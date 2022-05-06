@@ -1,0 +1,51 @@
+{
+  "name": "prisma-zod-generator",
+  "version": "0.0.0-rc.1",
+  "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
+  "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
+  "bin": {
+    "prisma-zod-generator": "lib/generator.js"
+  },
+  "scripts": {
+    "gen-example": "tsc && npx prisma generate",
+    "package:publish": "./package.sh && cd package && npm publish"
+  },
+  "author": {
+    "name": "Omar Dulaimi",
+    "url": "https://github.com/omar-dulaimi"
+  },
+  "keywords": [
+    "prisma",
+    "prisma-client",
+    "prisma-schema",
+    "zod",
+    "prisma-generator",
+    "prisma-zod-generator"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@prisma/client": "~3.13.0",
+    "prisma": "~3.13.0",
+    "tslib": "^2.4.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^3.13.0",
+    "@prisma/generator-helper": "^3.13.0",
+    "@prisma/sdk": "^3.13.0",
+    "prettier": "^2.6.2",
+    "ts-node": "^10.7.0",
+    "tslib": "^2.4.0",
+    "zod": "^3.15.1"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.31",
+    "@types/prettier": "^2.6.0",
+    "prisma": "^3.13.0",
+    "typescript": "^4.6.4"
+  },
+  "bugs": {
+    "url": "https://github.com/omar-dulaimi/prisma-zod-generator/issues"
+  },
+  "homepage": "https://github.com/omar-dulaimi/prisma-zod-generator#readme",
+  "private": true
+}
