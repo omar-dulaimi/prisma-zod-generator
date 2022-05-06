@@ -512,7 +512,7 @@ export default class Transformer {
       await writeFileSafely(
         path.join(Transformer.outputPath, `schemas/enums/${name}.schema.ts`),
         `${this.getImportZod()}\n${this.addExportSchema(
-          `z.union([${JSON.stringify(values)}])`,
+          `z.enum(${JSON.stringify(values)})`,
           `${name}`,
         )}`,
       );
