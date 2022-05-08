@@ -315,6 +315,32 @@ export default class Transformer {
           ? zodStringWithMainType
           : this.getFieldValidators(zodStringWithMainType, field);
         return value;
+      })
+      .map((field) => {
+        if (
+          (field.includes('create:') ||
+            field.includes('connectOrCreate:') ||
+            field.includes('disconnect:') ||
+            field.includes('connect:') ||
+            field.includes('delete:') ||
+            field.includes('update:') ||
+            field.includes('updateMany:') ||
+            field.includes('deleteMany:') ||
+            field.includes('upsert:') ||
+            field.includes('set:') ||
+            field.includes('not:') ||
+            field.includes('_count:') ||
+            field.includes('_min:') ||
+            field.includes('_max:') ||
+            field.includes('increment:') ||
+            field.includes('decrement:') ||
+            field.includes('multiply:') ||
+            field.includes('divide:')) &&
+          !field.includes('optional()')
+        ) {
+          return `${field}.optional()`;
+        }
+        return field;
       });
 
     await writeFileSafely(
