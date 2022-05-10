@@ -523,7 +523,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${groupBy}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereInputSchemaObject), orderBy: z.object(${modelName}OrderByWithAggregationInputSchemaObject), having: z.object(${modelName}ScalarWhereWithAggregatesInputSchemaObject), take: z.number(), skip: z.number(), by: z.array(${modelName}ScalarFieldEnumSchema).required()  })`,
+            `z.object({ where: z.object(${modelName}WhereInputSchemaObject), orderBy: z.object(${modelName}OrderByWithAggregationInputSchemaObject), having: z.object(${modelName}ScalarWhereWithAggregatesInputSchemaObject), take: z.number(), skip: z.number(), by: z.array(${modelName}ScalarFieldEnumSchema)  })`,
             `${modelName}GroupBy`,
           )}`,
         );
