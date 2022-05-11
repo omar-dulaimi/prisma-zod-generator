@@ -29,7 +29,7 @@ Using yarn:
 
 # Usage
 
-1- Star this repo 😉 
+1- Star this repo 😉
 
 2- Add the generator to your Prisma schema
 
@@ -39,7 +39,18 @@ generator zod {
 }
 ```
 
-3- Running `npx prisma generate` for the following schema.prisma
+3- Enable strict mode in `tsconfig` as it is required by Zod, and considered a Typescript best practice
+
+```ts
+{
+  "compilerOptions": {
+    "strict": true
+  }
+}
+
+```
+
+4- Running `npx prisma generate` for the following schema.prisma
 
 ```prisma
 model User {
@@ -66,7 +77,7 @@ will generate the following files
 
 ![Zod Schemas](https://raw.githubusercontent.com/omar-dulaimi/prisma-zod-generator/master/zodSchemas.png)
 
-4- Use generated schemas somewhere in your API logic, like middleware or decorator
+5- Use generated schemas somewhere in your API logic, like middleware or decorator
 
 ```ts
 import { PostCreateOneSchema } from './prisma/generated/schemas/createOnePost.schema';
