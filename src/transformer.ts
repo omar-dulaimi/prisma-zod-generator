@@ -375,7 +375,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${findUnique}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereUniqueInputSchemaObject) }).required()`,
+            `z.object({ where: z.object(${modelName}WhereUniqueInputSchemaObject) })`,
             `${modelName}FindUnique`,
           )}`,
         );
@@ -420,7 +420,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${create}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ data: z.object(${modelName}CreateInputSchemaObject)  }).required()`,
+            `z.object({ data: z.object(${modelName}CreateInputSchemaObject)  })`,
             `${modelName}Create`,
           )}`,
         );
@@ -436,7 +436,7 @@ export default class Transformer {
             `schemas/${model.delete}.schema.ts`,
           ),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereUniqueInputSchemaObject)  }).required()`,
+            `z.object({ where: z.object(${modelName}WhereUniqueInputSchemaObject)  })`,
             `${modelName}DeleteOne`,
           )}`,
         );
@@ -449,7 +449,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${deleteMany}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereInputSchemaObject)  }).required()`,
+            `z.object({ where: z.object(${modelName}WhereInputSchemaObject)  })`,
             `${modelName}DeleteMany`,
           )}`,
         );
@@ -463,7 +463,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${update}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ data: z.object(${modelName}UpdateInputSchemaObject), where: z.object(${modelName}WhereUniqueInputSchemaObject)  }).required()`,
+            `z.object({ data: z.object(${modelName}UpdateInputSchemaObject), where: z.object(${modelName}WhereUniqueInputSchemaObject)  })`,
             `${modelName}UpdateOne`,
           )}`,
         );
@@ -477,7 +477,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${updateMany}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ data: z.object(${modelName}UpdateManyMutationInputSchemaObject), where: z.object(${modelName}WhereInputSchemaObject)  }).required()`,
+            `z.object({ data: z.object(${modelName}UpdateManyMutationInputSchemaObject), where: z.object(${modelName}WhereInputSchemaObject)  })`,
             `${modelName}UpdateMany`,
           )}`,
         );
@@ -492,7 +492,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${upsert}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereUniqueInputSchemaObject), data: z.object(${modelName}CreateInputSchemaObject), update: z.object(${modelName}UpdateInputSchemaObject)  }).required()`,
+            `z.object({ where: z.object(${modelName}WhereUniqueInputSchemaObject), data: z.object(${modelName}CreateInputSchemaObject), update: z.object(${modelName}UpdateInputSchemaObject)  })`,
             `${modelName}Upsert`,
           )}`,
         );
@@ -507,7 +507,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${aggregate}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereInputSchemaObject), orderBy: z.object(${modelName}OrderByWithRelationInputSchemaObject), cursor: z.object(${modelName}WhereUniqueInputSchemaObject), take: z.number(), skip: z.number()  }).required()`,
+            `z.object({ where: z.object(${modelName}WhereInputSchemaObject), orderBy: z.object(${modelName}OrderByWithRelationInputSchemaObject), cursor: z.object(${modelName}WhereUniqueInputSchemaObject), take: z.number(), skip: z.number()  })`,
             `${modelName}Aggregate`,
           )}`,
         );
