@@ -122,39 +122,13 @@ export default class Transformer {
     if (inputsLength === 1) {
       lines = lines.map((inputType: PrismaDMMF.SchemaArgInputType) => {
         if (inputType.type === 'String') {
-          return [
-            `  ${field.name}: ${
-              inputType.isList
-                ? 'z.union([z.string(), z.null()])'
-                : 'z.string()'
-            }`,
-            field,
-          ];
+          return [`  ${field.name}: ${'z.string()'}`, field];
         } else if (inputType.type === 'Int' || inputType.type === 'Float') {
-          return [
-            `  ${field.name}: ${
-              inputType.isList
-                ? 'z.union([z.number(), z.null()])'
-                : 'z.number()'
-            }`,
-            field,
-          ];
+          return [`  ${field.name}: ${'z.number()'}`, field];
         } else if (inputType.type === 'Boolean') {
-          return [
-            `  ${field.name}: ${
-              inputType.isList
-                ? 'z.union([z.boolean(), z.null()])'
-                : 'z.boolean()'
-            }`,
-            field,
-          ];
+          return [`  ${field.name}: ${'z.boolean()'}`, field];
         } else if (inputType.type === 'DateTime') {
-          return [
-            `  ${field.name}: ${
-              inputType.isList ? 'z.union([z.date(), z.null()])' : 'z.date()'
-            }`,
-            field,
-          ];
+          return [`  ${field.name}: ${'z.date()'}`, field];
         } else {
           if (inputType.namespace === 'prisma') {
             if (inputType.type !== this.name) {
@@ -185,6 +159,8 @@ export default class Transformer {
             result.push(
               inputType.isList ? 'z.array(z.boolean())' : 'z.boolean()',
             );
+          } else if (inputType.type === 'DateTime') {
+            result.push(inputType.isList ? 'z.array(z.date())' : 'z.date()');
           } else {
             if (inputType.namespace === 'prisma') {
               if (inputType.type !== this.name) {
@@ -201,6 +177,10 @@ export default class Transformer {
       );
 
       if (alternatives.length > 0) {
+        if (field.isNullable) {
+          alternatives[alternatives.length - 1] =
+            alternatives[alternatives.length - 1] + '.nullable()';
+        }
         lines = [
           [
             `  ${field.name}: ${
@@ -229,6 +209,9 @@ export default class Transformer {
     if (!isRequired) {
       zodStringWithAllValidators += '.optional()';
     }
+    if (isNullable) {
+      zodStringWithAllValidators += '.nullable()';
+    }
     return zodStringWithAllValidators;
   }
 
@@ -244,7 +227,7 @@ export default class Transformer {
     let wrapped = '{';
     wrapped += '\n';
     wrapped += isArray
-      ? '  ' + (zodStringFields as unknown as Array<string>).join(',\r\n')
+      ? '  ' + (zodStringFields as unknown as Array<string>).join('\r\n,')
       : '  ' + zodStringFields;
     wrapped += '\n';
     wrapped += forData ? '  ' + '}' : '}';
@@ -317,30 +300,7 @@ export default class Transformer {
         return value;
       })
       .map((field) => {
-        if (
-          (field.includes('create:') ||
-            field.includes('connectOrCreate:') ||
-            field.includes('disconnect:') ||
-            field.includes('connect:') ||
-            field.includes('delete:') ||
-            field.includes('update:') ||
-            field.includes('updateMany:') ||
-            field.includes('deleteMany:') ||
-            field.includes('upsert:') ||
-            field.includes('set:') ||
-            field.includes('not:') ||
-            field.includes('_count:') ||
-            field.includes('_min:') ||
-            field.includes('_max:') ||
-            field.includes('increment:') ||
-            field.includes('decrement:') ||
-            field.includes('multiply:') ||
-            field.includes('divide:')) &&
-          !field.includes('optional()')
-        ) {
-          return `${field}.optional()`;
-        }
-        return field;
+        return field.trim();
       });
 
     await writeFileSafely(
@@ -492,7 +452,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${upsert}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereUniqueInputSchemaObject), data: z.object(${modelName}CreateInputSchemaObject), update: z.object(${modelName}UpdateInputSchemaObject)  })`,
+            `z.object({ where: z.object(${modelName}WhereUniqueInputSchemaObject), create: z.object(${modelName}CreateInputSchemaObject), update: z.object(${modelName}UpdateInputSchemaObject)  })`,
             `${modelName}Upsert`,
           )}`,
         );
