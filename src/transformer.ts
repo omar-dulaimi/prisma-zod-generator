@@ -275,11 +275,43 @@ export default class Transformer {
     return `export const ${name}Schema = ${schema}`;
   }
 
-  getFinalForm(zodStringFields: string) {
-    const schemaObject = `${this.addExportSchemaObject(
-      this.wrapWithObject({ zodStringFields }),
-    )}\n`;
-    const objectSchema = `${this.addExportObjectSchema(
+  addTsIgnore() {
+    return `///@ts-ignore\r\n`;
+  }
+
+  checkIfSchemaShouldBeIgnored(zodStringFields: string, objectName: string) {
+    let shouldIgnoreSchema = false;
+    if (
+      objectName.includes('Filter') ||
+      (typeof zodStringFields === 'string' &&
+        (zodStringFields.includes('.lazy(') ||
+          zodStringFields.includes('Filter'))) ||
+      (Array.isArray(zodStringFields) &&
+        zodStringFields.some(
+          (field) =>
+            field.includes('.lazy(') ||
+            field.includes('some') ||
+            field.includes('every') ||
+            field.includes('none') ||
+            field.includes('Filter'),
+        ))
+    ) {
+      shouldIgnoreSchema = true;
+    }
+    return shouldIgnoreSchema;
+  }
+
+  getFinalForm(zodStringFields: string, objectName: string) {
+    const shouldIgnoreSchema = this.checkIfSchemaShouldBeIgnored(
+      zodStringFields,
+      objectName,
+    );
+    const schemaObject = `${
+      shouldIgnoreSchema ? this.addTsIgnore() : ''
+    }${this.addExportSchemaObject(this.wrapWithObject({ zodStringFields }))}\n`;
+    const objectSchema = `${
+      shouldIgnoreSchema ? this.addTsIgnore() : ''
+    }${this.addExportObjectSchema(
       this.wrapWithZodObject({ zodStringFields }),
     )}\n`;
     return `${this.getImportsForSchemaObjects()}${schemaObject}\n${objectSchema}`;
@@ -308,7 +340,10 @@ export default class Transformer {
         Transformer.outputPath,
         `schemas/objects/${this.name}.schema.ts`,
       ),
-      this.getFinalForm(zodStringFields as unknown as string),
+      this.getFinalForm(
+        zodStringFields as unknown as string,
+        this.name as string,
+      ),
     );
   }
 
