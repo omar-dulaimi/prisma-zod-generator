@@ -386,7 +386,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${findFirst}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereInputSchemaObject), orderBy: z.object(${modelName}OrderByWithRelationInputSchemaObject), cursor: z.object(${modelName}WhereUniqueInputSchemaObject), take: z.number(), skip: z.number(), distinct: z.array(${modelName}ScalarFieldEnumSchema) })`,
+            `z.object({ where: z.object(${modelName}WhereInputSchemaObject).optional(), orderBy: z.object(${modelName}OrderByWithRelationInputSchemaObject).optional(), cursor: z.object(${modelName}WhereUniqueInputSchemaObject).optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional() })`,
             `${modelName}FindFirst`,
           )}`,
         );
@@ -402,7 +402,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${findMany}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereInputSchemaObject), orderBy: z.object(${modelName}OrderByWithRelationInputSchemaObject), cursor: z.object(${modelName}WhereUniqueInputSchemaObject), take: z.number(), skip: z.number(), distinct: z.array(${modelName}ScalarFieldEnumSchema)  })`,
+            `z.object({ where: z.object(${modelName}WhereInputSchemaObject).optional(), orderBy: z.object(${modelName}OrderByWithRelationInputSchemaObject).optional(), cursor: z.object(${modelName}WhereUniqueInputSchemaObject).optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional()  })`,
             `${modelName}FindMany`,
           )}`,
         );
@@ -444,7 +444,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${deleteMany}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereInputSchemaObject)  })`,
+            `z.object({ where: z.object(${modelName}WhereInputSchemaObject).optional()  })`,
             `${modelName}DeleteMany`,
           )}`,
         );
@@ -472,7 +472,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${updateMany}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ data: z.object(${modelName}UpdateManyMutationInputSchemaObject), where: z.object(${modelName}WhereInputSchemaObject)  })`,
+            `z.object({ data: z.object(${modelName}UpdateManyMutationInputSchemaObject), where: z.object(${modelName}WhereInputSchemaObject).optional()  })`,
             `${modelName}UpdateMany`,
           )}`,
         );
@@ -502,7 +502,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${aggregate}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereInputSchemaObject), orderBy: z.object(${modelName}OrderByWithRelationInputSchemaObject), cursor: z.object(${modelName}WhereUniqueInputSchemaObject), take: z.number(), skip: z.number()  })`,
+            `z.object({ where: z.object(${modelName}WhereInputSchemaObject).optional(), orderBy: z.object(${modelName}OrderByWithRelationInputSchemaObject).optional(), cursor: z.object(${modelName}WhereUniqueInputSchemaObject).optional(), take: z.number().optional(), skip: z.number().optional()  })`,
             `${modelName}Aggregate`,
           )}`,
         );
@@ -518,7 +518,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${groupBy}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereInputSchemaObject), orderBy: z.object(${modelName}OrderByWithAggregationInputSchemaObject), having: z.object(${modelName}ScalarWhereWithAggregatesInputSchemaObject), take: z.number(), skip: z.number(), by: z.array(${modelName}ScalarFieldEnumSchema)  })`,
+            `z.object({ where: z.object(${modelName}WhereInputSchemaObject).optional(), orderBy: z.object(${modelName}OrderByWithAggregationInputSchemaObject), having: z.object(${modelName}ScalarWhereWithAggregatesInputSchemaObject).optional(), take: z.number(), skip: z.number(), by: z.array(${modelName}ScalarFieldEnumSchema)  })`,
             `${modelName}GroupBy`,
           )}`,
         );
