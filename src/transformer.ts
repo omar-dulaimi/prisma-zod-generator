@@ -8,6 +8,7 @@ export default class Transformer {
   schemaImports?: Set<string>;
   modelOperations?: PrismaDMMF.ModelMapping[];
   enumTypes?: PrismaDMMF.SchemaEnum[];
+  static enumNames: Array<string> = [];
   private static outputPath: string = './generated';
   constructor({
     name,
@@ -43,7 +44,7 @@ export default class Transformer {
   getAllSchemaImports() {
     return [...(this.schemaImports ?? [])]
       .map((name) =>
-        name === 'SortOrder' || name === 'QueryMode'
+        Transformer.enumNames.includes(name)
           ? `import { ${name}Schema } from '../enums/${name}.schema';`
           : [
               `import { ${name}SchemaObject } from './${name}.schema';`,
@@ -58,6 +59,7 @@ export default class Transformer {
     field: PrismaDMMF.SchemaArg,
     inputType: PrismaDMMF.SchemaArgInputType,
     inputsLength: number,
+    isEnum: boolean,
   ) {
     if (inputsLength === 1) {
       if (inputType.isList) {
@@ -67,7 +69,7 @@ export default class Transformer {
           }: z.array(${`z.lazy(() => ${inputType.type}ObjectSchema`}))`;
         } else {
           return `  ${field.name}: ${
-            ['SortOrder', 'QueryMode'].includes(inputType.type as string)
+            isEnum
               ? `${`${inputType.type}Schema`}`
               : `z.array(z.object(${`${inputType.type}SchemaObject`}))`
           }`;
@@ -79,7 +81,7 @@ export default class Transformer {
           }: ${`z.lazy(() => ${inputType.type}ObjectSchema)`}`;
         } else {
           return `  ${field.name}: ${
-            ['SortOrder', 'QueryMode'].includes(inputType.type as string)
+            isEnum
               ? `${`${inputType.type}Schema`}`
               : `z.object(${`${inputType.type}SchemaObject`})`
           }`;
@@ -93,7 +95,7 @@ export default class Transformer {
           return `z.array(${`z.lazy(() => ${inputType.type}ObjectSchema`}))`;
         } else {
           return `${
-            ['SortOrder', 'QueryMode'].includes(inputType.type as string)
+            isEnum
               ? `${`${inputType.type}Schema`}`
               : `z.array(z.object(${`${inputType.type}SchemaObject`}))`
           }`;
@@ -103,7 +105,7 @@ export default class Transformer {
           return `${`z.lazy(() => ${inputType.type}ObjectSchema)`}`;
         } else {
           return `${
-            ['SortOrder', 'QueryMode'].includes(inputType.type as string)
+            isEnum
               ? `${`${inputType.type}Schema`}`
               : `z.object(${`${inputType.type}SchemaObject`})`
           }`;
@@ -115,86 +117,60 @@ export default class Transformer {
 
   getSchemaObjectLine(field: PrismaDMMF.SchemaArg) {
     let lines: any = field.inputTypes;
-
     const inputsLength = field.inputTypes.length;
     if (inputsLength === 0) return lines;
 
-    if (inputsLength === 1) {
-      lines = lines.map((inputType: PrismaDMMF.SchemaArgInputType) => {
+    const alternatives = lines.reduce(
+      (result: Array<string>, inputType: PrismaDMMF.SchemaArgInputType) => {
         if (inputType.type === 'String') {
-          return [`  ${field.name}: ${'z.string()'}`, field];
+          result.push(inputType.isList ? 'z.array(z.string())' : 'z.string()');
         } else if (inputType.type === 'Int' || inputType.type === 'Float') {
-          return [`  ${field.name}: ${'z.number()'}`, field];
+          result.push(inputType.isList ? 'z.array(z.number())' : 'z.number()');
         } else if (inputType.type === 'Boolean') {
-          return [`  ${field.name}: ${'z.boolean()'}`, field];
+          result.push(
+            inputType.isList ? 'z.array(z.boolean())' : 'z.boolean()',
+          );
         } else if (inputType.type === 'DateTime') {
-          return [`  ${field.name}: ${'z.date()'}`, field];
+          result.push(inputType.isList ? 'z.array(z.date())' : 'z.date()');
         } else {
-          if (inputType.namespace === 'prisma') {
+          const isEnum = inputType.location === 'enumTypes';
+
+          if (inputType.namespace === 'prisma' || isEnum) {
             if (inputType.type !== this.name) {
               this.addSchemaImport(inputType.type as string);
             }
-
-            return [
-              this.getPrismaStringLine(field, inputType, inputsLength),
-              field,
-              true,
-            ];
+            result.push(
+              this.getPrismaStringLine(field, inputType, inputsLength, isEnum),
+            );
           }
         }
-        return [];
-      });
-    } else {
-      const alternatives = lines.reduce(
-        (result: Array<string>, inputType: PrismaDMMF.SchemaArgInputType) => {
-          if (inputType.type === 'String') {
-            result.push(
-              inputType.isList ? 'z.array(z.string())' : 'z.string()',
-            );
-          } else if (inputType.type === 'Int' || inputType.type === 'Float') {
-            result.push(
-              inputType.isList ? 'z.array(z.number())' : 'z.number()',
-            );
-          } else if (inputType.type === 'Boolean') {
-            result.push(
-              inputType.isList ? 'z.array(z.boolean())' : 'z.boolean()',
-            );
-          } else if (inputType.type === 'DateTime') {
-            result.push(inputType.isList ? 'z.array(z.date())' : 'z.date()');
-          } else {
-            if (inputType.namespace === 'prisma') {
-              if (inputType.type !== this.name) {
-                this.addSchemaImport(inputType.type as string);
-              }
-              result.push(
-                this.getPrismaStringLine(field, inputType, inputsLength),
-              );
-            }
-          }
-          return result;
-        },
-        [],
-      );
+        return result;
+      },
+      [],
+    );
 
-      if (alternatives.length > 0) {
-        if (field.isNullable) {
-          alternatives[alternatives.length - 1] =
-            alternatives[alternatives.length - 1] + '.nullable()';
-        }
-        lines = [
-          [
-            `  ${field.name}: ${
-              alternatives.length === 1
-                ? alternatives.join(',\r\n')
-                : `z.union([${alternatives.join(',\r\n')}])`
-            } `,
-            field,
-            true,
-          ],
-        ];
-      } else {
-        return [[]];
+    if (alternatives.length > 0) {
+      if (field.isNullable) {
+        alternatives[alternatives.length - 1] =
+          alternatives[alternatives.length - 1] + '.nullable()';
       }
+      lines = [
+        [
+          `  ${
+            alternatives.some((alt: string) => alt.includes(':'))
+              ? ''
+              : `  ${field.name}:`
+          } ${
+            alternatives.length === 1
+              ? alternatives.join(',\r\n')
+              : `z.union([${alternatives.join(',\r\n')}])`
+          } `,
+          field,
+          true,
+        ],
+      ];
+    } else {
+      return [[]];
     }
 
     return lines.filter(Boolean);
@@ -529,7 +505,6 @@ export default class Transformer {
   async printEnumSchemas() {
     for (const enumType of this.enumTypes ?? []) {
       const { name, values } = enumType;
-
       await writeFileSafely(
         path.join(Transformer.outputPath, `schemas/enums/${name}.schema.ts`),
         `${this.getImportZod()}\n${this.addExportSchema(
