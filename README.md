@@ -7,6 +7,12 @@
 
 Automatically generate [Zod](https://github.com/colinhacks/zod) schemas from your [Prisma](https://github.com/prisma/prisma) Schema, and use them to validate your API endpoints or any other use you have. Updates every time `npx prisma generate` runs.
 
+<p align="center">
+  <a href="https://www.buymeacoffee.com/omardulaimi">
+    <img src="https://cdn.buymeacoffee.com/buttons/default-black.png" alt="Buy Me A Coffee" height="41" width="174">
+  </a>
+</p>
+
 ## Table of Contents
 
 - [Installation](#installing)
