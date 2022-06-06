@@ -40,7 +40,7 @@ export async function generate(options: GeneratorOptions) {
     const fields = prismaClientDmmf.schema.inputObjectTypes.prisma[i]?.fields;
     const name = prismaClientDmmf.schema.inputObjectTypes.prisma[i]?.name;
     const obj = new Transformer({ name, fields });
-    await obj.printSchemaObjects();
+    await obj.printObjectSchemas();
   }
 
   const obj = new Transformer({
