@@ -18,6 +18,7 @@ Automatically generate [Zod](https://github.com/colinhacks/zod) schemas from you
 - [Installation](#installing)
 - [Usage](#usage)
 - [Additional Options](#additional-options)
+- [Known Issues](#known-issues)
 
 ## Installation
 
@@ -108,3 +109,8 @@ generator zod {
   output     = "./generated-zod-schemas"
 }
 ```
+
+## Known Issues
+
+For the time being, fields that reference its parent schemas are not emitted. Like AND, OR, NOT.
+This is only temporary, as Zod make it hard to handle recursive types. https://github.com/colinhacks/zod#recursive-types
