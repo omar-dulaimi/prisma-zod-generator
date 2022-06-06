@@ -61,58 +61,68 @@ export default class Transformer {
     inputsLength: number,
     isEnum: boolean,
   ) {
-    if (inputsLength === 1) {
-      if (inputType.isList) {
-        if (inputType.type === this.name) {
-          return `  ${
-            field.name
-          }: z.array(${`z.lazy(() => ${inputType.type}ObjectSchema`}))`;
-        } else {
-          return `  ${field.name}: ${
-            isEnum
-              ? `${`${inputType.type}Schema`}`
-              : `z.array(z.object(${`${inputType.type}SchemaObject`}))`
-          }`;
-        }
+    let schemaObjectLine = `${`${inputType.type}SchemaObject`}`;
+    let objectSchemaLine = `${inputType.type}ObjectSchema`;
+    let schemaObjectWrappedWithZodObject = `z.object(${schemaObjectLine})`;
+    let enumSchemaLine = `${`${inputType.type}Schema`}`;
+    if (!field.isRequired && !inputType.isList) {
+      objectSchemaLine += '.optional()';
+      schemaObjectWrappedWithZodObject += '.optional()';
+      enumSchemaLine += '.optional()';
+    }
+    if (inputType.isList) {
+      if (inputType.type === this.name) {
+        return inputsLength === 1
+          ? `  ${field.name}: z.array(${`z.lazy(() => ${objectSchemaLine}`}))`
+          : `z.array(${`z.lazy(() => ${objectSchemaLine}`}))`;
       } else {
-        if (inputType.type === this.name) {
-          return `  ${
-            field.name
-          }: ${`z.lazy(() => ${inputType.type}ObjectSchema)`}`;
-        } else {
+        if (inputsLength === 1) {
           return `  ${field.name}: ${
             isEnum
-              ? `${`${inputType.type}Schema`}`
-              : `z.object(${`${inputType.type}SchemaObject`})`
+              ? enumSchemaLine
+              : `z.array(${schemaObjectWrappedWithZodObject})`
+          }`;
+        } else {
+          return `${
+            isEnum
+              ? enumSchemaLine
+              : `z.array(${schemaObjectWrappedWithZodObject})`
           }`;
         }
       }
+    } else {
+      if (inputType.type === this.name) {
+        return inputsLength === 1
+          ? `  ${field.name}: ${`z.lazy(() => ${objectSchemaLine})`}`
+          : `${`z.lazy(() => ${objectSchemaLine})`}`;
+      } else {
+        return inputsLength === 1
+          ? `  ${field.name}: ${
+              isEnum ? enumSchemaLine : `${schemaObjectWrappedWithZodObject}`
+            }`
+          : `${
+              isEnum ? enumSchemaLine : `${schemaObjectWrappedWithZodObject}`
+            }`;
+      }
     }
+  }
 
-    if (inputsLength > 1) {
-      if (inputType.isList) {
-        if (inputType.type === this.name) {
-          return `z.array(${`z.lazy(() => ${inputType.type}ObjectSchema`}))`;
-        } else {
-          return `${
-            isEnum
-              ? `${`${inputType.type}Schema`}`
-              : `z.array(z.object(${`${inputType.type}SchemaObject`}))`
-          }`;
-        }
-      } else {
-        if (inputType.type === this.name) {
-          return `${`z.lazy(() => ${inputType.type}ObjectSchema)`}`;
-        } else {
-          return `${
-            isEnum
-              ? `${`${inputType.type}Schema`}`
-              : `z.object(${`${inputType.type}SchemaObject`})`
-          }`;
-        }
-      }
+  wrapWithZodArray(line: string, inputType: PrismaDMMF.SchemaArgInputType) {
+    return inputType.isList ? `z.array(${line})` : line;
+  }
+
+  wrapWithZodValidators(
+    mainValidator: string,
+    field: PrismaDMMF.SchemaArg,
+    inputType: PrismaDMMF.SchemaArgInputType,
+  ) {
+    let line: string = '';
+    line = mainValidator;
+    if (!field.isRequired && !inputType.isList) {
+      line += '.optional()';
     }
-    return '';
+    line = this.wrapWithZodArray(line, inputType);
+    return line;
   }
 
   getSchemaObjectLine(field: PrismaDMMF.SchemaArg) {
@@ -120,18 +130,22 @@ export default class Transformer {
     const inputsLength = field.inputTypes.length;
     if (inputsLength === 0) return lines;
 
-    const alternatives = lines.reduce(
+    let alternatives = lines.reduce(
       (result: Array<string>, inputType: PrismaDMMF.SchemaArgInputType) => {
         if (inputType.type === 'String') {
-          result.push(inputType.isList ? 'z.array(z.string())' : 'z.string()');
+          result.push(
+            this.wrapWithZodValidators('z.string()', field, inputType),
+          );
         } else if (inputType.type === 'Int' || inputType.type === 'Float') {
-          result.push(inputType.isList ? 'z.array(z.number())' : 'z.number()');
+          result.push(
+            this.wrapWithZodValidators('z.number()', field, inputType),
+          );
         } else if (inputType.type === 'Boolean') {
           result.push(
-            inputType.isList ? 'z.array(z.boolean())' : 'z.boolean()',
+            this.wrapWithZodValidators('z.boolean()', field, inputType),
           );
         } else if (inputType.type === 'DateTime') {
-          result.push(inputType.isList ? 'z.array(z.date())' : 'z.date()');
+          result.push(this.wrapWithZodValidators('z.date()', field, inputType));
         } else {
           const isEnum = inputType.location === 'enumTypes';
 
@@ -154,6 +168,11 @@ export default class Transformer {
         alternatives[alternatives.length - 1] =
           alternatives[alternatives.length - 1] + '.nullable()';
       }
+      if (alternatives.length > 1) {
+        alternatives = alternatives.map((alter: string) =>
+          alter.replace('.optional()', ''),
+        );
+      }
       lines = [
         [
           `  ${
@@ -163,7 +182,9 @@ export default class Transformer {
           } ${
             alternatives.length === 1
               ? alternatives.join(',\r\n')
-              : `z.union([${alternatives.join(',\r\n')}])`
+              : `z.union([${alternatives.join(',\r\n')}])${
+                  !field.isRequired ? '.optional()' : ''
+                }`
           } `,
           field,
           true,
@@ -494,7 +515,7 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${groupBy}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: z.object(${modelName}WhereInputSchemaObject).optional(), orderBy: z.object(${modelName}OrderByWithAggregationInputSchemaObject), having: z.object(${modelName}ScalarWhereWithAggregatesInputSchemaObject).optional(), take: z.number(), skip: z.number(), by: z.array(${modelName}ScalarFieldEnumSchema)  })`,
+            `z.object({ where: z.object(${modelName}WhereInputSchemaObject).optional(), orderBy: z.object(${modelName}OrderByWithAggregationInputSchemaObject), having: z.object(${modelName}ScalarWhereWithAggregatesInputSchemaObject).optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${modelName}ScalarFieldEnumSchema)  })`,
             `${modelName}GroupBy`,
           )}`,
         );
