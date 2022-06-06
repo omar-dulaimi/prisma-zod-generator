@@ -61,8 +61,8 @@ export default class Transformer {
     let objectSchemaLine = `${inputType.type}ObjectSchema`;
     let enumSchemaLine = `${`${inputType.type}Schema`}`;
     if (!field.isRequired && !inputType.isList) {
-      objectSchemaLine += '.optional()';
-      enumSchemaLine += '.optional()';
+      objectSchemaLine += '?.optional()';
+      enumSchemaLine += '?.optional()';
     }
     if (inputType.isList) {
       if (inputType.type === this.name) {
@@ -105,7 +105,7 @@ export default class Transformer {
     let line: string = '';
     line = mainValidator;
     if (!field.isRequired && !inputType.isList) {
-      line += '.optional()';
+      line += '?.optional()';
     }
     line = this.wrapWithZodArray(line, inputType);
     return line;
@@ -156,7 +156,7 @@ export default class Transformer {
       }
       if (alternatives.length > 1) {
         alternatives = alternatives.map((alter: string) =>
-          alter.replace('.optional()', ''),
+          alter.replace('?.optional()', ''),
         );
       }
       lines = [
@@ -169,7 +169,7 @@ export default class Transformer {
             alternatives.length === 1
               ? alternatives.join(',\r\n')
               : `z.union([${alternatives.join(',\r\n')}])${
-                  !field.isRequired ? '.optional()' : ''
+                  !field.isRequired ? '?.optional()' : ''
                 }`
           } `,
           field,
@@ -190,7 +190,7 @@ export default class Transformer {
     let zodStringWithAllValidators = zodStringWithMainType;
     const { isRequired, isNullable } = field;
     if (!isRequired) {
-      zodStringWithAllValidators += '.optional()';
+      zodStringWithAllValidators += '?.optional()';
     }
     if (isNullable) {
       zodStringWithAllValidators += '.nullable()';
@@ -217,15 +217,6 @@ export default class Transformer {
     return wrapped;
   }
 
-  wrapWithZodObject({ zodStringFields }: { zodStringFields: string }) {
-    let wrapped = 'z.object({';
-    wrapped += '\n';
-    wrapped += '  ' + zodStringFields;
-    wrapped += '\n';
-    wrapped += '})';
-    return wrapped;
-  }
-
   getImportZod() {
     let zodImportStatement = "import { z } from 'zod';";
     zodImportStatement += '\n';
@@ -246,7 +237,6 @@ export default class Transformer {
     return imports;
   }
 
-
   addExportObjectSchema(schema: string) {
     return `export const ${this.name}ObjectSchema = ${schema};`;
   }
@@ -259,13 +249,19 @@ export default class Transformer {
     return `///@ts-ignore\r\n`;
   }
 
-  checkIfSchemaShouldBeIgnored(zodStringFields: string, objectName: string) {
+  checkIfSchemaShouldBeIgnored({
+    zodStringFields,
+    objectName,
+  }: {
+    zodStringFields: Array<string>;
+    objectName: string;
+  }) {
     let shouldIgnoreSchema = false;
     if (
       objectName.includes('Filter') ||
       (typeof zodStringFields === 'string' &&
-        (zodStringFields.includes('.lazy(') ||
-          zodStringFields.includes('Filter'))) ||
+        ((zodStringFields as Array<string>).includes('.lazy(') ||
+          (zodStringFields as Array<string>).includes('Filter'))) ||
       (Array.isArray(zodStringFields) &&
         zodStringFields.some(
           (field) =>
@@ -281,20 +277,66 @@ export default class Transformer {
     return shouldIgnoreSchema;
   }
 
-  getFinalForm(zodStringFields: string, objectName: string) {
-    const shouldIgnoreSchema = this.checkIfSchemaShouldBeIgnored(
+  wrapWithZodObject({ zodStringFields }: { zodStringFields: any }) {
+    let wrapped = 'z.object({';
+    wrapped += '\n';
+    wrapped += '  ' + zodStringFields;
+    wrapped += '\n';
+    wrapped += '})';
+    return wrapped;
+  }
+
+  wrapWithZodOUnion({ zodStringFields }: { zodStringFields: Array<string> }) {
+    let wrapped = 'z.union([';
+    wrapped += '\n';
+    wrapped += '  ' + zodStringFields.join(',');
+    wrapped += '\n';
+    wrapped += '])';
+    return wrapped;
+  }
+
+  addFinalWrappers({ zodStringFields }: { zodStringFields: Array<string> }) {
+    let wrapped = '';
+    let fields = [...zodStringFields];
+    const shouldWrapWithUnion = fields.some(
+      (field) =>
+        // TODO handle other cases if any
+        // field.includes('create:') ||
+        field.includes('connectOrCreate:') || field.includes('connect:'),
+    );
+    if (shouldWrapWithUnion) {
+      fields = fields.map(
+        (field) => `${this.wrapWithZodObject({ zodStringFields: field })}`,
+      );
+      wrapped = this.wrapWithZodOUnion({ zodStringFields: fields });
+    } else {
+      wrapped = 'z.object({';
+      wrapped += '\n';
+      wrapped += '  ' + fields;
+      wrapped += '\n';
+      wrapped += '})';
+      wrapped = this.wrapWithZodObject({ zodStringFields: fields });
+    }
+
+    return wrapped;
+  }
+  getFinalForm(zodStringFields: Array<string>, objectName: string) {
+    const shouldIgnoreSchema = this.checkIfSchemaShouldBeIgnored({
       zodStringFields,
       objectName,
-    );
+    });
     const objectSchema = `${
       shouldIgnoreSchema ? this.addTsIgnore() : ''
     }${this.addExportObjectSchema(
-      this.wrapWithZodObject({ zodStringFields }),
+      this.addFinalWrappers({ zodStringFields }),
     )}\n`;
     return `${this.getImportsForObjectSchemas()}${objectSchema}`;
   }
   async printObjectSchemas() {
-    const zodStringFields = (this.fields ?? [])
+    const zodStringFields: Array<string> = (this.fields ?? [])
+      // TODO find a way to handle self refs, zod makes it hard to do so
+      // https://github.com/colinhacks/zod#recursive-types
+      .filter((field) => !['AND', 'OR', 'NOT'].includes(field.name))
       .map((field) => {
         const value = this.getObjectSchemaLine(field);
         return value;
@@ -317,10 +359,7 @@ export default class Transformer {
         Transformer.outputPath,
         `schemas/objects/${this.name}.schema.ts`,
       ),
-      this.getFinalForm(
-        zodStringFields as unknown as string,
-        this.name as string,
-      ),
+      this.getFinalForm(zodStringFields, this.name as string),
     );
   }
 
