@@ -3,30 +3,19 @@ import path from 'path';
 import { writeFileSafely } from './utils/writeFileSafely';
 
 export default class Transformer {
-  name?: string;
-  fields?: PrismaDMMF.SchemaArg[];
-  schemaImports?: Set<string>;
-  modelOperations?: PrismaDMMF.ModelMapping[];
-  enumTypes?: PrismaDMMF.SchemaEnum[];
-  static enumNames: Array<string> = [];
+  name: string;
+  fields: PrismaDMMF.SchemaArg[];
+  schemaImports = new Set<string>();
+  modelOperations: PrismaDMMF.ModelMapping[];
+  enumTypes: PrismaDMMF.SchemaEnum[];
+  static enumNames: string[] = [];
   private static outputPath: string = './generated';
-  constructor({
-    name,
-    fields,
-    modelOperations,
-    enumTypes,
-  }: {
-    name?: string | undefined;
-    fields?: PrismaDMMF.SchemaArg[] | undefined;
-    schemaImports?: Set<string>;
-    modelOperations?: PrismaDMMF.ModelMapping[];
-    enumTypes?: PrismaDMMF.SchemaEnum[];
-  }) {
-    this.name = name ?? '';
-    this.fields = fields ?? [];
-    this.modelOperations = modelOperations ?? [];
-    this.schemaImports = new Set();
-    this.enumTypes = enumTypes;
+
+  constructor(params: TransformerParams) {
+    this.name = params.name ?? '';
+    this.fields = params.fields ?? [];
+    this.modelOperations = params.modelOperations ?? [];
+    this.enumTypes = params.enumTypes ?? [];
   }
 
   static setOutputPath(outPath: string) {
@@ -38,17 +27,16 @@ export default class Transformer {
   }
 
   addSchemaImport(name: string) {
-    this.schemaImports?.add(name);
+    this.schemaImports.add(name);
   }
 
   getAllSchemaImports() {
-    return [...(this.schemaImports ?? [])]
+    return [...this.schemaImports]
       .map((name) =>
         Transformer.enumNames.includes(name)
           ? `import { ${name}Schema } from '../enums/${name}.schema';`
-          : [`import { ${name}ObjectSchema } from './${name}.schema';`],
+          : `import { ${name}ObjectSchema } from './${name}.schema';`,
       )
-      .flatMap((item) => item)
       .join(';\r\n');
   }
 
@@ -56,45 +44,56 @@ export default class Transformer {
     field: PrismaDMMF.SchemaArg,
     inputType: PrismaDMMF.SchemaArgInputType,
     inputsLength: number,
-    isEnum: boolean,
   ) {
+    const isEnum = inputType.location === 'enumTypes';
+
     let objectSchemaLine = `${inputType.type}ObjectSchema`;
-    let enumSchemaLine = `${`${inputType.type}Schema`}`;
-    if (!field.isRequired && !inputType.isList) {
-      objectSchemaLine += '?.optional()';
-      enumSchemaLine += '?.optional()';
-    }
-    if (inputType.isList) {
-      if (inputType.type === this.name) {
-        return inputsLength === 1
-          ? `  ${field.name}: z.array(${`z.lazy(() => ${objectSchemaLine}`}))`
-          : `z.array(${`z.lazy(() => ${objectSchemaLine}`}))`;
-      } else {
-        if (inputsLength === 1) {
-          return `  ${field.name}: ${
-            isEnum ? enumSchemaLine : `z.array(${objectSchemaLine})`
-          }`;
-        } else {
-          return `${isEnum ? enumSchemaLine : `z.array(${objectSchemaLine})`}`;
-        }
-      }
-    } else {
-      if (inputType.type === this.name) {
-        return inputsLength === 1
-          ? `  ${field.name}: ${`z.lazy(() => ${objectSchemaLine})`}`
-          : `${`z.lazy(() => ${objectSchemaLine})`}`;
-      } else {
-        return inputsLength === 1
-          ? `  ${field.name}: ${
-              isEnum ? enumSchemaLine : `${objectSchemaLine}`
-            }`
-          : `${isEnum ? enumSchemaLine : `${objectSchemaLine}`}`;
-      }
-    }
+    let enumSchemaLine = `${inputType.type}Schema`;
+
+    const schema =
+      inputType.type === this.name
+        ? objectSchemaLine
+        : isEnum
+        ? enumSchemaLine
+        : objectSchemaLine;
+
+    const arr = inputType.isList ? '.array()' : '';
+    // is field optional - if yes, add .optional() to schema
+    const opt = !field.isRequired ? '.optional()' : '';
+
+    return inputsLength === 1
+      ? `  ${field.name}: z.lazy(() => ${schema})${arr}${opt}`
+      : `z.lazy(() => ${schema})${arr}${opt}`;
   }
 
-  wrapWithZodArray(line: string, inputType: PrismaDMMF.SchemaArgInputType) {
-    return inputType.isList ? `z.array(${line})` : line;
+  getPrismaTypeStringLine(
+    field: PrismaDMMF.SchemaArg,
+    inputType: PrismaDMMF.SchemaArgInputType,
+    inputsLength: number,
+  ) {
+    const isEnum = inputType.location === 'enumTypes';
+
+    const objectSchemaLine = `z.infer<typeof ${inputType.type}ObjectSchema>`;
+    const enumSchemaLine = `z.infer<typeof ${inputType.type}Schema>`;
+
+    const schema =
+      inputType.type === this.name
+        ? `Prisma.${this.name}`
+        : isEnum
+        ? enumSchemaLine
+        : objectSchemaLine;
+
+    const arr = inputType.isList ? '[]' : '';
+    // is field optional - if yes, ? to field name
+    const opt = !field.isRequired ? '?' : '';
+
+    return inputsLength === 1
+      ? `  ${field.name}${opt}: ${schema}${arr}`
+      : `${schema}${arr}`;
+  }
+
+  wrapWithTypeArray(line: string, inputType: PrismaDMMF.SchemaArgInputType) {
+    return inputType.isList ? `${line}[]` : line;
   }
 
   wrapWithZodValidators(
@@ -104,117 +103,99 @@ export default class Transformer {
   ) {
     let line: string = '';
     line = mainValidator;
-    if (!field.isRequired && !inputType.isList) {
-      line += '?.optional()';
+
+    if (inputType.isList) {
+      line += '.array()';
     }
-    line = this.wrapWithZodArray(line, inputType);
+
+    if (!field.isRequired) {
+      line += '.optional()';
+    }
+
     return line;
   }
 
-  getObjectSchemaLine(field: PrismaDMMF.SchemaArg) {
-    let lines: any = field.inputTypes;
-    const inputsLength = field.inputTypes.length;
-    if (inputsLength === 0) return lines;
+  getObjectSchemaLine(
+    field: PrismaDMMF.SchemaArg,
+  ): [string, PrismaDMMF.SchemaArg, boolean][] {
+    let lines = field.inputTypes;
 
-    let alternatives = lines.reduce(
-      (result: Array<string>, inputType: PrismaDMMF.SchemaArgInputType) => {
-        if (inputType.type === 'String') {
-          result.push(
-            this.wrapWithZodValidators('z.string()', field, inputType),
-          );
-        } else if (inputType.type === 'Int' || inputType.type === 'Float') {
-          result.push(
-            this.wrapWithZodValidators('z.number()', field, inputType),
-          );
-        } else if (inputType.type === 'Boolean') {
-          result.push(
-            this.wrapWithZodValidators('z.boolean()', field, inputType),
-          );
-        } else if (inputType.type === 'DateTime') {
-          result.push(this.wrapWithZodValidators('z.date()', field, inputType));
-        } else {
-          const isEnum = inputType.location === 'enumTypes';
-
-          if (inputType.namespace === 'prisma' || isEnum) {
-            if (inputType.type !== this.name) {
-              this.addSchemaImport(inputType.type as string);
-            }
-            result.push(
-              this.getPrismaStringLine(field, inputType, inputsLength, isEnum),
-            );
-          }
-        }
-        return result;
-      },
-      [],
-    );
-
-    if (alternatives.length > 0) {
-      if (field.isNullable) {
-        alternatives[alternatives.length - 1] =
-          alternatives[alternatives.length - 1] + '.nullable()';
-      }
-      if (alternatives.length > 1) {
-        alternatives = alternatives.map((alter: string) =>
-          alter.replace('?.optional()', ''),
-        );
-      }
-      lines = [
-        [
-          `  ${
-            alternatives.some((alt: string) => alt.includes(':'))
-              ? ''
-              : `  ${field.name}:`
-          } ${
-            alternatives.length === 1
-              ? alternatives.join(',\r\n')
-              : `z.union([${alternatives.join(',\r\n')}])${
-                  !field.isRequired ? '?.optional()' : ''
-                }`
-          } `,
-          field,
-          true,
-        ],
-      ];
-    } else {
-      return [[]];
+    if (lines.length === 0) {
+      return [];
     }
 
-    return lines.filter(Boolean);
+    let alternatives = lines.reduce<string[]>((result, inputType) => {
+      if (inputType.type === 'String') {
+        result.push(this.wrapWithZodValidators('z.string()', field, inputType));
+      } else if (inputType.type === 'Int' || inputType.type === 'Float') {
+        result.push(this.wrapWithZodValidators('z.number()', field, inputType));
+      } else if (inputType.type === 'Boolean') {
+        result.push(
+          this.wrapWithZodValidators('z.boolean()', field, inputType),
+        );
+      } else if (inputType.type === 'DateTime') {
+        result.push(this.wrapWithZodValidators('z.date()', field, inputType));
+      } else {
+        const isEnum = inputType.location === 'enumTypes';
+
+        if (inputType.namespace === 'prisma' || isEnum) {
+          if (
+            inputType.type !== this.name &&
+            typeof inputType.type === 'string'
+          ) {
+            this.addSchemaImport(inputType.type);
+          }
+
+          result.push(this.getPrismaStringLine(field, inputType, lines.length));
+        }
+      }
+
+      return result;
+    }, []);
+
+    if (alternatives.length === 0) {
+      return [];
+    }
+
+    if (alternatives.length > 1) {
+      alternatives = alternatives.map((alter) =>
+        alter.replace('.optional()', ''),
+      );
+    }
+
+    const fieldName = alternatives.some((alt) => alt.includes(':'))
+      ? ''
+      : `  ${field.name}:`;
+
+    const opt = !field.isRequired ? '.optional()' : '';
+
+    let resString =
+      alternatives.length === 1
+        ? alternatives.join(',\r\n')
+        : `z.union([${alternatives.join(',\r\n')}])${opt}`;
+
+    if (field.isNullable) {
+      resString += '.nullable()';
+    }
+
+    return [[`  ${fieldName} ${resString} `, field, true]];
   }
 
   getFieldValidators(
     zodStringWithMainType: string,
     field: PrismaDMMF.SchemaArg,
   ) {
-    let zodStringWithAllValidators = zodStringWithMainType;
     const { isRequired, isNullable } = field;
-    if (!isRequired) {
-      zodStringWithAllValidators += '?.optional()';
-    }
-    if (isNullable) {
-      zodStringWithAllValidators += '.nullable()';
-    }
-    return zodStringWithAllValidators;
-  }
 
-  wrapWithObject({
-    zodStringFields,
-    isArray = true,
-    forData = false,
-  }: {
-    zodStringFields: string;
-    isArray?: boolean;
-    forData?: boolean;
-  }) {
-    let wrapped = '{';
-    wrapped += '\n';
-    wrapped += isArray
-      ? '  ' + (zodStringFields as unknown as Array<string>).join('\r\n,')
-      : '  ' + zodStringFields;
-    wrapped += '\n';
-    wrapped += forData ? '  ' + '}' : '}';
-    return wrapped;
+    if (!isRequired) {
+      zodStringWithMainType += '.optional()';
+    }
+
+    if (isNullable) {
+      zodStringWithMainType += '.nullable()';
+    }
+
+    return zodStringWithMainType;
   }
 
   getImportZod() {
@@ -230,7 +211,7 @@ export default class Transformer {
     return imports;
   }
 
-  getImportsForSchemas(additionalImports: Array<string>) {
+  getImportsForSchemas(additionalImports: string[]) {
     let imports = this.getImportZod();
     imports += [...additionalImports].join(';\r\n');
     imports += '\n\n';
@@ -238,47 +219,18 @@ export default class Transformer {
   }
 
   addExportObjectSchema(schema: string) {
-    return `export const ${this.name}ObjectSchema = ${schema};`;
+    const end = `export const ${this.name}ObjectSchema = Schema`;
+    return `const Schema: z.ZodType<Prisma.${this.name}> = ${schema};\n\n ${end}`;
   }
 
   addExportSchema(schema: string, name: string) {
     return `export const ${name}Schema = ${schema}`;
   }
 
-  addTsIgnore() {
-    return `///@ts-ignore\r\n`;
-  }
+  wrapWithZodObject(zodStringFields: string | string[]) {
+    let wrapped = '';
 
-  checkIfSchemaShouldBeIgnored({
-    zodStringFields,
-    objectName,
-  }: {
-    zodStringFields: Array<string>;
-    objectName: string;
-  }) {
-    let shouldIgnoreSchema = false;
-    if (
-      objectName.includes('Filter') ||
-      (typeof zodStringFields === 'string' &&
-        ((zodStringFields as Array<string>).includes('.lazy(') ||
-          (zodStringFields as Array<string>).includes('Filter'))) ||
-      (Array.isArray(zodStringFields) &&
-        zodStringFields.some(
-          (field) =>
-            field.includes('.lazy(') ||
-            field.includes('some') ||
-            field.includes('every') ||
-            field.includes('none') ||
-            field.includes('Filter'),
-        ))
-    ) {
-      shouldIgnoreSchema = true;
-    }
-    return shouldIgnoreSchema;
-  }
-
-  wrapWithZodObject({ zodStringFields }: { zodStringFields: any }) {
-    let wrapped = 'z.object({';
+    wrapped += 'z.object({';
     wrapped += '\n';
     wrapped += '  ' + zodStringFields;
     wrapped += '\n';
@@ -286,8 +238,22 @@ export default class Transformer {
     return wrapped;
   }
 
-  wrapWithZodOUnion({ zodStringFields }: { zodStringFields: Array<string> }) {
-    let wrapped = 'z.union([';
+  wrapWithTypeObject(stringOrArray: string | string[]) {
+    let wrapped = '';
+
+    wrapped += '{';
+    wrapped += '\n';
+    wrapped += '  ' + stringOrArray;
+    wrapped += '\n';
+    wrapped += '}';
+
+    return wrapped;
+  }
+
+  wrapWithZodOUnion(zodStringFields: string[]) {
+    let wrapped = '';
+
+    wrapped += 'z.union([';
     wrapped += '\n';
     wrapped += '  ' + zodStringFields.join(',');
     wrapped += '\n';
@@ -295,63 +261,76 @@ export default class Transformer {
     return wrapped;
   }
 
-  addFinalWrappers({ zodStringFields }: { zodStringFields: Array<string> }) {
+  wrapWithTypeUnion(strings: string[]) {
     let wrapped = '';
-    let fields = [...zodStringFields];
+    wrapped += '\n';
+    wrapped += '  ' + strings.join(' | ');
+    wrapped += '\n';
+    wrapped += '';
+    return wrapped;
+  }
+
+  addFinalWrappers({ zodStringFields }: { zodStringFields: string[] }) {
+    const fields = [...zodStringFields];
+
     const shouldWrapWithUnion = fields.some(
       (field) =>
         // TODO handle other cases if any
         // field.includes('create:') ||
         field.includes('connectOrCreate:') || field.includes('connect:'),
     );
-    if (shouldWrapWithUnion) {
-      fields = fields.map(
-        (field) => `${this.wrapWithZodObject({ zodStringFields: field })}`,
-      );
-      wrapped = this.wrapWithZodOUnion({ zodStringFields: fields });
-    } else {
-      wrapped = 'z.object({';
-      wrapped += '\n';
-      wrapped += '  ' + fields;
-      wrapped += '\n';
-      wrapped += '})';
-      wrapped = this.wrapWithZodObject({ zodStringFields: fields });
+
+    if (!shouldWrapWithUnion) {
+      return this.wrapWithZodObject(fields) + '.strict()';
     }
 
-    return wrapped;
+    const wrapped = fields.map((field) => this.wrapWithZodObject(field));
+
+    return this.wrapWithZodOUnion(wrapped);
   }
-  getFinalForm(zodStringFields: Array<string>, objectName: string) {
-    const shouldIgnoreSchema = this.checkIfSchemaShouldBeIgnored({
-      zodStringFields,
-      objectName,
-    });
-    const objectSchema = `${
-      shouldIgnoreSchema ? this.addTsIgnore() : ''
-    }${this.addExportObjectSchema(
+
+  addTypesFinalWrappers(params: { zodStringFields: string[] }) {
+    const fields = params.zodStringFields;
+
+    const shouldWrapWithUnion = fields.some(
+      (field) =>
+        // TODO handle other cases if any
+        // field.includes('create:') ||
+        field.includes('connectOrCreate:') || field.includes('connect:'),
+    );
+
+    if (!shouldWrapWithUnion) {
+      return this.wrapWithTypeObject(fields);
+    }
+
+    const wrapped = fields.map((field) => this.wrapWithTypeObject(field));
+
+    return this.wrapWithTypeUnion(wrapped);
+  }
+
+  getFinalForm(zodStringFields: string[]) {
+    const objectSchema = `${this.addExportObjectSchema(
       this.addFinalWrappers({ zodStringFields }),
     )}\n`;
-    return `${this.getImportsForObjectSchemas()}${objectSchema}`;
+
+    const prismaImport = `import type { Prisma } from '@prisma/client';\n\n`;
+
+    return `${this.getImportsForObjectSchemas()}${prismaImport}${objectSchema}`;
   }
+
   async printObjectSchemas() {
-    const zodStringFields: Array<string> = (this.fields ?? [])
-      // TODO find a way to handle self refs, zod makes it hard to do so
-      // https://github.com/colinhacks/zod#recursive-types
-      .filter((field) => !['AND', 'OR', 'NOT'].includes(field.name))
-      .map((field) => {
-        const value = this.getObjectSchemaLine(field);
-        return value;
-      })
+    const zodStringFields: string[] = this.fields
+      // array with items or array without, so no need to filter out and loose types
+      .map((field) => this.getObjectSchemaLine(field))
       .flatMap((item) => item)
-      .filter((item) => item && item.length > 0)
       .map((item) => {
         const [zodStringWithMainType, field, skipValidators] = item;
+
         const value = skipValidators
           ? zodStringWithMainType
           : this.getFieldValidators(zodStringWithMainType, field);
-        return value;
-      })
-      .map((field) => {
-        return field.trim();
+
+        return value.trim();
       });
 
     await writeFileSafely(
@@ -359,12 +338,13 @@ export default class Transformer {
         Transformer.outputPath,
         `schemas/objects/${this.name}.schema.ts`,
       ),
-      this.getFinalForm(zodStringFields, this.name as string),
+
+      this.getFinalForm(zodStringFields),
     );
   }
 
   async printModelSchemas() {
-    for (const model of this.modelOperations ?? []) {
+    for (const model of this.modelOperations) {
       const {
         model: modelName,
         findUnique,
@@ -543,8 +523,9 @@ export default class Transformer {
   }
 
   async printEnumSchemas() {
-    for (const enumType of this.enumTypes ?? []) {
+    for (const enumType of this.enumTypes) {
       const { name, values } = enumType;
+
       await writeFileSafely(
         path.join(Transformer.outputPath, `schemas/enums/${name}.schema.ts`),
         `${this.getImportZod()}\n${this.addExportSchema(
@@ -555,3 +536,10 @@ export default class Transformer {
     }
   }
 }
+
+type TransformerParams = {
+  enumTypes?: PrismaDMMF.SchemaEnum[];
+  fields?: PrismaDMMF.SchemaArg[];
+  name?: string;
+  modelOperations?: PrismaDMMF.ModelMapping[];
+};
