@@ -66,36 +66,6 @@ export default class Transformer {
       : `z.lazy(() => ${schema})${arr}${opt}`;
   }
 
-  getPrismaTypeStringLine(
-    field: PrismaDMMF.SchemaArg,
-    inputType: PrismaDMMF.SchemaArgInputType,
-    inputsLength: number,
-  ) {
-    const isEnum = inputType.location === 'enumTypes';
-
-    const objectSchemaLine = `z.infer<typeof ${inputType.type}ObjectSchema>`;
-    const enumSchemaLine = `z.infer<typeof ${inputType.type}Schema>`;
-
-    const schema =
-      inputType.type === this.name
-        ? `Prisma.${this.name}`
-        : isEnum
-        ? enumSchemaLine
-        : objectSchemaLine;
-
-    const arr = inputType.isList ? '[]' : '';
-    // is field optional - if yes, ? to field name
-    const opt = !field.isRequired ? '?' : '';
-
-    return inputsLength === 1
-      ? `  ${field.name}${opt}: ${schema}${arr}`
-      : `${schema}${arr}`;
-  }
-
-  wrapWithTypeArray(line: string, inputType: PrismaDMMF.SchemaArgInputType) {
-    return inputType.isList ? `${line}[]` : line;
-  }
-
   wrapWithZodValidators(
     mainValidator: string,
     field: PrismaDMMF.SchemaArg,
@@ -238,18 +208,6 @@ export default class Transformer {
     return wrapped;
   }
 
-  wrapWithTypeObject(stringOrArray: string | string[]) {
-    let wrapped = '';
-
-    wrapped += '{';
-    wrapped += '\n';
-    wrapped += '  ' + stringOrArray;
-    wrapped += '\n';
-    wrapped += '}';
-
-    return wrapped;
-  }
-
   wrapWithZodOUnion(zodStringFields: string[]) {
     let wrapped = '';
 
@@ -258,15 +216,6 @@ export default class Transformer {
     wrapped += '  ' + zodStringFields.join(',');
     wrapped += '\n';
     wrapped += '])';
-    return wrapped;
-  }
-
-  wrapWithTypeUnion(strings: string[]) {
-    let wrapped = '';
-    wrapped += '\n';
-    wrapped += '  ' + strings.join(' | ');
-    wrapped += '\n';
-    wrapped += '';
     return wrapped;
   }
 
@@ -289,25 +238,6 @@ export default class Transformer {
     return this.wrapWithZodOUnion(wrapped);
   }
 
-  addTypesFinalWrappers(params: { zodStringFields: string[] }) {
-    const fields = params.zodStringFields;
-
-    const shouldWrapWithUnion = fields.some(
-      (field) =>
-        // TODO handle other cases if any
-        // field.includes('create:') ||
-        field.includes('connectOrCreate:') || field.includes('connect:'),
-    );
-
-    if (!shouldWrapWithUnion) {
-      return this.wrapWithTypeObject(fields);
-    }
-
-    const wrapped = fields.map((field) => this.wrapWithTypeObject(field));
-
-    return this.wrapWithTypeUnion(wrapped);
-  }
-
   getFinalForm(zodStringFields: string[]) {
     const objectSchema = `${this.addExportObjectSchema(
       this.addFinalWrappers({ zodStringFields }),
@@ -319,7 +249,7 @@ export default class Transformer {
   }
 
   async printObjectSchemas() {
-    const zodStringFields: string[] = this.fields
+    const zodStringFields = this.fields
       // array with items or array without, so no need to filter out and loose types
       .map((field) => this.getObjectSchemaLine(field))
       .flatMap((item) => item)
