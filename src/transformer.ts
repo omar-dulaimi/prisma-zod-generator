@@ -10,6 +10,7 @@ export default class Transformer {
   enumTypes: PrismaDMMF.SchemaEnum[];
   static enumNames: string[] = [];
   private static outputPath: string = './generated';
+  hasJson = false;
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
@@ -58,7 +59,7 @@ export default class Transformer {
         : objectSchemaLine;
 
     const arr = inputType.isList ? '.array()' : '';
-    // is field optional - if yes, add .optional() to schema
+
     const opt = !field.isRequired ? '.optional()' : '';
 
     return inputsLength === 1
@@ -105,6 +106,10 @@ export default class Transformer {
         );
       } else if (inputType.type === 'DateTime') {
         result.push(this.wrapWithZodValidators('z.date()', field, inputType));
+      } else if (inputType.type === 'Json') {
+        this.hasJson = true;
+
+        result.push(this.wrapWithZodValidators('jsonSchema', field, inputType));
       } else {
         const isEnum = inputType.location === 'enumTypes';
 
@@ -245,12 +250,21 @@ export default class Transformer {
 
     const prismaImport = `import type { Prisma } from '@prisma/client';\n\n`;
 
-    return `${this.getImportsForObjectSchemas()}${prismaImport}${objectSchema}`;
+    let json = '';
+
+    if (this.hasJson) {
+      json += `\n`;
+      json += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
+      json += `const jsonSchema: z.ZodType<Prisma.InputJsonValue> = z.lazy(() =>\n`;
+      json += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(jsonSchema.nullable())])\n`;
+      json += `);\n\n`;
+    }
+
+    return `${this.getImportsForObjectSchemas()}${prismaImport}${json}${objectSchema}`;
   }
 
   async printObjectSchemas() {
     const zodStringFields = this.fields
-      // array with items or array without, so no need to filter out and loose types
       .map((field) => this.getObjectSchemaLine(field))
       .flatMap((item) => item)
       .map((item) => {
