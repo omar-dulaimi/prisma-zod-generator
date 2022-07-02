@@ -1,6 +1,7 @@
 import { DMMF as PrismaDMMF } from '@prisma/client/runtime';
 import path from 'path';
 import { writeFileSafely } from './utils/writeFileSafely';
+import { TransformerParams } from './types';
 
 export default class Transformer {
   name: string;
@@ -179,6 +180,24 @@ export default class Transformer {
     return zodImportStatement;
   }
 
+  getImportPrisma() {
+    return `import type { Prisma } from '@prisma/client';\n\n`;
+  }
+
+  getJsonSchemaImplementation() {
+    let jsonShemaImplementation = '';
+
+    if (this.hasJson) {
+      jsonShemaImplementation += `\n`;
+      jsonShemaImplementation += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
+      jsonShemaImplementation += `const jsonSchema: z.ZodType<Prisma.InputJsonValue> = z.lazy(() =>\n`;
+      jsonShemaImplementation += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(jsonSchema.nullable())])\n`;
+      jsonShemaImplementation += `);\n\n`;
+    }
+
+    return jsonShemaImplementation;
+  }
+
   getImportsForObjectSchemas() {
     let imports = this.getImportZod();
     imports += this.getAllSchemaImports();
@@ -248,17 +267,9 @@ export default class Transformer {
       this.addFinalWrappers({ zodStringFields }),
     )}\n`;
 
-    const prismaImport = `import type { Prisma } from '@prisma/client';\n\n`;
+    const prismaImport = this.getImportPrisma();
 
-    let json = '';
-
-    if (this.hasJson) {
-      json += `\n`;
-      json += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
-      json += `const jsonSchema: z.ZodType<Prisma.InputJsonValue> = z.lazy(() =>\n`;
-      json += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(jsonSchema.nullable())])\n`;
-      json += `);\n\n`;
-    }
+    const json = this.getJsonSchemaImplementation();
 
     return `${this.getImportsForObjectSchemas()}${prismaImport}${json}${objectSchema}`;
   }
@@ -480,10 +491,3 @@ export default class Transformer {
     }
   }
 }
-
-type TransformerParams = {
-  enumTypes?: PrismaDMMF.SchemaEnum[];
-  fields?: PrismaDMMF.SchemaArg[];
-  name?: string;
-  modelOperations?: PrismaDMMF.ModelMapping[];
-};
