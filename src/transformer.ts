@@ -11,7 +11,7 @@ export default class Transformer {
   enumTypes: PrismaDMMF.SchemaEnum[];
   static enumNames: string[] = [];
   private static outputPath: string = './generated';
-  hasJson = false;
+  private hasJson = false;
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
