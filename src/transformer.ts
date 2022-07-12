@@ -1,4 +1,4 @@
-import { DMMF as PrismaDMMF } from '@prisma/client/runtime';
+import type { DMMF as PrismaDMMF } from '@prisma/generator-helper';
 import path from 'path';
 import { writeFileSafely } from './utils/writeFileSafely';
 import { TransformerParams } from './types';
@@ -305,11 +305,16 @@ export default class Transformer {
         findUnique,
         findFirst,
         findMany,
-        create,
-        update,
+        // @ts-ignore
+        createOne,
+        // @ts-ignore
+        deleteOne,
+        // @ts-ignore
+        updateOne,
         deleteMany,
         updateMany,
-        upsert,
+        // @ts-ignore
+        upsertOne,
         aggregate,
         groupBy,
       } = model;
@@ -359,12 +364,12 @@ export default class Transformer {
         );
       }
 
-      if (create) {
+      if (createOne) {
         const imports = [
           `import { ${modelName}CreateInputObjectSchema } from './objects/${modelName}CreateInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${create}.schema.ts`),
+          path.join(Transformer.outputPath, `schemas/${createOne}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
             `z.object({ data: ${modelName}CreateInputObjectSchema  })`,
             `${modelName}Create`,
@@ -372,15 +377,12 @@ export default class Transformer {
         );
       }
 
-      if (model.delete) {
+      if (deleteOne) {
         const imports = [
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(
-            Transformer.outputPath,
-            `schemas/${model.delete}.schema.ts`,
-          ),
+          path.join(Transformer.outputPath, `schemas/${deleteOne}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
             `z.object({ where: ${modelName}WhereUniqueInputObjectSchema  })`,
             `${modelName}DeleteOne`,
@@ -401,13 +403,13 @@ export default class Transformer {
         );
       }
 
-      if (update) {
+      if (updateOne) {
         const imports = [
           `import { ${modelName}UpdateInputObjectSchema } from './objects/${modelName}UpdateInput.schema'`,
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${update}.schema.ts`),
+          path.join(Transformer.outputPath, `schemas/${updateOne}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
             `z.object({ data: ${modelName}UpdateInputObjectSchema, where: ${modelName}WhereUniqueInputObjectSchema  })`,
             `${modelName}UpdateOne`,
@@ -429,14 +431,14 @@ export default class Transformer {
         );
       }
 
-      if (upsert) {
+      if (upsertOne) {
         const imports = [
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
           `import { ${modelName}CreateInputObjectSchema } from './objects/${modelName}CreateInput.schema'`,
           `import { ${modelName}UpdateInputObjectSchema } from './objects/${modelName}UpdateInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${upsert}.schema.ts`),
+          path.join(Transformer.outputPath, `schemas/${upsertOne}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
             `z.object({ where: ${modelName}WhereUniqueInputObjectSchema, create: ${modelName}CreateInputObjectSchema, update: ${modelName}UpdateInputObjectSchema  })`,
             `${modelName}Upsert`,
