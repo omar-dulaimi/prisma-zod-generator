@@ -15,12 +15,23 @@ Automatically generate [Zod](https://github.com/colinhacks/zod) schemas from you
 
 ## Table of Contents
 
+- [Supported Prisma Versions](#supported-prisma-versions)
 - [Installation](#installing)
 - [Usage](#usage)
 - [Additional Options](#additional-options)
 - [Known Issues](#known-issues)
 
-## Installation
+# Supported Prisma Versions
+
+### Prisma 4
+
+- 0.3.0 and higher
+
+### Prisma 2/3
+
+- 0.2.0 and lower
+
+# Installation
 
 Using npm:
 
