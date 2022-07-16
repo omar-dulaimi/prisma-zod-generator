@@ -1,6 +1,6 @@
 {
   "name": "prisma-zod-generator",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
