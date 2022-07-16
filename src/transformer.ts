@@ -307,6 +307,7 @@ export default class Transformer {
         findMany,
         // @ts-ignore
         createOne,
+        createMany,
         // @ts-ignore
         deleteOne,
         // @ts-ignore
@@ -372,7 +373,20 @@ export default class Transformer {
           path.join(Transformer.outputPath, `schemas/${createOne}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
             `z.object({ data: ${modelName}CreateInputObjectSchema  })`,
-            `${modelName}Create`,
+            `${modelName}CreateOne`,
+          )}`,
+        );
+      }
+
+      if (createMany) {
+        const imports = [
+          `import { ${modelName}CreateManyInputObjectSchema } from './objects/${modelName}CreateManyInput.schema'`,
+        ];
+        await writeFileSafely(
+          path.join(Transformer.outputPath, `schemas/${createMany}.schema.ts`),
+          `${this.getImportsForSchemas(imports)}${this.addExportSchema(
+            `z.object({ data: ${modelName}CreateManyInputObjectSchema  })`,
+            `${modelName}CreateMany`,
           )}`,
         );
       }
