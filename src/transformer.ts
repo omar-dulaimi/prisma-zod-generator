@@ -12,6 +12,8 @@ export default class Transformer {
   static enumNames: string[] = [];
   private static outputPath: string = './generated';
   private hasJson = false;
+  static isDefaultPrismaClientOutput?: boolean;
+  static prismaClientOutputPath?: string;
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
@@ -181,7 +183,15 @@ export default class Transformer {
   }
 
   getImportPrisma() {
-    return `import type { Prisma } from '@prisma/client';\n\n`;
+    let prismaClientPath = '@prisma/client';
+    if (Transformer.isDefaultPrismaClientOutput) {
+      prismaClientPath = Transformer.prismaClientOutputPath ?? '';
+      prismaClientPath = path.relative(
+        path.join(Transformer.outputPath, 'schemas', 'objects'),
+        prismaClientPath,
+      );
+    }
+    return `import type { Prisma } from '${prismaClientPath}';\n\n`;
   }
 
   getJsonSchemaImplementation() {
