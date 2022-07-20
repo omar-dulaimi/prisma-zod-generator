@@ -5,4 +5,6 @@ export type TransformerParams = {
   fields?: PrismaDMMF.SchemaArg[];
   name?: string;
   modelOperations?: PrismaDMMF.ModelMapping[];
+  isDefaultPrismaClientOutput?: boolean;
+  prismaClientOutputPath?: string;
 };

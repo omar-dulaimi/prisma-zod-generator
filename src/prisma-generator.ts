@@ -18,6 +18,14 @@ export async function generate(options: GeneratorOptions) {
     previewFeatures: prismaClientProvider?.previewFeatures,
   });
 
+  Transformer.isDefaultPrismaClientOutput =
+    prismaClientProvider?.isCustomOutput ?? false;
+
+  if (prismaClientProvider?.isCustomOutput) {
+    Transformer.prismaClientOutputPath =
+      prismaClientProvider?.output?.value ?? '';
+  }
+
   Transformer.setOutputPath(outputDir);
 
   const enumTypes = [
