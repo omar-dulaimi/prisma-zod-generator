@@ -189,7 +189,7 @@ export default class Transformer {
       prismaClientPath = path.relative(
         path.join(Transformer.outputPath, 'schemas', 'objects'),
         prismaClientPath,
-      );
+      ).split(path.sep).join(path.posix.sep);
     }
     return `import type { Prisma } from '${prismaClientPath}';\n\n`;
   }
