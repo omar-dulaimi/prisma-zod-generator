@@ -1,7 +1,7 @@
 import type { DMMF as PrismaDMMF } from '@prisma/generator-helper';
 import path from 'path';
-import { writeFileSafely } from './utils/writeFileSafely';
 import { TransformerParams } from './types';
+import { writeFileSafely } from './utils/writeFileSafely';
 
 export default class Transformer {
   name: string;
@@ -101,7 +101,11 @@ export default class Transformer {
     let alternatives = lines.reduce<string[]>((result, inputType) => {
       if (inputType.type === 'String') {
         result.push(this.wrapWithZodValidators('z.string()', field, inputType));
-      } else if (inputType.type === 'Int' || inputType.type === 'Float') {
+      } else if (
+        inputType.type === 'Int' ||
+        inputType.type === 'Float' ||
+        inputType.type === 'Decimal'
+      ) {
         result.push(this.wrapWithZodValidators('z.number()', field, inputType));
       } else if (inputType.type === 'Boolean') {
         result.push(
@@ -186,10 +190,13 @@ export default class Transformer {
     let prismaClientPath = '@prisma/client';
     if (Transformer.isDefaultPrismaClientOutput) {
       prismaClientPath = Transformer.prismaClientOutputPath ?? '';
-      prismaClientPath = path.relative(
-        path.join(Transformer.outputPath, 'schemas', 'objects'),
-        prismaClientPath,
-      ).split(path.sep).join(path.posix.sep);
+      prismaClientPath = path
+        .relative(
+          path.join(Transformer.outputPath, 'schemas', 'objects'),
+          prismaClientPath,
+        )
+        .split(path.sep)
+        .join(path.posix.sep);
     }
     return `import type { Prisma } from '${prismaClientPath}';\n\n`;
   }
