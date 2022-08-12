@@ -111,7 +111,7 @@ export default class Transformer {
         result.push(
           this.wrapWithZodValidators('z.bigint()', field, inputType),
         );
-      }else if (inputType.type === 'Boolean') {
+      } else if (inputType.type === 'Boolean') {
         result.push(
           this.wrapWithZodValidators('z.boolean()', field, inputType),
         );
