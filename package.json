@@ -8,8 +8,7 @@
   },
   "scripts": {
     "gen-example": "tsc && npx prisma generate",
-    "package:publish": "./package.sh && cd package && npm publish",
-    "postinstall": "tsc"
+    "package:publish": "./package.sh && cd package && npm publish"
   },
   "author": {
     "name": "Omar Dulaimi",
