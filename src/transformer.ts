@@ -107,6 +107,10 @@ export default class Transformer {
         inputType.type === 'Decimal'
       ) {
         result.push(this.wrapWithZodValidators('z.number()', field, inputType));
+      } else if (inputType.type === 'BigInt') {
+        result.push(
+          this.wrapWithZodValidators('z.bigint()', field, inputType),
+        );
       } else if (inputType.type === 'Boolean') {
         result.push(
           this.wrapWithZodValidators('z.boolean()', field, inputType),
