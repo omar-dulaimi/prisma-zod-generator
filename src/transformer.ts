@@ -1,5 +1,6 @@
 import type { DMMF as PrismaDMMF } from '@prisma/generator-helper';
 import path from 'path';
+import { isMongodbRawOp } from './helpers';
 import { TransformerParams } from './types';
 import { writeFileSafely } from './utils/writeFileSafely';
 
@@ -10,6 +11,8 @@ export default class Transformer {
   modelOperations: PrismaDMMF.ModelMapping[];
   enumTypes: PrismaDMMF.SchemaEnum[];
   static enumNames: string[] = [];
+  static rawOpsMap: { [name: string]: string } = {};
+  static provider: string;
   private static outputPath: string = './generated';
   private hasJson = false;
   static isDefaultPrismaClientOutput?: boolean;
@@ -108,9 +111,7 @@ export default class Transformer {
       ) {
         result.push(this.wrapWithZodValidators('z.number()', field, inputType));
       } else if (inputType.type === 'BigInt') {
-        result.push(
-          this.wrapWithZodValidators('z.bigint()', field, inputType),
-        );
+        result.push(this.wrapWithZodValidators('z.bigint()', field, inputType));
       } else if (inputType.type === 'Boolean') {
         result.push(
           this.wrapWithZodValidators('z.boolean()', field, inputType),
@@ -206,17 +207,17 @@ export default class Transformer {
   }
 
   getJsonSchemaImplementation() {
-    let jsonShemaImplementation = '';
+    let jsonSchemaImplementation = '';
 
     if (this.hasJson) {
-      jsonShemaImplementation += `\n`;
-      jsonShemaImplementation += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
-      jsonShemaImplementation += `const jsonSchema: z.ZodType<Prisma.InputJsonValue> = z.lazy(() =>\n`;
-      jsonShemaImplementation += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(jsonSchema.nullable())])\n`;
-      jsonShemaImplementation += `);\n\n`;
+      jsonSchemaImplementation += `\n`;
+      jsonSchemaImplementation += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
+      jsonSchemaImplementation += `const jsonSchema: z.ZodType<Prisma.InputJsonValue> = z.lazy(() =>\n`;
+      jsonSchemaImplementation += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(jsonSchema.nullable())])\n`;
+      jsonSchemaImplementation += `);\n\n`;
     }
 
-    return jsonShemaImplementation;
+    return jsonSchemaImplementation;
   }
 
   getImportsForObjectSchemas() {
@@ -234,8 +235,16 @@ export default class Transformer {
   }
 
   addExportObjectSchema(schema: string) {
-    const end = `export const ${this.name}ObjectSchema = Schema`;
-    return `const Schema: z.ZodType<Prisma.${this.name}> = ${schema};\n\n ${end}`;
+    let name = this.name;
+    let exportName = this.name;
+    if (Transformer.provider === 'mongodb') {
+      if (isMongodbRawOp(name)) {
+        name = Transformer.rawOpsMap[name];
+        exportName = name.replace('Args', '');
+      }
+    }
+    const end = `export const ${exportName}ObjectSchema = Schema`;
+    return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
   }
 
   addExportSchema(schema: string, name: string) {
@@ -278,7 +287,9 @@ export default class Transformer {
       return this.wrapWithZodObject(fields) + '.strict()';
     }
 
-    const wrapped = fields.map((field) => this.wrapWithZodObject(field) + '.strict()');
+    const wrapped = fields.map(
+      (field) => this.wrapWithZodObject(field) + '.strict()',
+    );
 
     return this.wrapWithZodOUnion(wrapped);
   }
@@ -309,10 +320,17 @@ export default class Transformer {
         return value.trim();
       });
 
+    let name = this.name;
+    let exportName = this.name;
+    if (isMongodbRawOp(name)) {
+      name = Transformer.rawOpsMap[name];
+      exportName = name.replace('Args', '');
+    }
+
     await writeFileSafely(
       path.join(
         Transformer.outputPath,
-        `schemas/objects/${this.name}.schema.ts`,
+        `schemas/objects/${exportName}.schema.ts`,
       ),
 
       this.getFinalForm(zodStringFields),
