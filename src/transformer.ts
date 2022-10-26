@@ -122,6 +122,10 @@ export default class Transformer {
         this.hasJson = true;
 
         result.push(this.wrapWithZodValidators('jsonSchema', field, inputType));
+      } else if (inputType.type === 'True') {
+        result.push(
+          this.wrapWithZodValidators('z.literal(true)', field, inputType),
+        );
       } else {
         const isEnum = inputType.location === 'enumTypes';
 
@@ -242,6 +246,9 @@ export default class Transformer {
         name = Transformer.rawOpsMap[name];
         exportName = name.replace('Args', '');
       }
+    }
+    if (name.endsWith('AggregateInput')) {
+      name = `${name}Type`;
     }
     const end = `export const ${exportName}ObjectSchema = Schema`;
     return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
