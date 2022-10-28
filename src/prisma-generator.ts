@@ -9,7 +9,7 @@ import { promises as fs } from 'fs';
 import Transformer from './transformer';
 import removeDir from './utils/removeDir';
 import {
-  // addMissingInputObjectTypes,
+  addMissingInputObjectTypes,
   handleMongoDbRawOperationsAndQueries,
 } from './helpers';
 
