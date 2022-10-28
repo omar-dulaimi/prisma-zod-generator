@@ -10,6 +10,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "./generated"
+  depth    = 3
 }
 
 model User {

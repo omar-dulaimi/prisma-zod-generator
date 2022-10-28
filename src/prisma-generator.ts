@@ -116,6 +116,30 @@ export async function generate(options: GeneratorOptions) {
     await obj.printObjectSchemas();
   }
 
+  const modelRelations = prismaClientDmmf.datamodel.models.map((model) => {
+    return {
+      modelName: model.name,
+      fields: model.fields.map((field) => {
+        return {
+          name: field.name,
+          type: field.type,
+          relationName: field.relationName
+            ? field?.relationFromFields?.length &&
+              field?.relationToFields?.length
+              ? 'ManyToOne'
+              : 'OneToMany'
+            : '',
+        };
+      }),
+    };
+  });
+
+  Transformer.modelRelations = modelRelations;
+  Transformer.depth = Math.max(
+    0,
+    parseInt(options.generator.config?.depth || '3'),
+  );
+
   const obj = new Transformer({
     modelOperations: prismaClientDmmf.mappings.modelOperations,
   });
