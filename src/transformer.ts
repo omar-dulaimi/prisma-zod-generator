@@ -122,6 +122,10 @@ export default class Transformer {
         this.hasJson = true;
 
         result.push(this.wrapWithZodValidators('jsonSchema', field, inputType));
+      } else if (inputType.type === 'True') {
+        result.push(
+          this.wrapWithZodValidators('z.literal(true)', field, inputType),
+        );
       } else {
         const isEnum = inputType.location === 'enumTypes';
 
@@ -242,6 +246,9 @@ export default class Transformer {
         name = Transformer.rawOpsMap[name];
         exportName = name.replace('Args', '');
       }
+    }
+    if (name.endsWith('AggregateInput')) {
+      name = `${name}Type`;
     }
     const end = `export const ${exportName}ObjectSchema = Schema`;
     return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
@@ -504,11 +511,16 @@ export default class Transformer {
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
           `import { ${modelName}OrderByWithRelationInputObjectSchema } from './objects/${modelName}OrderByWithRelationInput.schema'`,
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
+          `import { ${modelName}CountAggregateInputObjectSchema } from './objects/${modelName}CountAggregateInput.schema'`,
+          `import { ${modelName}MinAggregateInputObjectSchema } from './objects/${modelName}MinAggregateInput.schema'`,
+          `import { ${modelName}MaxAggregateInputObjectSchema } from './objects/${modelName}MaxAggregateInput.schema'`,
+          `import { ${modelName}AvgAggregateInputObjectSchema } from './objects/${modelName}AvgAggregateInput.schema'`,
+          `import { ${modelName}SumAggregateInputObjectSchema } from './objects/${modelName}SumAggregateInput.schema'`,
         ];
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${aggregate}.schema.ts`),
           `${this.getImportsForSchemas(imports)}${this.addExportSchema(
-            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: ${modelName}OrderByWithRelationInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional()  })`,
+            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: ${modelName}OrderByWithRelationInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ${modelName}CountAggregateInputObjectSchema ]).optional(), _min: ${modelName}MinAggregateInputObjectSchema.optional(), _max: ${modelName}MaxAggregateInputObjectSchema.optional(), _avg: ${modelName}AvgAggregateInputObjectSchema.optional(), _sum: ${modelName}SumAggregateInputObjectSchema.optional()  })`,
             `${modelName}Aggregate`,
           )}`,
         );
