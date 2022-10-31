@@ -51,8 +51,8 @@ export async function generate(options: GeneratorOptions) {
       inputObjectTypes.push({
         constraints: { maxNumFields: null, minNumFields: null },
         name: `${name}Input`,
-        fields: outputObjectType.fields.map((x) => ({
-          name: x.name,
+        fields: outputObjectType.fields.map((field) => ({
+          name: field.name,
           isNullable: false,
           isRequired: false,
           inputTypes: [
