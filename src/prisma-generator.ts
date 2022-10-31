@@ -1,6 +1,7 @@
 import { EnvValue, GeneratorOptions } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
+import { isAggregateOutputType } from './helpers';
 import Transformer from './transformer';
 import removeDir from './utils/removeDir';
 
@@ -42,9 +43,33 @@ export async function generate(options: GeneratorOptions) {
   await enumsObj.printEnumSchemas();
 
   const inputObjectTypes = prismaClientDmmf.schema.inputObjectTypes.prisma;
+  const outputObjectTypes = prismaClientDmmf.schema.outputObjectTypes.prisma;
+
+  outputObjectTypes.forEach((outputObjectType) => {
+    if (isAggregateOutputType(outputObjectType.name)) {
+      const name = outputObjectType.name.replace(/(?:OutputType|Output)$/, '');
+      inputObjectTypes.push({
+        constraints: { maxNumFields: null, minNumFields: null },
+        name: `${name}Input`,
+        fields: outputObjectType.fields.map((field) => ({
+          name: field.name,
+          isNullable: false,
+          isRequired: false,
+          inputTypes: [
+            {
+              isList: false,
+              type: 'True',
+              location: 'scalar',
+            },
+          ],
+        })),
+      });
+    }
+  });
+
   const rawOpsMap: { [name: string]: string } = {};
 
-  /* 
+  /*
   TODO: remove once Prisma fix this issue: https://github.com/prisma/prisma/issues/14900
   */
   if (dataSource.provider === 'mongodb') {
