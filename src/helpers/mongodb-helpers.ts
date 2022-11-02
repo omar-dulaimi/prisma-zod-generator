@@ -1,7 +1,7 @@
 import { DMMF } from '@prisma/generator-helper';
 import Transformer from '../transformer';
 
-export function handleMongoDbRawOperationsAndQueries(
+export function addMissingInputObjectTypesForMongoDbRawOpsAndQueries(
   modelOperations: DMMF.ModelMapping[],
   outputObjectTypes: DMMF.OutputType[],
   inputObjectTypes: DMMF.InputType[],
