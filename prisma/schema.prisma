@@ -9,7 +9,8 @@ datasource db {
 
 generator zod {
   provider = "node ./lib/generator.js"
-  output   = "./generated"
+  output   = "./generated"  
+  isGenerateSelect = true
 }
 
 model User {

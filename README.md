@@ -108,9 +108,10 @@ app.post('/blog', async (req, res, next) => {
 
 ## Additional Options
 
-| Option   |  Description                                   | Type     |  Default      |
-| -------- | ---------------------------------------------- | -------- | ------------- |
-| `output` | Output directory for the generated zod schemas | `string` | `./generated` |
+| Option             |  Description                                                             | Type      |  Default      |
+| ------------------ | ------------------------------------------------------------------------ | --------- | ------------- |
+| `output`           | Output directory for the generated zod schemas                           | `string`  | `./generated` |
+| `isGenerateSelect` | Enables the generation of Select related schemas and the select property | `boolean` | `false`       |
 
 Use additional options in the `schema.prisma`
 
@@ -118,5 +119,6 @@ Use additional options in the `schema.prisma`
 generator zod {
   provider   = "prisma-zod-generator"
   output     = "./generated-zod-schemas"
+  isGenerate = true
 }
 ```
