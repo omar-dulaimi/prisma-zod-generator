@@ -8,7 +8,10 @@ import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import Transformer from './transformer';
 import removeDir from './utils/removeDir';
-import { addMissingInputObjectTypes } from './helpers';
+import {
+  addMissingInputObjectTypes,
+  resolveAddMissingInputObjectTypeOptions,
+} from './helpers';
 
 export async function generate(options: GeneratorOptions) {
   await handleGeneratorOutputValue(options.generator.output as EnvValue);
@@ -38,12 +41,16 @@ export async function generate(options: GeneratorOptions) {
   const dataSource = options.datasources?.[0];
   Transformer.provider = dataSource.provider;
 
+  const generatorConfigOptions = options.generator.config;
+  const addMissingInputObjectTypeOptions =
+    resolveAddMissingInputObjectTypeOptions(generatorConfigOptions);
   addMissingInputObjectTypes(
     inputObjectTypes,
     outputObjectTypes,
     models,
     modelOperations,
     dataSource.provider,
+    addMissingInputObjectTypeOptions,
   );
   await generateObjectSchemas(inputObjectTypes);
 
