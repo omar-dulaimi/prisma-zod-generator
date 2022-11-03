@@ -247,7 +247,14 @@ export default class Transformer {
         exportName = name.replace('Args', '');
       }
     }
-    if (name.endsWith('AggregateInput')) {
+
+    if (
+      name.endsWith('CountAggregateInput') ||
+      name.endsWith('SumAggregateInput') ||
+      name.endsWith('AvgAggregateInput') ||
+      name.endsWith('MinAggregateInput') ||
+      name.endsWith('MaxAggregateInput')
+    ) {
       name = `${name}Type`;
     }
     const end = `export const ${exportName}ObjectSchema = Schema`;
