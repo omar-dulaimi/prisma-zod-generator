@@ -28,12 +28,14 @@ function addMissingInputObjectTypesForSelect(
   const modelArgsInputObjectTypes = generateModelArgsInputObjectTypes(models);
   const modelSelectInputObjectTypes =
     generateModelSelectInputObjectTypes(models);
-
+  const modelIncludeInputObjectTypes =
+    generateModelIncludeInputObjectTypes(models);
   const generatedInputObjectTypes = [
     modelCountOutputTypeSelectInputObjectTypes,
     modelCountOutputTypeArgsInputObjectTypes,
     modelArgsInputObjectTypes,
     modelSelectInputObjectTypes,
+    modelIncludeInputObjectTypes,
   ].flat();
 
   for (const inputObjectType of generatedInputObjectTypes) {
@@ -139,6 +141,20 @@ function generateModelArgsInputObjectTypes(models: DMMF.Model[]) {
     fields.push(selectField);
 
     /** @todo add include field in a future pull request */
+    const includeField: DMMF.SchemaArg = {
+      name: 'include',
+      isRequired: false,
+      isNullable: false,
+      inputTypes: [
+        {
+          isList: false,
+          type: `${modelName}Include`,
+          location: 'inputObjectTypes',
+          namespace: 'prisma',
+        },
+      ],
+    };
+    fields.push(includeField);
 
     const modelArgsInputObjectType: DMMF.InputType = {
       name: `${modelName}Args`,
@@ -225,4 +241,77 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
     modelSelectInputObjectTypes.push(modelSelectInputObjectType);
   }
   return modelSelectInputObjectTypes;
+}
+
+function generateModelIncludeInputObjectTypes(models: DMMF.Model[]) {
+  const modelIncludeInputObjectTypes: DMMF.InputType[] = [];
+  for (const model of models) {
+    const { name: modelName, fields: modelFields } = model;
+    const fields: DMMF.SchemaArg[] = [];
+
+    let hasManyRelation = false;
+
+    for (const modelField of modelFields) {
+      const {
+        name: modelFieldName,
+        kind,
+        relationName,
+        isList,
+        type,
+      } = modelField;
+
+      const isRelationField = kind === 'object' && !!relationName;
+      if (isRelationField && isList) {
+        hasManyRelation = true;
+      }
+
+      if (isRelationField) {
+        const field: DMMF.SchemaArg = {
+          name: modelFieldName,
+          isRequired: false,
+          isNullable: false,
+          inputTypes: [
+            { isList: false, type: 'Boolean', location: 'scalar' },
+            {
+              isList: false,
+              type: isList ? `${type}FindManyArgs` : `${type}Args`,
+              location: 'inputObjectTypes',
+              namespace: 'prisma',
+            },
+          ],
+        };
+        fields.push(field);
+      }
+    }
+
+    const shouldAddCountField = hasManyRelation;
+    if (shouldAddCountField) {
+      const _countField: DMMF.SchemaArg = {
+        name: '_count',
+        isRequired: false,
+        isNullable: false,
+        inputTypes: [
+          { isList: false, type: 'Boolean', location: 'scalar' },
+          {
+            isList: false,
+            type: `${modelName}CountOutputTypeArgs`,
+            location: 'inputObjectTypes',
+            namespace: 'prisma',
+          },
+        ],
+      };
+      fields.push(_countField);
+    }
+
+    const modelIncludeInputObjectType: DMMF.InputType = {
+      name: `${modelName}Include`,
+      constraints: {
+        maxNumFields: null,
+        minNumFields: null,
+      },
+      fields,
+    };
+    modelIncludeInputObjectTypes.push(modelIncludeInputObjectType);
+  }
+  return modelIncludeInputObjectTypes;
 }
