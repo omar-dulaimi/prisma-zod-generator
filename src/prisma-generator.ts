@@ -106,6 +106,8 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[]) {
   }
 }
 
+// generate schemas
+
 async function generateModelSchemas(modelOperations: DMMF.ModelMapping[]) {
   const transformer = new Transformer({
     modelOperations,
