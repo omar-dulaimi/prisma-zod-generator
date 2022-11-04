@@ -10,7 +10,7 @@ import Transformer from './transformer';
 import removeDir from './utils/removeDir';
 import {
   addMissingInputObjectTypes,
-  handleMongoDbRawOperationsAndQueries,
+  resolveAddMissingInputObjectTypeOptions,
 } from './helpers';
 
 export async function generate(options: GeneratorOptions) {
@@ -41,23 +41,24 @@ export async function generate(options: GeneratorOptions) {
   const dataSource = options.datasources?.[0];
   Transformer.provider = dataSource.provider;
 
-  // TODO: remove once Prisma fix this issue: https://github.com/prisma/prisma/issues/14900
-  if (dataSource.provider === 'mongodb') {
-    handleMongoDbRawOperationsAndQueries(
-      modelOperations,
-      outputObjectTypes,
-      inputObjectTypes,
-    );
-  }
-
-  addMissingInputObjectTypes(inputObjectTypes, outputObjectTypes, models);
+  const generatorConfigOptions = options.generator.config;
+  const addMissingInputObjectTypeOptions =
+    resolveAddMissingInputObjectTypeOptions(generatorConfigOptions);
+  addMissingInputObjectTypes(
+    inputObjectTypes,
+    outputObjectTypes,
+    models,
+    modelOperations,
+    dataSource.provider,
+    addMissingInputObjectTypeOptions,
+  );
   await generateObjectSchemas(inputObjectTypes);
 
   await generateModelSchemas(modelOperations);
 }
 
-async function handleGeneratorOutputValue(generatorOuputValue: EnvValue) {
-  const outputDirectoryPath = parseEnvValue(generatorOuputValue);
+async function handleGeneratorOutputValue(generatorOutputValue: EnvValue) {
+  const outputDirectoryPath = parseEnvValue(generatorOutputValue);
 
   // create the output directory and delete contents that might exist from a previous run
   await fs.mkdir(outputDirectoryPath, { recursive: true });
