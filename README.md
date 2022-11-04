@@ -119,6 +119,6 @@ Use additional options in the `schema.prisma`
 generator zod {
   provider   = "prisma-zod-generator"
   output     = "./generated-zod-schemas"
-  isGenerate = true
+  isGenerateSelect = true
 }
 ```

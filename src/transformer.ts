@@ -665,7 +665,7 @@ export default class Transformer {
   resolveSelectImportAndZodSchemaLine(modelName: string) {
     const selectImport = Transformer.isGenerateSelect
       ? `import { ${modelName}SelectObjectSchema } from './objects/${modelName}Select.schema'`
-      : undefined;
+      : '';
 
     let selectZodSchemaLine = '';
     let selectZodSchemaLineLazy = '';
