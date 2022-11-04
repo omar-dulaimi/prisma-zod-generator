@@ -1,0 +1,76 @@
+import { DMMF } from '@prisma/generator-helper';
+
+export function addMissingInputObjectTypesForModelArgs(
+  inputObjectTypes: DMMF.InputType[],
+  models: DMMF.Model[],
+  isGenerateSelect: boolean,
+  isGenerateInclude: boolean,
+) {
+  const modelArgsInputObjectTypes = generateModelArgsInputObjectTypes(
+    models,
+    isGenerateSelect,
+    isGenerateInclude,
+  );
+
+  const generatedModelArgsInputObjectTypes = [modelArgsInputObjectTypes].flat();
+
+  for (const modelArgsInputObjectType of generatedModelArgsInputObjectTypes) {
+    inputObjectTypes.push(modelArgsInputObjectType);
+  }
+}
+function generateModelArgsInputObjectTypes(
+  models: DMMF.Model[],
+  isGenerateSelect: boolean,
+  isGenerateInclude: boolean,
+) {
+  const modelArgsInputObjectTypes: DMMF.InputType[] = [];
+  for (const model of models) {
+    const { name: modelName } = model;
+    const fields: DMMF.SchemaArg[] = [];
+
+    if (isGenerateSelect) {
+      const selectField: DMMF.SchemaArg = {
+        name: 'select',
+        isRequired: false,
+        isNullable: false,
+        inputTypes: [
+          {
+            isList: false,
+            type: `${modelName}Select`,
+            location: 'inputObjectTypes',
+            namespace: 'prisma',
+          },
+        ],
+      };
+      fields.push(selectField);
+    }
+
+    if (isGenerateInclude) {
+      const includeField: DMMF.SchemaArg = {
+        name: 'include',
+        isRequired: false,
+        isNullable: false,
+        inputTypes: [
+          {
+            isList: false,
+            type: `${modelName}Include`,
+            location: 'inputObjectTypes',
+            namespace: 'prisma',
+          },
+        ],
+      };
+      fields.push(includeField);
+    }
+
+    const modelArgsInputObjectType: DMMF.InputType = {
+      name: `${modelName}Args`,
+      constraints: {
+        maxNumFields: null,
+        minNumFields: null,
+      },
+      fields,
+    };
+    modelArgsInputObjectTypes.push(modelArgsInputObjectType);
+  }
+  return modelArgsInputObjectTypes;
+}
