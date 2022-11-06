@@ -10,8 +10,8 @@ datasource db {
 generator zod {
   provider          = "node ./lib/generator.js"
   output            = "./generated"
-  isGenerateSelect  = false
-  isGenerateInclude = false
+  isGenerateSelect  = true
+  isGenerateInclude = true
 }
 
 model User {
@@ -31,4 +31,5 @@ model Post {
   viewCount Int      @default(0)
   author    User?    @relation(fields: [authorId], references: [id])
   authorId  Int?
+  likes     BigInt
 }
