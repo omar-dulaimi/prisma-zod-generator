@@ -102,55 +102,6 @@ function generateModelCountOutputTypeArgsInputObjectTypes(
   return modelCountOutputTypeArgsInputObjectTypes;
 }
 
-function generateModelArgsInputObjectTypes(models: DMMF.Model[]) {
-  const modelArgsInputObjectTypes: DMMF.InputType[] = [];
-  for (const model of models) {
-    const { name: modelName } = model;
-    const fields: DMMF.SchemaArg[] = [];
-
-    const selectField: DMMF.SchemaArg = {
-      name: 'select',
-      isRequired: false,
-      isNullable: false,
-      inputTypes: [
-        {
-          isList: false,
-          type: `${modelName}Select`,
-          location: 'inputObjectTypes',
-          namespace: 'prisma',
-        },
-      ],
-    };
-    fields.push(selectField);
-
-    const includeField: DMMF.SchemaArg = {
-      name: 'include',
-      isRequired: false,
-      isNullable: false,
-      inputTypes: [
-        {
-          isList: false,
-          type: `${modelName}Include`,
-          location: 'inputObjectTypes',
-          namespace: 'prisma',
-        },
-      ],
-    };
-    fields.push(includeField);
-
-    const modelArgsInputObjectType: DMMF.InputType = {
-      name: `${modelName}Args`,
-      constraints: {
-        maxNumFields: null,
-        minNumFields: null,
-      },
-      fields,
-    };
-    modelArgsInputObjectTypes.push(modelArgsInputObjectType);
-  }
-  return modelArgsInputObjectTypes;
-}
-
 function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
   const modelSelectInputObjectTypes: DMMF.InputType[] = [];
   for (const model of models) {
