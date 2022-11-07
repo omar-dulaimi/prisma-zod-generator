@@ -12,9 +12,7 @@ export function addMissingInputObjectTypesForModelArgs(
     isGenerateInclude,
   );
 
-  const generatedModelArgsInputObjectTypes = [modelArgsInputObjectTypes].flat();
-
-  for (const modelArgsInputObjectType of generatedModelArgsInputObjectTypes) {
+  for (const modelArgsInputObjectType of modelArgsInputObjectTypes) {
     inputObjectTypes.push(modelArgsInputObjectType);
   }
 }

@@ -700,12 +700,12 @@ export default class Transformer {
     let selectZodSchemaLineLazy = '';
     let includeZodSchemaLineLazy = '';
     if (Transformer.isGenerateSelect) {
-      let zodSelectObjectSchema = `${modelName}SelectObjectSchema.optional()`;
+      const zodSelectObjectSchema = `${modelName}SelectObjectSchema.optional()`;
       selectZodSchemaLine = `select: ${zodSelectObjectSchema},`;
       selectZodSchemaLineLazy = `select: z.lazy(() => ${zodSelectObjectSchema}),`;
     }
     if (Transformer.isGenerateInclude) {
-      let zodIncludeObjectSchema = `${modelName}IncludeObjectSchema.optional()`;
+      const zodIncludeObjectSchema = `${modelName}IncludeObjectSchema.optional()`;
       includeZodSchemaLine = `include: ${zodIncludeObjectSchema},`;
       includeZodSchemaLineLazy = `include: z.lazy(() => ${zodIncludeObjectSchema}),`;
     }
