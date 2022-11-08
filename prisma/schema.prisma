@@ -8,8 +8,8 @@ datasource db {
 }
 
 generator zod {
-  provider = "node ./lib/generator.js"
-  output   = "./generated"  
+  provider         = "node ./lib/generator.js"
+  output           = "./generated"
   isGenerateSelect = true
 }
 
@@ -31,4 +31,9 @@ model Post {
   author    User?    @relation(fields: [authorId], references: [id])
   authorId  Int?
   likes     BigInt
+}
+
+model Map {
+  key   String @id
+  value String
 }
