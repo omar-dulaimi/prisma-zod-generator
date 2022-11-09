@@ -3,9 +3,12 @@ import Transformer from '../transformer';
 import { addMissingInputObjectTypesForMongoDbRawOpsAndQueries } from './mongodb-helpers';
 import { addMissingInputObjectTypesForAggregate } from './aggregate-helpers';
 import { addMissingInputObjectTypesForSelect } from './select-helpers';
+import { addMissingInputObjectTypesForInclude } from './include-helpers';
+import { addMissingInputObjectTypesForModelArgs } from './modelArgs-helpers';
 
 interface AddMissingInputObjectTypeOptions {
   isGenerateSelect: boolean;
+  isGenerateInclude: boolean;
 }
 
 export function addMissingInputObjectTypes(
@@ -33,6 +36,22 @@ export function addMissingInputObjectTypes(
     );
     Transformer.setIsGenerateSelect(true);
   }
+  if (options.isGenerateSelect || options.isGenerateInclude) {
+    addMissingInputObjectTypesForModelArgs(
+      inputObjectTypes,
+      models,
+      options.isGenerateSelect,
+      options.isGenerateInclude,
+    );
+  }
+  if (options.isGenerateInclude) {
+    addMissingInputObjectTypesForInclude(
+      inputObjectTypes,
+      models,
+      options.isGenerateSelect,
+    );
+    Transformer.setIsGenerateInclude(true);
+  }
 }
 
 export function resolveAddMissingInputObjectTypeOptions(
@@ -40,5 +59,6 @@ export function resolveAddMissingInputObjectTypeOptions(
 ): AddMissingInputObjectTypeOptions {
   return {
     isGenerateSelect: generatorConfigOptions.isGenerateSelect === 'true',
+    isGenerateInclude: generatorConfigOptions.isGenerateInclude === 'true',
   };
 }
