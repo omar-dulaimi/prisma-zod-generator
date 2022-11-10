@@ -28,6 +28,7 @@ function generateModelIncludeInputObjectTypes(
     const { name: modelName, fields: modelFields } = model;
     const fields: DMMF.SchemaArg[] = [];
 
+    let hasRelation = false;
     let hasManyRelation = false;
 
     for (const modelField of modelFields) {
@@ -40,8 +41,11 @@ function generateModelIncludeInputObjectTypes(
       } = modelField;
 
       const isRelationField = kind === 'object' && !!relationName;
-      if (isRelationField && isList) {
-        hasManyRelation = true;
+      if (isRelationField) {
+        hasRelation = true;
+        if (isList) {
+          hasManyRelation = true;
+        }
       }
 
       if (isRelationField) {
@@ -61,6 +65,14 @@ function generateModelIncludeInputObjectTypes(
         };
         fields.push(field);
       }
+    }
+
+    /**
+     * include is not generated for models that do not have relations with any other models
+     * continue on to the next model
+     */
+    if (!hasRelation) {
+      continue;
     }
 
     const shouldAddCountField = hasManyRelation;
