@@ -1,6 +1,10 @@
 import type { DMMF as PrismaDMMF } from '@prisma/generator-helper';
 import path from 'path';
-import { isMongodbRawOp } from './helpers';
+import {
+  isMongodbRawOp,
+  checkModelHasModelRelation,
+  findModelByName,
+} from './helpers';
 import { TransformerParams } from './types';
 import { writeFileSafely } from './utils/writeFileSafely';
 
@@ -8,6 +12,7 @@ export default class Transformer {
   name: string;
   fields: PrismaDMMF.SchemaArg[];
   schemaImports = new Set<string>();
+  models: PrismaDMMF.Model[];
   modelOperations: PrismaDMMF.ModelMapping[];
   enumTypes: PrismaDMMF.SchemaEnum[];
 
@@ -24,6 +29,7 @@ export default class Transformer {
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
     this.fields = params.fields ?? [];
+    this.models = params.models ?? [];
     this.modelOperations = params.modelOperations ?? [];
     this.enumTypes = params.enumTypes ?? [];
   }
@@ -433,7 +439,7 @@ export default class Transformer {
   }
 
   async generateModelSchemas() {
-    for (const model of this.modelOperations) {
+    for (const modelOperation of this.modelOperations) {
       const {
         model: modelName,
         findUnique,
@@ -452,7 +458,9 @@ export default class Transformer {
         upsertOne,
         aggregate,
         groupBy,
-      } = model;
+      } = modelOperation;
+
+      const model = findModelByName(this.models, modelName)!;
 
       const {
         selectImport,
@@ -461,7 +469,7 @@ export default class Transformer {
         includeZodSchemaLine,
         selectZodSchemaLineLazy,
         includeZodSchemaLineLazy,
-      } = this.resolveSelectIncludeImportAndZodSchemaLine(modelName);
+      } = this.resolveSelectIncludeImportAndZodSchemaLine(model);
 
       if (findUnique) {
         const imports = [
@@ -687,28 +695,37 @@ export default class Transformer {
     return generatedImports;
   }
 
-  resolveSelectIncludeImportAndZodSchemaLine(modelName: string) {
+  resolveSelectIncludeImportAndZodSchemaLine(model: PrismaDMMF.Model) {
+    const { name: modelName } = model;
+
+    const hasRelationToAnotherModel = checkModelHasModelRelation(model);
+
     const selectImport = Transformer.isGenerateSelect
       ? `import { ${modelName}SelectObjectSchema } from './objects/${modelName}Select.schema'`
       : '';
-    const includeImport = Transformer.isGenerateInclude
-      ? `import { ${modelName}IncludeObjectSchema } from './objects/${modelName}Include.schema'`
-      : '';
+
+    const includeImport =
+      Transformer.isGenerateInclude && hasRelationToAnotherModel
+        ? `import { ${modelName}IncludeObjectSchema } from './objects/${modelName}Include.schema'`
+        : '';
 
     let selectZodSchemaLine = '';
     let includeZodSchemaLine = '';
     let selectZodSchemaLineLazy = '';
     let includeZodSchemaLineLazy = '';
+
     if (Transformer.isGenerateSelect) {
       const zodSelectObjectSchema = `${modelName}SelectObjectSchema.optional()`;
       selectZodSchemaLine = `select: ${zodSelectObjectSchema},`;
       selectZodSchemaLineLazy = `select: z.lazy(() => ${zodSelectObjectSchema}),`;
     }
-    if (Transformer.isGenerateInclude) {
+
+    if (Transformer.isGenerateInclude && hasRelationToAnotherModel) {
       const zodIncludeObjectSchema = `${modelName}IncludeObjectSchema.optional()`;
       includeZodSchemaLine = `include: ${zodIncludeObjectSchema},`;
       includeZodSchemaLineLazy = `include: z.lazy(() => ${zodIncludeObjectSchema}),`;
     }
+
     return {
       selectImport,
       includeImport,
