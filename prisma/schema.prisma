@@ -33,3 +33,8 @@ model Post {
   authorId  Int?
   likes     BigInt
 }
+
+model Book {
+  id Int @unique
+  title String
+}
