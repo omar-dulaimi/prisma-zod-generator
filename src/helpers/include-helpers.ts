@@ -1,4 +1,9 @@
 import { DMMF } from '@prisma/generator-helper';
+import {
+  checkIsModelRelationField,
+  checkModelHasModelRelation,
+  checkModelHasManyModelRelation,
+} from './model-helpers';
 
 export function addMissingInputObjectTypesForInclude(
   inputObjectTypes: DMMF.InputType[],
@@ -6,14 +11,10 @@ export function addMissingInputObjectTypesForInclude(
   isGenerateSelect: boolean,
 ) {
   // generate input object types necessary to support ModelInclude with relation support
-  const modelIncludeInputObjectTypes = generateModelIncludeInputObjectTypes(
+  const generatedIncludeInputObjectTypes = generateModelIncludeInputObjectTypes(
     models,
     isGenerateSelect,
   );
-
-  const generatedIncludeInputObjectTypes = [
-    modelIncludeInputObjectTypes,
-  ].flat();
 
   for (const includeInputObjectType of generatedIncludeInputObjectTypes) {
     inputObjectTypes.push(includeInputObjectType);
@@ -28,25 +29,10 @@ function generateModelIncludeInputObjectTypes(
     const { name: modelName, fields: modelFields } = model;
     const fields: DMMF.SchemaArg[] = [];
 
-    let hasRelation = false;
-    let hasManyRelation = false;
-
     for (const modelField of modelFields) {
-      const {
-        name: modelFieldName,
-        kind,
-        relationName,
-        isList,
-        type,
-      } = modelField;
+      const { name: modelFieldName, isList, type } = modelField;
 
-      const isRelationField = kind === 'object' && !!relationName;
-      if (isRelationField) {
-        hasRelation = true;
-        if (isList) {
-          hasManyRelation = true;
-        }
-      }
+      const isRelationField = checkIsModelRelationField(modelField);
 
       if (isRelationField) {
         const field: DMMF.SchemaArg = {
@@ -68,14 +54,17 @@ function generateModelIncludeInputObjectTypes(
     }
 
     /**
-     * include is not generated for models that do not have relations with any other models
-     * continue on to the next model
+     * include is not generated for models that do not have a relation with any other models
+     * -> continue onto the next model
      */
-    if (!hasRelation) {
+    const hasRelationToAnotherModel = checkModelHasModelRelation(model);
+    if (!hasRelationToAnotherModel) {
       continue;
     }
 
-    const shouldAddCountField = hasManyRelation;
+    const hasManyRelationToAnotherModel = checkModelHasManyModelRelation(model);
+
+    const shouldAddCountField = hasManyRelationToAnotherModel;
     if (shouldAddCountField) {
       const inputTypes: DMMF.SchemaArgInputType[] = [
         { isList: false, type: 'Boolean', location: 'scalar' },
