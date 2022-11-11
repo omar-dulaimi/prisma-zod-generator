@@ -12,15 +12,12 @@ export function addMissingInputObjectTypesForSelect(
   const modelCountOutputTypeArgsInputObjectTypes =
     generateModelCountOutputTypeArgsInputObjectTypes(modelCountOutputTypes);
 
-  // generate input object types necessary to support ModelSelect with relation support
-  const modelArgsInputObjectTypes = generateModelArgsInputObjectTypes(models);
   const modelSelectInputObjectTypes =
     generateModelSelectInputObjectTypes(models);
 
   const generatedInputObjectTypes = [
     modelCountOutputTypeSelectInputObjectTypes,
     modelCountOutputTypeArgsInputObjectTypes,
-    modelArgsInputObjectTypes,
     modelSelectInputObjectTypes,
   ].flat();
 
@@ -103,42 +100,6 @@ function generateModelCountOutputTypeArgsInputObjectTypes(
     );
   }
   return modelCountOutputTypeArgsInputObjectTypes;
-}
-
-function generateModelArgsInputObjectTypes(models: DMMF.Model[]) {
-  const modelArgsInputObjectTypes: DMMF.InputType[] = [];
-  for (const model of models) {
-    const { name: modelName } = model;
-    const fields: DMMF.SchemaArg[] = [];
-
-    const selectField: DMMF.SchemaArg = {
-      name: 'select',
-      isRequired: false,
-      isNullable: false,
-      inputTypes: [
-        {
-          isList: false,
-          type: `${modelName}Select`,
-          location: 'inputObjectTypes',
-          namespace: 'prisma',
-        },
-      ],
-    };
-    fields.push(selectField);
-
-    /** @todo add include field in a future pull request */
-
-    const modelArgsInputObjectType: DMMF.InputType = {
-      name: `${modelName}Args`,
-      constraints: {
-        maxNumFields: null,
-        minNumFields: null,
-      },
-      fields,
-    };
-    modelArgsInputObjectTypes.push(modelArgsInputObjectType);
-  }
-  return modelArgsInputObjectTypes;
 }
 
 function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
