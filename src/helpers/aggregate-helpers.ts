@@ -3,7 +3,7 @@ import { DMMF } from '@prisma/generator-helper';
 const isAggregateOutputType = (name: string) =>
   /(?:Count|Avg|Sum|Min|Max)AggregateOutputType$/.test(name);
 
-export const isAggreateInputType = (name: string) =>
+export const isAggregateInputType = (name: string) =>
   name.endsWith('CountAggregateInput') ||
   name.endsWith('SumAggregateInput') ||
   name.endsWith('AvgAggregateInput') ||
