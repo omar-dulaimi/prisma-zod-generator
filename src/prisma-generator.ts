@@ -11,10 +11,10 @@ import {
   resolveAddMissingInputObjectTypeOptions,
 } from './helpers';
 import {
-  AggregateOperationSupport,
   resolveAggregateOperationSupport,
 } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
+import { AggregateOperationSupport } from './types';
 import removeDir from './utils/removeDir';
 
 export async function generate(options: GeneratorOptions) {
