@@ -1,5 +1,4 @@
 import { DMMF as PrismaDMMF } from '@prisma/client/runtime';
-import { AggregateOperationSupport } from './helpers/aggregate-helpers';
 
 export type TransformerParams = {
   enumTypes?: PrismaDMMF.SchemaEnum[];
@@ -9,4 +8,14 @@ export type TransformerParams = {
   aggregateOperationSupport?: AggregateOperationSupport;
   isDefaultPrismaClientOutput?: boolean;
   prismaClientOutputPath?: string;
+};
+
+export type AggregateOperationSupport = {
+  [model: string]: {
+    count?: boolean;
+    min?: boolean;
+    max?: boolean;
+    sum?: boolean;
+    avg?: boolean;
+  };
 };

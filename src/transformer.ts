@@ -2,10 +2,9 @@ import type { DMMF as PrismaDMMF } from '@prisma/generator-helper';
 import path from 'path';
 import { isMongodbRawOp } from './helpers';
 import {
-  AggregateOperationSupport,
-  isAggreateInputType,
+  isAggregateInputType,
 } from './helpers/aggregate-helpers';
-import { TransformerParams } from './types';
+import { AggregateOperationSupport, TransformerParams } from './types';
 import { writeFileSafely } from './utils/writeFileSafely';
 
 export default class Transformer {
@@ -283,7 +282,7 @@ export default class Transformer {
       }
     }
 
-    if (isAggreateInputType(name)) {
+    if (isAggregateInputType(name)) {
       name = `${name}Type`;
     }
     const end = `export const ${exportName}ObjectSchema = Schema`;

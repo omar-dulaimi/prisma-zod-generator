@@ -1,4 +1,5 @@
 import { DMMF } from '@prisma/generator-helper';
+import { AggregateOperationSupport } from '../types';
 
 const isAggregateOutputType = (name: string) =>
   /(?:Count|Avg|Sum|Min|Max)AggregateOutputType$/.test(name);
@@ -38,22 +39,12 @@ export function addMissingInputObjectTypesForAggregate(
   }
 }
 
-export type AggregateOperationSupport = {
-  [model: string]: {
-    count?: boolean;
-    min?: boolean;
-    max?: boolean;
-    sum?: boolean;
-    avg?: boolean;
-  };
-};
-
 export function resolveAggregateOperationSupport(
   inputObjectTypes: DMMF.InputType[],
 ) {
   const aggregateOperationSupport: AggregateOperationSupport = {};
   for (const inputType of inputObjectTypes) {
-    if (isAggreateInputType(inputType.name)) {
+    if (isAggregateInputType(inputType.name)) {
       const name = inputType.name.replace('AggregateInput', '');
       if (name.endsWith('Count')) {
         const model = name.replace('Count', '');
