@@ -54,7 +54,7 @@ export async function generate(options: GeneratorOptions) {
   );
   await generateObjectSchemas(inputObjectTypes);
 
-  await generateModelSchemas(modelOperations);
+  await generateModelSchemas(models, modelOperations);
 }
 
 async function handleGeneratorOutputValue(generatorOutputValue: EnvValue) {
@@ -107,8 +107,12 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[]) {
   }
 }
 
-async function generateModelSchemas(modelOperations: DMMF.ModelMapping[]) {
+async function generateModelSchemas(
+  models: DMMF.Model[],
+  modelOperations: DMMF.ModelMapping[],
+) {
   const transformer = new Transformer({
+    models,
     modelOperations,
   });
   await transformer.generateModelSchemas();
