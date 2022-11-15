@@ -108,17 +108,19 @@ app.post('/blog', async (req, res, next) => {
 
 ## Additional Options
 
-| Option             |  Description                                                             | Type      |  Default      |
-| ------------------ | ------------------------------------------------------------------------ | --------- | ------------- |
-| `output`           | Output directory for the generated zod schemas                           | `string`  | `./generated` |
-| `isGenerateSelect` | Enables the generation of Select related schemas and the select property | `boolean` | `false`       |
+| Option              | Description                                                                | Type      | Default       |
+| ------------------- | -------------------------------------------------------------------------- | --------- | ------------- |
+| `output`            | Output directory for the generated zod schemas                             | `string`  | `./generated` |
+| `isGenerateSelect`  | Enables the generation of Select related schemas and the select property   | `boolean` | `false`       |
+| `isGenerateInclude` | Enables the generation of Include related schemas and the include property | `boolean` | `false`       |
 
 Use additional options in the `schema.prisma`
 
 ```prisma
 generator zod {
-  provider   = "prisma-zod-generator"
-  output     = "./generated-zod-schemas"
-  isGenerateSelect = true
+  provider          = "prisma-zod-generator"
+  output            = "./generated-zod-schemas"
+  isGenerateSelect  = true
+  isGenerateInclude = true
 }
 ```
