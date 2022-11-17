@@ -6,12 +6,16 @@ import {
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
-import Transformer from './transformer';
-import removeDir from './utils/removeDir';
 import {
   addMissingInputObjectTypes,
   resolveAddMissingInputObjectTypeOptions,
 } from './helpers';
+import {
+  resolveAggregateOperationSupport,
+} from './helpers/aggregate-helpers';
+import Transformer from './transformer';
+import { AggregateOperationSupport } from './types';
+import removeDir from './utils/removeDir';
 
 export async function generate(options: GeneratorOptions) {
   await handleGeneratorOutputValue(options.generator.output as EnvValue);
@@ -54,7 +58,10 @@ export async function generate(options: GeneratorOptions) {
   );
   await generateObjectSchemas(inputObjectTypes);
 
-  await generateModelSchemas(models, modelOperations);
+  const aggregateOperationSupport =
+    resolveAggregateOperationSupport(inputObjectTypes);
+
+  await generateModelSchemas(models, modelOperations, aggregateOperationSupport);
 }
 
 async function handleGeneratorOutputValue(generatorOutputValue: EnvValue) {
@@ -110,10 +117,12 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[]) {
 async function generateModelSchemas(
   models: DMMF.Model[],
   modelOperations: DMMF.ModelMapping[],
+  aggregateOperationSupport: AggregateOperationSupport,
 ) {
   const transformer = new Transformer({
     models,
     modelOperations,
+    aggregateOperationSupport,
   });
   await transformer.generateModelSchemas();
 }
