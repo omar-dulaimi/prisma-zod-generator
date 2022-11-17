@@ -1,4 +1,5 @@
 import { DMMF } from '@prisma/generator-helper';
+import { checkModelHasModelRelation } from './model-helpers';
 
 export function addMissingInputObjectTypesForModelArgs(
   inputObjectTypes: DMMF.InputType[],
@@ -43,7 +44,9 @@ function generateModelArgsInputObjectTypes(
       fields.push(selectField);
     }
 
-    if (isGenerateInclude) {
+    const hasRelationToAnotherModel = checkModelHasModelRelation(model);
+
+    if (isGenerateInclude && hasRelationToAnotherModel) {
       const includeField: DMMF.SchemaArg = {
         name: 'include',
         isRequired: false,

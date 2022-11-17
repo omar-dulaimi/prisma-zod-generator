@@ -61,7 +61,7 @@ export async function generate(options: GeneratorOptions) {
   const aggregateOperationSupport =
     resolveAggregateOperationSupport(inputObjectTypes);
 
-  await generateModelSchemas(modelOperations, aggregateOperationSupport);
+  await generateModelSchemas(models, modelOperations, aggregateOperationSupport);
 }
 
 async function handleGeneratorOutputValue(generatorOutputValue: EnvValue) {
@@ -115,10 +115,12 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[]) {
 }
 
 async function generateModelSchemas(
+  models: DMMF.Model[],
   modelOperations: DMMF.ModelMapping[],
   aggregateOperationSupport: AggregateOperationSupport,
 ) {
   const transformer = new Transformer({
+    models,
     modelOperations,
     aggregateOperationSupport,
   });
