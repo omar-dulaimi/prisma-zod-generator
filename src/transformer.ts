@@ -1,11 +1,12 @@
 import type { DMMF as PrismaDMMF } from '@prisma/generator-helper';
 import path from 'path';
 import {
-  isMongodbRawOp,
   checkModelHasModelRelation,
   findModelByName,
+  isMongodbRawOp,
 } from './helpers';
-import { TransformerParams } from './types';
+import { isAggregateInputType } from './helpers/aggregate-helpers';
+import { AggregateOperationSupport, TransformerParams } from './types';
 import { writeFileSafely } from './utils/writeFileSafely';
 
 export default class Transformer {
@@ -14,6 +15,7 @@ export default class Transformer {
   schemaImports = new Set<string>();
   models: PrismaDMMF.Model[];
   modelOperations: PrismaDMMF.ModelMapping[];
+  aggregateOperationSupport: AggregateOperationSupport;
   enumTypes: PrismaDMMF.SchemaEnum[];
 
   static enumNames: string[] = [];
@@ -31,6 +33,7 @@ export default class Transformer {
     this.fields = params.fields ?? [];
     this.models = params.models ?? [];
     this.modelOperations = params.modelOperations ?? [];
+    this.aggregateOperationSupport = params.aggregateOperationSupport ?? {};
     this.enumTypes = params.enumTypes ?? [];
   }
 
@@ -283,13 +286,7 @@ export default class Transformer {
       }
     }
 
-    if (
-      name.endsWith('CountAggregateInput') ||
-      name.endsWith('SumAggregateInput') ||
-      name.endsWith('AvgAggregateInput') ||
-      name.endsWith('MinAggregateInput') ||
-      name.endsWith('MaxAggregateInput')
-    ) {
+    if (isAggregateInputType(name)) {
       name = `${name}Type`;
     }
     const end = `export const ${exportName}ObjectSchema = Schema`;
@@ -650,19 +647,58 @@ export default class Transformer {
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
           `import { ${modelName}OrderByWithRelationInputObjectSchema } from './objects/${modelName}OrderByWithRelationInput.schema'`,
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
-          `import { ${modelName}CountAggregateInputObjectSchema } from './objects/${modelName}CountAggregateInput.schema'`,
-          `import { ${modelName}MinAggregateInputObjectSchema } from './objects/${modelName}MinAggregateInput.schema'`,
-          `import { ${modelName}MaxAggregateInputObjectSchema } from './objects/${modelName}MaxAggregateInput.schema'`,
-          `import { ${modelName}AvgAggregateInputObjectSchema } from './objects/${modelName}AvgAggregateInput.schema'`,
-          `import { ${modelName}SumAggregateInputObjectSchema } from './objects/${modelName}SumAggregateInput.schema'`,
         ];
+        const aggregateOperations = [];
+        if (this.aggregateOperationSupport[modelName].count) {
+          imports.push(
+            `import { ${modelName}CountAggregateInputObjectSchema } from './objects/${modelName}CountAggregateInput.schema'`,
+          );
+          aggregateOperations.push(
+            `_count: z.union([ z.literal(true), ${modelName}CountAggregateInputObjectSchema ]).optional()`,
+          );
+        }
+        if (this.aggregateOperationSupport[modelName].min) {
+          imports.push(
+            `import { ${modelName}MinAggregateInputObjectSchema } from './objects/${modelName}MinAggregateInput.schema'`,
+          );
+          aggregateOperations.push(
+            `_min: ${modelName}MinAggregateInputObjectSchema.optional()`,
+          );
+        }
+        if (this.aggregateOperationSupport[modelName].max) {
+          imports.push(
+            `import { ${modelName}MaxAggregateInputObjectSchema } from './objects/${modelName}MaxAggregateInput.schema'`,
+          );
+          aggregateOperations.push(
+            `_max: ${modelName}MaxAggregateInputObjectSchema.optional()`,
+          );
+        }
+        if (this.aggregateOperationSupport[modelName].avg) {
+          imports.push(
+            `import { ${modelName}AvgAggregateInputObjectSchema } from './objects/${modelName}AvgAggregateInput.schema'`,
+          );
+          aggregateOperations.push(
+            `_avg: ${modelName}AvgAggregateInputObjectSchema.optional()`,
+          );
+        }
+        if (this.aggregateOperationSupport[modelName].sum) {
+          imports.push(
+            `import { ${modelName}SumAggregateInputObjectSchema } from './objects/${modelName}SumAggregateInput.schema'`,
+          );
+          aggregateOperations.push(
+            `_sum: ${modelName}SumAggregateInputObjectSchema.optional()`,
+          );
+        }
+
         await writeFileSafely(
           path.join(Transformer.outputPath, `schemas/${aggregate}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
             `${modelName}Aggregate`,
-            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: ${modelName}OrderByWithRelationInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ${modelName}CountAggregateInputObjectSchema ]).optional(), _min: ${modelName}MinAggregateInputObjectSchema.optional(), _max: ${modelName}MaxAggregateInputObjectSchema.optional(), _avg: ${modelName}AvgAggregateInputObjectSchema.optional(), _sum: ${modelName}SumAggregateInputObjectSchema.optional()  })`,
+            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: ${modelName}OrderByWithRelationInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
+              ', ',
+            )} })`,
           )}`,
         );
       }

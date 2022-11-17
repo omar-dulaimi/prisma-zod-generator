@@ -34,6 +34,11 @@ model Post {
   likes     BigInt
 }
 
+model Map {
+  key   String @id
+  value String
+}
+
 model Book {
   id Int @unique
   title String
