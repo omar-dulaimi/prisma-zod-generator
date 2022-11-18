@@ -2,66 +2,91 @@ import {
   DMMF,
   EnvValue,
   GeneratorConfig,
-  GeneratorOptions,
+  GeneratorOptions
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import {
   addMissingInputObjectTypes,
+  hideInputObjectTypesAndRelatedFields,
   resolveAddMissingInputObjectTypeOptions,
+  resolveModelsComments
 } from './helpers';
-import {
-  resolveAggregateOperationSupport,
-} from './helpers/aggregate-helpers';
+import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
 import { AggregateOperationSupport } from './types';
 import removeDir from './utils/removeDir';
 
 export async function generate(options: GeneratorOptions) {
-  await handleGeneratorOutputValue(options.generator.output as EnvValue);
+  try {
+    await handleGeneratorOutputValue(options.generator.output as EnvValue);
 
-  const prismaClientGeneratorConfig = getGeneratorConfigByProvider(
-    options.otherGenerators,
-    'prisma-client-js',
-  );
+    const prismaClientGeneratorConfig = getGeneratorConfigByProvider(
+      options.otherGenerators,
+      'prisma-client-js',
+    );
 
-  const prismaClientDmmf = await getDMMF({
-    datamodel: options.datamodel,
-    previewFeatures: prismaClientGeneratorConfig?.previewFeatures,
-  });
+    const prismaClientDmmf = await getDMMF({
+      datamodel: options.datamodel,
+      previewFeatures: prismaClientGeneratorConfig?.previewFeatures,
+    });
 
-  checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
+    checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
 
-  await generateEnumSchemas(
-    prismaClientDmmf.schema.enumTypes.prisma,
-    prismaClientDmmf.schema.enumTypes.model ?? [],
-  );
+    const modelOperations = prismaClientDmmf.mappings.modelOperations;
+    const inputObjectTypes = prismaClientDmmf.schema.inputObjectTypes.prisma;
+    const outputObjectTypes = prismaClientDmmf.schema.outputObjectTypes.prisma;
+    const enumTypes = prismaClientDmmf.schema.enumTypes;
+    const models: DMMF.Model[] = prismaClientDmmf.datamodel.models;
+    const hiddenModels: string[] = [];
+    const hiddenFields: string[] = [];
+    resolveModelsComments(
+      models,
+      modelOperations,
+      enumTypes,
+      hiddenModels,
+      hiddenFields,
+    );
 
-  const models = prismaClientDmmf.datamodel.models;
-  const modelOperations = prismaClientDmmf.mappings.modelOperations;
-  const inputObjectTypes = prismaClientDmmf.schema.inputObjectTypes.prisma;
-  const outputObjectTypes = prismaClientDmmf.schema.outputObjectTypes.prisma;
+    await generateEnumSchemas(
+      prismaClientDmmf.schema.enumTypes.prisma,
+      prismaClientDmmf.schema.enumTypes.model ?? [],
+    );
 
-  const dataSource = options.datasources?.[0];
-  Transformer.provider = dataSource.provider;
+    const dataSource = options.datasources?.[0];
+    Transformer.provider = dataSource.provider;
 
-  const generatorConfigOptions = options.generator.config;
-  const addMissingInputObjectTypeOptions =
-    resolveAddMissingInputObjectTypeOptions(generatorConfigOptions);
-  addMissingInputObjectTypes(
-    inputObjectTypes,
-    outputObjectTypes,
-    models,
-    modelOperations,
-    dataSource.provider,
-    addMissingInputObjectTypeOptions,
-  );
-  await generateObjectSchemas(inputObjectTypes);
+    const generatorConfigOptions = options.generator.config;
 
-  const aggregateOperationSupport =
-    resolveAggregateOperationSupport(inputObjectTypes);
+    const addMissingInputObjectTypeOptions =
+      resolveAddMissingInputObjectTypeOptions(generatorConfigOptions);
+    addMissingInputObjectTypes(
+      inputObjectTypes,
+      outputObjectTypes,
+      models,
+      modelOperations,
+      dataSource.provider,
+      addMissingInputObjectTypeOptions,
+    );
 
-  await generateModelSchemas(models, modelOperations, aggregateOperationSupport);
+    const aggregateOperationSupport =
+      resolveAggregateOperationSupport(inputObjectTypes);
+
+    hideInputObjectTypesAndRelatedFields(
+      inputObjectTypes,
+      hiddenModels,
+      hiddenFields,
+    );
+
+    await generateObjectSchemas(inputObjectTypes);
+    await generateModelSchemas(
+      models,
+      modelOperations,
+      aggregateOperationSupport,
+    );
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 async function handleGeneratorOutputValue(generatorOutputValue: EnvValue) {
