@@ -34,12 +34,14 @@ model Post {
   likes     BigInt
 }
 
+/// @@tRPCGen.model(hide: true)
 model Map {
   key   String @id
   value String
 }
 
+/// @@tRPCGen.model(hide: true)
 model Book {
-  id Int @unique
+  id    Int    @unique
   title String
 }
