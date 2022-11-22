@@ -269,11 +269,9 @@ export default class Transformer {
       this.addFinalWrappers({ zodStringFields: zodObjectSchemaFields }),
     )}\n`;
 
-    const prismaImportStatement = this.generateImportPrismaStatement();
-
     const json = this.generateJsonSchemaImplementation();
 
-    return `${this.generateObjectSchemaImportStatements()}${prismaImportStatement}${json}${objectSchema}`;
+    return `${this.generateObjectSchemaImportStatements()}${json}${objectSchema}`;
   }
 
   generateExportObjectSchemaStatement(schema: string) {
@@ -290,7 +288,7 @@ export default class Transformer {
       name = `${name}Type`;
     }
     const end = `export const ${exportName}ObjectSchema = Schema`;
-    return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
+    return `const Schema = ${schema};\n\n ${end}`;
   }
 
   addFinalWrappers({ zodStringFields }: { zodStringFields: string[] }) {
