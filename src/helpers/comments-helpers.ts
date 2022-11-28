@@ -1,6 +1,6 @@
 import { DMMF } from '@prisma/generator-helper';
 
-const modelAttributeRegex = /(@@tRPCGen\.)+([A-z])+(\()+(.+)+(\))+/;
+const modelAttributeRegex = /(@@Gen\.)+([A-z])+(\()+(.+)+(\))+/;
 const attributeNameRegex = /(?:\.)+([A-Za-z])+(?:\()+/;
 const attributeArgsRegex = /(?:\()+([A-Za-z])+\:+(.+)+(?:\))+/;
 
