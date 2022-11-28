@@ -19,6 +19,7 @@ model User {
   email String  @unique
   name  String?
   posts Post[]
+  books Book[]
 }
 
 model Post {
@@ -34,14 +35,15 @@ model Post {
   likes     BigInt
 }
 
-/// @@tRPCGen.model(hide: true)
+/// @@Gen.model(hide: true)
+model Book {
+  id       Int    @unique
+  title    String
+  author   User?  @relation(fields: [authorId], references: [id])
+  authorId Int?
+}
+
 model Map {
   key   String @id
   value String
-}
-
-/// @@tRPCGen.model(hide: true)
-model Book {
-  id    Int    @unique
-  title String
 }
