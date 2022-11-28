@@ -1,7 +1,7 @@
 import { DMMF } from '@prisma/generator-helper';
 import {
   checkIsModelRelationField,
-  checkModelHasManyModelRelation,
+  checkModelHasManyModelRelation
 } from './model-helpers';
 
 export function addMissingInputObjectTypesForSelect(
