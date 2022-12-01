@@ -235,8 +235,8 @@ export default class Transformer {
       inputType.type === this.name
         ? objectSchemaLine
         : isEnum
-        ? enumSchemaLine
-        : objectSchemaLine;
+          ? enumSchemaLine
+          : objectSchemaLine;
 
     const arr = inputType.isList ? '.array()' : '';
 
@@ -296,22 +296,7 @@ export default class Transformer {
   addFinalWrappers({ zodStringFields }: { zodStringFields: string[] }) {
     const fields = [...zodStringFields];
 
-    const shouldWrapWithUnion = fields.some(
-      (field) =>
-        // TODO handle other cases if any
-        // field.includes('create:') ||
-        field.includes('connectOrCreate:') || field.includes('connect:'),
-    );
-
-    if (!shouldWrapWithUnion) {
-      return this.wrapWithZodObject(fields) + '.strict()';
-    }
-
-    const wrapped = fields.map(
-      (field) => this.wrapWithZodObject(field) + '.strict()',
-    );
-
-    return this.wrapWithZodUnion(wrapped);
+    return this.wrapWithZodObject(fields) + '.strict()';
   }
 
   generateImportPrismaStatement() {
