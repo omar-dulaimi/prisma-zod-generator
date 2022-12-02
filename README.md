@@ -16,7 +16,7 @@ Automatically generate [Zod](https://github.com/colinhacks/zod) schemas from you
 ## Table of Contents
 
 - [Supported Prisma Versions](#supported-prisma-versions)
-- [Installation](#installing)
+- [Installation](#installation)
 - [Usage](#usage)
 - [Customizations](#customizations)
 - [Additional Options](#additional-options)
