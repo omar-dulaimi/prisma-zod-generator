@@ -7,6 +7,7 @@ import {
 } from './helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { AggregateOperationSupport, TransformerParams } from './types';
+import { writeIndexFile } from './utils/indexFile';
 import { writeFileSafely } from './utils/writeFileSafely';
 
 export default class Transformer {
@@ -57,6 +58,11 @@ export default class Transformer {
     this.prismaClientOutputPath = prismaClientCustomPath;
     this.isCustomPrismaClientOutputPath =
       prismaClientCustomPath !== '@prisma/client';
+  }
+
+  static async generateIndex() {
+    const indexPath = path.join(Transformer.outputPath, "schemas/index.ts");
+    await writeIndexFile(indexPath);
   }
 
   async generateEnumSchemas() {

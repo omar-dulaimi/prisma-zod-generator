@@ -84,6 +84,7 @@ export async function generate(options: GeneratorOptions) {
       modelOperations,
       aggregateOperationSupport,
     );
+    await generateIndex();
   } catch (error) {
     console.error(error);
   }
@@ -150,4 +151,8 @@ async function generateModelSchemas(
     aggregateOperationSupport,
   });
   await transformer.generateModelSchemas();
+}
+
+async function generateIndex() {
+  await Transformer.generateIndex();
 }
