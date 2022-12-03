@@ -3,7 +3,7 @@ import path from 'path';
 import {
   checkModelHasModelRelation,
   findModelByName,
-  isMongodbRawOp
+  isMongodbRawOp,
 } from './helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { AggregateOperationSupport, TransformerParams } from './types';
@@ -145,6 +145,8 @@ export default class Transformer {
         result.push(
           this.wrapWithZodValidators('z.literal(true)', field, inputType),
         );
+      } else if (inputType.type.toString().includes('Ref')) {
+        return result;
       } else {
         const isEnum = inputType.location === 'enumTypes';
 
@@ -235,8 +237,8 @@ export default class Transformer {
       inputType.type === this.name
         ? objectSchemaLine
         : isEnum
-          ? enumSchemaLine
-          : objectSchemaLine;
+        ? enumSchemaLine
+        : objectSchemaLine;
 
     const arr = inputType.isList ? '.array()' : '';
 
