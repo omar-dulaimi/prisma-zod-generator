@@ -552,7 +552,7 @@ export default class Transformer {
             imports,
           )}${this.generateExportSchemaStatement(
             `${modelName}CreateMany`,
-            `z.object({ data: ${modelName}CreateManyInputObjectSchema  })`,
+            `z.object({ data: z.array(${modelName}CreateManyInputObjectSchema) })`,
           )}`,
         );
       }
