@@ -54,7 +54,9 @@ export async function generate(options: GeneratorOptions) {
     );
 
     const dataSource = options.datasources?.[0];
+    const previewFeatures = prismaClientGeneratorConfig?.previewFeatures;
     Transformer.provider = dataSource.provider;
+    Transformer.previewFeatures = previewFeatures
 
     const generatorConfigOptions = options.generator.config;
 
