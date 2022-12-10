@@ -7,7 +7,7 @@ import {
 } from './helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { AggregateOperationSupport, TransformerParams } from './types';
-import { writeIndexFile } from './utils/indexFile';
+import { writeIndexFile } from './utils/writeIndexFile';
 import { writeFileSafely } from './utils/writeFileSafely';
 
 export default class Transformer {
