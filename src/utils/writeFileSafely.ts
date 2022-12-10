@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { formatFile } from './formatFile';
-import { addIndexExport } from './indexFile';
+import { addIndexExport } from './writeIndexFile';
 
 export const writeFileSafely = async (writeLocation: string, content: any, addToIndex = true) => {
   fs.mkdirSync(path.dirname(writeLocation), {
