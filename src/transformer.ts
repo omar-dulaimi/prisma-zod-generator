@@ -1,9 +1,12 @@
-import type { DMMF as PrismaDMMF } from '@prisma/generator-helper';
+import type {
+  ConnectorType,
+  DMMF as PrismaDMMF,
+} from '@prisma/generator-helper';
 import path from 'path';
 import {
   checkModelHasModelRelation,
   findModelByName,
-  isMongodbRawOp
+  isMongodbRawOp,
 } from './helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { AggregateOperationSupport, TransformerParams } from './types';
@@ -20,7 +23,8 @@ export default class Transformer {
 
   static enumNames: string[] = [];
   static rawOpsMap: { [name: string]: string } = {};
-  static provider: string;
+  static provider: ConnectorType;
+  static previewFeatures: string[] | undefined;
   private static outputPath: string = './generated';
   private hasJson = false;
   private static prismaClientOutputPath: string = '@prisma/client';
@@ -235,8 +239,8 @@ export default class Transformer {
       inputType.type === this.name
         ? objectSchemaLine
         : isEnum
-          ? enumSchemaLine
-          : objectSchemaLine;
+        ? enumSchemaLine
+        : objectSchemaLine;
 
     const arr = inputType.isList ? '.array()' : '';
 
@@ -453,6 +457,9 @@ export default class Transformer {
         includeZodSchemaLineLazy,
       } = this.resolveSelectIncludeImportAndZodSchemaLine(model);
 
+      const { orderByImport, orderByZodSchemaLine } =
+        this.resolveOrderByWithRelationImportAndZodSchemaLine(model);
+
       if (findUnique) {
         const imports = [
           selectImport,
@@ -474,8 +481,8 @@ export default class Transformer {
         const imports = [
           selectImport,
           includeImport,
+          orderByImport,
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
-          `import { ${modelName}OrderByWithRelationInputObjectSchema } from './objects/${modelName}OrderByWithRelationInput.schema'`,
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
         ];
@@ -485,7 +492,7 @@ export default class Transformer {
             imports,
           )}${this.generateExportSchemaStatement(
             `${modelName}FindFirst`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), orderBy: z.union([${modelName}OrderByWithRelationInputObjectSchema, ${modelName}OrderByWithRelationInputObjectSchema.array()]).optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional() })`,
+            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional() })`,
           )}`,
         );
       }
@@ -494,8 +501,8 @@ export default class Transformer {
         const imports = [
           selectImport,
           includeImport,
+          orderByImport,
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
-          `import { ${modelName}OrderByWithRelationInputObjectSchema } from './objects/${modelName}OrderByWithRelationInput.schema'`,
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
         ];
@@ -505,7 +512,7 @@ export default class Transformer {
             imports,
           )}${this.generateExportSchemaStatement(
             `${modelName}FindMany`,
-            `z.object({ ${selectZodSchemaLineLazy} ${includeZodSchemaLineLazy} where: ${modelName}WhereInputObjectSchema.optional(), orderBy: z.union([${modelName}OrderByWithRelationInputObjectSchema, ${modelName}OrderByWithRelationInputObjectSchema.array()]).optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional()  })`,
+            `z.object({ ${selectZodSchemaLineLazy} ${includeZodSchemaLineLazy} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional()  })`,
           )}`,
         );
       }
@@ -633,8 +640,8 @@ export default class Transformer {
 
       if (aggregate) {
         const imports = [
+          orderByImport,
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
-          `import { ${modelName}OrderByWithRelationInputObjectSchema } from './objects/${modelName}OrderByWithRelationInput.schema'`,
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
         ];
         const aggregateOperations = [];
@@ -685,7 +692,7 @@ export default class Transformer {
             imports,
           )}${this.generateExportSchemaStatement(
             `${modelName}Aggregate`,
-            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: z.union([${modelName}OrderByWithRelationInputObjectSchema, ${modelName}OrderByWithRelationInputObjectSchema.array()]).optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
+            `z.object({ ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
               ', ',
             )} })`,
           )}`,
@@ -759,5 +766,24 @@ export default class Transformer {
       selectZodSchemaLineLazy,
       includeZodSchemaLineLazy,
     };
+  }
+
+  resolveOrderByWithRelationImportAndZodSchemaLine(model: PrismaDMMF.Model) {
+    const { name: modelName } = model;
+    let modelOrderBy = '';
+
+    if (
+      ['postgresql', 'mysql'].includes(Transformer.provider) &&
+      Transformer.previewFeatures?.includes('fullTextSearch')
+    ) {
+      modelOrderBy = `${modelName}OrderByWithRelationAndSearchRelevanceInput`;
+    } else {
+      modelOrderBy = `${modelName}OrderByWithRelationInput`;
+    }
+
+    const orderByImport = `import { ${modelOrderBy}ObjectSchema } from './objects/${modelOrderBy}.schema'`;
+    const orderByZodSchemaLine = `orderBy: z.union([${modelOrderBy}ObjectSchema, ${modelOrderBy}ObjectSchema.array()]).optional(),`;
+
+    return { orderByImport, orderByZodSchemaLine };
   }
 }
