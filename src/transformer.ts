@@ -10,8 +10,8 @@ import {
 } from './helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { AggregateOperationSupport, TransformerParams } from './types';
-import { writeIndexFile } from './utils/writeIndexFile';
 import { writeFileSafely } from './utils/writeFileSafely';
+import { writeIndexFile } from './utils/writeIndexFile';
 
 export default class Transformer {
   name: string;
@@ -65,7 +65,7 @@ export default class Transformer {
   }
 
   static async generateIndex() {
-    const indexPath = path.join(Transformer.outputPath, "schemas/index.ts");
+    const indexPath = path.join(Transformer.outputPath, 'schemas/index.ts');
     await writeIndexFile(indexPath);
   }
 
@@ -718,7 +718,7 @@ export default class Transformer {
             imports,
           )}${this.generateExportSchemaStatement(
             `${modelName}GroupBy`,
-            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: z.union([${modelName}OrderByWithAggregationInputObjectSchema, ${modelName}OrderByWithAggregationInputObjectSchema.array()]), having: ${modelName}ScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${modelName}ScalarFieldEnumSchema)  })`,
+            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: z.union([${modelName}OrderByWithAggregationInputObjectSchema, ${modelName}OrderByWithAggregationInputObjectSchema.array()]).optional(), having: ${modelName}ScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${modelName}ScalarFieldEnumSchema)  })`,
           )}`,
         );
       }
