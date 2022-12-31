@@ -1,10 +1,11 @@
-import { DMMF, ConnectorType, Dictionary } from '@prisma/generator-helper';
+import { ConnectorType, Dictionary, DMMF } from '@prisma/generator-helper';
 import Transformer from '../transformer';
-import { addMissingInputObjectTypesForMongoDbRawOpsAndQueries } from './mongodb-helpers';
 import { addMissingInputObjectTypesForAggregate } from './aggregate-helpers';
-import { addMissingInputObjectTypesForSelect } from './select-helpers';
 import { addMissingInputObjectTypesForInclude } from './include-helpers';
 import { addMissingInputObjectTypesForModelArgs } from './modelArgs-helpers';
+import { addMissingInputObjectTypesForMongoDbRawOpsAndQueries } from './mongodb-helpers';
+import { addMissingInputObjectTypesForSelect } from './select-helpers';
+import { changeOptionalToRequiredFields } from './whereUniqueInput-helpers';
 
 interface AddMissingInputObjectTypeOptions {
   isGenerateSelect: boolean;
@@ -52,6 +53,8 @@ export function addMissingInputObjectTypes(
     );
     Transformer.setIsGenerateInclude(true);
   }
+
+  changeOptionalToRequiredFields(inputObjectTypes);
 }
 
 export function resolveAddMissingInputObjectTypeOptions(
