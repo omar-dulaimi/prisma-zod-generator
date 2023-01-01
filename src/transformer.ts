@@ -1,12 +1,12 @@
 import type {
   ConnectorType,
-  DMMF as PrismaDMMF,
+  DMMF as PrismaDMMF
 } from '@prisma/generator-helper';
 import path from 'path';
 import {
   checkModelHasModelRelation,
   findModelByName,
-  isMongodbRawOp,
+  isMongodbRawOp
 } from './helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { AggregateOperationSupport, TransformerParams } from './types';
@@ -154,6 +154,10 @@ export default class Transformer {
       } else if (inputType.type === 'True') {
         result.push(
           this.wrapWithZodValidators('z.literal(true)', field, inputType),
+        );
+      } else if (inputType.type === 'Bytes') {
+        result.push(
+          this.wrapWithZodValidators('z.instanceof(Buffer)', field, inputType),
         );
       } else {
         const isEnum = inputType.location === 'enumTypes';

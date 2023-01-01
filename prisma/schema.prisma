@@ -33,6 +33,7 @@ model Post {
   author    User?    @relation(fields: [authorId], references: [id])
   authorId  Int?
   likes     BigInt
+  bytes     Bytes
 }
 
 /// @@Gen.model(hide: true)
