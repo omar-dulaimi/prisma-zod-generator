@@ -120,6 +120,17 @@ model User {
 }
 ```
 
+## Skipping properties
+
+```prisma
+model User {
+  id Int @id @default(autoincrement())
+  email String @unique
+  /// @@Gen.property(hide: true)
+  name String?
+}
+```
+
 # Additional Options
 
 | Option              | Description                                                                | Type      | Default       |
