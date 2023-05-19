@@ -1,12 +1,12 @@
 import type {
   ConnectorType,
-  DMMF as PrismaDMMF
+  DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import {
   checkModelHasModelRelation,
   findModelByName,
-  isMongodbRawOp
+  isMongodbRawOp,
 } from './helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { AggregateOperationSupport, TransformerParams } from './types';
@@ -555,7 +555,12 @@ export default class Transformer {
             imports,
           )}${this.generateExportSchemaStatement(
             `${modelName}CreateMany`,
-            `z.object({ data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]) })`,
+            `z.object({ data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]), ${
+              Transformer.provider === 'mongodb' ||
+              Transformer.provider === 'sqlserver'
+                ? ''
+                : 'skipDuplicates: z.boolean().optional()'
+            } })`,
           )}`,
         );
       }
