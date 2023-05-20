@@ -6,6 +6,7 @@ import {
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
+import { join } from 'path';
 import {
   addMissingInputObjectTypes,
   hideInputObjectTypesAndRelatedFields,
@@ -96,9 +97,9 @@ async function handleGeneratorOutputValue(generatorOutputValue: EnvValue) {
   const outputDirectoryPath = parseEnvValue(generatorOutputValue);
 
   // create the output directory and delete contents that might exist from a previous run
-  await fs.mkdir(outputDirectoryPath, { recursive: true });
+  await fs.mkdir(join(outputDirectoryPath, 'schemas'), { recursive: true });
   const isRemoveContentsOnly = true;
-  await removeDir(outputDirectoryPath, isRemoveContentsOnly);
+  await removeDir(join(outputDirectoryPath, 'schemas'), isRemoveContentsOnly);
 
   Transformer.setOutputPath(outputDirectoryPath);
 }
