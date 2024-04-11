@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping us improve Prisma Zod Generator!
+        Please consider supporting me for faster fixes, responses and features [Sponsor Me](https://github.com/sponsors/omar-dulaimi)
   - type: textarea
     attributes:
       label: Bug description

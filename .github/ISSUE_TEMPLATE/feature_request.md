@@ -6,6 +6,9 @@ labels: ''
 assignees: ''
 ---
 
+Please consider supporting me for faster fixes, responses and features [Sponsor Me](https://github.com/sponsors/omar-dulaimi)
+
+
 ## Problem
 
 <!-- A clear and concise description of what the problem is. Ex. I'm always frustrated when [...] -->
