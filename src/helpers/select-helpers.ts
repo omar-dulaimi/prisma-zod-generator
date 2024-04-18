@@ -1,7 +1,7 @@
 import { DMMF } from '@prisma/generator-helper';
 import {
   checkIsModelRelationField,
-  checkModelHasManyModelRelation
+  checkModelHasManyModelRelation,
 } from './model-helpers';
 
 export function addMissingInputObjectTypesForSelect(
@@ -125,13 +125,13 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
       };
 
       if (isRelationField) {
-        let schemaArgInputType: DMMF.SchemaArgInputType = {
+        let schemaArgInputType: DMMF.InputTypeRef = {
           isList: false,
           type: isList ? `${type}FindManyArgs` : `${type}Args`,
           location: 'inputObjectTypes',
           namespace: 'prisma',
         };
-        field.inputTypes.push(schemaArgInputType);
+        (field.inputTypes as DMMF.InputTypeRef[]).push(schemaArgInputType);
       }
 
       fields.push(field);

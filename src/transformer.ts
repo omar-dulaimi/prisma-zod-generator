@@ -1,7 +1,4 @@
-import type {
-  ConnectorType,
-  DMMF as PrismaDMMF,
-} from '@prisma/generator-helper';
+import type { ConnectorType, DMMF } from '@prisma/generator-helper';
 import path from 'path';
 import {
   checkModelHasModelRelation,
@@ -15,12 +12,12 @@ import { writeIndexFile } from './utils/writeIndexFile';
 
 export default class Transformer {
   name: string;
-  fields: PrismaDMMF.SchemaArg[];
+  fields: DMMF.SchemaArg[];
   schemaImports = new Set<string>();
-  models: PrismaDMMF.Model[];
-  modelOperations: PrismaDMMF.ModelMapping[];
+  models: DMMF.Model[];
+  modelOperations: DMMF.ModelMapping[];
   aggregateOperationSupport: AggregateOperationSupport;
-  enumTypes: PrismaDMMF.SchemaEnum[];
+  enumTypes: DMMF.SchemaEnum[];
 
   static enumNames: string[] = [];
   static rawOpsMap: { [name: string]: string } = {};
@@ -122,8 +119,8 @@ export default class Transformer {
   }
 
   generateObjectSchemaField(
-    field: PrismaDMMF.SchemaArg,
-  ): [string, PrismaDMMF.SchemaArg, boolean][] {
+    field: DMMF.SchemaArg,
+  ): [string, DMMF.SchemaArg, boolean][] {
     let lines = field.inputTypes;
 
     if (lines.length === 0) {
@@ -211,8 +208,8 @@ export default class Transformer {
 
   wrapWithZodValidators(
     mainValidator: string,
-    field: PrismaDMMF.SchemaArg,
-    inputType: PrismaDMMF.SchemaArgInputType,
+    field: DMMF.SchemaArg,
+    inputType: DMMF.InputTypeRef,
   ) {
     let line: string = '';
     line = mainValidator;
@@ -233,8 +230,8 @@ export default class Transformer {
   }
 
   generatePrismaStringLine(
-    field: PrismaDMMF.SchemaArg,
-    inputType: PrismaDMMF.SchemaArgInputType,
+    field: DMMF.SchemaArg,
+    inputType: DMMF.InputTypeRef,
     inputsLength: number,
   ) {
     const isEnum = inputType.location === 'enumTypes';
@@ -251,8 +248,8 @@ export default class Transformer {
       inputType.type === this.name
         ? objectSchemaLine
         : isEnum
-        ? enumSchemaLine
-        : objectSchemaLine;
+          ? enumSchemaLine
+          : objectSchemaLine;
 
     const arr = inputType.isList ? '.array()' : '';
 
@@ -265,7 +262,7 @@ export default class Transformer {
 
   generateFieldValidators(
     zodStringWithMainType: string,
-    field: PrismaDMMF.SchemaArg,
+    field: DMMF.SchemaArg,
   ) {
     const { isRequired, isNullable } = field;
 
@@ -306,7 +303,9 @@ export default class Transformer {
       name = `${name}Type`;
     }
     const end = `export const ${exportName}ObjectSchema = Schema`;
-    return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
+    return `
+    // @ts-ignore
+    const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
   }
 
   addFinalWrappers({ zodStringFields }: { zodStringFields: string[] }) {
@@ -744,7 +743,7 @@ export default class Transformer {
     return generatedImports;
   }
 
-  resolveSelectIncludeImportAndZodSchemaLine(model: PrismaDMMF.Model) {
+  resolveSelectIncludeImportAndZodSchemaLine(model: DMMF.Model) {
     const { name: modelName } = model;
 
     const hasRelationToAnotherModel = checkModelHasModelRelation(model);
@@ -785,7 +784,7 @@ export default class Transformer {
     };
   }
 
-  resolveOrderByWithRelationImportAndZodSchemaLine(model: PrismaDMMF.Model) {
+  resolveOrderByWithRelationImportAndZodSchemaLine(model: DMMF.Model) {
     const { name: modelName } = model;
     let modelOrderBy = '';
 
