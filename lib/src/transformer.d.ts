@@ -32,7 +32,7 @@ export default class Transformer {
     generateExportSchemaStatement(name: string, schema: string): string;
     generateObjectSchema(): Promise<void>;
     generateObjectSchemaFields(): string[];
-    generateObjectSchemaField(field: DMMF.SchemaArg): [string, DMMF.SchemaArg, boolean][];
+    generateObjectSchemaField(fieldNotFiltered: DMMF.SchemaArg): [string, DMMF.SchemaArg, boolean][];
     wrapWithZodValidators(mainValidator: string, field: DMMF.SchemaArg, inputType: DMMF.InputTypeRef): string;
     addSchemaImport(name: string): void;
     generatePrismaStringLine(field: DMMF.SchemaArg, inputType: DMMF.InputTypeRef, inputsLength: number): string;

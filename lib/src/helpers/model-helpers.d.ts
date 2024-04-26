@@ -5,7 +5,7 @@ export declare function checkIsModelRelationField(modelField: DMMF.Field): boole
 export declare function checkIsManyModelRelationField(modelField: DMMF.Field): import("@prisma/generator-helper").ReadonlyDeep<boolean>;
 export declare function findModelByName(models: DMMF.Model[], modelName: string): import("@prisma/generator-helper").ReadonlyDeep<{
     name: string;
-    dbName: string | null;
+    dbName: string;
     fields: import("@prisma/generator-helper").ReadonlyDeep<{
         kind: DMMF.FieldKind;
         name: string;
@@ -14,30 +14,30 @@ export declare function findModelByName(models: DMMF.Model[], modelName: string)
         isUnique: boolean;
         isId: boolean;
         isReadOnly: boolean;
-        isGenerated?: boolean | undefined;
-        isUpdatedAt?: boolean | undefined;
+        isGenerated?: boolean;
+        isUpdatedAt?: boolean;
         type: string;
-        dbName?: string | null | undefined;
+        dbName?: string;
         hasDefaultValue: boolean;
         default?: import("@prisma/generator-helper").ReadonlyDeep<{
             name: string;
             args: any[];
-        }> | DMMF.FieldDefaultScalar | DMMF.FieldDefaultScalar[] | undefined;
-        relationFromFields?: string[] | undefined;
-        relationToFields?: string[] | undefined;
-        relationOnDelete?: string | undefined;
-        relationName?: string | undefined;
-        documentation?: string | undefined;
+        }> | DMMF.FieldDefaultScalar | DMMF.FieldDefaultScalar[];
+        relationFromFields?: string[];
+        relationToFields?: string[];
+        relationOnDelete?: string;
+        relationName?: string;
+        documentation?: string;
     }>[];
     uniqueFields: string[][];
     uniqueIndexes: import("@prisma/generator-helper").ReadonlyDeep<{
         name: string;
         fields: string[];
     }>[];
-    documentation?: string | undefined;
+    documentation?: string;
     primaryKey: import("@prisma/generator-helper").ReadonlyDeep<{
-        name: string | null;
+        name: string;
         fields: string[];
-    }> | null;
-    isGenerated?: boolean | undefined;
-}> | undefined;
+    }>;
+    isGenerated?: boolean;
+}>;

@@ -1,1 +1,1 @@
-export declare const writeFileSafely: (writeLocation: string, content: any, addToIndex?: boolean) => Promise<void>;
+export declare const writeFileSafely: (writeLocation: string, content: any, addToIndex?: boolean) => Promise<boolean>;

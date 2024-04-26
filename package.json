@@ -7,8 +7,8 @@
     "prisma-zod-generator": "lib/src/generator.js"
   },
   "scripts": {
-    "clear": "rm -rf lib & rm -rf ./prisma/generated",
-    "gen-example": "clear & tsc & npx prisma generate",
+    "clear": "rm -rf ./lib & rm -rf ./prisma/generated",
+    "gen-example": "yarn clear && yarn tsc && npx prisma generate && yarn tsc",
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish"
   },
@@ -26,18 +26,19 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^5.12.1",
-    "@prisma/generator-helper": "^5.12.1",
-    "@prisma/internals": "^5.12.1",
+    "@prisma/client": "^5.13.0",
+    "@prisma/generator-helper": "^5.13.0",
+    "@prisma/internals": "^5.13.0",
     "prettier": "^3.2.5",
     "tslib": "^2.6.2",
-    "zod": "^3.22.4"
+    "zod": "^3.23.4"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",
     "@types/prettier": "^3.0.0",
-    "prisma": "^5.12.1",
+    "prisma": "^5.13.0",
     "ts-node": "^10.9.2",
+    "typegraphql-prisma": "^0.27.2",
     "typescript": "^5.4.5"
   },
   "bugs": {

@@ -14,8 +14,10 @@
     "rootDir": "./",
     "typeRoots": ["src/types.ts"],
     "skipLibCheck": true,
-    "strict": true
-
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     // "noResolve": false,
     // "emitDeclarationOnly": false,
     // "inlineSources": true,
