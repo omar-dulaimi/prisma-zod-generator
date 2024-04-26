@@ -119,10 +119,16 @@ export default class Transformer {
   }
 
   generateObjectSchemaField(
-    field: DMMF.SchemaArg,
+    fieldNotFiltered: DMMF.SchemaArg,
   ): [string, DMMF.SchemaArg, boolean][] {
-    let lines = field.inputTypes;
+    const field = {
+      ...fieldNotFiltered,
+      inputTypes: fieldNotFiltered.inputTypes.filter(
+        (type) => !type.type.includes('RefInput'),
+      ),
+    };
 
+    let lines = field.inputTypes;
     if (lines.length === 0) {
       return [];
     }
@@ -362,6 +368,10 @@ export default class Transformer {
   generateSchemaImports() {
     return [...this.schemaImports]
       .map((name) => {
+        if (name.includes('RefInput')) {
+          console.log('name :>> ', name);
+          return '';
+        }
         const { isModelQueryType, modelName, queryName } =
           this.checkIsModelQueryType(name);
         if (isModelQueryType) {
@@ -489,6 +499,9 @@ export default class Transformer {
       }
 
       if (findFirst) {
+        if (modelName.includes('Scalar')) {
+          console.log('modelName :>> ', modelName);
+        }
         const imports = [
           selectImport,
           includeImport,
