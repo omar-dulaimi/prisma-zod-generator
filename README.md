@@ -25,6 +25,10 @@ Automatically generate [Zod](https://github.com/colinhacks/zod) schemas from you
 
 ### Prisma 4
 
+- 0.9.0 and higher
+
+### Prisma 4
+
 - 0.3.0 and higher
 
 ### Prisma 2/3

@@ -526,7 +526,7 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}WhereUniqueInputObjectSchema } from './objects/${toPascalCase(modelName)}WhereUniqueInput.schema'`,
             `import { ${toPascalCase(modelName)}ScalarFieldEnumSchema } from './enums/${toPascalCase(modelName)}ScalarFieldEnum.schema'`,
           ];
-          console.log('findMany', findMany)
+
           await writeFileSafely(
             path.join(Transformer.outputPath, `schemas/${toPascalCase(formatFindManyName(findMany))}.schema.ts`),
             `${this.generateImportStatements(
