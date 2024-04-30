@@ -3,9 +3,7 @@
   "version": "0.9.0",
   "description": "Prisma 5+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
-  "bin": {
-    "prisma-zod-generator": "lib/src/generator.js"
-  },
+  "bin": "lib/src/generator.js",
   "scripts": {
     "clear": "rm -rf ./lib & rm -rf ./prisma/generated",
     "gen-example": "yarn clear && yarn tsc && npx prisma generate && yarn tsc",
@@ -45,5 +43,6 @@
     "url": "https://github.com/omar-dulaimi/prisma-zod-generator/issues"
   },
   "homepage": "https://github.com/omar-dulaimi/prisma-zod-generator#readme",
-  "private": true
+  "private": true,
+  "packageManager": "yarn@3.4.1"
 }
