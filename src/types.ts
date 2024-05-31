@@ -1,11 +1,11 @@
-import { DMMF as PrismaDMMF } from '@prisma/client/runtime';
+import { DMMF } from '@prisma/generator-helper';
 
 export type TransformerParams = {
-  enumTypes?: PrismaDMMF.SchemaEnum[];
-  fields?: PrismaDMMF.SchemaArg[];
+  enumTypes?: DMMF.SchemaEnum[];
+  fields?: DMMF.SchemaArg[];
   name?: string;
-  models?: PrismaDMMF.Model[];
-  modelOperations?: PrismaDMMF.ModelMapping[];
+  models?: DMMF.Model[];
+  modelOperations?: DMMF.ModelMapping[];
   aggregateOperationSupport?: AggregateOperationSupport;
   isDefaultPrismaClientOutput?: boolean;
   prismaClientOutputPath?: string;

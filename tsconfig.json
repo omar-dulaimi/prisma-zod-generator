@@ -11,10 +11,13 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "outDir": "./lib",
-    "rootDir": "./src",
+    "rootDir": "./",
     "typeRoots": ["src/types.ts"],
     "skipLibCheck": true,
-    "strict": true
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
-  "include": ["./src/**/*.ts"]
+  "include": ["./src/**/*.ts", "./prisma/**/*.ts"]
 }

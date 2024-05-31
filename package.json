@@ -1,13 +1,12 @@
 {
   "name": "prisma-zod-generator",
-  "version": "0.8.13",
-  "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
+  "version": "0.9.0",
+  "description": "Prisma 5+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
-  "bin": {
-    "prisma-zod-generator": "lib/generator.js"
-  },
+  "bin": "lib/src/generator.js",
   "scripts": {
-    "gen-example": "tsc && npx prisma generate",
+    "clear": "rm -rf ./lib & rm -rf ./prisma/generated",
+    "gen-example": "yarn clear && yarn tsc && npx prisma generate && yarn tsc",
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish"
   },
@@ -25,23 +24,25 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^4.8.0",
-    "@prisma/generator-helper": "^4.8.0",
-    "@prisma/internals": "^4.8.0",
-    "prettier": "^2.8.1",
-    "tslib": "^2.4.1",
-    "zod": "^3.20.2"
+    "@prisma/client": "^5.13.0",
+    "@prisma/generator-helper": "^5.13.0",
+    "@prisma/internals": "^5.13.0",
+    "prettier": "^3.2.5",
+    "tslib": "^2.6.2",
+    "zod": "^3.23.4"
   },
   "devDependencies": {
-    "@types/node": "^18.11.18",
-    "@types/prettier": "^2.7.2",
-    "prisma": "^4.8.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.9.4"
+    "@types/node": "^20.12.7",
+    "@types/prettier": "^3.0.0",
+    "prisma": "^5.13.0",
+    "ts-node": "^10.9.2",
+    "typegraphql-prisma": "^0.27.2",
+    "typescript": "^5.4.5"
   },
   "bugs": {
     "url": "https://github.com/omar-dulaimi/prisma-zod-generator/issues"
   },
   "homepage": "https://github.com/omar-dulaimi/prisma-zod-generator#readme",
-  "private": true
+  "private": true,
+  "packageManager": "yarn@3.4.1"
 }

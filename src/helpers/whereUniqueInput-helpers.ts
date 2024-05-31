@@ -1,20 +1,20 @@
 import { DMMF } from '@prisma/generator-helper';
 
 export function changeOptionalToRequiredFields(
-  inputObjectTypes: DMMF.InputType[],
-) {
-  inputObjectTypes.map((item) => {
+  inputObjectTypes: ReadonlyArray<DMMF.InputType>,
+): DMMF.InputType[] {
+  return inputObjectTypes.map((item) => {
     if (
       item.name.includes('WhereUniqueInput') &&
       item.constraints.fields?.length! > 0
     ) {
-      item.fields = item.fields.map((subItem) => {
+      const newFields = item.fields.map((subItem) => {
         if (item.constraints.fields?.includes(subItem.name)) {
-          subItem.isRequired = true;
-          return subItem;
+          return { ...subItem, isRequired: true }; // Create a new object with the updated field
         }
         return subItem;
       });
+      return { ...item, fields: newFields }; // Return a new item with updated fields
     }
     return item;
   });

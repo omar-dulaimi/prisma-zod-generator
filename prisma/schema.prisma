@@ -8,7 +8,7 @@ datasource db {
 }
 
 generator zod {
-  provider          = "node ./lib/generator.js"
+  provider          = "node ./lib/src/generator.js"
   output            = "./generated"
   isGenerateSelect  = true
   isGenerateInclude = true

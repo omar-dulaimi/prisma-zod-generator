@@ -1,16 +1,21 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { formatFile } from './formatFile';
 import { addIndexExport } from './writeIndexFile';
 
-export const writeFileSafely = async (writeLocation: string, content: any, addToIndex = true) => {
-  fs.mkdirSync(path.dirname(writeLocation), {
+export const writeFileSafely = async (
+  writeLocation: string,
+  content: any,
+  addToIndex = true,
+) => {
+  await fs.mkdir(path.dirname(writeLocation), {
     recursive: true,
   });
 
-  fs.writeFileSync(writeLocation, await formatFile(content));
+  await fs.writeFile(writeLocation, await formatFile(content));
 
   if (addToIndex) {
-    addIndexExport(writeLocation);
+    await addIndexExport(writeLocation);
   }
+  return true
 };
