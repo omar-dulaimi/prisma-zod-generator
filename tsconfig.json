@@ -14,31 +14,10 @@
     "rootDir": "./",
     "typeRoots": ["src/types.ts"],
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    // "noResolve": false,
-    // "emitDeclarationOnly": false,
-    // "inlineSources": true,
-    // "experimentalDecorators": true,
-    // "emitDecoratorMetadata": true,
-
-    // "isolatedModules": true,
-    // "preserveConstEnums": true,
-    // "suppressImplicitAnyIndexErrors": false,
-    // "strictNullChecks": true,
-    // "noUnusedLocals": false,
-
-    // "noUnusedParameters": false,
-    // "importHelpers": true,
-    // "newLine": "LF",
-    // "noEmit": true,
-    // "composite": true,
-
-    // "sourceRoot": "src",
-    // "allowJs": true,
-    // "checkJs": false
+    "emitDecoratorMetadata": true
   },
   "include": ["./src/**/*.ts", "./prisma/**/*.ts"]
 }

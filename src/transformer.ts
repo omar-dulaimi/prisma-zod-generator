@@ -73,7 +73,10 @@ export default class Transformer {
       const { name, values } = enumType;
 
       await writeFileSafely(
-        path.join(Transformer.outputPath, `schemas/enums/${toPascalCase(name)}.schema.ts`),
+        path.join(
+          Transformer.outputPath,
+          `schemas/enums/${toPascalCase(name)}.schema.ts`,
+        ),
         `${this.generateImportZodStatement()}\n${this.generateExportSchemaStatement(
           `${toPascalCase(name)}`,
           `z.enum(${JSON.stringify(values)})`,
@@ -377,9 +380,9 @@ export default class Transformer {
           this.checkIsModelQueryType(name);
         if (isModelQueryType) {
           return `import { ${this.resolveModelQuerySchemaName(
-            toPascalCase(modelName)!,
-            toPascalCase(queryName)!,
-          )} } from '../${toPascalCase(queryName)}${toPascalCase(modelName)}.schema'`;
+            toPascalCase(modelName!),
+            toPascalCase(queryName!),
+          )} } from '../${toPascalCase(queryName!)}${toPascalCase(modelName!)}.schema'`;
         } else if (Transformer.enumNames.includes(name)) {
           return `import { ${toPascalCase(name)}Schema } from '../enums/${toPascalCase(name)}.schema'`;
         } else {
@@ -392,7 +395,7 @@ export default class Transformer {
   checkIsModelQueryType(type: string) {
     const modelQueryTypeSuffixToQueryName: Record<string, string> = {
       FindManyArgs: 'findMany',
-    }; 
+    };
     for (const modelQueryType of ['FindManyArgs']) {
       if (type.includes(modelQueryType)) {
         const modelQueryTypeSuffixIndex = type.indexOf(modelQueryType);
@@ -485,7 +488,10 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}WhereUniqueInputObjectSchema } from './objects/${toPascalCase(modelName)}WhereUniqueInput.schema'`,
           ];
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(findUnique)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(findUnique)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -507,7 +513,10 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}ScalarFieldEnumSchema } from './enums/${toPascalCase(modelName)}ScalarFieldEnum.schema'`,
           ];
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(findFirst)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(findFirst)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -528,7 +537,10 @@ export default class Transformer {
           ];
 
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(formatFindManyName(findMany))}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(formatFindManyName(findMany))}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -546,7 +558,10 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}UncheckedCreateInputObjectSchema } from './objects/${toPascalCase(modelName)}UncheckedCreateInput.schema'`,
           ];
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(createOne)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(createOne)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -561,7 +576,10 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}CreateManyInputObjectSchema } from './objects/${toPascalCase(modelName)}CreateManyInput.schema'`,
           ];
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(createMany)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(createMany)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -583,7 +601,10 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}WhereUniqueInputObjectSchema } from './objects/${toPascalCase(modelName)}WhereUniqueInput.schema'`,
           ];
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(deleteOne)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(deleteOne)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -598,7 +619,10 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}WhereInputObjectSchema } from './objects/${toPascalCase(modelName)}WhereInput.schema'`,
           ];
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(deleteMany)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(deleteMany)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -617,7 +641,10 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}WhereUniqueInputObjectSchema } from './objects/${toPascalCase(modelName)}WhereUniqueInput.schema'`,
           ];
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(updateOne)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(updateOne)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -633,7 +660,10 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}WhereInputObjectSchema } from './objects/${toPascalCase(modelName)}WhereInput.schema'`,
           ];
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(updateMany)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(updateMany)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -654,7 +684,10 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}UncheckedUpdateInputObjectSchema } from './objects/${toPascalCase(modelName)}UncheckedUpdateInput.schema'`,
           ];
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(upsertOne)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(upsertOne)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -713,7 +746,10 @@ export default class Transformer {
           }
 
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(aggregate)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(aggregate)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -733,7 +769,10 @@ export default class Transformer {
             `import { ${toPascalCase(modelName)}ScalarFieldEnumSchema } from './enums/${toPascalCase(modelName)}ScalarFieldEnum.schema'`,
           ];
           await writeFileSafely(
-            path.join(Transformer.outputPath, `schemas/${toPascalCase(groupBy)}.schema.ts`),
+            path.join(
+              Transformer.outputPath,
+              `schemas/${toPascalCase(groupBy)}.schema.ts`,
+            ),
             `${this.generateImportStatements(
               imports,
             )}${this.generateExportSchemaStatement(
@@ -743,8 +782,7 @@ export default class Transformer {
           );
         }
       } catch (error) {
-        console.log('error', error)
-        
+        console.log('error', error);
       }
     }
   }
