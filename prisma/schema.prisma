@@ -47,4 +47,7 @@ model Book {
 model Map {
   key   String @id
   value String
+
+  /// @@Gen.property(hide: true)
+  hiddenField String
 }
