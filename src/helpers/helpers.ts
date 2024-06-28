@@ -10,6 +10,7 @@ import { changeOptionalToRequiredFields } from './whereUniqueInput-helpers';
 interface AddMissingInputObjectTypeOptions {
   isGenerateSelect: boolean;
   isGenerateInclude: boolean;
+  useDecimalLib: boolean;
 }
 
 export function addMissingInputObjectTypes(
@@ -53,6 +54,7 @@ export function addMissingInputObjectTypes(
     );
     Transformer.setIsGenerateInclude(true);
   }
+  Transformer.setUseDecimalLib(options.useDecimalLib);
 
   changeOptionalToRequiredFields(inputObjectTypes);
 }
@@ -63,5 +65,6 @@ export function resolveAddMissingInputObjectTypeOptions(
   return {
     isGenerateSelect: generatorConfigOptions.isGenerateSelect === 'true',
     isGenerateInclude: generatorConfigOptions.isGenerateInclude === 'true',
+    useDecimalLib: generatorConfigOptions.useDecimalLib === 'true',
   };
 }

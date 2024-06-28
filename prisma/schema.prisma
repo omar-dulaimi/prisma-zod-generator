@@ -12,14 +12,16 @@ generator zod {
   output            = "./generated"
   isGenerateSelect  = true
   isGenerateInclude = true
+  useDecimalLib     = true
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  posts Post[]
-  books Book[]
+  id     Int     @id @default(autoincrement())
+  email  String  @unique
+  name   String?
+  posts  Post[]
+  books  Book[]
+  rating Decimal
 }
 
 model Post {
