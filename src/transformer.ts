@@ -32,6 +32,7 @@ export default class Transformer {
   private static isCustomPrismaClientOutputPath: boolean = false;
   private static isGenerateSelect: boolean = false;
   private static isGenerateInclude: boolean = false;
+  private static useDecimalLib: boolean = false;
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
@@ -52,6 +53,10 @@ export default class Transformer {
 
   static setIsGenerateInclude(isGenerateInclude: boolean) {
     this.isGenerateInclude = isGenerateInclude;
+  }
+
+  static setUseDecimalLib(useDecimalLib: boolean) {
+    this.useDecimalLib = useDecimalLib;
   }
 
   static getOutputPath() {
@@ -133,6 +138,11 @@ export default class Transformer {
     let alternatives = lines.reduce<string[]>((result, inputType) => {
       if (inputType.type === 'String') {
         result.push(this.wrapWithZodValidators('z.string()', field, inputType));
+      } else if (Transformer.useDecimalLib && inputType.type === 'Decimal') {
+        result.push(
+          this.wrapWithZodValidators('z.instanceof(Decimal)', field, inputType),
+        );
+        this.addSchemaImport('Decimal');
       } else if (
         inputType.type === 'Int' ||
         inputType.type === 'Float' ||
@@ -372,6 +382,8 @@ export default class Transformer {
           )} } from '../${queryName}${modelName}.schema'`;
         } else if (Transformer.enumNames.includes(name)) {
           return `import { ${name}Schema } from '../enums/${name}.schema'`;
+        } else if (name === 'Decimal') {
+          return "import { Decimal } from 'decimal.js'";
         } else {
           return `import { ${name}ObjectSchema } from './${name}.schema'`;
         }
