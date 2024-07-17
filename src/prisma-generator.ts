@@ -15,8 +15,9 @@ import {
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
-import { AggregateOperationSupport } from './types';
+import { AggregateOperationSupport, TransformerParams } from './types';
 import removeDir from './utils/removeDir';
+import pLimit from './helpers/plimit';
 
 export async function generate(options: GeneratorOptions) {
   try {
@@ -147,12 +148,20 @@ async function generateEnumSchemas(
 }
 
 async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[]) {
-  for (let i = 0; i < inputObjectTypes.length; i += 1) {
-    const fields = inputObjectTypes[i]?.fields as DMMF.SchemaArg[];
-    const name = inputObjectTypes[i]?.name;
-    const transformer = new Transformer({ name, fields });
-    await transformer.generateObjectSchema();
-  }
+  const limit = pLimit(1); // Limit to 10 concurrent executions
+  const tasks = inputObjectTypes.map((inputObjectType, index) => {
+    return limit(async () => {
+      const fields = inputObjectType?.fields;
+      const name = inputObjectType?.name;
+      const transformer = new Transformer({
+        name,
+        fields,
+      } as TransformerParams);
+      await transformer.generateObjectSchema();
+    });
+  });
+
+  await Promise.all(tasks);
 }
 
 async function generateModelSchemas(

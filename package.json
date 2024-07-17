@@ -6,7 +6,7 @@
   "bin": "lib/src/generator.js",
   "scripts": {
     "clear": "rm -rf ./lib & rm -rf ./prisma/generated",
-    "gen-example": "yarn clear && yarn tsc && npx prisma generate && yarn tsc",
+    "gen-example": "yarn clear && yarn tsc && npx prisma generate",
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish"
   },
@@ -27,6 +27,7 @@
     "@prisma/client": "^5.13.0",
     "@prisma/generator-helper": "^5.13.0",
     "@prisma/internals": "^5.13.0",
+    "p-limit": "^6.1.0",
     "prettier": "^3.2.5",
     "tslib": "^2.6.2",
     "zod": "^3.23.4"
