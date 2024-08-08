@@ -1,0 +1,1 @@
+{"version":3,"file":"UpdateManyPost.schema.js","sourceRoot":"","sources":["../../../../prisma/generated/schemas/UpdateManyPost.schema.ts"],"names":[],"mappings":";;;AAAA,6BAAwB;AACxB,qGAAuG;AACvG,2EAA6E;AAEhE,QAAA,oBAAoB,GAAG,OAAC,CAAC,MAAM,CAAC;IAC3C,IAAI,EAAE,4EAAuC;IAC7C,KAAK,EAAE,kDAA0B,CAAC,QAAQ,EAAE;CAC7C,CAAC,CAAC"}

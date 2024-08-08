@@ -1,0 +1,1 @@
+{"version":3,"file":"DeleteManyMap.schema.js","sourceRoot":"","sources":["../../../../prisma/generated/schemas/DeleteManyMap.schema.ts"],"names":[],"mappings":";;;AAAA,6BAAwB;AACxB,yEAA2E;AAE9D,QAAA,mBAAmB,GAAG,OAAC,CAAC,MAAM,CAAC;IAC1C,KAAK,EAAE,gDAAyB,CAAC,QAAQ,EAAE;CAC5C,CAAC,CAAC"}

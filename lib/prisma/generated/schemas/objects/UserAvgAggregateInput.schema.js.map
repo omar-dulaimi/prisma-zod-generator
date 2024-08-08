@@ -1,0 +1,1 @@
+{"version":3,"file":"UserAvgAggregateInput.schema.js","sourceRoot":"","sources":["../../../../../prisma/generated/schemas/objects/UserAvgAggregateInput.schema.ts"],"names":[],"mappings":";;;AAAA,6BAAwB;AAIxB,aAAa;AACb,MAAM,MAAM,GAAgD,OAAC;KAC1D,MAAM,CAAC;IACN,EAAE,EAAE,OAAC,CAAC,OAAO,CAAC,IAAI,CAAC,CAAC,QAAQ,EAAE;CAC/B,CAAC;KACD,MAAM,EAAE,CAAC;AAEC,QAAA,iCAAiC,GAAG,MAAM,CAAC"}

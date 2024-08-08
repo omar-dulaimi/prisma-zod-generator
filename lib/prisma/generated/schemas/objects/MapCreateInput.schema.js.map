@@ -1,0 +1,1 @@
+{"version":3,"file":"MapCreateInput.schema.js","sourceRoot":"","sources":["../../../../../prisma/generated/schemas/objects/MapCreateInput.schema.ts"],"names":[],"mappings":";;;AAAA,6BAAwB;AAIxB,aAAa;AACb,MAAM,MAAM,GAAqC,OAAC;KAC/C,MAAM,CAAC;IACN,GAAG,EAAE,OAAC,CAAC,MAAM,EAAE;IACf,KAAK,EAAE,OAAC,CAAC,MAAM,EAAE;CAClB,CAAC;KACD,MAAM,EAAE,CAAC;AAEC,QAAA,0BAA0B,GAAG,MAAM,CAAC"}

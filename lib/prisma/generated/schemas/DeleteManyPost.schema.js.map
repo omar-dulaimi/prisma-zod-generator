@@ -1,0 +1,1 @@
+{"version":3,"file":"DeleteManyPost.schema.js","sourceRoot":"","sources":["../../../../prisma/generated/schemas/DeleteManyPost.schema.ts"],"names":[],"mappings":";;;AAAA,6BAAwB;AACxB,2EAA6E;AAEhE,QAAA,oBAAoB,GAAG,OAAC,CAAC,MAAM,CAAC;IAC3C,KAAK,EAAE,kDAA0B,CAAC,QAAQ,EAAE;CAC7C,CAAC,CAAC"}
