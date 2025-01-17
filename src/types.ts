@@ -1,4 +1,4 @@
-import { DMMF as PrismaDMMF } from '@prisma/client/runtime';
+import { DMMF as PrismaDMMF } from '@prisma/generator-helper';
 
 export type TransformerParams = {
   enumTypes?: PrismaDMMF.SchemaEnum[];
@@ -20,3 +20,17 @@ export type AggregateOperationSupport = {
     avg?: boolean;
   };
 };
+
+export type Mutable<T> = {
+  -readonly [P in keyof T]: T[P];
+};
+
+export type MutableDeep<T> = {
+  -readonly [P in keyof T]: MutableDeep<T[P]>;
+}
+
+export type DMMFSchemaEnumTypes = {
+  model?: PrismaDMMF.SchemaEnum[];
+  prisma: PrismaDMMF.SchemaEnum[];
+
+}

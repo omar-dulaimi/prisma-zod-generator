@@ -66,7 +66,7 @@ function generateModelIncludeInputObjectTypes(
 
     const shouldAddCountField = hasManyRelationToAnotherModel;
     if (shouldAddCountField) {
-      const inputTypes: DMMF.SchemaArgInputType[] = [
+      const inputTypes: DMMF.InputTypeRef[] = [
         { isList: false, type: 'Boolean', location: 'scalar' },
       ];
       if (isGenerateSelect) {

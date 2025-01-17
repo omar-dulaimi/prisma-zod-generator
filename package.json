@@ -7,6 +7,7 @@
     "prisma-zod-generator": "lib/generator.js"
   },
   "scripts": {
+    "build": "rm -rf lib && tsc",
     "gen-example": "tsc && npx prisma generate",
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish"
@@ -25,19 +26,19 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^4.8.0",
-    "@prisma/generator-helper": "^4.8.0",
-    "@prisma/internals": "^4.8.0",
-    "prettier": "^2.8.1",
-    "tslib": "^2.4.1",
-    "zod": "^3.20.2"
+    "@prisma/client": "^6.2.1",
+    "@prisma/generator-helper": "^6.2.1",
+    "@prisma/internals": "^6.2.1",
+    "prettier": "^2.8.8",
+    "tslib": "^2.8.1",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node": "^18.11.18",
-    "@types/prettier": "^2.7.2",
-    "prisma": "^4.8.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.9.4"
+    "@types/node": "^18.19.71",
+    "@types/prettier": "^2.7.3",
+    "prisma": "^6.2.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^4.9.5"
   },
   "bugs": {
     "url": "https://github.com/omar-dulaimi/prisma-zod-generator/issues"

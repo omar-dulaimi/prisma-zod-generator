@@ -4,7 +4,7 @@ import {
   GeneratorConfig,
   GeneratorOptions
 } from '@prisma/generator-helper';
-import { getDMMF, parseEnvValue } from '@prisma/internals';
+import { getDMMF, parseEnvValue, Dictionary } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import {
   addMissingInputObjectTypes,
@@ -14,7 +14,7 @@ import {
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
-import { AggregateOperationSupport } from './types';
+import { AggregateOperationSupport, DMMFSchemaEnumTypes, MutableDeep } from './types';
 import removeDir from './utils/removeDir';
 
 export async function generate(options: GeneratorOptions) {
@@ -33,11 +33,11 @@ export async function generate(options: GeneratorOptions) {
 
     checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
 
-    const modelOperations = prismaClientDmmf.mappings.modelOperations;
-    const inputObjectTypes = prismaClientDmmf.schema.inputObjectTypes.prisma;
-    const outputObjectTypes = prismaClientDmmf.schema.outputObjectTypes.prisma;
-    const enumTypes = prismaClientDmmf.schema.enumTypes;
-    const models: DMMF.Model[] = prismaClientDmmf.datamodel.models;
+    const modelOperations = prismaClientDmmf.mappings.modelOperations as DMMF.ModelMapping[];
+    const inputObjectTypes = prismaClientDmmf.schema.inputObjectTypes.prisma as MutableDeep<DMMF.InputType[]>;
+    const outputObjectTypes = prismaClientDmmf.schema.outputObjectTypes.prisma as DMMF.OutputType[];
+    const enumTypes = prismaClientDmmf.schema.enumTypes as DMMFSchemaEnumTypes;
+    const models = prismaClientDmmf.datamodel.models as DMMF.Model[];
     const hiddenModels: string[] = [];
     const hiddenFields: string[] = [];
     resolveModelsComments(
@@ -49,8 +49,8 @@ export async function generate(options: GeneratorOptions) {
     );
 
     await generateEnumSchemas(
-      prismaClientDmmf.schema.enumTypes.prisma,
-      prismaClientDmmf.schema.enumTypes.model ?? [],
+      prismaClientDmmf.schema.enumTypes.prisma as DMMF.SchemaEnum[],
+      prismaClientDmmf.schema.enumTypes.model as DMMF.SchemaEnum[] ?? [],
     );
 
     const dataSource = options.datasources?.[0];
@@ -58,7 +58,7 @@ export async function generate(options: GeneratorOptions) {
     Transformer.provider = dataSource.provider;
     Transformer.previewFeatures = previewFeatures
 
-    const generatorConfigOptions = options.generator.config;
+    const generatorConfigOptions = options.generator.config as Dictionary<string>;
 
     const addMissingInputObjectTypeOptions =
       resolveAddMissingInputObjectTypeOptions(generatorConfigOptions);
@@ -88,7 +88,7 @@ export async function generate(options: GeneratorOptions) {
     );
     await generateIndex();
   } catch (error) {
-    console.error(error);
+    console.log(error);
   }
 }
 
@@ -135,7 +135,7 @@ async function generateEnumSchemas(
 
 async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[]) {
   for (let i = 0; i < inputObjectTypes.length; i += 1) {
-    const fields = inputObjectTypes[i]?.fields;
+    const fields = inputObjectTypes[i]?.fields as DMMF.SchemaArg[];
     const name = inputObjectTypes[i]?.name;
     const transformer = new Transformer({ name, fields });
     await transformer.generateObjectSchema();

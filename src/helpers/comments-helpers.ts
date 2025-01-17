@@ -1,4 +1,5 @@
 import { DMMF } from '@prisma/generator-helper';
+import { MutableDeep } from '../types';
 
 const modelAttributeRegex = /(@@Gen\.)+([A-z])+(\()+(.+)+(\))+/;
 const attributeNameRegex = /(?:\.)+([A-Za-z])+(?:\()+/;
@@ -100,7 +101,7 @@ function hideModelOperations(
 }
 
 export function hideInputObjectTypesAndRelatedFields(
-  inputObjectTypes: DMMF.InputType[],
+  inputObjectTypes: MutableDeep<DMMF.InputType>[],
   hiddenModels: string[],
   hiddenFields: string[],
 ) {

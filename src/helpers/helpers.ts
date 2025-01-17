@@ -1,4 +1,5 @@
-import { ConnectorType, Dictionary, DMMF } from '@prisma/generator-helper';
+import { ConnectorType, DMMF } from '@prisma/generator-helper';
+import { Dictionary } from '@prisma/internals';
 import Transformer from '../transformer';
 import { addMissingInputObjectTypesForAggregate } from './aggregate-helpers';
 import { addMissingInputObjectTypesForInclude } from './include-helpers';
@@ -6,6 +7,7 @@ import { addMissingInputObjectTypesForModelArgs } from './modelArgs-helpers';
 import { addMissingInputObjectTypesForMongoDbRawOpsAndQueries } from './mongodb-helpers';
 import { addMissingInputObjectTypesForSelect } from './select-helpers';
 import { changeOptionalToRequiredFields } from './whereUniqueInput-helpers';
+import { MutableDeep } from '../types';
 
 interface AddMissingInputObjectTypeOptions {
   isGenerateSelect: boolean;
@@ -13,7 +15,7 @@ interface AddMissingInputObjectTypeOptions {
 }
 
 export function addMissingInputObjectTypes(
-  inputObjectTypes: DMMF.InputType[],
+  inputObjectTypes: MutableDeep<DMMF.InputType[]>,
   outputObjectTypes: DMMF.OutputType[],
   models: DMMF.Model[],
   modelOperations: DMMF.ModelMapping[],

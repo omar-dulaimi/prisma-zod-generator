@@ -1,7 +1,8 @@
 import { DMMF } from '@prisma/generator-helper';
+import { MutableDeep } from '../types';
 
 export function changeOptionalToRequiredFields(
-  inputObjectTypes: DMMF.InputType[],
+  inputObjectTypes: MutableDeep<DMMF.InputType>[],
 ) {
   inputObjectTypes.map((item) => {
     if (

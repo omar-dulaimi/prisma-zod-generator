@@ -3,6 +3,9 @@ import {
   checkIsModelRelationField,
   checkModelHasManyModelRelation
 } from './model-helpers';
+import {
+  MutableDeep
+} from '../types';
 
 export function addMissingInputObjectTypesForSelect(
   inputObjectTypes: DMMF.InputType[],
@@ -117,7 +120,7 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
 
       const isRelationField = checkIsModelRelationField(modelField);
 
-      const field: DMMF.SchemaArg = {
+      const field: MutableDeep<DMMF.SchemaArg> = {
         name: modelFieldName,
         isRequired: false,
         isNullable: false,
@@ -125,7 +128,7 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
       };
 
       if (isRelationField) {
-        let schemaArgInputType: DMMF.SchemaArgInputType = {
+        let schemaArgInputType: DMMF.InputTypeRef = {
           isList: false,
           type: isList ? `${type}FindManyArgs` : `${type}Args`,
           location: 'inputObjectTypes',

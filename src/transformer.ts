@@ -212,7 +212,7 @@ export default class Transformer {
   wrapWithZodValidators(
     mainValidator: string,
     field: PrismaDMMF.SchemaArg,
-    inputType: PrismaDMMF.SchemaArgInputType,
+    inputType: PrismaDMMF.InputTypeRef,
   ) {
     let line: string = '';
     line = mainValidator;
@@ -234,7 +234,7 @@ export default class Transformer {
 
   generatePrismaStringLine(
     field: PrismaDMMF.SchemaArg,
-    inputType: PrismaDMMF.SchemaArgInputType,
+    inputType: PrismaDMMF.InputTypeRef,
     inputsLength: number,
   ) {
     const isEnum = inputType.location === 'enumTypes';
@@ -251,8 +251,8 @@ export default class Transformer {
       inputType.type === this.name
         ? objectSchemaLine
         : isEnum
-        ? enumSchemaLine
-        : objectSchemaLine;
+          ? enumSchemaLine
+          : objectSchemaLine;
 
     const arr = inputType.isList ? '.array()' : '';
 
@@ -557,11 +557,10 @@ export default class Transformer {
             imports,
           )}${this.generateExportSchemaStatement(
             `${modelName}CreateMany`,
-            `z.object({ data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]), ${
-              Transformer.provider === 'mongodb' ||
+            `z.object({ data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]), ${Transformer.provider === 'mongodb' ||
               Transformer.provider === 'sqlserver'
-                ? ''
-                : 'skipDuplicates: z.boolean().optional()'
+              ? ''
+              : 'skipDuplicates: z.boolean().optional()'
             } })`,
           )}`,
         );
