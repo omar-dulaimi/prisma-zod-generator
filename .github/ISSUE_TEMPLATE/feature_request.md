@@ -6,7 +6,7 @@ labels: ''
 assignees: ''
 ---
 
-Please consider supporting me for faster fixes, responses and features [Sponsor Me](https://github.com/sponsors/omar-dulaimi)
+Please consider supporting me for faster fixes, responses and features [Sponsor Me](https://github.com/sponsors/ladislaogarcia)
 
 
 ## Problem

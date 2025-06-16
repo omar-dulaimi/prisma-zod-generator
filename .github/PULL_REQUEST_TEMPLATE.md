@@ -1,4 +1,4 @@
-Please see the [contributing guidelines](https://github.com/omar-dulaimi/prisma-zod-generator/blob/master/CONTRIBUTING.md) for how to create and submit a high-quality PR for this repo.
+Please see the [contributing guidelines](https://github.com/ladislaogarcia/prisma-zod-generator/blob/master/CONTRIBUTING.md) for how to create and submit a high-quality PR for this repo.
 
 ### Description
 

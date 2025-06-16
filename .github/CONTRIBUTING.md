@@ -1,4 +1,4 @@
-# Contributing to Omar Dulaimi projects
+# Contributing to Ladislao García projects
 
 A big welcome and thank you for considering contributing to my open source projects! It’s people like you that make it a reality for users in our community.
 
