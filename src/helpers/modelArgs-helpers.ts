@@ -1,4 +1,5 @@
 import { DMMF } from '@prisma/generator-helper';
+import PRISMA_VERSION from '../utils/getPrismaVersion';
 import { checkModelHasModelRelation } from './model-helpers';
 
 export function addMissingInputObjectTypesForModelArgs(
@@ -16,6 +17,11 @@ export function addMissingInputObjectTypesForModelArgs(
   for (const modelArgsInputObjectType of modelArgsInputObjectTypes) {
     inputObjectTypes.push(modelArgsInputObjectType);
   }
+}
+function getModelArgsTypeName(modelName: string) {
+  const modelArgsPrepend =
+    PRISMA_VERSION && PRISMA_VERSION >= 6 ? 'Default' : '';
+  return `${modelName}${modelArgsPrepend}Args`;
 }
 function generateModelArgsInputObjectTypes(
   models: DMMF.Model[],
@@ -62,9 +68,8 @@ function generateModelArgsInputObjectTypes(
       };
       fields.push(includeField);
     }
-
     const modelArgsInputObjectType: DMMF.InputType = {
-      name: `${modelName}Args`,
+      name: getModelArgsTypeName(modelName),
       constraints: {
         maxNumFields: null,
         minNumFields: null,

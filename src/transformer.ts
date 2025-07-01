@@ -8,6 +8,7 @@ import {
   findModelByName,
   isMongodbRawOp,
 } from './helpers';
+import PRISMA_VERSION from './utils/getPrismaVersion';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { AggregateOperationSupport, TransformerParams } from './types';
 import { writeFileSafely } from './utils/writeFileSafely';
@@ -104,7 +105,6 @@ export default class Transformer {
       objectSchema,
     );
   }
-
   generateObjectSchemaFields() {
     const zodObjectSchemaFields = this.fields
       .map((field) => this.generateObjectSchemaField(field))
@@ -120,17 +120,27 @@ export default class Transformer {
       });
     return zodObjectSchemaFields;
   }
+  getFieldByPrismaVersion(field: PrismaDMMF.SchemaArg): PrismaDMMF.SchemaArg {
+    const affectedFields = ['OR', 'in', 'notIn'];
+    const inputTypes =
+      PRISMA_VERSION &&
+      PRISMA_VERSION >= 5 &&
+      !affectedFields.includes(field.name)
+        ? field.inputTypes
+        : field.inputTypes.filter((elem) => !elem.isList);
+    return { ...field, inputTypes };
+  }
 
   generateObjectSchemaField(
     field: PrismaDMMF.SchemaArg,
   ): [string, PrismaDMMF.SchemaArg, boolean][] {
-    let lines = field.inputTypes;
-
-    if (lines.length === 0) {
+    if (!field.inputTypes || field.inputTypes.length === 0) {
       return [];
     }
+  const validFieldByPrismaVersion = this.getFieldByPrismaVersion(field);
 
-    let alternatives = lines.reduce<string[]>((result, inputType) => {
+  let alternatives = validFieldByPrismaVersion.inputTypes.reduce<string[]>(
+    (result, inputType) => {
       if (inputType.type === 'String') {
         result.push(this.wrapWithZodValidators('z.string()', field, inputType));
       } else if (
@@ -173,13 +183,19 @@ export default class Transformer {
           }
 
           result.push(
-            this.generatePrismaStringLine(field, inputType, lines.length),
+            this.generatePrismaStringLine(
+              field,
+              inputType,
+              field.inputTypes.length,
+            ),
           );
         }
       }
 
       return result;
-    }, []);
+    },
+    [],
+  );
 
     if (alternatives.length === 0) {
       return [];

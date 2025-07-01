@@ -1,5 +1,5 @@
 {
-  "name": "prisma-zod-generator",
+  "name": "@ladislaogarcia/prisma-zod-generator",
   "version": "1.0.0",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/ladislaogarcia/prisma-zod-generator",
@@ -9,7 +9,9 @@
   "scripts": {
     "gen-example": "tsc && npx prisma generate",
     "check-uncommitted": "git diff-index --quiet HEAD --",
-    "package:publish": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish"
+    "build": "tsc",
+    "package:publish": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish",
+    "package:publish:public": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish --access public"
   },
   "author": {
     "name": "Ladislao García",
@@ -35,6 +37,7 @@
   "devDependencies": {
     "@types/node": "^18.19.111",
     "@types/prettier": "^2.7.2",
+    "node-packages-installed-version": "^1.0.1",
     "prisma": "^4.8.0",
     "ts-node": "^10.9.1",
     "typescript": "^4.9.4"
