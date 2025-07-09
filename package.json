@@ -4,7 +4,7 @@
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/ladislaogarcia/prisma-zod-generator",
   "bin": {
-    "prisma-zod-generator": "lib/generator.js"
+    "@ladislaogarcia/prisma-zod-generator": "lib/generator.js"
   },
   "scripts": {
     "gen-example": "tsc && npx prisma generate",
@@ -37,7 +37,7 @@
   "devDependencies": {
     "@types/node": "^18.19.111",
     "@types/prettier": "^2.7.2",
-    "node-packages-installed-version": "^1.0.1",
+    "node-packages-installed-version": "^1.0.3",
     "prisma": "^4.8.0",
     "ts-node": "^10.9.1",
     "typescript": "^4.9.4"
@@ -50,5 +50,6 @@
   "engines": {
     "node": ">=16.13.0",
     "npm": ">=8.1.0"
-  }
+  },
+  "private": false
 }
