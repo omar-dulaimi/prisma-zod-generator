@@ -66,11 +66,11 @@ function generateModelIncludeInputObjectTypes(
 
     const shouldAddCountField = hasManyRelationToAnotherModel;
     if (shouldAddCountField) {
-      const inputTypes: DMMF.SchemaArgInputType[] = [
+      const inputTypes: DMMF.SchemaArg['inputTypes'] = [
         { isList: false, type: 'Boolean', location: 'scalar' },
       ];
       if (isGenerateSelect) {
-        inputTypes.push({
+        (inputTypes as any).push({
           isList: false,
           type: `${modelName}CountOutputTypeArgs`,
           location: 'inputObjectTypes',

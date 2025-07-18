@@ -124,7 +124,7 @@ export default class Transformer {
   generateObjectSchemaField(
     field: PrismaDMMF.SchemaArg,
   ): [string, PrismaDMMF.SchemaArg, boolean][] {
-    let lines = field.inputTypes;
+    const lines = field.inputTypes;
 
     if (lines.length === 0) {
       return [];
@@ -159,7 +159,11 @@ export default class Transformer {
         );
       } else if (inputType.type === 'Bytes') {
         result.push(
-          this.wrapWithZodValidators('z.instanceof(Buffer)', field, inputType),
+          this.wrapWithZodValidators(
+            'z.instanceof(Uint8Array)',
+            field,
+            inputType,
+          ),
         );
       } else {
         const isEnum = inputType.location === 'enumTypes';
@@ -212,7 +216,7 @@ export default class Transformer {
   wrapWithZodValidators(
     mainValidator: string,
     field: PrismaDMMF.SchemaArg,
-    inputType: PrismaDMMF.SchemaArgInputType,
+    inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
   ) {
     let line: string = '';
     line = mainValidator;
@@ -234,7 +238,7 @@ export default class Transformer {
 
   generatePrismaStringLine(
     field: PrismaDMMF.SchemaArg,
-    inputType: PrismaDMMF.SchemaArgInputType,
+    inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
     inputsLength: number,
   ) {
     const isEnum = inputType.location === 'enumTypes';
@@ -242,17 +246,17 @@ export default class Transformer {
     const { isModelQueryType, modelName, queryName } =
       this.checkIsModelQueryType(inputType.type as string);
 
-    let objectSchemaLine = isModelQueryType
+    const objectSchemaLine = isModelQueryType
       ? this.resolveModelQuerySchemaName(modelName!, queryName!)
       : `${inputType.type}ObjectSchema`;
-    let enumSchemaLine = `${inputType.type}Schema`;
+    const enumSchemaLine = `${inputType.type}Schema`;
 
     const schema =
       inputType.type === this.name
         ? objectSchemaLine
         : isEnum
-        ? enumSchemaLine
-        : objectSchemaLine;
+          ? enumSchemaLine
+          : objectSchemaLine;
 
     const arr = inputType.isList ? '.array()' : '';
 
@@ -443,16 +447,16 @@ export default class Transformer {
         findUnique,
         findFirst,
         findMany,
-        // @ts-ignore
+        // @ts-expect-error - Legacy API compatibility
         createOne,
         createMany,
-        // @ts-ignore
+        // @ts-expect-error - Legacy API compatibility
         deleteOne,
-        // @ts-ignore
+        // @ts-expect-error - Legacy API compatibility
         updateOne,
         deleteMany,
         updateMany,
-        // @ts-ignore
+        // @ts-expect-error - Legacy API compatibility
         upsertOne,
         aggregate,
         groupBy,

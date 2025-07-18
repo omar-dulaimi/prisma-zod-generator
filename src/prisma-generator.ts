@@ -2,7 +2,7 @@ import {
   DMMF,
   EnvValue,
   GeneratorConfig,
-  GeneratorOptions
+  GeneratorOptions,
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
@@ -10,7 +10,7 @@ import {
   addMissingInputObjectTypes,
   hideInputObjectTypesAndRelatedFields,
   resolveAddMissingInputObjectTypeOptions,
-  resolveModelsComments
+  resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -35,55 +35,68 @@ export async function generate(options: GeneratorOptions) {
 
     const modelOperations = prismaClientDmmf.mappings.modelOperations;
     const inputObjectTypes = prismaClientDmmf.schema.inputObjectTypes.prisma;
-    const outputObjectTypes = prismaClientDmmf.schema.outputObjectTypes.prisma;
+    // Filter out AndReturn types that were introduced in Prisma 6 but shouldn't have Zod schemas
+    const outputObjectTypes =
+      prismaClientDmmf.schema.outputObjectTypes.prisma.filter(
+        (type) => !type.name.includes('AndReturn'),
+      );
     const enumTypes = prismaClientDmmf.schema.enumTypes;
-    const models: DMMF.Model[] = prismaClientDmmf.datamodel.models;
+    const models: DMMF.Model[] = [...prismaClientDmmf.datamodel.models];
     const hiddenModels: string[] = [];
     const hiddenFields: string[] = [];
     resolveModelsComments(
       models,
-      modelOperations,
-      enumTypes,
+      [...modelOperations],
+      {
+        model: enumTypes.model ? [...enumTypes.model] : undefined,
+        prisma: [...enumTypes.prisma],
+      },
       hiddenModels,
       hiddenFields,
     );
 
     await generateEnumSchemas(
-      prismaClientDmmf.schema.enumTypes.prisma,
-      prismaClientDmmf.schema.enumTypes.model ?? [],
+      [...prismaClientDmmf.schema.enumTypes.prisma],
+      [...(prismaClientDmmf.schema.enumTypes.model ?? [])],
     );
 
     const dataSource = options.datasources?.[0];
     const previewFeatures = prismaClientGeneratorConfig?.previewFeatures;
     Transformer.provider = dataSource.provider;
-    Transformer.previewFeatures = previewFeatures
+    Transformer.previewFeatures = previewFeatures;
 
     const generatorConfigOptions = options.generator.config;
 
     const addMissingInputObjectTypeOptions =
-      resolveAddMissingInputObjectTypeOptions(generatorConfigOptions);
+      resolveAddMissingInputObjectTypeOptions(
+        generatorConfigOptions as Record<string, string>,
+      );
+
+    const mutableInputObjectTypes = [...inputObjectTypes];
+    const mutableOutputObjectTypes = [...outputObjectTypes];
+
     addMissingInputObjectTypes(
-      inputObjectTypes,
-      outputObjectTypes,
+      mutableInputObjectTypes,
+      mutableOutputObjectTypes,
       models,
-      modelOperations,
+      [...modelOperations],
       dataSource.provider,
       addMissingInputObjectTypeOptions,
     );
 
-    const aggregateOperationSupport =
-      resolveAggregateOperationSupport(inputObjectTypes);
+    const aggregateOperationSupport = resolveAggregateOperationSupport(
+      mutableInputObjectTypes,
+    );
 
     hideInputObjectTypesAndRelatedFields(
-      inputObjectTypes,
+      mutableInputObjectTypes,
       hiddenModels,
       hiddenFields,
     );
-
-    await generateObjectSchemas(inputObjectTypes);
+    await generateObjectSchemas(mutableInputObjectTypes);
     await generateModelSchemas(
       models,
-      modelOperations,
+      [...modelOperations],
       aggregateOperationSupport,
     );
     await generateIndex();
@@ -137,7 +150,7 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[]) {
   for (let i = 0; i < inputObjectTypes.length; i += 1) {
     const fields = inputObjectTypes[i]?.fields;
     const name = inputObjectTypes[i]?.name;
-    const transformer = new Transformer({ name, fields });
+    const transformer = new Transformer({ name, fields: [...(fields || [])] });
     await transformer.generateObjectSchema();
   }
 }
