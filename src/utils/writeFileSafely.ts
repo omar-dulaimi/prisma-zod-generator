@@ -3,7 +3,11 @@ import path from 'path';
 import { formatFile } from './formatFile';
 import { addIndexExport } from './writeIndexFile';
 
-export const writeFileSafely = async (writeLocation: string, content: any, addToIndex = true) => {
+export const writeFileSafely = async (
+  writeLocation: string,
+  content: any,
+  addToIndex = true,
+) => {
   fs.mkdirSync(path.dirname(writeLocation), {
     recursive: true,
   });
