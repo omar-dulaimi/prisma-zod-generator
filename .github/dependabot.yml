@@ -1,0 +1,64 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "omar-dulaimi"
+    assignees:
+      - "omar-dulaimi"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+    ignore:
+      # Ignore major version updates for critical dependencies
+      - dependency-name: "@prisma/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+    groups:
+      prisma:
+        patterns:
+          - "@prisma/*"
+          - "prisma"
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "expect-type"
+      eslint:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint/*"
+      build-tools:
+        patterns:
+          - "typescript"
+          - "prettier"
+          - "tslib"
+          - "tsx"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "omar-dulaimi"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "github-actions"
+      - "automated"
