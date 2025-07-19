@@ -1,0 +1,639 @@
+// MongoDB Comprehensive Test Schema
+// Tests all MongoDB-specific features and document modeling
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider          = "node \"/home/omar/Desktop/New Folder/libs/prisma-zod-generator/lib/generator.js\""
+  output            = "./generated"
+  isGenerateSelect  = true
+  isGenerateInclude = true
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URL")
+}
+
+// =============================================================================
+// MONGODB DOCUMENT MODELING
+// =============================================================================
+
+model MongoUser {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  email             String              @unique
+  username          String              @unique
+  firstName         String
+  lastName          String
+  passwordHash      String
+  status            MongoUserStatus     @default(ACTIVE)
+  role              MongoUserRole       @default(USER)
+  
+  // Embedded documents
+  profile           MongoProfile?
+  settings          MongoSettings?
+  
+  // Arrays of primitives
+  tags              String[]
+  languages         String[]
+  skills            String[]
+  scores            Int[]
+  ratings           Float[]
+  
+  // Arrays of embedded documents
+  addresses         MongoAddress[]
+  socialLinks       MongoSocialLink[]
+  educations        MongoEducation[]
+  experiences       MongoExperience[]
+  
+  // References to other documents
+  posts             MongoPost[]
+  comments          MongoComment[]
+  
+  // Self-referential
+  managerId         String?             @db.ObjectId
+  manager           MongoUser?          @relation("UserManagement", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subordinates      MongoUser[]         @relation("UserManagement")
+  
+  // Metadata
+  metadata          Json?
+  customFields      Json?
+  
+  // Timestamps
+  lastLoginAt       DateTime?
+  emailVerifiedAt   DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mongo_users")
+}
+
+// =============================================================================
+// MONGODB EMBEDDED DOCUMENTS (COMPOSITE TYPES)
+// =============================================================================
+
+type MongoProfile {
+  displayName       String?
+  bio               String?
+  avatarUrl         String?
+  website           String?
+  location          String?
+  timezone          String?
+  birthDate         DateTime?
+  phoneNumber       String?
+  isPublic          Boolean             @default(true)
+  showEmail         Boolean             @default(false)
+  showPhone         Boolean             @default(false)
+  company           String?
+  jobTitle          String?
+  industry          String?
+}
+
+type MongoSettings {
+  theme             String              @default("light")
+  language          String              @default("en")
+  timezone          String              @default("UTC")
+  emailNotifications Boolean           @default(true)
+  pushNotifications Boolean            @default(true)
+  smsNotifications  Boolean            @default(false)
+  privacy           MongoPrivacySettings
+  display           MongoDisplaySettings
+}
+
+type MongoPrivacySettings {
+  profileVisibility String             @default("public")
+  showOnlineStatus  Boolean            @default(true)
+  showLastSeen      Boolean            @default(true)
+  allowDirectMessages Boolean          @default(true)
+  allowGroupInvites Boolean            @default(true)
+}
+
+type MongoDisplaySettings {
+  itemsPerPage      Int                @default(20)
+  showImages        Boolean            @default(true)
+  showVideos        Boolean            @default(true)
+  autoPlayVideos    Boolean            @default(false)
+  showAvatars       Boolean            @default(true)
+}
+
+type MongoAddress {
+  type              String              @default("home")
+  street            String
+  city              String
+  state             String?
+  postalCode        String?
+  country           String
+  isPrimary         Boolean             @default(false)
+  coordinates       MongoCoordinate?
+}
+
+type MongoCoordinate {
+  latitude          Float
+  longitude         Float
+  accuracy          Float?
+}
+
+type MongoSocialLink {
+  platform          String
+  username          String
+  url               String
+  isVerified        Boolean             @default(false)
+  isPublic          Boolean             @default(true)
+}
+
+type MongoEducation {
+  institution       String
+  degree            String?
+  field             String?
+  startDate         DateTime?
+  endDate           DateTime?
+  isCurrent         Boolean             @default(false)
+  description       String?
+  achievements      String[]
+}
+
+type MongoExperience {
+  company           String
+  position          String
+  startDate         DateTime?
+  endDate           DateTime?
+  isCurrent         Boolean             @default(false)
+  description       String?
+  technologies      String[]
+  achievements      String[]
+}
+
+// =============================================================================
+// MONGODB ENUMS
+// =============================================================================
+
+enum MongoUserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  SUSPENDED
+  ARCHIVED
+}
+
+enum MongoUserRole {
+  ADMIN
+  MODERATOR
+  USER
+  GUEST
+}
+
+enum MongoPostStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+  DELETED
+}
+
+enum MongoContentType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  LINK
+  POLL
+  EVENT
+}
+
+enum MongoPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+enum MongoReactionType {
+  LIKE
+  LOVE
+  HAHA
+  WOW
+  SAD
+  ANGRY
+}
+
+// =============================================================================
+// MONGODB POSTS AND CONTENT
+// =============================================================================
+
+model MongoPost {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  slug              String              @unique
+  content           String?
+  excerpt           String?
+  status            MongoPostStatus     @default(DRAFT)
+  contentType       MongoContentType    @default(TEXT)
+  priority          MongoPriority       @default(MEDIUM)
+  
+  // Rich content
+  media             MongoMedia[]
+  tags              String[]
+  categories        String[]
+  
+  // Engagement
+  reactions         MongoReaction[]
+  comments          MongoComment[]
+  
+  // SEO and metadata
+  seoTitle          String?
+  seoDescription    String?
+  canonicalUrl      String?
+  metadata          Json?
+  customFields      Json?
+  
+  // Statistics
+  stats             MongoPostStats?
+  
+  // Author reference
+  authorId          String              @db.ObjectId
+  author            MongoUser           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  // Publishing
+  publishedAt       DateTime?
+  scheduledAt       DateTime?
+  
+  // Timestamps
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mongo_posts")
+}
+
+type MongoMedia {
+  type              String
+  url               String
+  thumbnailUrl      String?
+  alt               String?
+  caption           String?
+  size              Int?
+  mimeType          String?
+  dimensions        MongoMediaDimensions?
+  metadata          Json?
+}
+
+type MongoMediaDimensions {
+  width             Int
+  height            Int
+  aspectRatio       Float?
+}
+
+type MongoPostStats {
+  viewCount         Int                 @default(0)
+  likeCount         Int                 @default(0)
+  commentCount      Int                 @default(0)
+  shareCount        Int                 @default(0)
+  reactionCounts    Json?
+  engagementRate    Float?              @default(0.0)
+  lastInteractionAt DateTime?
+}
+
+type MongoReaction {
+  type              MongoReactionType
+  userId            String              @db.ObjectId
+  createdAt         DateTime            @default(now())
+}
+
+// =============================================================================
+// MONGODB COMMENTS SYSTEM
+// =============================================================================
+
+model MongoComment {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  content           String
+  isEdited          Boolean             @default(false)
+  editHistory       MongoEditHistory[]
+  
+  // Moderation
+  isApproved        Boolean             @default(true)
+  isFlagged         Boolean             @default(false)
+  moderationNotes   String?
+  
+  // Author reference
+  authorId          String              @db.ObjectId
+  author            MongoUser           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  // Post reference
+  postId            String              @db.ObjectId
+  post              MongoPost           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  // Nested comments
+  parentId          String?             @db.ObjectId
+  parent            MongoComment?       @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies           MongoComment[]      @relation("CommentReplies")
+  
+  // Engagement
+  reactions         MongoReaction[]
+  
+  // Timestamps
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mongo_comments")
+}
+
+type MongoEditHistory {
+  content           String
+  editedAt          DateTime
+  editReason        String?
+}
+
+// =============================================================================
+// MONGODB GROUPS AND COMMUNITIES
+// =============================================================================
+
+model MongoGroup {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  name              String              @unique
+  slug              String              @unique
+  description       String?
+  isPrivate         Boolean             @default(false)
+  isActive          Boolean             @default(true)
+  
+  // Group settings
+  settings          MongoGroupSettings?
+  
+  // Members as embedded documents
+  members           MongoGroupMember[]
+  
+  // Group statistics
+  stats             MongoGroupStats?
+  
+  // Metadata
+  metadata          Json?
+  customFields      Json?
+  
+  // Timestamps
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mongo_groups")
+}
+
+type MongoGroupSettings {
+  maxMembers        Int?
+  requireApproval   Boolean             @default(false)
+  allowInvites      Boolean             @default(true)
+  allowPosting      Boolean             @default(true)
+  postApprovalRequired Boolean          @default(false)
+  description       String?
+  rules             String[]
+  tags              String[]
+  visibility        String              @default("public")
+}
+
+type MongoGroupMember {
+  userId            String              @db.ObjectId
+  role              String              @default("member")
+  permissions       String[]
+  joinedAt          DateTime            @default(now())
+  lastActiveAt      DateTime?
+  isActive          Boolean             @default(true)
+  invitedBy         String?             @db.ObjectId
+  metadata          Json?
+}
+
+type MongoGroupStats {
+  memberCount       Int                 @default(0)
+  postCount         Int                 @default(0)
+  activeMembers     Int                 @default(0)
+  lastActivityAt    DateTime?
+  growthRate        Float?              @default(0.0)
+}
+
+// =============================================================================
+// MONGODB GEOSPATIAL AND LOCATION DATA
+// =============================================================================
+
+model MongoLocation {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  description       String?
+  type              String              @default("point")
+  
+  // GeoJSON-like structure
+  coordinates       MongoGeoCoordinate
+  
+  // Location metadata
+  address           MongoAddress?
+  properties        Json?
+  
+  // References
+  createdBy         String              @db.ObjectId
+  
+  // Timestamps
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mongo_locations")
+}
+
+type MongoGeoCoordinate {
+  type              String              @default("Point")
+  coordinates       Float[]
+  
+  // Additional geo properties
+  altitude          Float?
+  accuracy          Float?
+  heading           Float?
+  speed             Float?
+}
+
+// =============================================================================
+// MONGODB ANALYTICS AND METRICS
+// =============================================================================
+
+model MongoAnalytics {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  eventType         String
+  eventName         String
+  
+  // Event data
+  properties        Json?
+  userProperties    Json?
+  
+  // Session information
+  sessionId         String?
+  userId            String?             @db.ObjectId
+  
+  // Technical details
+  device            MongoDeviceInfo?
+  browser           MongoBrowserInfo?
+  location          MongoLocationInfo?
+  
+  // Timestamps
+  timestamp         DateTime            @default(now())
+  
+  @@map("mongo_analytics")
+}
+
+type MongoDeviceInfo {
+  type              String?
+  model             String?
+  os                String?
+  osVersion         String?
+  screenResolution  String?
+  userAgent         String?
+}
+
+type MongoBrowserInfo {
+  name              String?
+  version           String?
+  language          String?
+  timezone          String?
+  cookies           Boolean?
+  javascript        Boolean?
+}
+
+type MongoLocationInfo {
+  country           String?
+  region            String?
+  city              String?
+  timezone          String?
+  isp               String?
+  ipAddress         String?
+}
+
+// =============================================================================
+// MONGODB AGGREGATION TESTING
+// =============================================================================
+
+model MongoMetric {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  value             Float
+  unit              String?
+  
+  // Dimensions for grouping
+  dimensions        MongoMetricDimensions
+  
+  // Time-based data
+  timestamp         DateTime            @default(now())
+  period            String?
+  
+  // Metadata
+  metadata          Json?
+  
+  @@map("mongo_metrics")
+}
+
+type MongoMetricDimensions {
+  entityType        String
+  entityId          String
+  category          String?
+  subcategory       String?
+  tags              String[]
+  properties        Json?
+}
+
+// =============================================================================
+// MONGODB AUDIT AND LOGGING
+// =============================================================================
+
+model MongoAuditLog {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Operation details
+  operation         String
+  collection        String
+  documentId        String?
+  
+  // Change tracking
+  changes           MongoAuditChange[]
+  
+  // User context
+  userId            String?             @db.ObjectId
+  userEmail         String?
+  userRole          String?
+  
+  // Request context
+  requestId         String?
+  sessionId         String?
+  ipAddress         String?
+  userAgent         String?
+  
+  // Metadata
+  metadata          Json?
+  
+  // Timestamp
+  timestamp         DateTime            @default(now())
+  
+  @@map("mongo_audit_log")
+}
+
+type MongoAuditChange {
+  field             String
+  oldValue          Json?
+  newValue          Json?
+  changeType        String
+}
+
+// =============================================================================
+// MONGODB FULL-TEXT SEARCH
+// =============================================================================
+
+model MongoSearchIndex {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Document reference
+  documentId        String              @db.ObjectId
+  documentType      String
+  
+  // Search content
+  title             String
+  content           String
+  tags              String[]
+  categories        String[]
+  
+  // Search metadata
+  language          String              @default("en")
+  searchScore       Float?              @default(0.0)
+  
+  // Timestamps
+  indexedAt         DateTime            @default(now())
+  lastUpdated       DateTime            @updatedAt
+  
+  @@map("mongo_search_index")
+}
+
+// =============================================================================
+// MONGODB CONFIGURATION AND SETTINGS
+// =============================================================================
+
+model MongoConfig {
+  id                String              @id @default(auto()) @map("_id") @db.ObjectId
+  key               String              @unique
+  value             Json
+  
+  // Configuration metadata
+  category          String?
+  description       String?
+  isActive          Boolean             @default(true)
+  isPublic          Boolean             @default(false)
+  
+  // Versioning
+  version           Int                 @default(1)
+  previousVersions  MongoConfigVersion[]
+  
+  // Timestamps
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mongo_config")
+}
+
+type MongoConfigVersion {
+  version           Int
+  value             Json
+  changedBy         String?             @db.ObjectId
+  changedAt         DateTime
+  changeReason      String?
+}
