@@ -404,7 +404,7 @@ export default class Transformer {
     const modelNameCapitalized =
       modelName.charAt(0).toUpperCase() + modelName.slice(1);
     const queryNameCapitalized =
-      queryName.charAt(0).toUpperCase() + queryName!.slice(1);
+      queryName.charAt(0).toUpperCase() + (queryName as string).slice(1);
     return `${modelNameCapitalized}${queryNameCapitalized}Schema`;
   }
 
@@ -462,7 +462,7 @@ export default class Transformer {
         groupBy,
       } = modelOperation;
 
-      const model = findModelByName(this.models, modelName)!;
+      const model = findModelByName(this.models, modelName) as DMMF.Model;
 
       const {
         selectImport,
