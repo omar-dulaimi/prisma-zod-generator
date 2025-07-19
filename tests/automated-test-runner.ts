@@ -216,7 +216,7 @@ class AutomatedTestRunner {
       for (const [key, value] of Object.entries(schema)) {
         if (value && typeof value === 'object' && 'safeParse' in value) {
           // Test basic validation
-          const result = (value as any).safeParse({});
+          const result = (value as z.ZodTypeAny).safeParse({});
           // Schema should either pass or fail gracefully
           if (result === undefined) {
             throw new Error(

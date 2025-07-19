@@ -7,7 +7,7 @@ import { join } from 'path';
 
 // Import known working MongoDB schemas directly
 const testImportedSchemas = async () => {
-  const results: Array<{ name: string; success: boolean; schema?: any }> = [];
+  const results: Array<{ name: string; success: boolean; schema?: z.ZodTypeAny }> = [];
   
   try {
     // Test operation schemas
@@ -59,7 +59,7 @@ const testImportedSchemas = async () => {
 
 // Test additional schemas by sampling from each category
 const testSampleSchemas = async () => {
-  const results: Array<{ name: string; success: boolean; schema?: any }> = [];
+  const results: Array<{ name: string; success: boolean; schema?: z.ZodTypeAny }> = [];
   const basePath = 'prisma/schemas/mongodb/generated/schemas';
   
   try {
@@ -149,8 +149,8 @@ const testSampleSchemas = async () => {
 };
 
 describe('MongoDB Schema Coverage Tests', () => {
-  let importedSchemas: Array<{ name: string; success: boolean; schema?: any }> = [];
-  let sampleSchemas: Array<{ name: string; success: boolean; schema?: any }> = [];
+  let importedSchemas: Array<{ name: string; success: boolean; schema?: z.ZodTypeAny }> = [];
+  let sampleSchemas: Array<{ name: string; success: boolean; schema?: z.ZodTypeAny }> = [];
 
   it('should import core MongoDB schemas', async () => {
     importedSchemas = await testImportedSchemas();

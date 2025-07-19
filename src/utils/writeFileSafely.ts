@@ -5,7 +5,7 @@ import { addIndexExport } from './writeIndexFile';
 
 export const writeFileSafely = async (
   writeLocation: string,
-  content: any,
+  content: string,
   addToIndex = true,
 ) => {
   fs.mkdirSync(path.dirname(writeLocation), {
