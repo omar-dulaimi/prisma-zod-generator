@@ -3,7 +3,7 @@ START_TIME=$SECONDS
 
 echo "Buidling package..."
 rm -r lib
-tsc
+npx tsc
 rm -r package
 mkdir package
 
