@@ -34,7 +34,7 @@ export class SchemaTestUtils {
    */
   static testInvalidData<T extends z.ZodType>(
     schema: T,
-    invalidData: any,
+    invalidData: unknown,
     expectedErrorPaths?: string[],
   ): void {
     const result = schema.safeParse(invalidData);

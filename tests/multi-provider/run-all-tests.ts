@@ -40,7 +40,7 @@ class ComprehensiveTestRunner {
 
   async run(): Promise<void> {
     console.log('🚀 Starting comprehensive multi-provider tests...');
-    console.log(`📋 Providers to test: ${this.options.providers!.join(', ')}`);
+    console.log(`📋 Providers to test: ${(this.options.providers as string[]).join(', ')}`);
     
     try {
       // Setup phase
@@ -91,7 +91,7 @@ class ComprehensiveTestRunner {
     console.log('\n⚙️  Generation Phase');
     console.log('='.repeat(50));
 
-    for (const provider of this.options.providers!) {
+    for (const provider of (this.options.providers as string[])) {
       console.log(`\n📄 Generating schemas for ${provider}...`);
       
       try {
@@ -185,7 +185,7 @@ class ComprehensiveTestRunner {
     // For now, we'll use in-memory/file-based databases for testing
     // In a real scenario, you might want to start Docker containers
 
-    for (const provider of this.options.providers!) {
+    for (const provider of (this.options.providers as string[])) {
       console.log(`  📊 Setting up ${provider}...`);
       
       switch (provider) {
@@ -238,7 +238,7 @@ class ComprehensiveTestRunner {
   private async runTestsInParallel(): Promise<void> {
     console.log('🏃‍♂️ Running tests in parallel...');
 
-    const testPromises = this.options.providers!.map(provider => 
+    const testPromises = (this.options.providers as string[]).map(provider => 
       this.testRunner.runProviderTests(provider)
     );
 
@@ -246,7 +246,7 @@ class ComprehensiveTestRunner {
       const results = await Promise.allSettled(testPromises);
       
       results.forEach((result, index) => {
-        const provider = this.options.providers![index];
+        const provider = (this.options.providers as string[])[index];
         if (result.status === 'fulfilled') {
           console.log(`✅ ${provider}: ${result.value.summary.passedTests}/${result.value.summary.totalTests} tests passed`);
         } else {
