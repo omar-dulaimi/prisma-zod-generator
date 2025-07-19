@@ -6,7 +6,7 @@ generator client {
 }
 
 generator zod {
-  provider          = "node \"/home/omar/Desktop/New Folder/libs/prisma-zod-generator/lib/generator.js\""
+  provider          = "node ./lib/generator.js"
   output            = "./generated"
   isGenerateSelect  = true
   isGenerateInclude = true
