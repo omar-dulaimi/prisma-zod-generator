@@ -10,13 +10,47 @@
     "gen-example": "tsc && npx prisma generate",
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish",
+    
     "test": "vitest",
     "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
+    "test:basic": "vitest run tests/generated-schema.test.ts",
+    
+    "test:coverage": "vitest run --coverage",
+    "test:coverage:fast": "vitest run --coverage tests/generated-schema.test.ts",
+    "test:coverage:comprehensive": "vitest run --coverage tests/comprehensive-schema-coverage.test.ts",
+    "test:coverage:mongodb": "vitest run --coverage tests/mongodb-schema-coverage.test.ts",
+    "test:coverage:all": "vitest run --coverage tests/generated-schema.test.ts tests/mongodb-schema-coverage.test.ts",
     "test:ci": "vitest run --coverage",
-    "test:type-check": "vitest typecheck",
-    "test:full": "vitest run --coverage --typecheck",
-    "test:specific": "vitest --grep",
+    "test:type-check": "tsc --noEmit",
+    
+    "test:multi": "VITEST_PARALLEL=true vitest run tests/multi-provider/multi-provider.test.ts",
+    "test:multi:sequential": "VITEST_PARALLEL=false vitest run tests/multi-provider/multi-provider.test.ts",
+    "test:multi:coverage": "VITEST_PARALLEL=true vitest run --coverage tests/multi-provider/multi-provider.test.ts",
+    "test:multi:comprehensive": "VITEST_PARALLEL=true vitest run tests/multi-provider/multi-provider.test.ts -t 'Comprehensive Integration Test'",
+    
+    "test:provider:postgresql": "vitest run tests/multi-provider/multi-provider.test.ts -t 'PostgreSQL Provider Tests'",
+    "test:provider:mysql": "vitest run tests/multi-provider/multi-provider.test.ts -t 'MySQL Provider Tests'",
+    "test:provider:mongodb": "vitest run tests/multi-provider/multi-provider.test.ts -t 'MongoDB Provider Tests'",
+    "test:provider:sqlite": "vitest run tests/multi-provider/multi-provider.test.ts -t 'SQLite Provider Tests'",
+    "test:provider:sqlserver": "vitest run tests/multi-provider/multi-provider.test.ts -t 'SQL Server Provider Tests'",
+    
+    "test:generation:postgresql": "vitest run tests/multi-provider/multi-provider.test.ts -t 'should generate schemas for postgresql'",
+    "test:generation:mysql": "vitest run tests/multi-provider/multi-provider.test.ts -t 'should generate schemas for mysql'",
+    "test:generation:mongodb": "vitest run tests/multi-provider/multi-provider.test.ts -t 'should generate schemas for mongodb'",
+    "test:generation:sqlite": "vitest run tests/multi-provider/multi-provider.test.ts -t 'should generate schemas for sqlite'",
+    "test:generation:sqlserver": "vitest run tests/multi-provider/multi-provider.test.ts -t 'should generate schemas for sqlserver'",
+    
+    "test:performance": "VITEST_PARALLEL=true vitest run tests/multi-provider/multi-provider.test.ts -t 'Performance Comparison'",
+    "test:compatibility": "VITEST_PARALLEL=true vitest run tests/multi-provider/multi-provider.test.ts -t 'Cross-Provider Compatibility'",
+    
+    "test:full": "npm run test:basic && npm run test:multi",
+    "test:full:coverage": "npm run test:coverage:fast && npm run test:multi:coverage",
+    "test:comprehensive": "VITEST_PARALLEL=true npm run test:full:coverage",
+    
+    "test:legacy:multi-provider": "tsx tests/multi-provider/run-all-tests.ts",
+    "test:legacy:multi-provider:parallel": "tsx tests/multi-provider/run-all-tests.ts --parallel",
+    "test:legacy:multi-provider:generate": "tsx tests/multi-provider/run-all-tests.ts --generate-only",
+    
     "lint": "eslint src/ tests/ --fix",
     "format": "prettier --write src/ tests/"
   },
@@ -51,6 +85,7 @@
     "expect-type": "^0.19.0",
     "prisma": "^6.12.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "vitest": "^2.1.8"
   },
