@@ -2,7 +2,7 @@ name: Semantic Release
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, upgrade/prisma-and-dependencies ]
   workflow_dispatch:
 
 jobs:
