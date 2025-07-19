@@ -131,7 +131,7 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
           location: 'inputObjectTypes',
           namespace: 'prisma',
         };
-        (field.inputTypes as any[]).push(schemaArgInputType);
+        (field.inputTypes as Array<{ isList: boolean; type: string; location: string; namespace?: string }>).push(schemaArgInputType);
       }
 
       fields.push(field);

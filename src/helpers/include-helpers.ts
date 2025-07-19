@@ -70,7 +70,7 @@ function generateModelIncludeInputObjectTypes(
         { isList: false, type: 'Boolean', location: 'scalar' },
       ];
       if (isGenerateSelect) {
-        (inputTypes as any[]).push({
+        (inputTypes as Array<{ isList: boolean; type: string; location: string; namespace?: string }>).push({
           isList: false,
           type: `${modelName}CountOutputTypeArgs`,
           location: 'inputObjectTypes',

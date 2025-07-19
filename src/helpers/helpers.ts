@@ -74,7 +74,7 @@ function filterFieldRefTypes(inputObjectTypes: DMMF.InputType[]): void {
       ) {
         // Replace the entire inputTypes array with just the first input type
         // This removes the fieldRefTypes reference while preserving functionality
-        (field as any).inputTypes = [field.inputTypes[0]];
+        (field as DMMF.SchemaArg & { inputTypes: DMMF.SchemaArg['inputTypes'] }).inputTypes = [field.inputTypes[0]];
       }
     }
   }

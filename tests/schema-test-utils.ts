@@ -76,7 +76,7 @@ export class SchemaTestUtils {
    */
   static testCoercion<T extends z.ZodType>(
     schema: T,
-    input: any,
+    input: unknown,
     expectedOutput: z.output<T>,
   ): void {
     const result = schema.safeParse(input);
@@ -96,7 +96,7 @@ export class SchemaTestUtils {
   static testBoundaryValues<T extends z.ZodType>(
     schema: T,
     tests: Array<{
-      value: any;
+      value: unknown;
       shouldPass: boolean;
       description: string;
     }>,
@@ -123,7 +123,7 @@ export class SchemaTestUtils {
    */
   static testOptionalFields<T extends z.ZodType>(
     schema: T,
-    baseValidData: Record<string, any>,
+    baseValidData: Record<string, unknown>,
     optionalFields: string[],
   ): void {
     // Test with all optional fields present
@@ -142,7 +142,7 @@ export class SchemaTestUtils {
    */
   static testRequiredFields<T extends z.ZodType>(
     schema: T,
-    baseValidData: Record<string, any>,
+    baseValidData: Record<string, unknown>,
     requiredFields: string[],
   ): void {
     // Test with all required fields present
@@ -159,7 +159,7 @@ export class SchemaTestUtils {
   /**
    * Test enum schema values
    */
-  static testEnumValues<T extends z.ZodEnum<any>>(
+  static testEnumValues<T extends z.ZodEnum<readonly [string, ...string[]]>>(
     schema: T,
     validValues: string[],
     invalidValues: string[],
@@ -176,10 +176,10 @@ export class SchemaTestUtils {
   /**
    * Test array schema with various inputs
    */
-  static testArraySchema<T extends z.ZodArray<any>>(
+  static testArraySchema<T extends z.ZodArray<z.ZodTypeAny>>(
     schema: T,
-    validItems: any[],
-    invalidItems: any[],
+    validItems: unknown[],
+    invalidItems: unknown[],
   ): void {
     // Test empty array
     this.testValidData(schema, []);
@@ -291,7 +291,7 @@ export class TestDataGenerators {
     ],
   };
 
-  static generateObject<T extends Record<string, any>>(
+  static generateObject<T extends Record<string, unknown>>(
     template: T,
     overrides: Partial<T> = {},
   ): T {
