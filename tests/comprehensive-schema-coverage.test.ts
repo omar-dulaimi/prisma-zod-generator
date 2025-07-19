@@ -3,7 +3,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { readdirSync, statSync } from 'fs';
-import { join, basename, dirname } from 'path';
+import { join, basename } from 'path';
 import { z } from 'zod';
 
 interface SchemaInfo {
