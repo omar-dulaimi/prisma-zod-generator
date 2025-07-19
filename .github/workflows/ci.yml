@@ -44,6 +44,9 @@ jobs:
       run: npm run test:coverage:comprehensive
       timeout-minutes: 10
       
+    - name: Generate MongoDB schemas
+      run: npx prisma generate --schema="prisma/schemas/mongodb/schema.prisma"
+      
     - name: Run MongoDB tests
       run: npm run test:coverage:mongodb
       timeout-minutes: 10
