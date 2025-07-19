@@ -65,16 +65,16 @@ function filterFieldRefTypes(inputObjectTypes: DMMF.InputType[]): void {
   // Filter out fieldRefTypes from input types following zod-prisma-types approach
   // This prevents generation of non-existent FieldRefInput schemas
   for (const inputType of inputObjectTypes) {
-    const fields = inputType.fields as any[];
+    const fields = inputType.fields as DMMF.SchemaArg[];
     for (const field of fields) {
       if (
         field.inputTypes.some(
-          (inputType: any) => inputType.location === 'fieldRefTypes',
+          (inputType) => inputType.location === 'fieldRefTypes',
         )
       ) {
         // Replace the entire inputTypes array with just the first input type
         // This removes the fieldRefTypes reference while preserving functionality
-        field.inputTypes = [field.inputTypes[0]];
+        (field as any).inputTypes = [field.inputTypes[0]];
       }
     }
   }

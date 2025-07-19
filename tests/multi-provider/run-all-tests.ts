@@ -7,7 +7,7 @@ import { MultiProviderTestRunner } from '../../prisma/utils/multi-provider-test-
 import { getAllProviders } from '../../prisma/utils/provider-config';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
-import { join } from 'path';
+// import { join } from 'path';
 
 interface TestOptions {
   providers?: string[];
@@ -155,7 +155,7 @@ class ComprehensiveTestRunner {
     try {
       execSync('npx prisma --version', { stdio: 'pipe' });
       console.log('✅ Prisma CLI is available');
-    } catch (error) {
+    } catch {
       console.error('❌ Prisma CLI not found');
       throw new Error('Prisma CLI is required');
     }
@@ -164,7 +164,7 @@ class ComprehensiveTestRunner {
     try {
       execSync('npx tsc --version', { stdio: 'pipe' });
       console.log('✅ TypeScript is available');
-    } catch (error) {
+    } catch {
       console.error('❌ TypeScript not found');
       throw new Error('TypeScript is required');
     }
@@ -173,7 +173,7 @@ class ComprehensiveTestRunner {
     try {
       execSync('npx vitest --version', { stdio: 'pipe' });
       console.log('✅ Vitest is available');
-    } catch (error) {
+    } catch {
       console.error('❌ Vitest not found');
       throw new Error('Vitest is required');
     }

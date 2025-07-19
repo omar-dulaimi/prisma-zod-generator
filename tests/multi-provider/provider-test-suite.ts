@@ -2,7 +2,7 @@
 // Extends the existing test framework for multi-provider testing
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { SchemaTestUtils } from '../schema-test-utils';
+// import { SchemaTestUtils } from '../schema-test-utils';
 import { MultiProviderTestRunner } from '../../prisma/utils/multi-provider-test-runner';
 import { getProviderConfig, ProviderConfig } from '../../prisma/utils/provider-config';
 import { execSync } from 'child_process';
@@ -311,7 +311,7 @@ export class ProviderTestSuite {
   }
 
   // Test implementation methods
-  private async testNativeType(nativeType: string): Promise<boolean> {
+  private async testNativeType(_nativeType: string): Promise<boolean> {
     // Implementation varies by provider and type
     return true; // Placeholder
   }
@@ -336,12 +336,12 @@ export class ProviderTestSuite {
     return true; // Placeholder
   }
 
-  private async testOperation(operation: string): Promise<boolean> {
+  private async testOperation(_operation: string): Promise<boolean> {
     // Test operation schema generation
     return true; // Placeholder
   }
 
-  private async testMongoDBRawOperation(operation: string): Promise<boolean> {
+  private async testMongoDBRawOperation(_operation: string): Promise<boolean> {
     // Test MongoDB raw operation schemas
     return true; // Placeholder
   }
@@ -371,12 +371,12 @@ export class ProviderTestSuite {
     return true; // Placeholder
   }
 
-  private async testSpecificFeature(feature: string): Promise<boolean> {
+  private async testSpecificFeature(_feature: string): Promise<boolean> {
     // Test provider-specific feature
     return true; // Placeholder
   }
 
-  private async testLimitation(limitation: string): Promise<boolean> {
+  private async testLimitation(_limitation: string): Promise<boolean> {
     // Test that limitations are handled gracefully
     return true; // Placeholder
   }

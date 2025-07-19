@@ -120,7 +120,7 @@ export function hideInputObjectTypesAndRelatedFields(
         --k;
         const field = inputType?.fields?.[k];
         if (field && hiddenFields.includes(field.name)) {
-          (inputObjectTypes[j] as any).fields.splice(k, 1);
+          (inputObjectTypes[j] as DMMF.InputType & { fields: DMMF.SchemaArg[] }).fields.splice(k, 1);
         }
       }
     }
