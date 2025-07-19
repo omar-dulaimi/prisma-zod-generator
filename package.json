@@ -72,7 +72,7 @@
     "zod": "^4.0.5"
   },
   "devDependencies": {
-    "@types/node": "^24.0.14",
+    "@types/node": "^24.0.15",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
     "@vitest/coverage-v8": "^2.1.8",
