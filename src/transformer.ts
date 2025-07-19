@@ -462,7 +462,7 @@ export default class Transformer {
         groupBy,
       } = modelOperation;
 
-      const model = findModelByName(this.models, modelName) as DMMF.Model;
+      const model = findModelByName(this.models, modelName) as PrismaDMMF.Model;
 
       const {
         selectImport,
