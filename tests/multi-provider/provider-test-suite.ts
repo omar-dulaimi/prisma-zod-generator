@@ -11,7 +11,7 @@ import { join } from 'path';
 export class ProviderTestSuite {
   private testRunner: MultiProviderTestRunner;
   private config: ProviderConfig;
-  private generatedSchemas: Record<string, any> = {};
+  private generatedSchemas: Record<string, unknown> = {};
 
   constructor(private providerName: string) {
     this.testRunner = new MultiProviderTestRunner();
