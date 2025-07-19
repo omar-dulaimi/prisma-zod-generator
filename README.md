@@ -7,29 +7,26 @@
 
 Automatically generate [Zod](https://github.com/colinhacks/zod) schemas from your [Prisma](https://github.com/prisma/prisma) Schema, and use them to validate your API endpoints or any other use you have. Updates every time `npx prisma generate` runs.
 
-<p align="center">
-  <a href="https://www.buymeacoffee.com/omardulaimi">
-    <img src="https://cdn.buymeacoffee.com/buttons/default-black.png" alt="Buy Me A Coffee" height="41" width="174">
-  </a>
-</p>
-
 ## Table of Contents
 
-- [Supported Prisma Versions](#supported-prisma-versions)
+- [Supported Versions](#supported-versions)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Customizations](#customizations)
 - [Additional Options](#additional-options)
 
-# Supported Prisma Versions
+# Supported Versions
 
-### Prisma 4
+### Prisma 6
+- ✅ **Current**: Full support for Prisma 6.12.0+
+- All database providers: PostgreSQL, MySQL, MongoDB, SQLite, SQL Server, CockroachDB
 
-- 0.3.0 and higher
+### Zod 4
+- ✅ **Current**: Zod 4.0.5+ (Breaking changes from v3)
 
-### Prisma 2/3
-
-- 0.2.0 and lower
+### Legacy Support
+- Prisma 4: Use v0.3.0+
+- Prisma 2/3: Use v0.2.0 and lower
 
 # Installation
 
