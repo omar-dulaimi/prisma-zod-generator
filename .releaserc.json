@@ -1,6 +1,10 @@
 {
   "branches": [
-    "master"
+    "master",
+    {
+      "name": "upgrade/prisma-and-dependencies",
+      "prerelease": "beta"
+    }
   ],
   "plugins": [
     [
