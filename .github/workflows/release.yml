@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
     inputs:
       release_type:
@@ -89,7 +89,7 @@ jobs:
         
     - name: Push changes
       run: |
-        git push origin main
+        git push origin master
         git push origin "v${{ steps.bump.outputs.new_version }}"
         
     - name: Create GitHub Release
@@ -102,7 +102,7 @@ jobs:
         body: |
           ## Changes
           
-          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for detailed changes.
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md) for detailed changes.
           
           **Full Changelog**: https://github.com/${{ github.repository }}/compare/v${{ steps.bump.outputs.old_version }}...v${{ steps.bump.outputs.new_version }}
         draft: false

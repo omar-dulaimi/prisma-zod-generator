@@ -5,7 +5,7 @@ This repository uses GitHub Actions for automated testing, building, and releasi
 ## Core Workflows
 
 ### 1. CI (`ci.yml`)
-**Trigger**: Push/PR to main/develop branches
+**Trigger**: Push/PR to master branch
 
 **Jobs**:
 - **test**: Runs on Node.js 18.x, 20.x, 22.x
@@ -22,7 +22,7 @@ This repository uses GitHub Actions for automated testing, building, and releasi
   - Verifies package can be created successfully
 
 ### 2. Release (`release.yml`)
-**Trigger**: Push to main branch, manual dispatch
+**Trigger**: Push to master branch, manual dispatch
 
 **Features**:
 - Automatic version bumping based on commit messages
@@ -37,7 +37,7 @@ This repository uses GitHub Actions for automated testing, building, and releasi
 - Everything else → patch version
 
 ### 3. Semantic Release (`semantic-release.yml`)
-**Trigger**: Push to main/develop branches
+**Trigger**: Push to master branch
 
 **Features**:
 - Uses conventional commits for automated releases
@@ -46,7 +46,7 @@ This repository uses GitHub Actions for automated testing, building, and releasi
 - Creates GitHub releases with release notes
 
 ### 4. Extended Test Matrix (`test-matrix.yml`)
-**Trigger**: Nightly schedule (2 AM UTC), manual dispatch, pushes to main
+**Trigger**: Nightly schedule (2 AM UTC), manual dispatch, pushes to master
 
 **Features**:
 - Cross-platform testing (Ubuntu, Windows, macOS)
@@ -74,7 +74,7 @@ This repository uses GitHub Actions for automated testing, building, and releasi
 ### Semantic Release (`.releaserc.json`)
 - Conventional commits configuration
 - Automatic changelog generation
-- Branch-based release strategy (main = stable, develop = beta)
+- Branch-based release strategy (master = stable releases)
 - NPM publishing from `package/` directory
 
 ## Required Secrets
@@ -103,7 +103,7 @@ To use these workflows, configure the following secrets in your repository:
    - Copy the token and add as `CODECOV_TOKEN`
 
 3. **Branch Protection**:
-   - Enable branch protection for `main`
+   - Enable branch protection for `master`
    - Require status checks: "test", "package-test"
    - Require up-to-date branches
    - Require review from code owners

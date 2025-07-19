@@ -2,7 +2,7 @@ name: Semantic Release
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
