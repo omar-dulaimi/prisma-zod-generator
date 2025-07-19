@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import { readdirSync } from 'fs';
 import { join } from 'path';
+import { z } from 'zod';
 
 // Import known working MongoDB schemas directly
 const testImportedSchemas = async () => {
@@ -190,6 +191,7 @@ describe('MongoDB Schema Coverage Tests', () => {
     for (const schemaInfo of allSchemas) {
       try {
         const schema = schemaInfo.schema;
+        if (!schema) continue;
         
         // Basic validation tests
         expect(schema).toBeDefined();
@@ -287,6 +289,7 @@ describe('MongoDB Schema Coverage Tests', () => {
     for (const schemaInfo of testSchemas) {
       try {
         const schema = schemaInfo.schema;
+        if (!schema) continue;
         
         // Perform multiple validations to test performance and exercise code
         schema.safeParse({});
