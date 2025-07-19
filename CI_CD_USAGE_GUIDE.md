@@ -21,15 +21,35 @@ CODECOV_TOKEN=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 #### Get NPM Token:
+
+**Option 1: Via NPM Website (Recommended)**
+1. Go to [npmjs.com](https://npmjs.com) and sign in
+2. Click your profile avatar → **Access Tokens**
+3. Click **"Generate New Token"**
+4. Choose **"Automation"** (for CI/CD)
+5. Copy the token and add it as `NPM_TOKEN` secret in GitHub
+
+**Option 2: Via Command Line**
 ```bash
-# Login to NPM
+# Login to NPM (will prompt for username/password)
 npm login
 
-# Create an automation token
+# Create an automation token (will prompt for password again)
 npm token create --type=automation
 
 # Copy the token and add it as NPM_TOKEN secret
 ```
+
+**Important Notes:**
+- If you have 2FA enabled, you'll need to enter your 2FA code when prompted
+- Choose **"Automation"** token type (not "Publish" or "Read-only") for CI/CD
+- The token will start with `npm_` and should be kept secure
+- You can revoke/regenerate tokens anytime from the NPM website
+
+**Token Permissions:**
+- ✅ **Automation**: Can publish packages (recommended for CI/CD)
+- ❌ **Publish**: Limited publish permissions  
+- ❌ **Read-only**: Cannot publish packages
 
 #### Get Codecov Token:
 1. Visit [codecov.io](https://codecov.io)
@@ -217,8 +237,12 @@ npm run check-uncommitted
 - **Solution:** Make sure you have `feat:`, `fix:`, or breaking change commits
 
 #### 2. **NPM publish fails**
-- **Cause:** Invalid or expired NPM_TOKEN
-- **Solution:** Regenerate NPM token and update secret
+- **Cause:** Invalid, expired, or insufficient permissions on NPM_TOKEN
+- **Solutions:** 
+  - Regenerate NPM token with "Automation" type
+  - Verify you have publish permissions for the package
+  - Check if package name is available/not taken
+  - Ensure you're logged into the correct NPM account
 
 #### 3. **Tests fail in CI but pass locally**
 - **Cause:** Environment differences
@@ -227,7 +251,22 @@ npm run check-uncommitted
   - Verify all dependencies are in package.json
   - Check for hardcoded paths
 
-#### 4. **Dependabot PRs fail**
+#### 4. **NPM authentication issues**
+- **Cause:** 2FA, expired session, or login problems
+- **Solutions:**
+  ```bash
+  # Check if you're logged in
+  npm whoami
+  
+  # Logout and login again
+  npm logout
+  npm login
+  
+  # If using 2FA, make sure to enter the code correctly
+  # Use website method if CLI continues to fail
+  ```
+
+#### 5. **Dependabot PRs fail**
 - **Cause:** Breaking changes in dependencies
 - **Solution:** Review dependency changelog and update code
 
