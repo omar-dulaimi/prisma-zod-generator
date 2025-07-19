@@ -52,7 +52,13 @@
     "test:legacy:multi-provider:generate": "tsx tests/multi-provider/run-all-tests.ts --generate-only",
     
     "lint": "eslint src/ tests/ --fix",
-    "format": "prettier --write src/ tests/"
+    "format": "prettier --write src/ tests/",
+    
+    "prerelease": "npm run gen-example && npm run test:type-check && npm run lint",
+    "release": "semantic-release",
+    "release:dry": "semantic-release --dry-run",
+    "ci:test": "npm run test:ci",
+    "ci:build": "npm run gen-example"
   },
   "author": {
     "name": "Omar Dulaimi",
@@ -87,7 +93,15 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "semantic-release": "^22.0.12",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^9.2.6",
+    "@semantic-release/npm": "^11.0.2",
+    "@semantic-release/commit-analyzer": "^11.1.0",
+    "@semantic-release/release-notes-generator": "^12.1.0",
+    "conventional-changelog-conventionalcommits": "^7.0.2"
   },
   "bugs": {
     "url": "https://github.com/omar-dulaimi/prisma-zod-generator/issues"

@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build project
+      run: npm run gen-example
+      
+    - name: Run type checking
+      run: npm run test:type-check
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run basic tests
+      run: npm run test:basic
+      
+    - name: Run comprehensive tests
+      run: npm run test:coverage:comprehensive
+      timeout-minutes: 10
+      
+    - name: Run MongoDB tests
+      run: npm run test:coverage:mongodb
+      timeout-minutes: 10
+      
+    - name: Run multi-provider tests (sequential)
+      run: npm run test:multi:sequential
+      timeout-minutes: 15
+      
+    - name: Upload coverage reports
+      if: matrix.node-version == '20.x'
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/coverage-final.json
+        fail_ci_if_error: false
+        
+  package-test:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build and package
+      run: |
+        npm run gen-example
+        ./package.sh
+        
+    - name: Test package integrity
+      run: |
+        cd package
+        npm pack --dry-run
+        
+    - name: Upload package artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: package-build
+        path: package/
+        retention-days: 7
