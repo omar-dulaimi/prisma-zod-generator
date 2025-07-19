@@ -90,7 +90,7 @@ describe('Multi-Provider Integration Tests', () => {
 
       for (const provider of providers) {
         const startTime = Date.now();
-        const result = await testRunner.runProviderTests(provider);
+        await testRunner.runProviderTests(provider);
         const duration = Date.now() - startTime;
         
         performanceResults[provider] = duration;

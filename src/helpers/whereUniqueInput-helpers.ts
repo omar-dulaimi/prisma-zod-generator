@@ -8,7 +8,7 @@ export function changeOptionalToRequiredFields(
       item.name.includes('WhereUniqueInput') &&
       (item.constraints.fields?.length ?? 0) > 0
     ) {
-      (item as any).fields = item.fields.map((subItem) => {
+      (item as DMMF.InputType & { fields: DMMF.SchemaArg[] }).fields = item.fields.map((subItem) => {
         if (item.constraints.fields?.includes(subItem.name)) {
           return { ...subItem, isRequired: true };
         }

@@ -81,7 +81,7 @@ const testSampleSchemas = async () => {
             schema: schemaExport 
           });
         }
-      } catch (error) {
+      } catch {
         results.push({ 
           name: file.replace('.schema.ts', ''), 
           success: false 
@@ -107,7 +107,7 @@ const testSampleSchemas = async () => {
             schema: schemaExport 
           });
         }
-      } catch (error) {
+      } catch {
         results.push({ 
           name: `enum_${file.replace('.schema.ts', '')}`, 
           success: false 
@@ -133,7 +133,7 @@ const testSampleSchemas = async () => {
             schema: schemaExport 
           });
         }
-      } catch (error) {
+      } catch {
         results.push({ 
           name: `object_${file.replace('.schema.ts', '')}`, 
           success: false 

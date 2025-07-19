@@ -247,7 +247,7 @@ export default class Transformer {
       this.checkIsModelQueryType(inputType.type as string);
 
     const objectSchemaLine = isModelQueryType
-      ? this.resolveModelQuerySchemaName(modelName!, queryName!)
+      ? this.resolveModelQuerySchemaName(modelName as string, queryName as string)
       : `${inputType.type}ObjectSchema`;
     const enumSchemaLine = `${inputType.type}Schema`;
 
@@ -327,7 +327,7 @@ export default class Transformer {
        * relative path from {outputPath}/schemas/objects to {prismaClientCustomPath}
        */
       const fromPath = path.join(Transformer.outputPath, 'schemas', 'objects');
-      const toPath = Transformer.prismaClientOutputPath!;
+      const toPath = Transformer.prismaClientOutputPath as string;
       const relativePathFromOutputToPrismaClient = path
         .relative(fromPath, toPath)
         .split(path.sep)
@@ -371,8 +371,8 @@ export default class Transformer {
           this.checkIsModelQueryType(name);
         if (isModelQueryType) {
           return `import { ${this.resolveModelQuerySchemaName(
-            modelName!,
-            queryName!,
+            modelName as string,
+            queryName as string,
           )} } from '../${queryName}${modelName}.schema'`;
         } else if (Transformer.enumNames.includes(name)) {
           return `import { ${name}Schema } from '../enums/${name}.schema'`;

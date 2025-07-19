@@ -30,10 +30,16 @@ class ComprehensiveSchemaTest {
         return statSync(fullPath).isDirectory();
       });
 
+      // Check for root-level generated schemas (prisma/generated/schemas)
+      const rootGeneratedPath = join('prisma', 'generated', 'schemas');
+      if (this.pathExists(rootGeneratedPath)) {
+        await this.discoverProviderSchemas(rootGeneratedPath, 'default', schemas);
+      }
+
       for (const provider of providers) {
         const generatedPath = join(this.basePath, provider, 'generated', 'schemas');
         
-        if (statSync(generatedPath).isDirectory()) {
+        if (this.pathExists(generatedPath)) {
           await this.discoverProviderSchemas(generatedPath, provider, schemas);
         }
       }
@@ -132,7 +138,7 @@ class ComprehensiveSchemaTest {
       }
       
       return false;
-    } catch (error) {
+    } catch {
       // Skip problematic schemas silently to maintain test performance
       return false;
     }
@@ -172,7 +178,7 @@ class ComprehensiveSchemaTest {
   /**
    * Test enum schemas
    */
-  private testEnumSchema(schema: z.ZodTypeAny, schemaInfo: SchemaInfo): void {
+  private testEnumSchema(schema: z.ZodTypeAny, _schemaInfo: SchemaInfo): void {
     // Test empty enum parsing (should fail gracefully)
     const result = schema.safeParse(undefined);
     expect(result.success || !result.success).toBe(true); // Either should be valid

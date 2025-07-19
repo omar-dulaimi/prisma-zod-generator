@@ -62,7 +62,7 @@ export class SchemaTestUtils {
   /**
    * Test schema type inference matches expected TypeScript type
    */
-  static testTypeInference<T extends z.ZodType>(schema: T): void {
+  static testTypeInference<T extends z.ZodType>(_schema: T): void {
     type Input = z.input<T>;
     type Output = z.output<T>;
 
