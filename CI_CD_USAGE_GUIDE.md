@@ -10,14 +10,36 @@ First, you need to configure the required secrets in your GitHub repository:
 
 #### Required Secrets:
 1. **Go to your GitHub repository** → Settings → Secrets and variables → Actions
-2. **Add these secrets:**
+2. **Click on "Repository secrets" tab** (not Environment secrets)
+3. **Click "New repository secret"**
+4. **Add these secrets:**
 
 ```bash
-# NPM Token (Required for publishing)
-NPM_TOKEN=npm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Secret Name: NPM_TOKEN
+# Secret Value: npm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# (Your NPM automation token)
 
-# Codecov Token (Optional, for coverage reporting)
-CODECOV_TOKEN=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# Secret Name: CODECOV_TOKEN  
+# Secret Value: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# (Optional, for coverage reporting)
+```
+
+**Important:** 
+- ✅ Use **"Repository secrets"** (available to all workflows)
+- ❌ Don't use **"Environment secrets"** (requires environment setup)
+- The secrets will be available as `${{ secrets.NPM_TOKEN }}` in workflows
+
+**Step-by-step:**
+```
+GitHub Repository 
+→ Settings 
+→ Secrets and variables 
+→ Actions 
+→ Repository secrets tab
+→ New repository secret
+→ Name: NPM_TOKEN
+→ Value: npm_your_token_here
+→ Add secret
 ```
 
 #### Get NPM Token:
@@ -266,7 +288,15 @@ npm run check-uncommitted
   # Use website method if CLI continues to fail
   ```
 
-#### 5. **Dependabot PRs fail**
+#### 5. **Secrets not found in workflows**
+- **Cause:** Added secrets to wrong location (Environment vs Repository)
+- **Solutions:**
+  - Verify secrets are in **"Repository secrets"** tab
+  - Delete any secrets from **"Environment secrets"** 
+  - Re-add secrets to **"Repository secrets"**
+  - Check secret names match exactly (case-sensitive)
+
+#### 6. **Dependabot PRs fail**
 - **Cause:** Breaking changes in dependencies
 - **Solution:** Review dependency changelog and update code
 
