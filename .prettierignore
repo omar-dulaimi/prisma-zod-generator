@@ -1,2 +1,10 @@
 lib/**/*
 package/**/*
+node_modules/
+prisma/generated/
+tests/node_modules/
+coverage/
+*.md
+*.json
+*.js.map
+*.d.ts

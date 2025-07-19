@@ -124,7 +124,7 @@ export default class Transformer {
   generateObjectSchemaField(
     field: PrismaDMMF.SchemaArg,
   ): [string, PrismaDMMF.SchemaArg, boolean][] {
-    let lines = field.inputTypes;
+    const lines = field.inputTypes;
 
     if (lines.length === 0) {
       return [];
@@ -159,7 +159,11 @@ export default class Transformer {
         );
       } else if (inputType.type === 'Bytes') {
         result.push(
-          this.wrapWithZodValidators('z.instanceof(Buffer)', field, inputType),
+          this.wrapWithZodValidators(
+            'z.instanceof(Uint8Array)',
+            field,
+            inputType,
+          ),
         );
       } else {
         const isEnum = inputType.location === 'enumTypes';
@@ -212,7 +216,7 @@ export default class Transformer {
   wrapWithZodValidators(
     mainValidator: string,
     field: PrismaDMMF.SchemaArg,
-    inputType: PrismaDMMF.SchemaArgInputType,
+    inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
   ) {
     let line: string = '';
     line = mainValidator;
@@ -234,7 +238,7 @@ export default class Transformer {
 
   generatePrismaStringLine(
     field: PrismaDMMF.SchemaArg,
-    inputType: PrismaDMMF.SchemaArgInputType,
+    inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
     inputsLength: number,
   ) {
     const isEnum = inputType.location === 'enumTypes';
@@ -242,17 +246,17 @@ export default class Transformer {
     const { isModelQueryType, modelName, queryName } =
       this.checkIsModelQueryType(inputType.type as string);
 
-    let objectSchemaLine = isModelQueryType
-      ? this.resolveModelQuerySchemaName(modelName!, queryName!)
+    const objectSchemaLine = isModelQueryType
+      ? this.resolveModelQuerySchemaName(modelName as string, queryName as string)
       : `${inputType.type}ObjectSchema`;
-    let enumSchemaLine = `${inputType.type}Schema`;
+    const enumSchemaLine = `${inputType.type}Schema`;
 
     const schema =
       inputType.type === this.name
         ? objectSchemaLine
         : isEnum
-        ? enumSchemaLine
-        : objectSchemaLine;
+          ? enumSchemaLine
+          : objectSchemaLine;
 
     const arr = inputType.isList ? '.array()' : '';
 
@@ -323,7 +327,7 @@ export default class Transformer {
        * relative path from {outputPath}/schemas/objects to {prismaClientCustomPath}
        */
       const fromPath = path.join(Transformer.outputPath, 'schemas', 'objects');
-      const toPath = Transformer.prismaClientOutputPath!;
+      const toPath = Transformer.prismaClientOutputPath as string;
       const relativePathFromOutputToPrismaClient = path
         .relative(fromPath, toPath)
         .split(path.sep)
@@ -367,8 +371,8 @@ export default class Transformer {
           this.checkIsModelQueryType(name);
         if (isModelQueryType) {
           return `import { ${this.resolveModelQuerySchemaName(
-            modelName!,
-            queryName!,
+            modelName as string,
+            queryName as string,
           )} } from '../${queryName}${modelName}.schema'`;
         } else if (Transformer.enumNames.includes(name)) {
           return `import { ${name}Schema } from '../enums/${name}.schema'`;
@@ -400,7 +404,7 @@ export default class Transformer {
     const modelNameCapitalized =
       modelName.charAt(0).toUpperCase() + modelName.slice(1);
     const queryNameCapitalized =
-      queryName.charAt(0).toUpperCase() + queryName!.slice(1);
+      queryName.charAt(0).toUpperCase() + (queryName as string).slice(1);
     return `${modelNameCapitalized}${queryNameCapitalized}Schema`;
   }
 
@@ -443,22 +447,22 @@ export default class Transformer {
         findUnique,
         findFirst,
         findMany,
-        // @ts-ignore
+        // @ts-expect-error - Legacy API compatibility
         createOne,
         createMany,
-        // @ts-ignore
+        // @ts-expect-error - Legacy API compatibility
         deleteOne,
-        // @ts-ignore
+        // @ts-expect-error - Legacy API compatibility
         updateOne,
         deleteMany,
         updateMany,
-        // @ts-ignore
+        // @ts-expect-error - Legacy API compatibility
         upsertOne,
         aggregate,
         groupBy,
       } = modelOperation;
 
-      const model = findModelByName(this.models, modelName)!;
+      const model = findModelByName(this.models, modelName) as PrismaDMMF.Model;
 
       const {
         selectImport,

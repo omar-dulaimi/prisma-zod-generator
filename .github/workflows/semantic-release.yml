@@ -1,0 +1,55 @@
+name: Semantic Release
+
+on:
+  push:
+    branches: [ master, upgrade/prisma-and-dependencies ]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install semantic-release dependencies
+      run: |
+        npm install --save-dev \
+          semantic-release \
+          @semantic-release/changelog \
+          @semantic-release/git \
+          @semantic-release/github \
+          @semantic-release/npm \
+          @semantic-release/commit-analyzer \
+          @semantic-release/release-notes-generator \
+          conventional-changelog-conventionalcommits
+        
+    - name: Build and test
+      run: |
+        npm run gen-example
+        npm run test:type-check
+        npm run lint
+        npm run test:basic
+        
+    - name: Build package
+      run: ./package.sh
+      
+    - name: Semantic Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: npx semantic-release

@@ -25,7 +25,7 @@ function collectHiddenModels(models: DMMF.Model[], hiddenModels: string[]) {
         const attributeName = attribute
           ?.match(attributeNameRegex)?.[0]
           ?.slice(1, -1);
-        if (attributeName !== 'model') model;
+        if (attributeName !== 'model') return model;
         const rawAttributeArgs = attribute
           ?.match(attributeArgsRegex)?.[0]
           ?.slice(1, -1);
@@ -120,7 +120,7 @@ export function hideInputObjectTypesAndRelatedFields(
         --k;
         const field = inputType?.fields?.[k];
         if (field && hiddenFields.includes(field.name)) {
-          inputObjectTypes[j].fields.splice(k, 1);
+          (inputObjectTypes[j] as DMMF.InputType & { fields: DMMF.SchemaArg[] }).fields.splice(k, 1);
         }
       }
     }

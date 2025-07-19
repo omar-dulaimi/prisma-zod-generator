@@ -1,0 +1,551 @@
+// MySQL Comprehensive Test Schema
+// Tests all MySQL-specific features and native types
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider          = "node ./lib/generator.js"
+  output            = "./generated"
+  isGenerateSelect  = true
+  isGenerateInclude = true
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("MYSQL_URL")
+}
+
+// =============================================================================
+// COMPREHENSIVE MYSQL TYPE TESTING
+// =============================================================================
+
+model MySQLAllTypes {
+  id                Int                 @id @default(autoincrement())
+  
+  // Integer types (signed)
+  tinyintField      Int                 @db.TinyInt
+  smallintField     Int                 @db.SmallInt
+  mediumintField    Int                 @db.MediumInt
+  intField          Int                 @db.Int
+  bigintField       BigInt              @db.BigInt
+  
+  // Integer types (unsigned)
+  uTinyintField     Int                 @db.UnsignedTinyInt
+  uSmallintField    Int                 @db.UnsignedSmallInt
+  uMediumintField   Int                 @db.UnsignedMediumInt
+  uIntField         Int                 @db.UnsignedInt
+  uBigintField      BigInt              @db.UnsignedBigInt
+  
+  // Floating point types
+  floatField        Float               @db.Float
+  doubleField       Float               @db.Double
+  decimalField      Decimal             @db.Decimal(10, 2)
+  
+  // Character types
+  charField         String              @db.Char(10)
+  varcharField      String              @db.VarChar(255)
+  tinytextField     String              @db.TinyText
+  textField         String              @db.Text
+  mediumtextField   String              @db.MediumText
+  longtextField     String              @db.LongText
+  
+  // Binary types
+  binaryField       Bytes               @db.Binary(16)
+  varbinaryField    Bytes               @db.VarBinary(255)
+  tinyblobField     Bytes               @db.TinyBlob
+  blobField         Bytes               @db.Blob
+  mediumblobField   Bytes               @db.MediumBlob
+  longblobField     Bytes               @db.LongBlob
+  
+  // Date and time types
+  dateField         DateTime            @db.Date
+  timeField         DateTime            @db.Time(3)
+  datetimeField     DateTime            @db.DateTime(3)
+  timestampField    DateTime            @db.Timestamp(3)
+  yearField         Int                 @db.Year
+  
+  // JSON type
+  jsonField         Json?               @db.Json
+  
+  // Bit type (MySQL only supports Bit(1) for Boolean, use Bytes for larger bit fields)
+  bitField          Boolean             @db.Bit(1)
+  bitBytesField     Bytes?              @db.VarBinary(1)
+  
+  // Spatial types (using TEXT as MySQL spatial types are not supported by Prisma)
+  geometryField     String?             @db.Text
+  pointField        String?             @db.Text
+  linestringField   String?             @db.Text
+  polygonField      String?             @db.Text
+  multipointField   String?             @db.Text
+  multilinestringField String?          @db.Text
+  multipolygonField String?             @db.Text
+  geometrycollectionField String?       @db.Text
+  
+  // Optional fields for testing null handling
+  optionalText      String?             @db.Text
+  optionalInt       Int?                @db.Int
+  optionalJson      Json?               @db.Json
+  optionalDecimal   Decimal?            @db.Decimal(8, 2)
+  
+  // Auto-increment and timestamps
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mysql_all_types")
+  @@index([varcharField])
+  @@index([intField])
+  @@index([dateField])
+  @@fulltext([textField])
+  @@unique([varcharField, intField])
+}
+
+// =============================================================================
+// MYSQL ENUM TESTING
+// =============================================================================
+
+enum MySQLUserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  SUSPENDED
+  ARCHIVED
+}
+
+enum MySQLUserRole {
+  ADMIN
+  MODERATOR
+  USER
+  GUEST
+}
+
+enum MySQLPostStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+  DELETED
+}
+
+enum MySQLPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+enum MySQLContentType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  LINK
+}
+
+// =============================================================================
+// COMPREHENSIVE RELATIONSHIP TESTING
+// =============================================================================
+
+model MySQLUser {
+  id                Int                         @id @default(autoincrement()) @db.UnsignedInt
+  email             String                      @unique @db.VarChar(255)
+  username          String                      @unique @db.VarChar(100)
+  firstName         String                      @db.VarChar(100)
+  lastName          String                      @db.VarChar(100)
+  passwordHash      String                      @db.VarChar(255)
+  status            MySQLUserStatus             @default(ACTIVE)
+  role              MySQLUserRole               @default(USER)
+  lastLoginAt       DateTime?                   @db.DateTime
+  emailVerifiedAt   DateTime?                   @db.DateTime
+  phoneNumber       String?                     @db.VarChar(20)
+  avatarUrl         String?                     @db.Text
+  bio               String?                     @db.Text
+  website           String?                     @db.VarChar(255)
+  location          String?                     @db.VarChar(255)
+  birthDate         DateTime?                   @db.Date
+  metadata          Json?                       @db.Json
+  preferences       Json?                       @db.Json
+  
+  // One-to-one relationship
+  profile           MySQLProfile?
+  
+  // One-to-many relationships
+  posts             MySQLPost[]
+  comments          MySQLComment[]
+  likes             MySQLLike[]
+  bookmarks         MySQLBookmark[]
+  
+  // Many-to-many relationships
+  followedUsers     MySQLFollow[]               @relation("UserFollows")
+  followers         MySQLFollow[]               @relation("UserFollowers")
+  joinedGroups      MySQLGroupMember[]
+  
+  // Self-referential relationships
+  managerId         Int?                        @db.UnsignedInt
+  manager           MySQLUser?                  @relation("UserManagement", fields: [managerId], references: [id])
+  subordinates      MySQLUser[]                 @relation("UserManagement")
+  
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  
+  @@map("mysql_users")
+  @@index([email])
+  @@index([username])
+  @@index([status])
+  @@index([role])
+  @@index([lastLoginAt])
+}
+
+model MySQLProfile {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  userId            Int                 @unique @db.UnsignedInt
+  displayName       String?             @db.VarChar(255)
+  company           String?             @db.VarChar(255)
+  jobTitle          String?             @db.VarChar(255)
+  industry          String?             @db.VarChar(100)
+  education         String?             @db.Text
+  skills            Json?               @db.Json
+  languages         Json?               @db.Json
+  timezone          String?             @db.VarChar(50)
+  isPublic          Boolean             @default(true)
+  showEmail         Boolean             @default(false)
+  showPhone         Boolean             @default(false)
+  
+  user              MySQLUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mysql_profiles")
+  @@index([userId])
+}
+
+model MySQLPost {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  title             String              @db.VarChar(255)
+  slug              String              @unique @db.VarChar(255)
+  content           String?             @db.LongText
+  excerpt           String?             @db.Text
+  featuredImage     String?             @db.Text
+  status            MySQLPostStatus     @default(DRAFT)
+  priority          MySQLPriority       @default(MEDIUM)
+  contentType       MySQLContentType    @default(TEXT)
+  publishedAt       DateTime?           @db.DateTime
+  scheduledAt       DateTime?           @db.DateTime
+  seoTitle          String?             @db.VarChar(255)
+  seoDescription    String?             @db.Text
+  customFields      Json?               @db.Json
+  viewCount         Int                 @default(0) @db.UnsignedInt
+  likeCount         Int                 @default(0) @db.UnsignedInt
+  commentCount      Int                 @default(0) @db.UnsignedInt
+  shareCount        Int                 @default(0) @db.UnsignedInt
+  
+  authorId          Int                 @db.UnsignedInt
+  author            MySQLUser           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  // One-to-many relationships
+  comments          MySQLComment[]
+  likes             MySQLLike[]
+  bookmarks         MySQLBookmark[]
+  
+  // Many-to-many relationships
+  tags              MySQLPostTag[]
+  categories        MySQLPostCategory[]
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mysql_posts")
+  @@index([authorId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([slug])
+  @@index([contentType])
+  @@fulltext([title, content])
+}
+
+model MySQLComment {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  content           String              @db.Text
+  isEdited          Boolean             @default(false)
+  editedAt          DateTime?           @db.DateTime
+  isApproved        Boolean             @default(true)
+  approvedAt        DateTime?           @db.DateTime
+  
+  authorId          Int                 @db.UnsignedInt
+  author            MySQLUser           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  postId            Int                 @db.UnsignedInt
+  post              MySQLPost           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  // Self-referential for nested comments
+  parentId          Int?                @db.UnsignedInt
+  parent            MySQLComment?       @relation("CommentReplies", fields: [parentId], references: [id])
+  replies           MySQLComment[]      @relation("CommentReplies")
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mysql_comments")
+  @@index([authorId])
+  @@index([postId])
+  @@index([parentId])
+  @@index([isApproved])
+}
+
+model MySQLLike {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  
+  userId            Int                 @db.UnsignedInt
+  user              MySQLUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  postId            Int                 @db.UnsignedInt
+  post              MySQLPost           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime            @default(now())
+  
+  @@map("mysql_likes")
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
+
+model MySQLBookmark {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  
+  userId            Int                 @db.UnsignedInt
+  user              MySQLUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  postId            Int                 @db.UnsignedInt
+  post              MySQLPost           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime            @default(now())
+  
+  @@map("mysql_bookmarks")
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
+
+model MySQLTag {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  name              String              @unique @db.VarChar(100)
+  slug              String              @unique @db.VarChar(100)
+  description       String?             @db.Text
+  color             String?             @db.VarChar(7)
+  isActive          Boolean             @default(true)
+  
+  posts             MySQLPostTag[]
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mysql_tags")
+  @@index([name])
+  @@index([slug])
+}
+
+model MySQLPostTag {
+  postId            Int                 @db.UnsignedInt
+  post              MySQLPost           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  tagId             Int                 @db.UnsignedInt
+  tag               MySQLTag            @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime            @default(now())
+  
+  @@id([postId, tagId])
+  @@map("mysql_post_tags")
+}
+
+model MySQLCategory {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  name              String              @unique @db.VarChar(100)
+  slug              String              @unique @db.VarChar(100)
+  description       String?             @db.Text
+  color             String?             @db.VarChar(7)
+  icon              String?             @db.VarChar(50)
+  isActive          Boolean             @default(true)
+  sortOrder         Int                 @default(0) @db.UnsignedInt
+  
+  // Self-referential for category hierarchy
+  parentId          Int?                @db.UnsignedInt
+  parent            MySQLCategory?      @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children          MySQLCategory[]     @relation("CategoryHierarchy")
+  
+  // Many-to-many with posts
+  posts             MySQLPostCategory[]
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mysql_categories")
+  @@index([name])
+  @@index([slug])
+  @@index([parentId])
+  @@index([sortOrder])
+}
+
+model MySQLPostCategory {
+  postId            Int                 @db.UnsignedInt
+  post              MySQLPost           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  categoryId        Int                 @db.UnsignedInt
+  category          MySQLCategory       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  isPrimary         Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  
+  @@id([postId, categoryId])
+  @@map("mysql_post_categories")
+}
+
+model MySQLFollow {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  
+  followerId        Int                 @db.UnsignedInt
+  follower          MySQLUser           @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
+  
+  followingId       Int                 @db.UnsignedInt
+  following         MySQLUser           @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime            @default(now())
+  
+  @@map("mysql_follows")
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model MySQLGroup {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  name              String              @unique @db.VarChar(100)
+  slug              String              @unique @db.VarChar(100)
+  description       String?             @db.Text
+  isPrivate         Boolean             @default(false)
+  isActive          Boolean             @default(true)
+  maxMembers        Int?                @db.UnsignedInt
+  memberCount       Int                 @default(0) @db.UnsignedInt
+  settings          Json?               @db.Json
+  
+  members           MySQLGroupMember[]
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mysql_groups")
+  @@index([name])
+  @@index([slug])
+}
+
+model MySQLGroupMember {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  
+  userId            Int                 @db.UnsignedInt
+  user              MySQLUser           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  groupId           Int                 @db.UnsignedInt
+  group             MySQLGroup          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  role              String              @default("member") @db.VarChar(50)
+  isActive          Boolean             @default(true)
+  joinedAt          DateTime            @default(now())
+  
+  @@map("mysql_group_members")
+  @@unique([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
+}
+
+// =============================================================================
+// MYSQL SPATIAL AND ADVANCED FEATURES
+// =============================================================================
+
+model MySQLSpatialData {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  locationName      String              @db.VarChar(255)
+  
+  // Spatial data types (using TEXT as MySQL spatial types are not supported by Prisma)
+  coordinate        String?             @db.Text
+  boundary          String?             @db.Text
+  route             String?             @db.Text
+  region            String?             @db.Text
+  landmarks         String?             @db.Text
+  
+  // Geographic metadata
+  country           String?             @db.VarChar(100)
+  state             String?             @db.VarChar(100)
+  city              String?             @db.VarChar(100)
+  postalCode        String?             @db.VarChar(20)
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@map("mysql_spatial_data")
+  @@index([locationName])
+}
+
+// =============================================================================
+// MYSQL METRICS AND ANALYTICS
+// =============================================================================
+
+model MySQLMetrics {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  entityType        String              @db.VarChar(50)
+  entityId          Int                 @db.UnsignedInt
+  metricName        String              @db.VarChar(100)
+  metricValue       Float               @db.Double
+  metricUnit        String?             @db.VarChar(20)
+  dimensions        Json?               @db.Json
+  timestamp         DateTime            @default(now())
+  
+  @@map("mysql_metrics")
+  @@index([entityType, entityId])
+  @@index([metricName])
+  @@index([timestamp])
+  @@unique([entityType, entityId, metricName, timestamp])
+}
+
+model MySQLAuditLog {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  tableName         String              @db.VarChar(100)
+  recordId          Int                 @db.UnsignedInt
+  action            String              @db.VarChar(20)
+  oldValues         Json?               @db.Json
+  newValues         Json?               @db.Json
+  userId            Int?                @db.UnsignedInt
+  userEmail         String?             @db.VarChar(255)
+  ipAddress         String?             @db.VarChar(45)
+  userAgent         String?             @db.Text
+  timestamp         DateTime            @default(now())
+  
+  @@map("mysql_audit_log")
+  @@index([tableName])
+  @@index([recordId])
+  @@index([action])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+// =============================================================================
+// MYSQL PERFORMANCE TESTING
+// =============================================================================
+
+model MySQLPerformanceTest {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  testName          String              @db.VarChar(255)
+  iterationCount    Int                 @db.UnsignedInt
+  executionTime     Float               @db.Double
+  memoryUsage       Int?                @db.UnsignedInt
+  cpuUsage          Float?              @db.Float
+  metadata          Json?               @db.Json
+  
+  createdAt         DateTime            @default(now())
+  
+  @@map("mysql_performance_test")
+  @@index([testName])
+  @@index([createdAt])
+}
