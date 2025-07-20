@@ -1,6 +1,7 @@
 # Prisma Zod Generator
 
 [![npm version](https://badge.fury.io/js/prisma-zod-generator.svg)](https://badge.fury.io/js/prisma-zod-generator)
+[![Network Dependents](https://dependents.info/omar-dulaimi/prisma-zod-generator/badge?label=users)](https://dependents.info/omar-dulaimi/prisma-zod-generator)
 [![npm downloads](https://img.shields.io/npm/dt/prisma-zod-generator.svg)](https://www.npmjs.com/package/prisma-zod-generator)
 [![CI/CD Pipeline](https://github.com/omar-dulaimi/prisma-zod-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/omar-dulaimi/prisma-zod-generator/actions)
 [![License: MIT](https://img.shields.io/npm/l/prisma-zod-generator.svg)](LICENSE)
