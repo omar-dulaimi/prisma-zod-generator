@@ -1,0 +1,7 @@
+# Global code owners
+* @omar-dulaimi
+
+# Dependabot PRs
+package.json @omar-dulaimi
+package-lock.json @omar-dulaimi
+.github/workflows/ @omar-dulaimi
