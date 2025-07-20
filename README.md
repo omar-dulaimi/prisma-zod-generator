@@ -10,6 +10,16 @@
 
 Transform your Prisma models into type-safe Zod validation schemas with full TypeScript support. Perfect for API validation, form handling, and ensuring data integrity across your application.
 
+## 🧪 Beta Testing - v0.8.14-beta.0
+
+**Try the latest beta with Prisma 6 & Zod 4 support!**
+
+```bash
+npm install prisma-zod-generator@beta
+```
+
+This beta includes major upgrades to Prisma 6.12.0+ and Zod v4.0.5+ with enhanced CI/CD, multi-provider testing, and improved reliability. Please test in development and [report any issues](https://github.com/omar-dulaimi/prisma-zod-generator/issues). Your feedback helps us deliver a stable release!
+
 ## 🚀 Features
 
 - ✅ **Full Prisma 6 Support** - Works with latest Prisma features
