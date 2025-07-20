@@ -7,8 +7,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
-    reviewers:
-      - "omar-dulaimi"
     assignees:
       - "omar-dulaimi"
     commit-message:
@@ -54,8 +52,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 5
-    reviewers:
-      - "omar-dulaimi"
     commit-message:
       prefix: "ci"
       include: "scope"
