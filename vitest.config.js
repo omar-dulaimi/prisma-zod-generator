@@ -8,14 +8,6 @@ export default defineConfig({
     exclude: ['node_modules', 'dist', 'coverage', 'lib', 'package'],
     testTimeout: 300000,
     hookTimeout: 60000,
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: false,
-        maxThreads: 4,
-        minThreads: 1
-      }
-    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -36,9 +28,6 @@ export default defineConfig({
         lines: 8
       },
       reportsDirectory: './coverage'
-    },
-    typecheck: {
-      enabled: false
     }
   },
   resolve: {
