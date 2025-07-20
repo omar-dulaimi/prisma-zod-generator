@@ -9,12 +9,12 @@ export default defineConfig({
     // Performance optimizations
     testTimeout: 300000, // 5 minutes for multi-provider tests
     hookTimeout: 60000,  // 1 minute for setup/teardown
-    pool: 'threads',
+    pool: 'forks',
     poolOptions: {
-      threads: {
-        singleThread: false,
-        maxThreads: 4,  // Limit threads to prevent resource exhaustion
-        minThreads: 1
+      forks: {
+        singleFork: false,
+        maxForks: 4,  // Limit forks to prevent resource exhaustion
+        minForks: 1
       }
     },
     coverage: {
