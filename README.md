@@ -10,6 +10,18 @@
 
 Transform your Prisma models into type-safe Zod validation schemas with full TypeScript support. Perfect for API validation, form handling, and ensuring data integrity across your application.
 
+## 💖 Support This Project
+
+If this tool helps you build better applications, please consider supporting its development:
+
+<p align="center">
+  <a href="https://github.com/sponsors/omar-dulaimi">
+    <img src="https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?style=for-the-badge&logo=github" alt="GitHub Sponsors" height="40">
+  </a>
+</p>
+
+Your sponsorship helps maintain and improve this project. Thank you! 🙏
+
 ## 🧪 Beta Testing - v0.8.14-beta.0
 
 **Try the latest beta with Prisma 6 & Zod 4 support!**
