@@ -1,114 +1,231 @@
-# Prisma Zod Generator
+<div align="center">
+  <img src="https://raw.githubusercontent.com/omar-dulaimi/prisma-zod-generator/master/logo.png" alt="Prisma Zod Generator" width="100" height="100">
+  
+  # ⚡ Prisma Zod Generator
 
-[![npm version](https://badge.fury.io/js/prisma-zod-generator.svg)](https://badge.fury.io/js/prisma-zod-generator)
-[![npm downloads](https://img.shields.io/npm/dt/prisma-zod-generator.svg)](https://www.npmjs.com/package/prisma-zod-generator)
-[![CI/CD Pipeline](https://github.com/omar-dulaimi/prisma-zod-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/omar-dulaimi/prisma-zod-generator/actions)
-[![License: MIT](https://img.shields.io/npm/l/prisma-zod-generator.svg)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+  ### 🚀 **Automatically generate Zod schemas from your Prisma schema**
 
-> **Automatically generate [Zod](https://github.com/colinhacks/zod) schemas from your [Prisma](https://github.com/prisma/prisma) Schema**
+  <p>
+    <a href="https://www.npmjs.com/package/prisma-zod-generator">
+      <img src="https://img.shields.io/npm/v/prisma-zod-generator/latest.svg?style=for-the-badge&logo=npm&color=blue" alt="Stable Version">
+    </a>
+    <a href="https://www.npmjs.com/package/prisma-zod-generator">
+      <img src="https://img.shields.io/npm/v/prisma-zod-generator/beta.svg?style=for-the-badge&logo=npm&label=beta&color=orange" alt="Beta Version">
+    </a>
+  </p>
 
-Transform your Prisma models into type-safe Zod validation schemas with full TypeScript support. Perfect for API validation, form handling, and ensuring data integrity across your application.
+  <p>
+    <a href="https://www.npmjs.com/package/prisma-zod-generator">
+      <img src="https://img.shields.io/npm/dt/prisma-zod-generator.svg?style=for-the-badge&logo=npm&color=green" alt="Downloads">
+    </a>
+    <a href="https://github.com/omar-dulaimi/prisma-zod-generator/actions">
+      <img src="https://img.shields.io/github/actions/workflow/status/omar-dulaimi/prisma-zod-generator/ci.yml?style=for-the-badge&logo=github" alt="CI Status">
+    </a>
+    <a href="LICENSE">
+      <img src="https://img.shields.io/npm/l/prisma-zod-generator.svg?style=for-the-badge&color=purple" alt="License">
+    </a>
+  </p>
 
-## 💖 Support This Project
+  <p>
+    <strong>🎯 Zero-config • 🛡️ Type-safe • ⚡ Fast • 🔧 Customizable</strong>
+  </p>
 
-If this tool helps you build better applications, please consider supporting its development:
+</div>
 
-<p align="center">
+---
+
+<br>
+
+<div align="center">
+  <h3>💡 Transform your Prisma schema into type-safe validation schemas</h3>
+  <p><em>Automatically generates Zod schemas for all Prisma operations with full TypeScript support</em></p>
+</div>
+
+<div align="center">
+  
+  ## 💖 **Support This Project**
+  
+  <p><em>If this tool accelerates your development, consider supporting its growth</em></p>
+  
   <a href="https://github.com/sponsors/omar-dulaimi">
-    <img src="https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?style=for-the-badge&logo=github" alt="GitHub Sponsors" height="40">
+    <img src="https://img.shields.io/badge/💝_Sponsor_on_GitHub-ea4aaa?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Sponsors" height="45">
   </a>
-</p>
+  
+  <p><strong>✨ Your sponsorship drives innovation and keeps this project thriving ✨</strong></p>
+  
+</div>
 
-Your sponsorship helps maintain and improve this project. Thank you! 🙏
+<div align="center">
+  
+  ## 🚀 **Version 0.8.14-beta** - Major Upgrade Available!
+  
+  <table>
+    <tr>
+      <td align="center">
+        <img src="https://img.shields.io/badge/⚠️_BETA_RELEASE-orange?style=for-the-badge&logo=rocket" alt="Beta Release">
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <strong>🎉 Prisma 6 & Zod 4 support with next-gen features!</strong>
+      </td>
+    </tr>
+  </table>
+  
+</div>
 
-## 🧪 Beta Testing - v0.8.14-beta.0
+### ✨ **What's New in v0.8.14-beta**
 
-**Try the latest beta with Prisma 6 & Zod 4 support!**
+<div align="center">
+  
+  | 🚀 **Feature** | 📦 **Version** | 🎯 **Benefit** |
+  |----------------|----------------|------------------|
+  | **Prisma** | `6.12.0+` | 🏃‍♂️ Latest features & performance |
+  | **Zod** | `4.0.5+` | 🛡️ Enhanced validation & type safety |
+  | **TypeScript** | `5.8+` | ⚡ Cutting-edge language features |
+  | **Testing** | `Vitest 3` | 🧪 Comprehensive coverage |
+  | **Tooling** | `ESLint 9` | 🔧 Modern dev experience |
+  | **Multi-DB** | `All Providers` | 🗄️ PostgreSQL, MySQL, MongoDB, SQLite+ |
+  
+</div>
+
+<div align="center">
+  
+  ### 📦 **Try the Beta**
+  
+</div>
 
 ```bash
+# 🚀 Install the cutting-edge beta
 npm install prisma-zod-generator@beta
+
+# 🎯 Or lock to specific version
+npm install prisma-zod-generator@0.8.14-beta.0
 ```
 
-This beta includes **major upgrades to Prisma 6.12.0+ and Zod v4.0.5+** - bringing compatibility with the latest versions and their breaking changes. Please test in development and [report any issues](https://github.com/omar-dulaimi/prisma-zod-generator/issues). Your feedback helps us deliver a stable release!
+### 🔄 Migration from Stable
 
-## 🚀 Features
+The beta maintains API compatibility but requires:
+- **Node.js 18+** (upgraded from 16+)
+- **Prisma 6.12.0+** (upgraded from 4.8+) 
+- **Zod 4.0.5+** (upgraded from 3.20+)
 
-- ✅ **Full Prisma 6 Support** - Works with latest Prisma features
-- ✅ **Zod 4 Compatible** - Updated for breaking changes in Zod v4
-- ✅ **Multi-Database Support** - PostgreSQL, MySQL, MongoDB, SQLite, SQL Server, CockroachDB
-- ✅ **Type Safety** - Full TypeScript support with Prisma type imports
-- ✅ **CRUD Operations** - Generate schemas for all Prisma operations
-- ✅ **Relations & Aggregations** - Handle complex relationships and aggregate functions
-- ✅ **Customizable Output** - Configure output directory and generation options
-- ✅ **Auto-Generated** - Updates automatically with `npx prisma generate`
+Simply update your dependencies and re-run `npx prisma generate` - no code changes needed!
 
-## 📖 Table of Contents
+### 📝 Beta Feedback
 
-- [Supported Versions](#-supported-versions)
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [Configuration](#-configuration)
-- [Examples](#-examples)
-- [API Reference](#-api-reference)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [License](#-license)
+Please test thoroughly and [report any issues](https://github.com/omar-dulaimi/prisma-zod-generator/issues). Your feedback helps us deliver a stable release!
 
-## 🎯 Supported Versions
+<div align="center">
+  
+  ## 📚 **Navigation**
+  
+  <table>
+    <tr>
+      <td><a href="#-features">✨ Features</a></td>
+      <td><a href="#-quick-start">🚀 Quick Start</a></td>
+      <td><a href="#-generated-output">📋 Output</a></td>
+      <td><a href="#️-configuration-options">⚙️ Config</a></td>
+    </tr>
+    <tr>
+      <td><a href="#-advanced-usage">🔧 Advanced</a></td>
+      <td><a href="#-examples">📚 Examples</a></td>
+      <td><a href="#-troubleshooting">🔍 Troubleshooting</a></td>
+      <td><a href="#-contributing">🤝 Contributing</a></td>
+    </tr>
+  </table>
+  
+</div>
 
-### ✅ Current Support
-| Technology | Version | Notes |
-|------------|---------|-------|
-| **Prisma** | 6.12.0+ | Full support with all latest features |
-| **Zod** | 4.0.5+ | Updated for v4 breaking changes |
-| **Node.js** | 16+ | LTS versions recommended |
-| **TypeScript** | 4.5+ | Required for type safety |
+<div align="center">
+  
+  ## ✨ **Why Choose Prisma Zod Generator?**
+  
+</div>
 
-### 🗄️ Database Providers
-All major database providers are fully supported:
-- **PostgreSQL** - Complete support including advanced types
-- **MySQL** - Full compatibility with all MySQL features  
-- **MongoDB** - Native MongoDB schema generation
-- **SQLite** - Perfect for development and testing
-- **SQL Server** - Enterprise-grade support
-- **CockroachDB** - Distributed database support
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/🚀-Zero_Config-blue?style=for-the-badge" alt="Zero Config">
+      <br><strong>Works instantly</strong><br><em>Sensible defaults included</em>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/🔄-Auto_Generated-green?style=for-the-badge" alt="Auto Generated">
+      <br><strong>Always in sync</strong><br><em>Updates with schema changes</em>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/🛡️-Type_Safe-purple?style=for-the-badge" alt="Type Safe">
+      <br><strong>100% TypeScript</strong><br><em>Catch errors at compile time</em>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/🎯-Comprehensive-orange?style=for-the-badge" alt="Comprehensive">
+      <br><strong>Full CRUD coverage</strong><br><em>All Prisma operations included</em>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="https://img.shields.io/badge/⚙️-Configurable-red?style=for-the-badge" alt="Configurable">
+      <br><strong>Highly customizable</strong><br><em>Adapt to your needs</em>
+    </td>
+    <td align="center">
+      <img src="https://img.shields.io/badge/📦-Lightweight-yellow?style=for-the-badge" alt="Lightweight">
+      <br><strong>Minimal footprint</strong><br><em>Fast generation & runtime</em>
+    </td>
+    <td align="center">
+      <img src="https://img.shields.io/badge/🗄️-Multi_DB-cyan?style=for-the-badge" alt="Multi Database">
+      <br><strong>All databases</strong><br><em>PostgreSQL, MySQL, MongoDB+</em>
+    </td>
+    <td align="center">
+      <img src="https://img.shields.io/badge/🎨-Flexible-pink?style=for-the-badge" alt="Flexible">
+      <br><strong>Your way</strong><br><em>Custom paths & options</em>
+    </td>
+  </tr>
+</table>
 
-### 📦 Legacy Support
-- **Prisma 4**: Use version `v0.3.0+`
-- **Prisma 2/3**: Use version `v0.2.0` and lower
+## 🚀 Quick Start
 
-## 🔧 Installation
+### Installation
 
-### NPM
+#### Beta Version (Recommended - Latest Features)
 ```bash
-npm install prisma-zod-generator
+# NPM
+npm install prisma-zod-generator@beta
+
+# Yarn  
+yarn add prisma-zod-generator@beta
+
+# PNPM
+pnpm add prisma-zod-generator@beta
 ```
 
-### Yarn
+#### Stable Version (Latest)
 ```bash
-yarn add prisma-zod-generator
+# NPM
+npm install prisma-zod-generator@latest
+
+# Yarn
+yarn add prisma-zod-generator@latest
+
+# PNPM  
+pnpm add prisma-zod-generator@latest
 ```
 
-### PNPM
-```bash
-pnpm add prisma-zod-generator
-```
+### Setup
 
-## ⚡ Quick Start
+1. **Star this repo** 😉
 
-### 1. ⭐ Star this repository
-Show your support by starring this repo!
+2. **Add the generator to your Prisma schema:**
 
-### 2. 📝 Add the generator to your Prisma schema
 ```prisma
 generator zod {
-  provider = "prisma-zod-generator"
+  provider          = "prisma-zod-generator"
+  output            = "./generated/schemas"
+  isGenerateSelect  = true
+  isGenerateInclude = true
 }
 ```
 
-### 3. ⚙️ Configure TypeScript (Required)
-Enable strict mode in your `tsconfig.json` as required by Zod:
+3. **Enable strict mode in `tsconfig.json`** (required by Zod):
 
 ```json
 {
@@ -119,19 +236,17 @@ Enable strict mode in your `tsconfig.json` as required by Zod:
 }
 ```
 
-### 4. 🏗️ Generate schemas from your Prisma schema
+4. **Generate your Zod schemas:**
 
-Given this Prisma schema:
+```bash
+npx prisma generate
+```
+
+## 📋 Generated Output
+
+For the following schema:
 
 ```prisma
-generator client {
-  provider = "prisma-client-js"
-}
-
-generator zod {
-  provider = "prisma-zod-generator"
-}
-
 model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
@@ -153,13 +268,7 @@ model Post {
 }
 ```
 
-Run the generator:
-```bash
-npx prisma generate
-```
-
-### 5. 🎉 Generated Schema Structure
-The generator creates comprehensive Zod schemas:
+The generator creates:
 
 ```
 📁 generated/schemas/
@@ -175,62 +284,39 @@ The generator creates comprehensive Zod schemas:
 └── 📄 index.ts         # Barrel exports
 ```
 
-### 6. 🚀 Use in your application
+### Version Compatibility
 
-```typescript
-import { PostCreateOneSchema, UserFindManySchema } from './generated/schemas';
+| Version | Prisma | Zod | TypeScript | Node.js | Status |
+|---------|--------|-----|------------|---------|--------|
+| **v0.8.14-beta** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | 🧪 **Beta** |
+| v0.8.13 (stable) | 4.8.0+ | 3.20+ | 4.9+ | 16+ | ✅ **Stable** |
 
-// API Route validation
-app.post('/api/posts', async (req, res) => {
-  try {
-    const validatedData = PostCreateOneSchema.parse(req.body);
-    const post = await prisma.post.create(validatedData);
-    res.json(post);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
+> **Recommendation**: Use the beta version for new projects to get the latest features and future-proof your setup.
 
-// Query parameter validation
-app.get('/api/users', async (req, res) => {
-  const query = UserFindManySchema.parse(req.query);
-  const users = await prisma.user.findMany(query);
-  res.json(users);
-});
-```
+## ⚙️ Configuration Options
 
-## ⚙️ Configuration
+| Option | Description | Type | Default |
+|--------|-------------|------|---------|
+| `output` | Output directory for generated files | `string` | `"./generated"` |
+| `isGenerateSelect` | Generate Select-related schemas | `boolean` | `false` |
+| `isGenerateInclude` | Generate Include-related schemas | `boolean` | `false` |
 
-### Generator Options
+### Example Configuration
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `output` | `string` | `"./generated"` | Output directory for generated schemas |
-| `isGenerateSelect` | `boolean` | `false` | Generate Select-related schemas |
-| `isGenerateInclude` | `boolean` | `false` | Generate Include-related schemas |
-
-#### Basic Configuration
-```prisma
-generator zod {
-  provider = "prisma-zod-generator"
-  output   = "./src/schemas"
-}
-```
-
-#### Advanced Configuration
 ```prisma
 generator zod {
   provider          = "prisma-zod-generator"
-  output            = "./generated-zod-schemas"
+  output            = "./src/schemas"
   isGenerateSelect  = true
   isGenerateInclude = true
 }
 ```
 
+## 🔧 Advanced Usage
+
 ### Model Customizations
 
-#### Hide Models from Generation
-Use the `@@Gen.model(hide: true)` directive to exclude specific models:
+Hide specific models from generation:
 
 ```prisma
 /// @@Gen.model(hide: true)
@@ -241,14 +327,24 @@ model InternalLog {
 }
 ```
 
-## 💡 Examples
+### Database Provider Support
 
-### Framework Integration Examples
+The generator supports all Prisma database providers:
 
-#### Express.js API Validation
+- **PostgreSQL** - Complete support including advanced types
+- **MySQL** - Full compatibility with all MySQL features  
+- **MongoDB** - Native MongoDB schema generation
+- **SQLite** - Perfect for development and testing
+- **SQL Server** - Enterprise-grade support
+- **CockroachDB** - Distributed database support
+
+## 📚 Examples
+
+### Express.js API Validation
+
 ```typescript
 import express from 'express';
-import { PostCreateOneSchema, PostUpdateOneSchema } from './generated/schemas';
+import { PostCreateOneSchema, UserFindManySchema } from './generated/schemas';
 
 const app = express();
 
@@ -266,18 +362,16 @@ app.post('/posts', async (req, res) => {
   }
 });
 
-// Update post with validation
-app.put('/posts/:id', async (req, res) => {
-  const data = PostUpdateOneSchema.parse({
-    where: { id: parseInt(req.params.id) },
-    data: req.body
-  });
-  const post = await prisma.post.update(data);
-  res.json(post);
+// Query with validation
+app.get('/users', async (req, res) => {
+  const query = UserFindManySchema.parse(req.query);
+  const users = await prisma.user.findMany(query);
+  res.json(users);
 });
 ```
 
-#### Next.js API Routes
+### Next.js API Routes
+
 ```typescript
 // pages/api/users.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -296,7 +390,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }
 ```
 
-#### tRPC Integration
+### tRPC Integration
+
 ```typescript
 import { z } from 'zod';
 import { PostCreateOneSchema, PostFindManySchema } from './generated/schemas';
@@ -316,9 +411,8 @@ export const postRouter = router({
 });
 ```
 
-### Advanced Use Cases
+### React Hook Form Integration
 
-#### Form Validation with React Hook Form
 ```typescript
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -387,57 +481,46 @@ Examples:
 - `PostFindManyArgsSchema` - Schema for finding multiple posts with arguments
 - `UserWhereInputObjectSchema` - Schema for user where conditions
 
-## 🐛 Troubleshooting
+## 🔍 Troubleshooting
+
+### Beta Version Issues
+
+**Dependency compatibility errors with v0.8.14-beta**
+- Ensure you're using Node.js 18+ 
+- Update Prisma to 6.12.0+ and Zod to 4.0.5+
+- Check that all peer dependencies are compatible
+
+**Migration from stable to beta**
+- Backup your project before upgrading
+- Update all related dependencies (Prisma, Zod)
+- Re-run `npx prisma generate` after upgrading
+- Test thoroughly in development environment
 
 ### Common Issues
 
-#### ❌ "Cannot find module" errors
-**Problem**: Import errors when using generated schemas
-```
-Error: Cannot find module './generated/schemas'
-```
+**Error: Cannot find module './generated/schemas'**
+- Ensure you've run `npx prisma generate` after adding the generator
+- Check that your output path is correct
 
-**Solution**: Ensure you've run `npx prisma generate` after adding the generator
-```bash
-npx prisma generate
-```
+**TypeScript errors in generated schemas**
+- Make sure all dependencies are installed and up to date
+- Ensure `strict: true` is enabled in `tsconfig.json`
+- Verify exactOptionalPropertyTypes is enabled
 
-#### ❌ TypeScript strict mode errors
-**Problem**: TypeScript compilation errors related to strict mode
-```
-Error: Type 'undefined' is not assignable to type 'string'
-```
+**Generated schemas not updating**
+- Run `npx prisma generate` after modifying your schema
+- Check that the generator is properly configured in `schema.prisma`
+- Clear your build cache and regenerate
 
-**Solution**: Enable strict mode in your `tsconfig.json`:
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "exactOptionalPropertyTypes": true
-  }
-}
-```
+**Zod validation errors (v0.8.14-beta)**
+- Ensure you have Zod 4.0.5+ installed for beta compatibility
+- Check that your input schemas match your Prisma model types
 
-#### ❌ Zod validation errors
-**Problem**: Unexpected validation failures
-```
-ZodError: Invalid input
-```
-
-**Solutions**:
-1. Check that your input data matches the expected Prisma schema
-2. Verify field types match your Prisma model definitions
-3. Ensure required fields are provided
-4. Check for typos in field names
-
-#### ❌ Generator fails to run
-**Problem**: Generator execution errors during `prisma generate`
-
-**Solutions**:
-1. Ensure you have the correct version installed
-2. Check that your `schema.prisma` syntax is valid
-3. Verify Node.js version compatibility (16+)
-4. Clear node_modules and reinstall dependencies
+**Generator fails to run**
+- Ensure you have the correct version installed
+- Check that your `schema.prisma` syntax is valid
+- Verify Node.js version compatibility (18+)
+- Clear node_modules and reinstall dependencies
 
 ### Performance Considerations
 
@@ -470,9 +553,15 @@ A: Enums are automatically converted to Zod enum schemas and placed in the `enum
 **Q: Can I exclude certain fields from validation?**
 A: Use Prisma's `@ignore` directive or model-level hiding with `@@Gen.model(hide: true)`.
 
+### Getting Help
+
+- 🐛 **Bug Reports**: [Create a bug report](https://github.com/omar-dulaimi/prisma-zod-generator/issues/new)
+- 💡 **Feature Requests**: [Request a feature](https://github.com/omar-dulaimi/prisma-zod-generator/issues/new)
+- 💬 **Discussions**: [Join the discussion](https://github.com/omar-dulaimi/prisma-zod-generator/discussions)
+
 ## 🤝 Contributing
 
-We welcome contributions! Here's how you can help:
+Contributions are welcome! Here's how you can help:
 
 ### Development Setup
 
@@ -540,6 +629,12 @@ This project uses semantic versioning and automated releases:
 
 This project is licensed under the [MIT License](LICENSE).
 
+## 🔗 Related Projects
+
+- [prisma-trpc-generator](https://github.com/omar-dulaimi/prisma-trpc-generator) - Generate tRPC routers from Prisma schema
+- [Prisma](https://github.com/prisma/prisma) - Database toolkit and ORM
+- [Zod](https://github.com/colinhacks/zod) - TypeScript-first schema validation
+
 ## 🙏 Acknowledgments
 
 - [Prisma](https://github.com/prisma/prisma) - Modern database toolkit
@@ -548,6 +643,44 @@ This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-**Made with ❤️ by [Omar Dulaimi](https://github.com/omar-dulaimi)**
+<br>
 
-⭐ **Star this repo if it helped you!**
+---
+
+<div align="center">
+  
+  <h3>🌟 **Show Your Support** 🌟</h3>
+  
+  <a href="https://github.com/omar-dulaimi/prisma-zod-generator">
+    <img src="https://img.shields.io/github/stars/omar-dulaimi/prisma-zod-generator?style=for-the-badge&logo=github&color=yellow" alt="GitHub Stars">
+  </a>
+  
+  <br><br>
+  
+  <table>
+    <tr>
+      <td align="center">
+        <img src="https://img.shields.io/badge/💎-Latest_Stable-success?style=for-the-badge&logo=npm" alt="Stable">
+        <br>
+        <code>v0.8.13</code>
+      </td>
+      <td align="center">
+        <img src="https://img.shields.io/badge/🚀-Beta_Version-warning?style=for-the-badge&logo=rocket" alt="Beta">
+        <br>
+        <code>v0.8.14-beta.0</code>
+      </td>
+    </tr>
+  </table>
+  
+  <br>
+  
+  <p>
+    <strong>Made with ❤️ by</strong>
+    <a href="https://github.com/omar-dulaimi">
+      <img src="https://img.shields.io/badge/Omar_Dulaimi-100000?style=for-the-badge&logo=github&logoColor=white" alt="Omar Dulaimi">
+    </a>
+  </p>
+  
+  <p><em>⚡ Accelerating Prisma development, one schema at a time</em></p>
+  
+</div>
