@@ -5,7 +5,6 @@ generatorHandler({
   onManifest: () => ({
     defaultOutput: './generated',
     prettyName: 'Prisma Zod Generator',
-    requiresGenerators: ['prisma-client-js'],
   }),
   onGenerate: generate,
 });
