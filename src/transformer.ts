@@ -262,9 +262,19 @@ export default class Transformer {
 
     const opt = !field.isRequired ? '.optional()' : '';
 
-    return inputsLength === 1
-      ? `  ${field.name}: z.lazy(() => ${schema})${arr}${opt}`
-      : `z.lazy(() => ${schema})${arr}${opt}`;
+    // Only use lazy loading for self-references or complex object schemas that might have circular dependencies
+    // Simple enums like SortOrder don't need lazy loading
+    const needsLazyLoading = inputType.type === this.name || (!isEnum && inputType.namespace === 'prisma');
+
+    if (needsLazyLoading) {
+      return inputsLength === 1
+        ? `  ${field.name}: z.lazy(() => ${schema})${arr}${opt}`
+        : `z.lazy(() => ${schema})${arr}${opt}`;
+    } else {
+      return inputsLength === 1
+        ? `  ${field.name}: ${schema}${arr}${opt}`
+        : `${schema}${arr}${opt}`;
+    }
   }
 
   generateFieldValidators(
@@ -309,7 +319,15 @@ export default class Transformer {
     if (isAggregateInputType(name)) {
       name = `${name}Type`;
     }
+    
     const end = `export const ${exportName}ObjectSchema = Schema`;
+    
+    // Args types like UserArgs, ProfileArgs don't exist in Prisma client
+    // Use generic typing instead of non-existent Prisma type
+    if (name.endsWith('Args')) {
+      return `const Schema = ${schema};\n\n ${end}`;
+    }
+    
     return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
   }
 
