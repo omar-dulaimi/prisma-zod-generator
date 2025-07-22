@@ -57,7 +57,7 @@
 
 <div align="center">
   
-  ## 🚀 **Version 0.8.14-beta** - Major Upgrade Available!
+  ## 🚀 **Version 0.8.15-beta** - Major Upgrade Available!
   
   <table>
     <tr>
@@ -67,19 +67,20 @@
     </tr>
     <tr>
       <td align="center">
-        <strong>🎉 Prisma 6 & Zod 4 support with next-gen features!</strong>
+        <strong>🎉 New Prisma Client Generator Support + Latest Features!</strong>
       </td>
     </tr>
   </table>
   
 </div>
 
-### ✨ **What's New in v0.8.14-beta**
+### ✨ **What's New in v0.8.15-beta**
 
 <div align="center">
   
   | 🚀 **Feature** | 📦 **Version** | 🎯 **Benefit** |
   |----------------|----------------|------------------|
+  | **New Prisma Client** | `6.12.0+` | 🆕 ESM-compatible generator support |
   | **Prisma** | `6.12.0+` | 🏃‍♂️ Latest features & performance |
   | **Zod** | `4.0.5+` | 🛡️ Enhanced validation & type safety |
   | **TypeScript** | `5.8+` | ⚡ Cutting-edge language features |
@@ -100,7 +101,7 @@
 npm install prisma-zod-generator@beta
 
 # 🎯 Or lock to specific version
-npm install prisma-zod-generator@0.8.14-beta.0
+npm install prisma-zod-generator@0.8.15-beta.0
 ```
 
 ### 🔄 Migration from Stable
@@ -242,6 +243,59 @@ generator zod {
 npx prisma generate
 ```
 
+## 🆕 New Prisma Client Generator Support
+
+**v0.8.15-beta** introduces support for the new ESM-compatible `prisma-client` generator introduced in Prisma 6.12.0!
+
+### Generator Compatibility
+
+The Zod generator now supports both Prisma client generators:
+
+#### Legacy Generator (Existing Projects)
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated/schemas"
+}
+```
+
+#### New ESM-Compatible Generator (Prisma 6.12.0+)
+```prisma
+generator client {
+  provider = "prisma-client"
+  output = "./src/generated/client"
+  runtime = "nodejs"
+  moduleFormat = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension = "ts"
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated/schemas"
+}
+```
+
+### Key Benefits of the New Generator
+
+- **🔗 ESM Compatibility** - Full ES Module support
+- **📂 Custom Output Location** - Generate client outside `node_modules`
+- **🔧 Runtime Flexibility** - Support for Bun, Deno, Cloudflare Workers
+- **⚡ Better Performance** - Optimized code generation
+- **🔮 Future-Ready** - Will become the default in Prisma v7
+
+### Migration Guide
+
+**Existing Projects**: No changes needed - continue using `prisma-client-js`
+
+**New Projects**: Consider using the new `prisma-client` generator for modern features
+
+**Gradual Migration**: Both generators are supported simultaneously during the transition
+
 ## 📋 Generated Output
 
 For the following schema:
@@ -288,7 +342,8 @@ The generator creates:
 
 | Version | Prisma | Zod | TypeScript | Node.js | Status |
 |---------|--------|-----|------------|---------|--------|
-| **v0.8.14-beta** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | 🧪 **Beta** |
+| **v0.8.15-beta** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | 🧪 **Beta** - New Generator Support |
+| v0.8.14-beta | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | 🧪 **Beta** |
 | v0.8.13 (stable) | 4.8.0+ | 3.20+ | 4.9+ | 16+ | ✅ **Stable** |
 
 > **Recommendation**: Use the beta version for new projects to get the latest features and future-proof your setup.
@@ -485,7 +540,12 @@ Examples:
 
 ### Beta Version Issues
 
-**Dependency compatibility errors with v0.8.14-beta**
+**New Generator Support (v0.8.15-beta)**
+- Both `prisma-client-js` and `prisma-client` generators are supported
+- If using the new generator, ensure Prisma 6.12.0+ is installed
+- Clear error messages guide you if no compatible generator is found
+
+**Dependency compatibility errors with v0.8.15-beta**
 - Ensure you're using Node.js 18+ 
 - Update Prisma to 6.12.0+ and Zod to 4.0.5+
 - Check that all peer dependencies are compatible
@@ -497,6 +557,11 @@ Examples:
 - Test thoroughly in development environment
 
 ### Common Issues
+
+**Generator compatibility errors**
+- Ensure you have either `prisma-client-js` or `prisma-client` generator in your schema
+- The Zod generator provides clear error messages with examples if no compatible generator is found
+- Both legacy and new generators are supported simultaneously
 
 **Error: Cannot find module './generated/schemas'**
 - Ensure you've run `npx prisma generate` after adding the generator
@@ -667,7 +732,7 @@ This project is licensed under the [MIT License](LICENSE).
       <td align="center">
         <img src="https://img.shields.io/badge/🚀-Beta_Version-warning?style=for-the-badge&logo=rocket" alt="Beta">
         <br>
-        <code>v0.8.14-beta.0</code>
+        <code>v0.8.15-beta.0</code>
       </td>
     </tr>
   </table>
