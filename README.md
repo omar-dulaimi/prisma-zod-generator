@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/omar-dulaimi/prisma-zod-generator/master/logo.png" alt="Prisma Zod Generator" width="100" height="100">
   
   # ⚡ Prisma Zod Generator
 
