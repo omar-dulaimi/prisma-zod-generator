@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.1...v1.0.2) (2025-07-22)
+
+### 🐛 Bug Fixes
+
+* resolve schema compilation errors in Issue [#119](https://github.com/omar-dulaimi/prisma-zod-generator/issues/119) ([3f29b48](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3f29b486a0486b7fa45dff44c1a1b8ca493162e3))
+* resolve Vitest worker timeout in CI ([08a5546](https://github.com/omar-dulaimi/prisma-zod-generator/commit/08a5546743bafc5ee16c57f9aaafb8fdb61c069c))
+
 ## [1.0.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.0...v1.0.1) (2025-07-22)
 
 ### 🐛 Bug Fixes
