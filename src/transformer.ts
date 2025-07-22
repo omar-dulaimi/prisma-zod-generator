@@ -328,7 +328,35 @@ export default class Transformer {
       return `const Schema = ${schema};\n\n ${end}`;
     }
     
+    // For schemas with complex relations, omit explicit typing
+    // to avoid TypeScript inference issues with z.lazy()
+    if (this.hasComplexRelations() && (
+      name.endsWith('CreateInput') || 
+      name.includes('CreateOrConnect') ||
+      name.includes('CreateNestedOne') ||
+      name.includes('CreateNestedMany')
+    )) {
+      return `const Schema = ${schema};\n\n ${end}`;
+    }
+    
     return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
+  }
+
+  private hasComplexRelations(): boolean {
+    // Check if this schema has any lazy-loaded relation fields
+    return this.fields.some(field => 
+      field.inputTypes.some(inputType => 
+        inputType.location !== 'enumTypes' && 
+        inputType.namespace === 'prisma' && 
+        typeof inputType.type === 'string' &&
+        inputType.type !== this.name &&
+        (inputType.type.includes('CreateNestedOneWithout') ||
+         inputType.type.includes('CreateNestedManyWithout') ||
+         inputType.type.includes('WhereUniqueInput') ||
+         inputType.type.includes('CreateWithout') ||
+         inputType.type.includes('UncheckedCreateWithout'))
+      )
+    );
   }
 
   addFinalWrappers({ zodStringFields }: { zodStringFields: string[] }) {
