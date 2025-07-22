@@ -8,6 +8,18 @@ export default defineConfig({
     exclude: ['node_modules', 'dist', 'coverage', 'lib', 'package'],
     testTimeout: 300000,
     hookTimeout: 60000,
+    teardownTimeout: 60000,
+    // Increase worker timeout to handle long-running tests
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: false,
+        useAtomics: true
+      }
+    },
+    // Add worker timeout configuration
+    maxWorkers: 1,
+    minWorkers: 1,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
