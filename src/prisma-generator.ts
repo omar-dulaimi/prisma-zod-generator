@@ -21,10 +21,24 @@ export async function generate(options: GeneratorOptions) {
   try {
     await handleGeneratorOutputValue(options.generator.output as EnvValue);
 
-    const prismaClientGeneratorConfig = getGeneratorConfigByProvider(
-      options.otherGenerators,
-      'prisma-client-js',
-    );
+    const prismaClientGeneratorConfig = 
+      getGeneratorConfigByProvider(options.otherGenerators, 'prisma-client-js') ||
+      getGeneratorConfigByProvider(options.otherGenerators, 'prisma-client');
+
+    if (!prismaClientGeneratorConfig) {
+      throw new Error(
+        'Prisma Zod Generator requires either "prisma-client-js" or "prisma-client" generator to be present in your schema.prisma file.\n\n' +
+        'Please add one of the following to your schema.prisma:\n\n' +
+        '// For the legacy generator:\n' +
+        'generator client {\n' +
+        '  provider = "prisma-client-js"\n' +
+        '}\n\n' +
+        '// Or for the new generator (Prisma 6.12.0+):\n' +
+        'generator client {\n' +
+        '  provider = "prisma-client"\n' +
+        '}'
+      );
+    }
 
     const prismaClientDmmf = await getDMMF({
       datamodel: options.datamodel,
