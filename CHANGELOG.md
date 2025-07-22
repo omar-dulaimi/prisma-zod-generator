@@ -1,3 +1,13 @@
+## [1.0.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.0...v1.0.1) (2025-07-22)
+
+### 🐛 Bug Fixes
+
+* remove broken logo image from README ([eb2ba51](https://github.com/omar-dulaimi/prisma-zod-generator/commit/eb2ba51aaed0005b6489de4c8d84f21c6ea4edaf))
+
+### 📚 Documentation
+
+* update README for v1.0.0 stable release ([0f267c9](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0f267c9b7144685530e2a5dd3d3420c9e3e2b5f3))
+
 ## 1.0.0 (2025-07-22)
 
 ### 🚀 Features
