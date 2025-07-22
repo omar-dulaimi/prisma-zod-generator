@@ -1,5 +1,6 @@
 // Test schema for new prisma-client generator
 // Tests compatibility with Prisma 6.12.0+ prisma-client generator
+// This schema demonstrates the new ESM-compatible generator usage
 
 generator client {
   provider = "prisma-client"
