@@ -1,3 +1,13 @@
+## [1.0.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.2...v1.0.3) (2025-07-22)
+
+### 🐛 Bug Fixes
+
+* resolve TypeScript inference issues with z.lazy() relations ([6da8eb8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6da8eb800d3610da52f022146d9448d963111ec1))
+
+### 📚 Documentation
+
+* remove hardcoded version numbers from README ([95d6cbd](https://github.com/omar-dulaimi/prisma-zod-generator/commit/95d6cbdb08fd6fd897ee0e0f99ada71c9fbe8a1f))
+
 ## [1.0.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.1...v1.0.2) (2025-07-22)
 
 ### 🐛 Bug Fixes
