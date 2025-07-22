@@ -1,0 +1,58 @@
+// Test schema for new prisma-client generator
+// Tests compatibility with Prisma 6.12.0+ prisma-client generator
+
+generator client {
+  provider = "prisma-client"
+  output = "./generated/client"
+  runtime = "nodejs"
+  moduleFormat = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension = "ts"
+}
+
+generator zod {
+  provider          = "node ../../../lib/generator.js"
+  output            = "./generated"
+  isGenerateSelect  = true
+  isGenerateInclude = true
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test-new-client.db"
+}
+
+// Simple test models to verify basic functionality
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+  posts Post[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("users")
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  viewCount Int      @default(0)
+  
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("posts")
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
