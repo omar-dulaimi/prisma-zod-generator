@@ -57,24 +57,24 @@
 
 <div align="center">
   
-  ## 🚀 **Version 0.8.15-beta** - Major Upgrade Available!
+  ## 🚀 **Version 1.0.0** - Stable Release with New Generator Support!
   
   <table>
     <tr>
       <td align="center">
-        <img src="https://img.shields.io/badge/⚠️_BETA_RELEASE-orange?style=for-the-badge&logo=rocket" alt="Beta Release">
+        <img src="https://img.shields.io/badge/🎉_STABLE_RELEASE-green?style=for-the-badge&logo=checkmark" alt="Stable Release">
       </td>
     </tr>
     <tr>
       <td align="center">
-        <strong>🎉 New Prisma Client Generator Support + Latest Features!</strong>
+        <strong>🎉 Production Ready with New Prisma Client Generator Support!</strong>
       </td>
     </tr>
   </table>
   
 </div>
 
-### ✨ **What's New in v0.8.15-beta**
+### ✨ **What's New in v1.0.0**
 
 <div align="center">
   
@@ -92,21 +92,24 @@
 
 <div align="center">
   
-  ### 📦 **Try the Beta**
+  ### 📦 **Installation**
   
 </div>
 
 ```bash
-# 🚀 Install the cutting-edge beta
-npm install prisma-zod-generator@beta
+# 🚀 Install the stable release (recommended)
+npm install prisma-zod-generator@latest
 
 # 🎯 Or lock to specific version
-npm install prisma-zod-generator@0.8.15-beta.0
+npm install prisma-zod-generator@1.0.0
+
+# 🧪 Install beta versions (for testing)
+npm install prisma-zod-generator@beta
 ```
 
-### 🔄 Migration from Stable
+### 🔄 Migration from Previous Versions
 
-The beta maintains API compatibility but requires:
+Version 1.0.0 maintains API compatibility but requires:
 - **Node.js 18+** (upgraded from 16+)
 - **Prisma 6.12.0+** (upgraded from 4.8+) 
 - **Zod 4.0.5+** (upgraded from 3.20+)
@@ -243,9 +246,9 @@ generator zod {
 npx prisma generate
 ```
 
-## 🆕 New Prisma Client Generator Support
+## 🆕 Prisma Client Generator Support
 
-**v0.8.15-beta** introduces support for the new ESM-compatible `prisma-client` generator introduced in Prisma 6.12.0!
+**v1.0.0** includes full support for both the legacy and new ESM-compatible `prisma-client` generator introduced in Prisma 6.12.0!
 
 ### Generator Compatibility
 
@@ -342,11 +345,11 @@ The generator creates:
 
 | Version | Prisma | Zod | TypeScript | Node.js | Status |
 |---------|--------|-----|------------|---------|--------|
-| **v0.8.15-beta** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | 🧪 **Beta** - New Generator Support |
-| v0.8.14-beta | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | 🧪 **Beta** |
-| v0.8.13 (stable) | 4.8.0+ | 3.20+ | 4.9+ | 16+ | ✅ **Stable** |
+| **v1.0.0** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | ✅ **Latest Stable** - New Generator Support |
+| v0.8.15-beta | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | 🧪 **Beta** |
+| v0.8.13 | 4.8.0+ | 3.20+ | 4.9+ | 16+ | 📦 **Legacy** |
 
-> **Recommendation**: Use the beta version for new projects to get the latest features and future-proof your setup.
+> **Recommendation**: Use the stable v1.0.0 release for production applications. It includes full support for the new Prisma client generator and all latest features.
 
 ## ⚙️ Configuration Options
 
@@ -538,21 +541,21 @@ Examples:
 
 ## 🔍 Troubleshooting
 
-### Beta Version Issues
+### Version 1.0.0 Information
 
-**New Generator Support (v0.8.15-beta)**
-- Both `prisma-client-js` and `prisma-client` generators are supported
+**New Generator Support (v1.0.0)**
+- Both `prisma-client-js` and `prisma-client` generators are fully supported
 - If using the new generator, ensure Prisma 6.12.0+ is installed
 - Clear error messages guide you if no compatible generator is found
 
-**Dependency compatibility errors with v0.8.15-beta**
-- Ensure you're using Node.js 18+ 
-- Update Prisma to 6.12.0+ and Zod to 4.0.5+
-- Check that all peer dependencies are compatible
+**Dependency compatibility with v1.0.0**
+- Requires Node.js 18+ (upgraded from 16+)
+- Requires Prisma 6.12.0+ and Zod 4.0.5+
+- All peer dependencies must be compatible
 
-**Migration from stable to beta**
+**Migration to v1.0.0**
 - Backup your project before upgrading
-- Update all related dependencies (Prisma, Zod)
+- Update all related dependencies (Prisma, Zod, TypeScript)
 - Re-run `npx prisma generate` after upgrading
 - Test thoroughly in development environment
 
@@ -727,12 +730,12 @@ This project is licensed under the [MIT License](LICENSE).
       <td align="center">
         <img src="https://img.shields.io/badge/💎-Latest_Stable-success?style=for-the-badge&logo=npm" alt="Stable">
         <br>
-        <code>v0.8.13</code>
+        <code>v1.0.0</code>
       </td>
       <td align="center">
-        <img src="https://img.shields.io/badge/🚀-Beta_Version-warning?style=for-the-badge&logo=rocket" alt="Beta">
+        <img src="https://img.shields.io/badge/📦-Legacy_Version-lightgrey?style=for-the-badge&logo=archive" alt="Legacy">
         <br>
-        <code>v0.8.15-beta.0</code>
+        <code>v0.8.13</code>
       </td>
     </tr>
   </table>
