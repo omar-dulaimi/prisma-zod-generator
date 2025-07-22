@@ -56,7 +56,7 @@
 
 <div align="center">
   
-  ## 🚀 **Version 1.0.0** - Stable Release with New Generator Support!
+  ## 🚀 **Latest Stable Release** - Now with Schema Compilation Fixes!
   
   <table>
     <tr>
@@ -73,7 +73,16 @@
   
 </div>
 
-### ✨ **What's New in v1.0.0**
+### ✨ **Latest Features**
+
+🐛 **Schema Compilation Fixes** - Resolved critical schema compilation errors:
+- **SortOrderInput schemas** now use direct enum references instead of unnecessary lazy loading
+- **Args schemas** (UserArgs, ProfileArgs, etc.) no longer cause TypeScript compilation errors  
+- **All generated schemas** now compile cleanly without type constraint issues
+
+🔧 **Test Infrastructure** - Enhanced test reliability with improved CI/CD pipeline
+
+### ✨ **Core Features**
 
 <div align="center">
   
@@ -96,24 +105,29 @@
 </div>
 
 ```bash
-# 🚀 Install the stable release (recommended)
+# 🚀 Install the latest stable release (recommended)
+npm install prisma-zod-generator
+
+# or explicitly specify latest
 npm install prisma-zod-generator@latest
 
-# 🎯 Or lock to specific version
-npm install prisma-zod-generator@1.0.0
-
-# 🧪 Install beta versions (for testing)
+# 🧪 Install beta versions (for testing latest features)
 npm install prisma-zod-generator@beta
 ```
 
-### 🔄 Migration from Previous Versions
+### 🔄 Upgrading
 
-Version 1.0.0 maintains API compatibility but requires:
-- **Node.js 18+** (upgraded from 16+)
-- **Prisma 6.12.0+** (upgraded from 4.8+) 
-- **Zod 4.0.5+** (upgraded from 3.20+)
+The latest stable version maintains full API compatibility. Requirements:
+- **Node.js 18+** 
+- **Prisma 6.12.0+** 
+- **Zod 4.0.5+** 
 
 Simply update your dependencies and re-run `npx prisma generate` - no code changes needed!
+
+```bash
+npm update prisma-zod-generator
+npx prisma generate
+```
 
 ### 📝 Beta Feedback
 
@@ -247,7 +261,7 @@ npx prisma generate
 
 ## 🆕 Prisma Client Generator Support
 
-**v1.0.0** includes full support for both the legacy and new ESM-compatible `prisma-client` generator introduced in Prisma 6.12.0!
+The latest stable version includes full support for both the legacy and new ESM-compatible `prisma-client` generator introduced in Prisma 6.12.0, plus important schema compilation fixes!
 
 ### Generator Compatibility
 
@@ -344,11 +358,11 @@ The generator creates:
 
 | Version | Prisma | Zod | TypeScript | Node.js | Status |
 |---------|--------|-----|------------|---------|--------|
-| **v1.0.0** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | ✅ **Latest Stable** - New Generator Support |
-| v0.8.15-beta | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | 🧪 **Beta** |
-| v0.8.13 | 4.8.0+ | 3.20+ | 4.9+ | 16+ | 📦 **Legacy** |
+| **Latest** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | ✅ **Stable** - Full Features + Schema Fixes |
+| **Beta** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | 🧪 **Testing** - Experimental Features |
+| **Legacy** | 4.8.0+ | 3.20+ | 4.9+ | 16+ | 📦 **Deprecated** - Limited Support |
 
-> **Recommendation**: Use the stable v1.0.0 release for production applications. It includes full support for the new Prisma client generator and all latest features.
+> **Recommendation**: Use `npm install prisma-zod-generator` for the latest stable release with full features and important bug fixes.
 
 ## ⚙️ Configuration Options
 
@@ -540,19 +554,25 @@ Examples:
 
 ## 🔍 Troubleshooting
 
-### Version 1.0.0 Information
+### Latest Version Information
 
-**New Generator Support (v1.0.0)**
+**Recent Schema Compilation Fixes**
+- **SortOrderInput schemas**: Fixed unnecessary lazy loading that caused validation issues
+- **Args schemas**: Resolved TypeScript compilation errors for UserArgs, ProfileArgs, etc.
+- **All schemas**: Now compile cleanly without type constraint issues
+- **Full backward compatibility**: No code changes needed when upgrading
+
+**Generator Support**
 - Both `prisma-client-js` and `prisma-client` generators are fully supported
 - If using the new generator, ensure Prisma 6.12.0+ is installed
 - Clear error messages guide you if no compatible generator is found
 
-**Dependency compatibility with v1.0.0**
-- Requires Node.js 18+ (upgraded from 16+)
+**Current Requirements**
+- Requires Node.js 18+
 - Requires Prisma 6.12.0+ and Zod 4.0.5+
 - All peer dependencies must be compatible
 
-**Migration to v1.0.0**
+**Upgrading to Latest Version**
 - Backup your project before upgrading
 - Update all related dependencies (Prisma, Zod, TypeScript)
 - Re-run `npx prisma generate` after upgrading
