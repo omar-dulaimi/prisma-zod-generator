@@ -64,8 +64,25 @@ export default class Transformer {
       prismaClientCustomPath !== '@prisma/client';
   }
 
+  /**
+   * Determines the schemas directory path based on the output path.
+   * If the output path already ends with 'schemas', use it directly.
+   * Otherwise, append 'schemas' to the output path.
+   */
+  private static getSchemasPath(): string {
+    const normalizedOutputPath = path.normalize(this.outputPath);
+    const pathSegments = normalizedOutputPath.split(path.sep);
+    const lastSegment = pathSegments[pathSegments.length - 1];
+    
+    if (lastSegment === 'schemas') {
+      return this.outputPath;
+    }
+    
+    return path.join(this.outputPath, 'schemas');
+  }
+
   static async generateIndex() {
-    const indexPath = path.join(Transformer.outputPath, 'schemas/index.ts');
+    const indexPath = path.join(Transformer.getSchemasPath(), 'index.ts');
     await writeIndexFile(indexPath);
   }
 
@@ -74,7 +91,7 @@ export default class Transformer {
       const { name, values } = enumType;
 
       await writeFileSafely(
-        path.join(Transformer.outputPath, `schemas/enums/${name}.schema.ts`),
+        path.join(Transformer.getSchemasPath(), `enums/${name}.schema.ts`),
         `${this.generateImportZodStatement()}\n${this.generateExportSchemaStatement(
           `${name}`,
           `z.enum(${JSON.stringify(values)})`,
@@ -98,8 +115,8 @@ export default class Transformer {
 
     await writeFileSafely(
       path.join(
-        Transformer.outputPath,
-        `schemas/objects/${objectSchemaName}.schema.ts`,
+        Transformer.getSchemasPath(),
+        `objects/${objectSchemaName}.schema.ts`,
       ),
       objectSchema,
     );
@@ -370,9 +387,9 @@ export default class Transformer {
     if (Transformer.isCustomPrismaClientOutputPath) {
       /**
        * If a custom location was designated for the prisma client, we need to figure out the
-       * relative path from {outputPath}/schemas/objects to {prismaClientCustomPath}
+       * relative path from {schemas path}/objects to {prismaClientCustomPath}
        */
-      const fromPath = path.join(Transformer.outputPath, 'schemas', 'objects');
+      const fromPath = path.join(Transformer.getSchemasPath(), 'objects');
       const toPath = Transformer.prismaClientOutputPath as string;
       const relativePathFromOutputToPrismaClient = path
         .relative(fromPath, toPath)
@@ -529,7 +546,7 @@ export default class Transformer {
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${findUnique}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${findUnique}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -549,7 +566,7 @@ export default class Transformer {
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${findFirst}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${findFirst}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -569,7 +586,7 @@ export default class Transformer {
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${findMany}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${findMany}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -587,7 +604,7 @@ export default class Transformer {
           `import { ${modelName}UncheckedCreateInputObjectSchema } from './objects/${modelName}UncheckedCreateInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${createOne}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${createOne}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -602,7 +619,7 @@ export default class Transformer {
           `import { ${modelName}CreateManyInputObjectSchema } from './objects/${modelName}CreateManyInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${createMany}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${createMany}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -624,7 +641,7 @@ export default class Transformer {
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${deleteOne}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -639,7 +656,7 @@ export default class Transformer {
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${deleteMany}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${deleteMany}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -658,7 +675,7 @@ export default class Transformer {
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${updateOne}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -674,7 +691,7 @@ export default class Transformer {
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${updateMany}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${updateMany}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -695,7 +712,7 @@ export default class Transformer {
           `import { ${modelName}UncheckedUpdateInputObjectSchema } from './objects/${modelName}UncheckedUpdateInput.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${upsertOne}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${upsertOne}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -754,7 +771,7 @@ export default class Transformer {
         }
 
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${aggregate}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${aggregate}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
@@ -774,7 +791,7 @@ export default class Transformer {
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
         ];
         await writeFileSafely(
-          path.join(Transformer.outputPath, `schemas/${groupBy}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`),
           `${this.generateImportStatements(
             imports,
           )}${this.generateExportSchemaStatement(
