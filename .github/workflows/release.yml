@@ -83,7 +83,7 @@ jobs:
         
     - name: Commit version bump
       run: |
-        git add package.json package/package.json
+        git add package.json
         git commit -m "chore: bump version to v${{ steps.bump.outputs.new_version }} [skip ci]"
         git tag "v${{ steps.bump.outputs.new_version }}"
         
