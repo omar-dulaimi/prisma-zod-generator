@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.3...v1.0.4) (2025-07-23)
+
+### 🐛 Bug Fixes
+
+* remove unused error parameters in test catch blocks ([025b822](https://github.com/omar-dulaimi/prisma-zod-generator/commit/025b82201bb3e615968118c81276f28e3c46874a))
+* resolve output directory duplication when path ends with 'schemas' ([e200115](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e200115de9a73d43b5dd540c4f48e75d1bc70612)), closes [#118](https://github.com/omar-dulaimi/prisma-zod-generator/issues/118)
+
 ## [1.0.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.2...v1.0.3) (2025-07-22)
 
 ### 🐛 Bug Fixes
