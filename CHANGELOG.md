@@ -1,3 +1,9 @@
+## [1.0.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.4...v1.0.5) (2025-07-23)
+
+### 🐛 Bug Fixes
+
+* remove package/package.json from git add in release workflow ([254ad28](https://github.com/omar-dulaimi/prisma-zod-generator/commit/254ad281cbe1ff5e7b96a85437d72c9917c8a9fc))
+
 ## [1.0.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.3...v1.0.4) (2025-07-23)
 
 ### 🐛 Bug Fixes
