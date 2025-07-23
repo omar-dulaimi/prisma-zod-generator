@@ -15,7 +15,7 @@ describe('Issue #118: Output Directory Structure', () => {
     // Clean up any existing test output
     try {
       await fs.rm(testOutputDir, { recursive: true, force: true });
-    } catch (error) {
+    } catch {
       // Directory might not exist, ignore
     }
 
@@ -59,7 +59,7 @@ model TestPost {
     try {
       await fs.rm(testOutputDir, { recursive: true, force: true });
       await fs.rm(tempSchemaPath, { force: true });
-    } catch (error) {
+    } catch {
       // Files might not exist, ignore
     }
   });
