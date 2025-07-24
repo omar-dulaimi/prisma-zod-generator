@@ -5,24 +5,15 @@
   ### 🚀 **Automatically generate Zod schemas from your Prisma schema**
 
   <p>
-    <a href="https://www.npmjs.com/package/prisma-zod-generator">
-      <img src="https://img.shields.io/npm/v/prisma-zod-generator/latest.svg?style=for-the-badge&logo=npm&color=blue" alt="Stable Version">
-    </a>
-    <a href="https://www.npmjs.com/package/prisma-zod-generator">
-      <img src="https://img.shields.io/npm/v/prisma-zod-generator/beta.svg?style=for-the-badge&logo=npm&label=beta&color=orange" alt="Beta Version">
-    </a>
+    <a href="https://www.npmjs.com/package/prisma-zod-generator"><img src="https://img.shields.io/npm/v/prisma-zod-generator/latest.svg?style=for-the-badge&logo=npm&color=blue" alt="Stable Version"></a>
+    <a href="https://www.npmjs.com/package/prisma-zod-generator"><img src="https://img.shields.io/npm/v/prisma-zod-generator/beta.svg?style=for-the-badge&logo=npm&label=beta&color=orange" alt="Beta Version"></a>
   </p>
 
   <p>
-    <a href="https://www.npmjs.com/package/prisma-zod-generator">
-      <img src="https://img.shields.io/npm/dt/prisma-zod-generator.svg?style=for-the-badge&logo=npm&color=green" alt="Downloads">
-    </a>
-    <a href="https://github.com/omar-dulaimi/prisma-zod-generator/actions">
-      <img src="https://img.shields.io/github/actions/workflow/status/omar-dulaimi/prisma-zod-generator/ci.yml?style=for-the-badge&logo=github" alt="CI Status">
-    </a>
-    <a href="LICENSE">
-      <img src="https://img.shields.io/npm/l/prisma-zod-generator.svg?style=for-the-badge&color=purple" alt="License">
-    </a>
+    <a href="https://dependents.info/omar-dulaimi/prisma-zod-generator"><img src="https://dependents.info/omar-dulaimi/prisma-zod-generator/badge?label=users&style=for-the-badge&logo=npm&color=green" alt="Network Dependents"></a>
+    <a href="https://www.npmjs.com/package/prisma-zod-generator"><img src="https://img.shields.io/npm/dt/prisma-zod-generator.svg?style=for-the-badge&logo=npm&color=green" alt="Downloads"></a>
+    <a href="https://github.com/omar-dulaimi/prisma-zod-generator/actions"><img src="https://img.shields.io/github/actions/workflow/status/omar-dulaimi/prisma-zod-generator/ci.yml?style=for-the-badge&logo=github" alt="CI Status"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/npm/l/prisma-zod-generator.svg?style=for-the-badge&color=purple" alt="License"></a>
   </p>
 
   <p>
