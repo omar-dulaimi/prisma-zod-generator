@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.7...v1.1.0) (2025-07-25)
+
+### 🚀 Features
+
+* add support for new prisma-client generator ([46cdc02](https://github.com/omar-dulaimi/prisma-zod-generator/commit/46cdc027a0229cc8da648d1daac243b2e62e6748)), closes [#127](https://github.com/omar-dulaimi/prisma-zod-generator/issues/127)
+
 ## [1.0.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.6...v1.0.7) (2025-07-25)
 
 ### 🐛 Bug Fixes
