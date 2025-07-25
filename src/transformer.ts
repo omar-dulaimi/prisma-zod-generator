@@ -690,10 +690,10 @@ export default class Transformer {
           )}${this.generateExportSchemaStatement(
             `${modelName}CreateMany`,
             `z.object({ data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]), ${
-              Transformer.provider === 'mongodb' ||
-              Transformer.provider === 'sqlserver'
-                ? ''
-                : 'skipDuplicates: z.boolean().optional()'
+              Transformer.provider === 'postgresql' ||
+              Transformer.provider === 'cockroachdb'
+                ? 'skipDuplicates: z.boolean().optional()'
+                : ''
             } })`,
           )}`,
         );
