@@ -312,6 +312,41 @@ generator zod {
 
 **Gradual Migration**: Both generators are supported simultaneously during the transition
 
+## 🧪 Preview Features Support
+
+The Prisma Zod Generator supports various Prisma preview features, providing seamless compatibility with the latest Prisma capabilities.
+
+### Implemented Preview Features
+
+| Preview Feature | Support Status | Since Version | Description |
+|----------------|----------------|---------------|-------------|
+| **prisma-client** | ✅ Full Support | v1.1.0 | ESM-compatible Prisma Client generator with custom output paths and improved modularity |
+
+### Usage with Preview Features
+
+To use supported preview features, enable them in your Prisma schema:
+
+```prisma
+generator client {
+  provider = "prisma-client"
+  output   = "./src/generated/client"
+  previewFeatures = ["driverAdapters", "queryCompiler"]
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./src/generated/zod"
+}
+```
+
+The Zod generator automatically detects enabled preview features and adapts its behavior accordingly.
+
+### Compatibility Notes
+
+- **Backward Compatibility**: All preview feature support maintains full compatibility with existing schemas
+- **Progressive Enhancement**: New features are additive and don't break existing functionality
+- **Automatic Detection**: No additional configuration required - the generator detects enabled features automatically
+
 ## 📋 Generated Output
 
 For the following schema:
