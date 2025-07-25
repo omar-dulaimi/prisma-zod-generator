@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.4...v1.0.5) (2025-07-25)
+
+### 🐛 Bug Fixes
+
+* remove package/package.json from git add in release workflow ([254ad28](https://github.com/omar-dulaimi/prisma-zod-generator/commit/254ad281cbe1ff5e7b96a85437d72c9917c8a9fc))
+* resolve TypeScript compilation errors in generated schemas ([85d10a8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/85d10a8e7f494365d8912120d492e6061d9b52dc))
+
 ## [1.0.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.4...v1.0.5) (2025-07-23)
 
 ### 🐛 Bug Fixes
