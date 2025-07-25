@@ -30,6 +30,8 @@ export default class Transformer {
   private hasJson = false;
   private static prismaClientOutputPath: string = '@prisma/client';
   private static isCustomPrismaClientOutputPath: boolean = false;
+  private static prismaClientProvider: string = 'prisma-client-js';
+  private static prismaClientConfig: Record<string, any> = {};
   private static isGenerateSelect: boolean = false;
   private static isGenerateInclude: boolean = false;
 
@@ -62,6 +64,14 @@ export default class Transformer {
     this.prismaClientOutputPath = prismaClientCustomPath;
     this.isCustomPrismaClientOutputPath =
       prismaClientCustomPath !== '@prisma/client';
+  }
+
+  static setPrismaClientProvider(provider: string) {
+    this.prismaClientProvider = provider;
+  }
+
+  static setPrismaClientConfig(config: Record<string, any>) {
+    this.prismaClientConfig = config;
   }
 
   /**
@@ -468,7 +478,21 @@ export default class Transformer {
        */
       prismaClientImportPath = Transformer.prismaClientOutputPath;
     }
-    return `import type { Prisma } from '${prismaClientImportPath}';\n\n`;
+
+    // Handle new prisma-client generator which requires /client suffix for type imports
+    // The new prisma-client generator can be detected by the presence of moduleFormat or runtime in config
+    // These fields only exist in the new generator
+    const isNewPrismaClientGenerator = Transformer.prismaClientProvider === 'prisma-client' ||
+                                       Transformer.prismaClientConfig.moduleFormat !== undefined ||
+                                       Transformer.prismaClientConfig.runtime !== undefined;
+    
+    const needsClientSuffix = isNewPrismaClientGenerator && 
+                               Transformer.isCustomPrismaClientOutputPath && 
+                               !prismaClientImportPath.endsWith('/client') &&
+                               !prismaClientImportPath.includes('@prisma/client');
+    const finalImportPath = needsClientSuffix ? `${prismaClientImportPath}/client` : prismaClientImportPath;
+    
+    return `import type { Prisma } from '${finalImportPath}';\n\n`;
   }
 
   generateJsonSchemaImplementation() {
