@@ -45,7 +45,10 @@ export async function generate(options: GeneratorOptions) {
       previewFeatures: prismaClientGeneratorConfig?.previewFeatures,
     });
 
+
     checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
+    setPrismaClientProvider(prismaClientGeneratorConfig);
+    setPrismaClientConfig(prismaClientGeneratorConfig);
 
     const modelOperations = prismaClientDmmf.mappings.modelOperations;
     const inputObjectTypes = prismaClientDmmf.schema.inputObjectTypes.prisma;
@@ -144,6 +147,24 @@ function checkForCustomPrismaClientOutputPath(
     Transformer.setPrismaClientOutputPath(
       prismaClientGeneratorConfig.output?.value as string,
     );
+  }
+}
+
+function setPrismaClientProvider(
+  prismaClientGeneratorConfig: GeneratorConfig | undefined,
+) {
+  if (prismaClientGeneratorConfig?.provider) {
+    Transformer.setPrismaClientProvider(
+      parseEnvValue(prismaClientGeneratorConfig.provider),
+    );
+  }
+}
+
+function setPrismaClientConfig(
+  prismaClientGeneratorConfig: GeneratorConfig | undefined,
+) {
+  if (prismaClientGeneratorConfig?.config) {
+    Transformer.setPrismaClientConfig(prismaClientGeneratorConfig.config);
   }
 }
 
