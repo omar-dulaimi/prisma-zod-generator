@@ -356,7 +356,72 @@ export default class Transformer {
       return `const Schema = ${schema};\n\n ${end}`;
     }
     
-    return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
+    // Check if the Prisma type actually exists before using it
+    // Many filter and input types don't exist in the Prisma client
+    if (this.isPrismaTypeAvailable(name)) {
+      return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
+    } else {
+      // Fallback to generic schema without type annotation
+      return `const Schema = ${schema};\n\n ${end}`;
+    }
+  }
+
+  private isPrismaTypeAvailable(name: string): boolean {
+    // Based on analysis of actual Prisma client exports
+    // Only these patterns of types exist in the Prisma namespace:
+    
+    // 1. ScalarFieldEnum types (e.g., MySQLUserScalarFieldEnum)
+    if (name.endsWith('ScalarFieldEnum')) {
+      return true;
+    }
+    
+    // 2. OrderByRelevanceFieldEnum types (e.g., MySQLUserOrderByRelevanceFieldEnum)
+    if (name.endsWith('OrderByRelevanceFieldEnum')) {
+      return true;
+    }
+    
+    // 3. Special built-in types that always exist
+    const builtInTypes = [
+      'JsonNullValueFilter',
+      'JsonNullValueInput', 
+      'NullableJsonNullValueInput',
+      'SortOrder',
+      'NullsOrder',
+      'QueryMode',
+      'TransactionIsolationLevel'
+    ];
+    if (builtInTypes.includes(name)) {
+      return true;
+    }
+    
+    // 4. Basic operation types that exist (without provider prefix)
+    // Remove provider prefix for checking
+    const nameWithoutProvider = name.replace(/^(MySQL|PostgreSQL|MongoDB|SQLite|SQLServer)/, '');
+    const basicTypes = [
+      'WhereInput',
+      'OrderByWithRelationInput', 
+      'WhereUniqueInput',
+      'CreateInput',
+      'UpdateInput',
+      'UncheckedCreateInput',
+      'UncheckedUpdateInput'
+    ];
+    
+    // Check if it's a basic type that should exist
+    if (basicTypes.some(type => nameWithoutProvider.endsWith(type))) {
+      // But filter types, nested types, and many input envelope types don't exist
+      if (nameWithoutProvider.includes('Filter') || 
+          nameWithoutProvider.includes('Nested') ||
+          nameWithoutProvider.includes('InputEnvelope') ||
+          nameWithoutProvider.includes('FieldUpdateOperations') ||
+          nameWithoutProvider.includes('WithAggregates')) {
+        return false;
+      }
+      return true;
+    }
+    
+    // All other types (especially Filter types, FieldUpdateOperations, etc.) don't exist
+    return false;
   }
 
   private hasComplexRelations(): boolean {
@@ -412,8 +477,8 @@ export default class Transformer {
     if (this.hasJson) {
       jsonSchemaImplementation += `\n`;
       jsonSchemaImplementation += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
-      jsonSchemaImplementation += `const jsonSchema: z.ZodType<Prisma.InputJsonValue> = z.lazy(() =>\n`;
-      jsonSchemaImplementation += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(jsonSchema.nullable())])\n`;
+      jsonSchemaImplementation += `const jsonSchema = z.lazy(() =>\n`;
+      jsonSchemaImplementation += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])\n`;
       jsonSchemaImplementation += `);\n\n`;
     }
 
