@@ -1,3 +1,9 @@
+## [1.0.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.5...v1.0.6) (2025-07-25)
+
+### 🐛 Bug Fixes
+
+* correct skipDuplicates support for database providers ([0511785](https://github.com/omar-dulaimi/prisma-zod-generator/commit/051178560b0fee4940779c1d941a06f547f16317))
+
 ## [1.0.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.4...v1.0.5) (2025-07-25)
 
 ### 🐛 Bug Fixes
