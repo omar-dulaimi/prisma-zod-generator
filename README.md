@@ -6,10 +6,7 @@
 
   <p>
     <a href="https://www.npmjs.com/package/prisma-zod-generator">
-      <img src="https://img.shields.io/npm/v/prisma-zod-generator/latest.svg?style=for-the-badge&logo=npm&color=blue" alt="Stable Version">
-    </a>
-    <a href="https://www.npmjs.com/package/prisma-zod-generator">
-      <img src="https://img.shields.io/npm/v/prisma-zod-generator/beta.svg?style=for-the-badge&logo=npm&label=beta&color=orange" alt="Beta Version">
+      <img src="https://img.shields.io/npm/v/prisma-zod-generator/latest.svg?style=for-the-badge&logo=npm&color=blue" alt="Latest Version">
     </a>
   </p>
 
@@ -105,14 +102,8 @@
 </div>
 
 ```bash
-# 🚀 Install the latest stable release (recommended)
+# 🚀 Install the latest release
 npm install prisma-zod-generator
-
-# or explicitly specify latest
-npm install prisma-zod-generator@latest
-
-# 🧪 Install beta versions (for testing latest features)
-npm install prisma-zod-generator@beta
 ```
 
 ### 🔄 Upgrading
@@ -128,10 +119,6 @@ Simply update your dependencies and re-run `npx prisma generate` - no code chang
 npm update prisma-zod-generator
 npx prisma generate
 ```
-
-### 📝 Beta Feedback
-
-Please test thoroughly and [report any issues](https://github.com/omar-dulaimi/prisma-zod-generator/issues). Your feedback helps us deliver a stable release!
 
 <div align="center">
   
@@ -203,28 +190,15 @@ Please test thoroughly and [report any issues](https://github.com/omar-dulaimi/p
 
 ### Installation
 
-#### Beta Version (Recommended - Latest Features)
 ```bash
 # NPM
-npm install prisma-zod-generator@beta
-
-# Yarn  
-yarn add prisma-zod-generator@beta
-
-# PNPM
-pnpm add prisma-zod-generator@beta
-```
-
-#### Stable Version (Latest)
-```bash
-# NPM
-npm install prisma-zod-generator@latest
+npm install prisma-zod-generator
 
 # Yarn
-yarn add prisma-zod-generator@latest
+yarn add prisma-zod-generator
 
 # PNPM  
-pnpm add prisma-zod-generator@latest
+pnpm add prisma-zod-generator
 ```
 
 ### Setup
@@ -393,8 +367,7 @@ The generator creates:
 
 | Version | Prisma | Zod | TypeScript | Node.js | Status |
 |---------|--------|-----|------------|---------|--------|
-| **Latest** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | ✅ **Stable** - Full Features + Schema Fixes |
-| **Beta** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | 🧪 **Testing** - Experimental Features |
+| **Latest** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | ✅ **Stable** - Full Features + Preview Support |
 | **Legacy** | 4.8.0+ | 3.20+ | 4.9+ | 16+ | 📦 **Deprecated** - Limited Support |
 
 > **Recommendation**: Use `npm install prisma-zod-generator` for the latest stable release with full features and important bug fixes.
@@ -634,8 +607,8 @@ Examples:
 - Check that the generator is properly configured in `schema.prisma`
 - Clear your build cache and regenerate
 
-**Zod validation errors (v0.8.14-beta)**
-- Ensure you have Zod 4.0.5+ installed for beta compatibility
+**Zod validation errors**
+- Ensure you have Zod 4.0.5+ installed for compatibility
 - Check that your input schemas match your Prisma model types
 
 **Generator fails to run**
