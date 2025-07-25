@@ -342,7 +342,7 @@ export default class Transformer {
     // Args types like UserArgs, ProfileArgs don't exist in Prisma client
     // Use generic typing instead of non-existent Prisma type
     if (name.endsWith('Args')) {
-      return `const Schema = ${schema};\n\n ${end}`;
+      return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
     }
     
     // For schemas with complex relations, omit explicit typing
@@ -353,7 +353,7 @@ export default class Transformer {
       name.includes('CreateNestedOne') ||
       name.includes('CreateNestedMany')
     )) {
-      return `const Schema = ${schema};\n\n ${end}`;
+      return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
     }
     
     // Check if the Prisma type actually exists before using it
@@ -361,8 +361,8 @@ export default class Transformer {
     if (this.isPrismaTypeAvailable(name)) {
       return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
     } else {
-      // Fallback to generic schema without type annotation
-      return `const Schema = ${schema};\n\n ${end}`;
+      // Fallback to generic schema with explicit any type annotation to avoid TypeScript errors
+      return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
     }
   }
 
