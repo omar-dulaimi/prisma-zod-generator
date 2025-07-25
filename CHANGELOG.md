@@ -1,3 +1,9 @@
+## [1.0.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.6...v1.0.7) (2025-07-25)
+
+### 🐛 Bug Fixes
+
+* add explicit type annotations to prevent TypeScript implicit any errors ([ef50308](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ef503088af6cd0728267a8fb30b9adab782453b8))
+
 ## [1.0.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.5...v1.0.6) (2025-07-25)
 
 ### 🐛 Bug Fixes
