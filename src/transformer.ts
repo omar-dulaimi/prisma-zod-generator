@@ -8,7 +8,6 @@ import {
   findModelByName,
   isMongodbRawOp,
 } from './helpers';
-import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { AggregateOperationSupport, TransformerParams } from './types';
 import { writeFileSafely } from './utils/writeFileSafely';
 import { writeIndexFile } from './utils/writeIndexFile';
@@ -83,11 +82,11 @@ export default class Transformer {
     const normalizedOutputPath = path.normalize(this.outputPath);
     const pathSegments = normalizedOutputPath.split(path.sep);
     const lastSegment = pathSegments[pathSegments.length - 1];
-    
+
     if (lastSegment === 'schemas') {
       return this.outputPath;
     }
-    
+
     return path.join(this.outputPath, 'schemas');
   }
 
@@ -274,7 +273,10 @@ export default class Transformer {
       this.checkIsModelQueryType(inputType.type as string);
 
     const objectSchemaLine = isModelQueryType
-      ? this.resolveModelQuerySchemaName(modelName as string, queryName as string)
+      ? this.resolveModelQuerySchemaName(
+          modelName as string,
+          queryName as string,
+        )
       : `${inputType.type}ObjectSchema`;
     const enumSchemaLine = `${inputType.type}Schema`;
 
@@ -291,7 +293,9 @@ export default class Transformer {
 
     // Only use lazy loading for self-references or complex object schemas that might have circular dependencies
     // Simple enums like SortOrder don't need lazy loading
-    const needsLazyLoading = inputType.type === this.name || (!isEnum && inputType.namespace === 'prisma');
+    const needsLazyLoading =
+      inputType.type === this.name ||
+      (!isEnum && inputType.namespace === 'prisma');
 
     if (needsLazyLoading) {
       return inputsLength === 1
@@ -326,11 +330,9 @@ export default class Transformer {
       this.addFinalWrappers({ zodStringFields: zodObjectSchemaFields }),
     )}\n`;
 
-    const prismaImportStatement = this.generateImportPrismaStatement();
-
     const json = this.generateJsonSchemaImplementation();
 
-    return `${this.generateObjectSchemaImportStatements()}${prismaImportStatement}${json}${objectSchema}`;
+    return `${this.generateObjectSchemaImportStatements()}${json}${objectSchema}`;
   }
 
   generateExportObjectSchemaStatement(schema: string) {
@@ -343,156 +345,15 @@ export default class Transformer {
       }
     }
 
-    if (isAggregateInputType(name)) {
-      name = `${name}Type`;
-    }
-    
     const end = `export const ${exportName}ObjectSchema = Schema`;
-    
-    // Args types like UserArgs, ProfileArgs don't exist in Prisma client
-    // Use generic typing instead of non-existent Prisma type
-    if (name.endsWith('Args')) {
-      return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
-    }
-    
-    // For schemas with complex relations, omit explicit typing
-    // to avoid TypeScript inference issues with z.lazy()
-    if (this.hasComplexRelations() && (
-      name.endsWith('CreateInput') || 
-      name.includes('CreateOrConnect') ||
-      name.includes('CreateNestedOne') ||
-      name.includes('CreateNestedMany')
-    )) {
-      return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
-    }
-    
-    // Check if the Prisma type actually exists before using it
-    // Many filter and input types don't exist in the Prisma client
-    if (this.isPrismaTypeAvailable(name)) {
-      return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
-    } else {
-      // Fallback to generic schema with explicit any type annotation to avoid TypeScript errors
-      return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
-    }
-  }
 
-  private isPrismaTypeAvailable(name: string): boolean {
-    // Based on analysis of actual Prisma client exports
-    // Only these patterns of types exist in the Prisma namespace:
-    
-    // 1. ScalarFieldEnum types (e.g., MySQLUserScalarFieldEnum)
-    if (name.endsWith('ScalarFieldEnum')) {
-      return true;
-    }
-    
-    // 2. OrderByRelevanceFieldEnum types (e.g., MySQLUserOrderByRelevanceFieldEnum)
-    if (name.endsWith('OrderByRelevanceFieldEnum')) {
-      return true;
-    }
-    
-    // 3. Special built-in types that always exist
-    const builtInTypes = [
-      'JsonNullValueFilter',
-      'JsonNullValueInput', 
-      'NullableJsonNullValueInput',
-      'SortOrder',
-      'NullsOrder',
-      'QueryMode',
-      'TransactionIsolationLevel'
-    ];
-    if (builtInTypes.includes(name)) {
-      return true;
-    }
-    
-    // 4. Basic operation types that exist (without provider prefix)
-    // Remove provider prefix for checking
-    const nameWithoutProvider = name.replace(/^(MySQL|PostgreSQL|MongoDB|SQLite|SQLServer)/, '');
-    const basicTypes = [
-      'WhereInput',
-      'OrderByWithRelationInput', 
-      'WhereUniqueInput',
-      'CreateInput',
-      'UpdateInput',
-      'UncheckedCreateInput',
-      'UncheckedUpdateInput'
-    ];
-    
-    // Check if it's a basic type that should exist
-    if (basicTypes.some(type => nameWithoutProvider.endsWith(type))) {
-      // But filter types, nested types, and many input envelope types don't exist
-      if (nameWithoutProvider.includes('Filter') || 
-          nameWithoutProvider.includes('Nested') ||
-          nameWithoutProvider.includes('InputEnvelope') ||
-          nameWithoutProvider.includes('FieldUpdateOperations') ||
-          nameWithoutProvider.includes('WithAggregates')) {
-        return false;
-      }
-      return true;
-    }
-    
-    // All other types (especially Filter types, FieldUpdateOperations, etc.) don't exist
-    return false;
-  }
-
-  private hasComplexRelations(): boolean {
-    // Check if this schema has any lazy-loaded relation fields
-    return this.fields.some(field => 
-      field.inputTypes.some(inputType => 
-        inputType.location !== 'enumTypes' && 
-        inputType.namespace === 'prisma' && 
-        typeof inputType.type === 'string' &&
-        inputType.type !== this.name &&
-        (inputType.type.includes('CreateNestedOneWithout') ||
-         inputType.type.includes('CreateNestedManyWithout') ||
-         inputType.type.includes('WhereUniqueInput') ||
-         inputType.type.includes('CreateWithout') ||
-         inputType.type.includes('UncheckedCreateWithout'))
-      )
-    );
+    return `const Schema = ${schema};\n\n ${end}`;
   }
 
   addFinalWrappers({ zodStringFields }: { zodStringFields: string[] }) {
     const fields = [...zodStringFields];
 
     return this.wrapWithZodObject(fields) + '.strict()';
-  }
-
-  generateImportPrismaStatement() {
-    let prismaClientImportPath: string;
-    if (Transformer.isCustomPrismaClientOutputPath) {
-      /**
-       * If a custom location was designated for the prisma client, we need to figure out the
-       * relative path from {schemas path}/objects to {prismaClientCustomPath}
-       */
-      const fromPath = path.join(Transformer.getSchemasPath(), 'objects');
-      const toPath = Transformer.prismaClientOutputPath as string;
-      const relativePathFromOutputToPrismaClient = path
-        .relative(fromPath, toPath)
-        .split(path.sep)
-        .join(path.posix.sep);
-      prismaClientImportPath = relativePathFromOutputToPrismaClient;
-    } else {
-      /**
-       * If the default output path for prisma client (@prisma/client) is being used, we can import from it directly
-       * without having to resolve a relative path
-       */
-      prismaClientImportPath = Transformer.prismaClientOutputPath;
-    }
-
-    // Handle new prisma-client generator which requires /client suffix for type imports
-    // The new prisma-client generator can be detected by the presence of moduleFormat or runtime in config
-    // These fields only exist in the new generator
-    const isNewPrismaClientGenerator = Transformer.prismaClientProvider === 'prisma-client' ||
-                                       Transformer.prismaClientConfig.moduleFormat !== undefined ||
-                                       Transformer.prismaClientConfig.runtime !== undefined;
-    
-    const needsClientSuffix = isNewPrismaClientGenerator && 
-                               Transformer.isCustomPrismaClientOutputPath && 
-                               !prismaClientImportPath.endsWith('/client') &&
-                               !prismaClientImportPath.includes('@prisma/client');
-    const finalImportPath = needsClientSuffix ? `${prismaClientImportPath}/client` : prismaClientImportPath;
-    
-    return `import type { Prisma } from '${finalImportPath}';\n\n`;
   }
 
   generateJsonSchemaImplementation() {
@@ -558,17 +419,6 @@ export default class Transformer {
     const queryNameCapitalized =
       queryName.charAt(0).toUpperCase() + (queryName as string).slice(1);
     return `${modelNameCapitalized}${queryNameCapitalized}Schema`;
-  }
-
-  wrapWithZodUnion(zodStringFields: string[]) {
-    let wrapped = '';
-
-    wrapped += 'z.union([';
-    wrapped += '\n';
-    wrapped += '  ' + zodStringFields.join(',');
-    wrapped += '\n';
-    wrapped += '])';
-    return wrapped;
   }
 
   wrapWithZodObject(zodStringFields: string | string[]) {
