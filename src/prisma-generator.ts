@@ -61,22 +61,24 @@ export async function generate(options: GeneratorOptions) {
       );
     const enumTypes = prismaClientDmmf.schema.enumTypes;
     const models: DMMF.Model[] = [...prismaClientDmmf.datamodel.models];
+    const mutableModelOperations = [...modelOperations];
+    const mutableEnumTypes = {
+      model: enumTypes.model ? [...enumTypes.model] : undefined,
+      prisma: [...enumTypes.prisma],
+    };
     const hiddenModels: string[] = [];
     const hiddenFields: string[] = [];
     resolveModelsComments(
       models,
-      [...modelOperations],
-      {
-        model: enumTypes.model ? [...enumTypes.model] : undefined,
-        prisma: [...enumTypes.prisma],
-      },
+      mutableModelOperations,
+      mutableEnumTypes,
       hiddenModels,
       hiddenFields,
     );
 
     await generateEnumSchemas(
-      [...prismaClientDmmf.schema.enumTypes.prisma],
-      [...(prismaClientDmmf.schema.enumTypes.model ?? [])],
+      mutableEnumTypes.prisma,
+      mutableEnumTypes.model ?? [],
     );
 
     const dataSource = options.datasources?.[0];
@@ -98,7 +100,7 @@ export async function generate(options: GeneratorOptions) {
       mutableInputObjectTypes,
       mutableOutputObjectTypes,
       models,
-      [...modelOperations],
+      mutableModelOperations,
       dataSource.provider,
       addMissingInputObjectTypeOptions,
     );
@@ -115,7 +117,7 @@ export async function generate(options: GeneratorOptions) {
     await generateObjectSchemas(mutableInputObjectTypes);
     await generateModelSchemas(
       models,
-      [...modelOperations],
+      mutableModelOperations,
       aggregateOperationSupport,
     );
     await generateIndex();
