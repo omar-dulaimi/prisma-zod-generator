@@ -144,6 +144,7 @@ export default class Transformer {
 
         return value.trim();
       });
+    
     return zodObjectSchemaFields;
   }
 
@@ -221,9 +222,15 @@ export default class Transformer {
       );
     }
 
-    const fieldName = alternatives.some((alt) => alt.includes(':'))
+    // Check if ALL alternatives already include the field name
+    // This happens when inputsLength === 1 for all alternatives
+    // We check if alternatives start with the field name pattern (spaces + fieldname + colon)
+    const fieldNamePattern = `  ${field.name}:`;
+    const allAlternativesHaveFieldName = alternatives.every((alt) => alt.startsWith(fieldNamePattern));
+    
+    const fieldName = allAlternativesHaveFieldName
       ? ''
-      : `  ${field.name}:`;
+      : fieldNamePattern;
 
     const opt = !field.isRequired ? '.optional()' : '';
 
@@ -299,8 +306,8 @@ export default class Transformer {
 
     if (needsLazyLoading) {
       return inputsLength === 1
-        ? `  ${field.name}: z.lazy(() => ${schema})${arr}${opt}`
-        : `z.lazy(() => ${schema})${arr}${opt}`;
+        ? `  ${field.name}: z.lazy((): z.ZodTypeAny => ${schema})${arr}${opt}`
+        : `z.lazy((): z.ZodTypeAny => ${schema})${arr}${opt}`;
     } else {
       return inputsLength === 1
         ? `  ${field.name}: ${schema}${arr}${opt}`
@@ -362,7 +369,7 @@ export default class Transformer {
     if (this.hasJson) {
       jsonSchemaImplementation += `\n`;
       jsonSchemaImplementation += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
-      jsonSchemaImplementation += `const jsonSchema = z.lazy(() =>\n`;
+      jsonSchemaImplementation += `const jsonSchema = z.lazy((): z.ZodTypeAny =>\n`;
       jsonSchemaImplementation += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])\n`;
       jsonSchemaImplementation += `);\n\n`;
     }
@@ -772,13 +779,13 @@ export default class Transformer {
     if (Transformer.isGenerateSelect) {
       const zodSelectObjectSchema = `${modelName}SelectObjectSchema.optional()`;
       selectZodSchemaLine = `select: ${zodSelectObjectSchema},`;
-      selectZodSchemaLineLazy = `select: z.lazy(() => ${zodSelectObjectSchema}),`;
+      selectZodSchemaLineLazy = `select: z.lazy((): z.ZodTypeAny => ${zodSelectObjectSchema}),`;
     }
 
     if (Transformer.isGenerateInclude && hasRelationToAnotherModel) {
       const zodIncludeObjectSchema = `${modelName}IncludeObjectSchema.optional()`;
       includeZodSchemaLine = `include: ${zodIncludeObjectSchema},`;
-      includeZodSchemaLineLazy = `include: z.lazy(() => ${zodIncludeObjectSchema}),`;
+      includeZodSchemaLineLazy = `include: z.lazy((): z.ZodTypeAny => ${zodIncludeObjectSchema}),`;
     }
 
     return {
