@@ -21,22 +21,25 @@ export async function generate(options: GeneratorOptions) {
   try {
     await handleGeneratorOutputValue(options.generator.output as EnvValue);
 
-    const prismaClientGeneratorConfig = 
-      getGeneratorConfigByProvider(options.otherGenerators, 'prisma-client-js') ||
+    const prismaClientGeneratorConfig =
+      getGeneratorConfigByProvider(
+        options.otherGenerators,
+        'prisma-client-js',
+      ) ||
       getGeneratorConfigByProvider(options.otherGenerators, 'prisma-client');
 
     if (!prismaClientGeneratorConfig) {
       throw new Error(
         'Prisma Zod Generator requires either "prisma-client-js" or "prisma-client" generator to be present in your schema.prisma file.\n\n' +
-        'Please add one of the following to your schema.prisma:\n\n' +
-        '// For the legacy generator:\n' +
-        'generator client {\n' +
-        '  provider = "prisma-client-js"\n' +
-        '}\n\n' +
-        '// Or for the new generator (Prisma 6.12.0+):\n' +
-        'generator client {\n' +
-        '  provider = "prisma-client"\n' +
-        '}'
+          'Please add one of the following to your schema.prisma:\n\n' +
+          '// For the legacy generator:\n' +
+          'generator client {\n' +
+          '  provider = "prisma-client-js"\n' +
+          '}\n\n' +
+          '// Or for the new generator (Prisma 6.12.0+):\n' +
+          'generator client {\n' +
+          '  provider = "prisma-client"\n' +
+          '}',
       );
     }
 
@@ -44,7 +47,6 @@ export async function generate(options: GeneratorOptions) {
       datamodel: options.datamodel,
       previewFeatures: prismaClientGeneratorConfig?.previewFeatures,
     });
-
 
     checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
     setPrismaClientProvider(prismaClientGeneratorConfig);
@@ -59,22 +61,24 @@ export async function generate(options: GeneratorOptions) {
       );
     const enumTypes = prismaClientDmmf.schema.enumTypes;
     const models: DMMF.Model[] = [...prismaClientDmmf.datamodel.models];
+    const mutableModelOperations = [...modelOperations];
+    const mutableEnumTypes = {
+      model: enumTypes.model ? [...enumTypes.model] : undefined,
+      prisma: [...enumTypes.prisma],
+    };
     const hiddenModels: string[] = [];
     const hiddenFields: string[] = [];
     resolveModelsComments(
       models,
-      [...modelOperations],
-      {
-        model: enumTypes.model ? [...enumTypes.model] : undefined,
-        prisma: [...enumTypes.prisma],
-      },
+      mutableModelOperations,
+      mutableEnumTypes,
       hiddenModels,
       hiddenFields,
     );
 
     await generateEnumSchemas(
-      [...prismaClientDmmf.schema.enumTypes.prisma],
-      [...(prismaClientDmmf.schema.enumTypes.model ?? [])],
+      mutableEnumTypes.prisma,
+      mutableEnumTypes.model ?? [],
     );
 
     const dataSource = options.datasources?.[0];
@@ -96,7 +100,7 @@ export async function generate(options: GeneratorOptions) {
       mutableInputObjectTypes,
       mutableOutputObjectTypes,
       models,
-      [...modelOperations],
+      mutableModelOperations,
       dataSource.provider,
       addMissingInputObjectTypeOptions,
     );
@@ -113,7 +117,7 @@ export async function generate(options: GeneratorOptions) {
     await generateObjectSchemas(mutableInputObjectTypes);
     await generateModelSchemas(
       models,
-      [...modelOperations],
+      mutableModelOperations,
       aggregateOperationSupport,
     );
     await generateIndex();
