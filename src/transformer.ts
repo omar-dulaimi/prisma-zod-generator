@@ -31,7 +31,7 @@ export default class Transformer {
   private static prismaClientOutputPath: string = '@prisma/client';
   private static isCustomPrismaClientOutputPath: boolean = false;
   private static prismaClientProvider: string = 'prisma-client-js';
-  private static prismaClientConfig: Record<string, any> = {};
+  private static prismaClientConfig: Record<string, unknown> = {};
   private static isGenerateSelect: boolean = false;
   private static isGenerateInclude: boolean = false;
 
@@ -70,7 +70,7 @@ export default class Transformer {
     this.prismaClientProvider = provider;
   }
 
-  static setPrismaClientConfig(config: Record<string, any>) {
+  static setPrismaClientConfig(config: Record<string, unknown>) {
     this.prismaClientConfig = config;
   }
 

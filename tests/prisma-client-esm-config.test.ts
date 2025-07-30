@@ -277,7 +277,7 @@ ${baseSchema}`;
             expect(content).not.toMatch(/import.*\.js'/);
             expect(content).not.toMatch(/import.*\.mjs'/);
           }
-        } catch (error) {
+        } catch {
           console.warn('Skipping ESM without extension test - might not be available');
         }
       });
@@ -307,7 +307,7 @@ ${baseSchema}`;
             // Should not add extensions when moduleFormat is not esm
             expect(content).not.toMatch(/import.*\.js'/);
           }
-        } catch (error) {
+        } catch {
           console.warn('Skipping runtime-only test - might not be available');
         }
       });
@@ -335,7 +335,7 @@ ${baseSchema}`;
             // Should not add extensions when importFileExtension is not specified
             expect(content).not.toMatch(/import.*\.js'/);
           }
-        } catch (error) {
+        } catch {
           console.warn('Skipping moduleFormat-only test - might not be available');
         }
       });
@@ -354,7 +354,7 @@ ${baseSchema}`;
           Transformer.setPrismaClientConfig({});
           
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as any).getImportFileExtension();
+          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
           
           expect(extension).toBe('');
         } finally {
@@ -375,7 +375,7 @@ ${baseSchema}`;
           });
           
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as any).getImportFileExtension();
+          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
           
           expect(extension).toBe('.js');
         } finally {
@@ -396,7 +396,7 @@ ${baseSchema}`;
           });
           
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as any).getImportFileExtension();
+          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
           
           expect(extension).toBe('.mjs');
         } finally {
@@ -417,7 +417,7 @@ ${baseSchema}`;
           });
           
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as any).getImportFileExtension();
+          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
           
           expect(extension).toBe('');
         } finally {
@@ -437,7 +437,7 @@ ${baseSchema}`;
           });
           
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as any).getImportFileExtension();
+          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
           
           expect(extension).toBe('');
         } finally {
@@ -459,7 +459,7 @@ ${baseSchema}`;
           });
           
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as any).getImportFileExtension();
+          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
           
           expect(extension).toBe('.js');
         } finally {
@@ -480,7 +480,7 @@ ${baseSchema}`;
           });
           
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as any).getImportFileExtension();
+          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
           
           expect(extension).toBe('.js');
         } finally {
@@ -503,7 +503,7 @@ ${baseSchema}`;
           });
           
           const transformer = new Transformer({ name: 'Test' });
-          const statement = (transformer as any).generateImportStatement(
+          const statement = (transformer as unknown as { generateImportStatement(name: string, path: string): string }).generateImportStatement(
             'TestSchema',
             './test.schema'
           );
@@ -524,7 +524,7 @@ ${baseSchema}`;
           Transformer.setPrismaClientConfig({});
           
           const transformer = new Transformer({ name: 'Test' });
-          const statement = (transformer as any).generateImportStatement(
+          const statement = (transformer as unknown as { generateImportStatement(name: string, path: string): string }).generateImportStatement(
             'TestSchema',
             './test.schema'
           );
@@ -586,7 +586,7 @@ ${baseSchema}`;
             }
           }
         }
-      } catch (error) {
+      } catch {
         console.warn('Skipping integration test - generator might not be available');
       }
     });
