@@ -1,3 +1,15 @@
+## [1.1.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.1.0...v1.1.1) (2025-07-30)
+
+### 🐛 Bug Fixes
+
+* improve ESM import handling and type validation ([c07d384](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c07d384d2ec4672271d653446f1c6576f0c2c4d4))
+* resolve ESLint errors in ESM configuration tests ([9687c1d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9687c1d0a2e6d3b6cf703d3bac74bd2c318cd7aa))
+
+### 📚 Documentation
+
+* add preview features support section to README ([a348446](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a348446b379da3ab77c9558eb77a9d27a872c1e9))
+* remove beta sections and references from README ([32edf33](https://github.com/omar-dulaimi/prisma-zod-generator/commit/32edf3374c4f96f3e482dc37f79e985ccc1b39f0))
+
 ## [1.1.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.0.7...v1.1.0) (2025-07-25)
 
 ### 🚀 Features
