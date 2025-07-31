@@ -4,14 +4,26 @@ import type {
 } from '@prisma/generator-helper';
 import path from 'path';
 import {
-  checkModelHasModelRelation,
   findModelByName,
   isMongodbRawOp,
 } from './helpers';
+import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { AggregateOperationSupport, TransformerParams } from './types';
 import { writeFileSafely } from './utils/writeFileSafely';
-import { writeIndexFile } from './utils/writeIndexFile';
+import { writeIndexFile, addIndexExport } from './utils/writeIndexFile';
+import { GeneratorConfig } from './config/parser';
+import ResultSchemaGenerator from './generators/results';
+
+/**
+ * Filter validation result interface
+ */
+interface FilterValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  suggestions: string[];
+}
 
 export default class Transformer {
   name: string;
@@ -34,6 +46,7 @@ export default class Transformer {
   private static prismaClientConfig: Record<string, unknown> = {};
   private static isGenerateSelect: boolean = false;
   private static isGenerateInclude: boolean = false;
+  private static generatorConfig: GeneratorConfig | null = null;
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
@@ -54,6 +67,356 @@ export default class Transformer {
 
   static setIsGenerateInclude(isGenerateInclude: boolean) {
     this.isGenerateInclude = isGenerateInclude;
+  }
+
+  static setGeneratorConfig(config: GeneratorConfig) {
+    this.generatorConfig = config;
+  }
+
+  static getGeneratorConfig(): GeneratorConfig | null {
+    return this.generatorConfig;
+  }
+
+  /**
+   * Check if a model should be generated based on configuration
+   */
+  static isModelEnabled(modelName: string): boolean {
+    const config = this.getGeneratorConfig();
+    
+    // If no configuration is available, generate all models (default behavior)
+    if (!config) {
+      return true;
+    }
+
+    // Check if model has specific configuration
+    const modelConfig = config.models?.[modelName];
+    if (modelConfig) {
+      // If model config exists, check if it's explicitly enabled/disabled
+      return modelConfig.enabled !== false;
+    }
+
+    // For minimal mode, only enable models that are explicitly configured
+    if (config.mode === 'minimal') {
+      return false;
+    }
+
+    // Default: enable all models not explicitly disabled
+    return true;
+  }
+
+  /**
+   * Get list of enabled models for generation
+   */
+  static getEnabledModels(allModels: PrismaDMMF.Model[]): PrismaDMMF.Model[] {
+    return allModels.filter(model => this.isModelEnabled(model.name));
+  }
+
+  /**
+   * Log information about model filtering
+   */
+  static logModelFiltering(allModels: PrismaDMMF.Model[]): void {
+    const config = this.getGeneratorConfig();
+    if (!config) return;
+
+    const enabledModels = this.getEnabledModels(allModels);
+    const disabledModels = allModels.filter(model => !this.isModelEnabled(model.name));
+
+    if (disabledModels.length > 0) {
+      console.log(`🚫 Models excluded from generation: ${disabledModels.map(m => m.name).join(', ')}`);
+    }
+
+    if (config.mode === 'minimal' && enabledModels.length < allModels.length) {
+      console.log(`⚡ Minimal mode: generating ${enabledModels.length}/${allModels.length} models`);
+    }
+  }
+
+  /**
+   * Check if a specific operation should be generated for a model
+   */
+  static isOperationEnabled(modelName: string, operationName: string): boolean {
+    const config = this.getGeneratorConfig();
+    
+    // If no configuration is available, generate all operations (default behavior)
+    if (!config) {
+      return true;
+    }
+
+    // Check if model has specific configuration
+    const modelConfig = config.models?.[modelName];
+    if (modelConfig && modelConfig.operations) {
+      // If model has specific operations configured, check if this operation is included
+      return modelConfig.operations.includes(operationName);
+    }
+
+    // For minimal mode, only enable basic CRUD operations
+    if (config.mode === 'minimal') {
+      const minimalOperations = [
+        'findMany', 'findUnique', 'findFirst',
+        'create', 'createOne', 'createMany',
+        'update', 'updateOne', 'updateMany', 
+        'delete', 'deleteOne', 'deleteMany',
+        'upsert', 'upsertOne'
+      ];
+      return minimalOperations.includes(operationName);
+    }
+
+    // Default: enable all operations not explicitly disabled
+    return true;
+  }
+
+  /**
+   * Get list of enabled operations for a model
+   */
+  static getEnabledOperations(modelName: string, allOperations: string[]): string[] {
+    return allOperations.filter(operation => this.isOperationEnabled(modelName, operation));
+  }
+
+  /**
+   * Log information about operation filtering for a model
+   */
+  static logOperationFiltering(modelName: string, allOperations: string[]): void {
+    const config = this.getGeneratorConfig();
+    if (!config) return;
+
+    const enabledOperations = this.getEnabledOperations(modelName, allOperations);
+    const disabledOperations = allOperations.filter(op => !this.isOperationEnabled(modelName, op));
+
+    if (disabledOperations.length > 0) {
+      console.log(`   🔧 ${modelName}: excluded operations [${disabledOperations.join(', ')}]`);
+    }
+
+    if (config.mode === 'minimal' && enabledOperations.length < allOperations.length) {
+      console.log(`   ⚡ ${modelName}: minimal mode - ${enabledOperations.length}/${allOperations.length} operations`);
+    }
+  }
+
+  /**
+   * Check if a field should be included in schema generation
+   */
+  static isFieldEnabled(fieldName: string, modelName?: string, variant?: 'pure' | 'input' | 'result'): boolean {
+    const config = this.getGeneratorConfig();
+    
+    // If no configuration is available, include all fields (default behavior)
+    if (!config) {
+      return true;
+    }
+
+    // Check global exclusions for the specified variant
+    if (variant && config.globalExclusions?.[variant]?.includes(fieldName)) {
+      return false;
+    }
+
+    // Check model-specific field exclusions
+    if (modelName) {
+      const modelConfig = config.models?.[modelName];
+      if (modelConfig?.variants?.[variant || 'pure']?.excludeFields?.includes(fieldName)) {
+        return false;
+      }
+    }
+
+    // Default: include all fields not explicitly excluded
+    return true;
+  }
+
+  /**
+   * Filter fields based on configuration and relationship preservation
+   */
+  static filterFields(fields: PrismaDMMF.SchemaArg[], modelName?: string, variant?: 'pure' | 'input' | 'result'): PrismaDMMF.SchemaArg[] {
+    return fields.filter(field => {
+      // Check basic field inclusion rules
+      if (!this.isFieldEnabled(field.name, modelName, variant)) {
+        return false;
+      }
+      
+      // For relation fields, also check if the related model is enabled
+      // This is a safety check for schema args that might represent relation fields
+      if (this.isRelationFieldArg(field)) {
+        const relatedModelName = this.extractRelatedModelFromFieldArg(field);
+        if (relatedModelName && !this.isModelEnabled(relatedModelName)) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }
+
+  /**
+   * Check if a schema arg represents a relation field
+   */
+  static isRelationFieldArg(field: PrismaDMMF.SchemaArg): boolean {
+    // Check if the field type suggests it's a relation
+    return field.inputTypes.some(inputType => {
+      return inputType.location === 'inputObjectTypes' && 
+             (inputType.type as string).includes('WhereInput') ||
+             (inputType.type as string).includes('CreateInput') ||
+             (inputType.type as string).includes('UpdateInput');
+    });
+  }
+
+  /**
+   * Extract related model name from field arg
+   */
+  static extractRelatedModelFromFieldArg(field: PrismaDMMF.SchemaArg): string | null {
+    for (const inputType of field.inputTypes) {
+      if (inputType.location === 'inputObjectTypes') {
+        const typeName = inputType.type as string;
+        // Extract model name from types like "PostWhereInput", "UserCreateInput", etc.
+        const match = typeName.match(/^(\w+)(?:Where|Create|Update|OrderBy)/);
+        if (match) {
+          return match[1];
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Extract model name from object schema context
+   */
+  static extractModelNameFromContext(schemaName: string): string | null {
+    // Try to extract model name from common schema naming patterns
+    const patterns = [
+      /^(\w+)WhereInput$/,
+      /^(\w+)WhereUniqueInput$/,
+      /^(\w+)CreateInput$/,
+      /^(\w+)UpdateInput$/,
+      /^(\w+)UncheckedCreateInput$/,
+      /^(\w+)UncheckedUpdateInput$/,
+      /^(\w+)OrderByWithRelationInput$/,
+      /^(\w+)Args$/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = schemaName.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Determine schema variant from context
+   */
+  static determineSchemaVariant(schemaName: string): 'pure' | 'input' | 'result' {
+    // Determine variant based on schema name patterns
+    if (schemaName.includes('Create') || schemaName.includes('Update') || schemaName.includes('Where')) {
+      return 'input';
+    }
+    
+    if (schemaName.includes('Result') || schemaName.includes('Output')) {
+      return 'result';
+    }
+    
+    return 'pure'; // Default variant
+  }
+
+  /**
+   * Log information about field filtering
+   */
+  static logFieldFiltering(originalCount: number, filteredCount: number, modelName?: string, variant?: string): void {
+    if (originalCount !== filteredCount) {
+      const context = modelName ? `${modelName}${variant ? ` (${variant})` : ''}` : 'schema';
+      console.log(`   🎯 ${context}: filtered ${originalCount - filteredCount} fields (${filteredCount}/${originalCount} remaining)`);
+    }
+  }
+
+  /**
+   * Check if a model has relationships to other ENABLED models
+   * This is a filtered version of checkModelHasModelRelation that only considers enabled models
+   */
+  static checkModelHasEnabledModelRelation(model: PrismaDMMF.Model): boolean {
+    const { fields: modelFields } = model;
+    for (const modelField of modelFields) {
+      if (this.isEnabledRelationField(modelField)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Check if a relation field points to an enabled model
+   */
+  static isEnabledRelationField(modelField: PrismaDMMF.Field): boolean {
+    const { kind, relationName, type } = modelField;
+    
+    // Must be an object relation field
+    if (kind !== 'object' || !relationName) {
+      return false;
+    }
+
+    // Check if the related model is enabled
+    const relatedModelName = type;
+    return this.isModelEnabled(relatedModelName);
+  }
+
+  /**
+   * Filter relation fields to only include those pointing to enabled models
+   */
+  static filterRelationFields(fields: PrismaDMMF.Field[]): PrismaDMMF.Field[] {
+    return fields.filter(field => {
+      // Include non-relation fields
+      if (field.kind !== 'object' || !field.relationName) {
+        return true;
+      }
+      
+      // Only include relation fields if the related model is enabled
+      return this.isEnabledRelationField(field);
+    });
+  }
+
+  /**
+   * Get list of enabled related models for a given model
+   */
+  static getEnabledRelatedModels(model: PrismaDMMF.Model): string[] {
+    const relatedModels = new Set<string>();
+    
+    for (const field of model.fields) {
+      if (this.isEnabledRelationField(field)) {
+        relatedModels.add(field.type);
+      }
+    }
+    
+    return Array.from(relatedModels);
+  }
+
+  /**
+   * Check if a model should have include schemas generated
+   * Only if it has relationships to other enabled models
+   */
+  static shouldGenerateIncludeSchema(model: PrismaDMMF.Model): boolean {
+    return Transformer.isGenerateInclude && this.checkModelHasEnabledModelRelation(model);
+  }
+
+  /**
+   * Check if a model should have select schemas generated  
+   */
+  static shouldGenerateSelectSchema(_model: PrismaDMMF.Model): boolean {
+    return Transformer.isGenerateSelect;
+  }
+
+  /**
+   * Log relationship preservation information
+   */
+  static logRelationshipPreservation(model: PrismaDMMF.Model): void {
+    const config = this.getGeneratorConfig();
+    if (!config) return;
+
+    const enabledRelatedModels = this.getEnabledRelatedModels(model);
+    const totalRelationFields = model.fields.filter(f => f.kind === 'object' && f.relationName).length;
+    const enabledRelationFields = model.fields.filter(f => this.isEnabledRelationField(f)).length;
+
+    if (totalRelationFields > enabledRelationFields) {
+      const disabledRelations = totalRelationFields - enabledRelationFields;
+      console.log(`   🔗 ${model.name}: ${disabledRelations} disabled relation(s) to filtered models`);
+    }
+
+    if (enabledRelatedModels.length > 0) {
+      console.log(`   ✅ ${model.name}: active relations to [${enabledRelatedModels.join(', ')}]`);
+    }
   }
 
   static getOutputPath() {
@@ -141,7 +504,18 @@ export default class Transformer {
   }
 
   generateObjectSchemaFields() {
-    const zodObjectSchemaFields = this.fields
+    // Determine context for field filtering  
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    const variant = Transformer.determineSchemaVariant(this.name);
+    
+    // Apply field filtering
+    const originalFieldCount = this.fields.length;
+    const filteredFields = Transformer.filterFields(this.fields, modelName || undefined, variant);
+    
+    // Log field filtering if any fields were excluded
+    Transformer.logFieldFiltering(originalFieldCount, filteredFields.length, modelName || undefined, variant);
+    
+    const zodObjectSchemaFields = filteredFields
       .map((field) => this.generateObjectSchemaField(field))
       .flatMap((item) => item)
       .map((item) => {
@@ -554,6 +928,75 @@ export default class Transformer {
     return `import { ${importName} } from '${importPath}${extension}'`;
   }
 
+  /**
+   * Generate import statement with validation - only if target will be generated
+   */
+  static generateValidatedImportStatement(importName: string, importPath: string, modelName?: string): string {
+    // Check if the target schema should be generated
+    if (!Transformer.shouldGenerateImport(importName, modelName)) {
+      return '';
+    }
+
+    const extension = Transformer.getImportFileExtension();
+    return `import { ${importName} } from '${importPath}${extension}'`;
+  }
+
+  /**
+   * Check if an import should be generated based on filtering rules
+   */
+  static shouldGenerateImport(importName: string, relatedModelName?: string): boolean {
+    // If a related model is specified, check if it's enabled
+    if (relatedModelName && !Transformer.isModelEnabled(relatedModelName)) {
+      return false;
+    }
+
+    // Check if the import represents a schema that would be filtered out
+    const extractedModelName = Transformer.extractModelFromImportName(importName);
+    if (extractedModelName && !Transformer.isModelEnabled(extractedModelName)) {
+      return false;
+    }
+
+    // Default: generate the import
+    return true;
+  }
+
+  /**
+   * Extract model name from import name
+   */
+  static extractModelFromImportName(importName: string): string | null {
+    // Common patterns for import names
+    const patterns = [
+      /^(\w+)WhereInputObjectSchema$/,
+      /^(\w+)WhereUniqueInputObjectSchema$/,
+      /^(\w+)CreateInputObjectSchema$/,
+      /^(\w+)UpdateInputObjectSchema$/,
+      /^(\w+)UncheckedCreateInputObjectSchema$/,
+      /^(\w+)UncheckedUpdateInputObjectSchema$/,
+      /^(\w+)SelectObjectSchema$/,
+      /^(\w+)IncludeObjectSchema$/,
+      /^(\w+)ScalarFieldEnumSchema$/,
+      /^(\w+)OrderByWithRelationInputObjectSchema$/,
+      /^(\w+)OrderByWithAggregationInputObjectSchema$/,
+    ];
+
+    for (const pattern of patterns) {
+      const match = importName.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get import file extension (static version)
+   */
+  static getImportFileExtension(): string {
+    // This mirrors the instance method but as static
+    return '.js';
+  }
+
   generateSchemaImports() {
     // Get the file extension to use for imports (for ESM support)
     const importExtension = this.getImportFileExtension();
@@ -634,6 +1077,15 @@ export default class Transformer {
   }
 
   async generateModelSchemas() {
+    // Perform comprehensive filter validation
+    const isValid = Transformer.performFilterValidation(this.models);
+    if (!isValid) {
+      throw new Error('Filter validation failed. Please fix the configuration errors above.');
+    }
+
+    // Log model filtering information
+    Transformer.logModelFiltering(this.models);
+
     for (const modelOperation of this.modelOperations) {
       const {
         model: modelName,
@@ -655,6 +1107,20 @@ export default class Transformer {
         groupBy,
       } = modelOperation;
 
+      // Skip generation for disabled models based on configuration
+      if (!Transformer.isModelEnabled(modelName)) {
+        continue;
+      }
+
+      // Log operation filtering information for this model
+      const allOperations = [
+        findUnique, findFirst, findMany, createOne, createMany,
+        deleteOne, deleteMany, updateOne, updateMany, upsertOne,
+        aggregate, groupBy
+      ].filter(Boolean); // Remove undefined operations
+      
+      Transformer.logOperationFiltering(modelName, allOperations);
+
       const model = findModelByName(this.models, modelName) as PrismaDMMF.Model;
 
       const {
@@ -669,7 +1135,7 @@ export default class Transformer {
       const { orderByImport, orderByZodSchemaLine } =
         this.resolveOrderByWithRelationImportAndZodSchemaLine(model);
 
-      if (findUnique) {
+      if (findUnique && Transformer.isOperationEnabled(modelName, 'findUnique')) {
         const imports = [
           selectImport,
           includeImport,
@@ -686,7 +1152,7 @@ export default class Transformer {
         );
       }
 
-      if (findFirst) {
+      if (findFirst && Transformer.isOperationEnabled(modelName, 'findFirst')) {
         const imports = [
           selectImport,
           includeImport,
@@ -706,7 +1172,7 @@ export default class Transformer {
         );
       }
 
-      if (findMany) {
+      if (findMany && Transformer.isOperationEnabled(modelName, 'findMany')) {
         const imports = [
           selectImport,
           includeImport,
@@ -726,7 +1192,7 @@ export default class Transformer {
         );
       }
 
-      if (createOne) {
+      if (createOne && Transformer.isOperationEnabled(modelName, 'createOne')) {
         const imports = [
           selectImport,
           includeImport,
@@ -744,7 +1210,7 @@ export default class Transformer {
         );
       }
 
-      if (createMany) {
+      if (createMany && Transformer.isOperationEnabled(modelName, 'createMany')) {
         const imports = [
           this.generateImportStatement(`${modelName}CreateManyInputObjectSchema`, `./objects/${modelName}CreateManyInput.schema`),
         ];
@@ -764,7 +1230,7 @@ export default class Transformer {
         );
       }
 
-      if (deleteOne) {
+      if (deleteOne && Transformer.isOperationEnabled(modelName, 'deleteOne')) {
         const imports = [
           selectImport,
           includeImport,
@@ -781,7 +1247,7 @@ export default class Transformer {
         );
       }
 
-      if (deleteMany) {
+      if (deleteMany && Transformer.isOperationEnabled(modelName, 'deleteMany')) {
         const imports = [
           this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
         ];
@@ -796,7 +1262,7 @@ export default class Transformer {
         );
       }
 
-      if (updateOne) {
+      if (updateOne && Transformer.isOperationEnabled(modelName, 'updateOne')) {
         const imports = [
           selectImport,
           includeImport,
@@ -815,7 +1281,7 @@ export default class Transformer {
         );
       }
 
-      if (updateMany) {
+      if (updateMany && Transformer.isOperationEnabled(modelName, 'updateMany')) {
         const imports = [
           this.generateImportStatement(`${modelName}UpdateManyMutationInputObjectSchema`, `./objects/${modelName}UpdateManyMutationInput.schema`),
           this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
@@ -831,7 +1297,7 @@ export default class Transformer {
         );
       }
 
-      if (upsertOne) {
+      if (upsertOne && Transformer.isOperationEnabled(modelName, 'upsertOne')) {
         const imports = [
           selectImport,
           includeImport,
@@ -852,7 +1318,7 @@ export default class Transformer {
         );
       }
 
-      if (aggregate) {
+      if (aggregate && Transformer.isOperationEnabled(modelName, 'aggregate')) {
         const imports = [
           orderByImport,
           this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
@@ -913,7 +1379,7 @@ export default class Transformer {
         );
       }
 
-      if (groupBy) {
+      if (groupBy && Transformer.isOperationEnabled(modelName, 'groupBy')) {
         const imports = [
           this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
           this.generateImportStatement(`${modelName}OrderByWithAggregationInputObjectSchema`, `./objects/${modelName}OrderByWithAggregationInput.schema`),
@@ -933,40 +1399,436 @@ export default class Transformer {
     }
   }
 
+  /**
+   * Generate result schemas for all enabled models
+   */
+  async generateResultSchemas() {
+    const config = Transformer.getGeneratorConfig();
+    
+    // Check if result schemas are enabled globally
+    if (config?.variants?.result?.enabled === false) {
+      console.log('⏭️  Result schema generation is disabled globally');
+      return;
+    }
+
+    const resultGenerator = new ResultSchemaGenerator();
+
+    for (const model of this.models) {
+      // Skip generation for disabled models
+      if (!Transformer.isModelEnabled(model.name)) {
+        continue;
+      }
+
+      // Check if result schemas are enabled for this specific model
+      const modelConfig = config?.models?.[model.name];
+      if (modelConfig?.variants?.result?.enabled === false) {
+        console.log(`⏭️  Result schema generation is disabled for model: ${model.name}`);
+        continue;
+      }
+
+      console.log(`🎯 Generating result schemas for model: ${model.name}`);
+
+      // Generate all result schemas for this model
+      const resultSchemas = resultGenerator.generateAllResultSchemas(model);
+
+      // Create results directory if it doesn't exist
+      const resultsPath = path.join(Transformer.getSchemasPath(), 'results');
+
+      // Write each result schema to appropriate file
+      for (const resultSchema of resultSchemas) {
+        const fileName = `${model.name}${resultSchema.operationType}Result.schema.ts`;
+        const filePath = path.join(resultsPath, fileName);
+
+        await writeFileSafely(
+          filePath,
+          `${this.generateImportStatements([
+            this.generateImportStatement(`${model.name}ObjectSchema`, `../objects/${model.name}.schema`),
+          ])}${resultSchema.zodSchema}`,
+        );
+      }
+
+    }
+
+    // Generate consolidated index file for all result schemas
+    const resultIndexPath = path.join(Transformer.getSchemasPath(), 'results', 'index.ts');
+    const allExports: string[] = [];
+
+    // Collect all result schema exports for all processed models
+    for (const model of this.models) {
+      if (!Transformer.isModelEnabled(model.name)) {
+        continue;
+      }
+
+      const modelConfig = config?.models?.[model.name];
+      if (modelConfig?.variants?.result?.enabled === false) {
+        continue;
+      }
+
+      const resultSchemas = resultGenerator.generateAllResultSchemas(model);
+      for (const resultSchema of resultSchemas) {
+        allExports.push(
+          `export { ${resultSchema.schemaName} } from './${model.name}${resultSchema.operationType}Result.schema';`
+        );
+      }
+    }
+
+    if (allExports.length > 0) {
+      await writeFileSafely(
+        resultIndexPath,
+        allExports.join('\n') + '\n',
+      );
+      
+      // Add results index to main index exports
+      addIndexExport(resultIndexPath);
+    }
+  }
+
   generateImportStatements(imports: (string | undefined)[]) {
     let generatedImports = this.generateImportZodStatement();
-    generatedImports +=
-      imports?.filter((importItem) => !!importItem).join(';\r\n') ?? '';
+    
+    // Filter out empty, undefined, and invalid imports
+    const validImports = Transformer.cleanAndValidateImports(imports);
+    
+    // Log import management if any filtering occurred
+    Transformer.logImportManagement(imports, validImports, this.name);
+    
+    generatedImports += validImports.join(';\r\n') ?? '';
     generatedImports += '\n\n';
     return generatedImports;
+  }
+
+  /**
+   * Clean and validate import array, removing empty and invalid imports
+   */
+  static cleanAndValidateImports(imports: (string | undefined)[]): string[] {
+    return imports
+      .filter((importItem): importItem is string => {
+        // Remove undefined/null/empty imports
+        if (!importItem || importItem.trim() === '') {
+          return false;
+        }
+
+        // Extract import information for validation
+        const importInfo = Transformer.parseImportStatement(importItem);
+        if (!importInfo) {
+          return true; // Keep imports we can't parse (might be external libraries)
+        }
+
+        // Check if the import should be generated based on filtering rules
+        return Transformer.shouldGenerateImport(importInfo.importName, importInfo.relatedModel);
+      })
+      .filter((importItem, index, array) => {
+        // Remove duplicate imports
+        return array.indexOf(importItem) === index;
+      });
+  }
+
+  /**
+   * Parse import statement to extract information
+   */
+  static parseImportStatement(importStatement: string): { importName: string; importPath: string; relatedModel?: string } | null {
+    // Match import pattern: import { ImportName } from 'path'
+    const match = importStatement.match(/import\s*\{\s*(\w+)\s*\}\s*from\s*['"]([^'"]+)['"]/);
+    if (!match) {
+      return null;
+    }
+
+    const importName = match[1];
+    const importPath = match[2];
+    const relatedModel = Transformer.extractModelFromImportName(importName);
+
+    return {
+      importName,
+      importPath,
+      relatedModel: relatedModel || undefined
+    };
+  }
+
+  /**
+   * Generate smart import statement that checks if target exists
+   */
+  generateSmartImportStatement(importName: string, importPath: string, relatedModel?: string): string {
+    // Use the static validated version
+    return Transformer.generateValidatedImportStatement(importName, importPath, relatedModel);
+  }
+
+  /**
+   * Log import management information
+   */
+  static logImportManagement(originalImports: (string | undefined)[], cleanedImports: string[], context?: string): void {
+    const originalCount = originalImports.filter(imp => imp && imp.trim()).length;
+    const cleanedCount = cleanedImports.length;
+    
+    if (originalCount !== cleanedCount) {
+      const contextStr = context ? ` for ${context}` : '';
+      console.log(`   📦 Import cleanup${contextStr}: ${originalCount - cleanedCount} filtered (${cleanedCount}/${originalCount} kept)`);
+    }
+  }
+
+  /**
+   * Validate filter combinations and detect conflicts
+   */
+  static validateFilterCombinations(allModels: PrismaDMMF.Model[]): FilterValidationResult {
+    const config = this.getGeneratorConfig();
+    const result: FilterValidationResult = {
+      isValid: true,
+      warnings: [],
+      errors: [],
+      suggestions: []
+    };
+
+    if (!config) {
+      return result; // No configuration to validate
+    }
+
+    // Check model dependencies and relationships
+    this.validateModelDependencies(allModels, result);
+
+    // Check operation consistency
+    this.validateOperationConsistency(allModels, result);
+
+    // Check field exclusion conflicts
+    this.validateFieldExclusions(allModels, result);
+
+    // Check variant consistency
+    this.validateVariantConsistency(result);
+
+    // Check mode consistency
+    this.validateModeConsistency(result);
+
+    return result;
+  }
+
+  /**
+   * Validate model dependencies and relationships
+   */
+  static validateModelDependencies(allModels: PrismaDMMF.Model[], result: FilterValidationResult): void {
+    const config = this.getGeneratorConfig();
+    if (!config) return;
+
+    for (const model of allModels) {
+      if (!this.isModelEnabled(model.name)) continue;
+
+      // Check if this model has relationships to disabled models
+      const disabledRelations = model.fields.filter(field => {
+        return field.kind === 'object' && 
+               field.relationName && 
+               !this.isModelEnabled(field.type);
+      });
+
+      if (disabledRelations.length > 0) {
+        const disabledModels = disabledRelations.map(f => f.type);
+        result.warnings.push(
+          `Model "${model.name}" has relations to disabled models: ${disabledModels.join(', ')}. ` +
+          `This may cause incomplete schema generation.`
+        );
+
+        result.suggestions.push(
+          `Consider enabling models [${disabledModels.join(', ')}] or removing relation fields ` +
+          `[${disabledRelations.map(f => f.name).join(', ')}] from ${model.name}`
+        );
+      }
+    }
+  }
+
+  /**
+   * Validate operation consistency across models
+   */
+  static validateOperationConsistency(allModels: PrismaDMMF.Model[], result: FilterValidationResult): void {
+    const config = this.getGeneratorConfig();
+    if (!config) return;
+
+    const enabledModels = allModels.filter(m => this.isModelEnabled(m.name));
+    
+    for (const model of enabledModels) {
+      const modelConfig = config.models?.[model.name];
+      if (!modelConfig?.operations) continue;
+
+      // Check for operations that require relationships
+      const requiresRelations = ['aggregate', 'groupBy'];
+      const hasEnabledRelations = checkModelHasEnabledModelRelation(model);
+
+      for (const operation of requiresRelations) {
+        if (modelConfig.operations.includes(operation) && !hasEnabledRelations) {
+          result.warnings.push(
+            `Model "${model.name}" has "${operation}" operation enabled but no active relationships. ` +
+            `This operation may not function as expected.`
+          );
+        }
+      }
+
+      // Check for circular dependencies in custom operations
+      if (modelConfig.operations.length === 0) {
+        result.warnings.push(
+          `Model "${model.name}" has no operations enabled. Consider disabling the model entirely.`
+        );
+      }
+    }
+  }
+
+  /**
+   * Validate field exclusion conflicts
+   */
+  static validateFieldExclusions(allModels: PrismaDMMF.Model[], result: FilterValidationResult): void {
+    const config = this.getGeneratorConfig();
+    if (!config) return;
+
+    const enabledModels = allModels.filter(m => this.isModelEnabled(m.name));
+
+    for (const model of enabledModels) {
+      const modelConfig = config.models?.[model.name];
+      if (!modelConfig?.variants) continue;
+
+      // Check each variant for field exclusion conflicts
+      Object.entries(modelConfig.variants).forEach(([variantName, variantConfig]) => {
+        if (!variantConfig?.excludeFields) return;
+
+        const variant = variantName as 'pure' | 'input' | 'result';
+        
+        // Check if all fields would be excluded
+        const totalFields = model.fields.length;
+        const excludedFields = variantConfig.excludeFields.length;
+        
+        if (excludedFields >= totalFields) {
+          result.errors.push(
+            `Model "${model.name}" ${variant} variant excludes all fields. This will result in empty schemas.`
+          );
+          result.isValid = false;
+        }
+
+        // Check for required fields being excluded
+        const requiredFields = model.fields.filter(f => f.isRequired && f.kind === 'scalar');
+        const excludedRequiredFields = requiredFields.filter(f => 
+          variantConfig.excludeFields && variantConfig.excludeFields.includes(f.name)
+        );
+        
+        if (excludedRequiredFields.length > 0 && variant === 'input') {
+          result.warnings.push(
+            `Model "${model.name}" ${variant} variant excludes required fields: ` +
+            `${excludedRequiredFields.map(f => f.name).join(', ')}. This may cause validation issues.`
+          );
+        }
+      });
+    }
+  }
+
+  /**
+   * Validate variant consistency
+   */
+  static validateVariantConsistency(result: FilterValidationResult): void {
+    const config = this.getGeneratorConfig();
+    if (!config?.variants) return;
+
+    // Check if variants are configured but no models use them
+    const configuredVariants = Object.keys(config.variants);
+    const enabledVariants = configuredVariants.filter(variant => 
+      config.variants && config.variants[variant as keyof typeof config.variants]?.enabled
+    );
+
+    if (enabledVariants.length === 0) {
+      result.warnings.push(
+        'Variants are configured but none are enabled. Consider enabling at least one variant or removing variant configuration.'
+      );
+    }
+
+    // Check for conflicting variant settings
+    if (config.mode === 'minimal' && enabledVariants.includes('result')) {
+      result.warnings.push(
+        'Minimal mode with result variant enabled may generate more schemas than expected. ' +
+        'Consider using only pure and input variants in minimal mode.'
+      );
+    }
+  }
+
+  /**
+   * Validate mode consistency
+   */
+  static validateModeConsistency(result: FilterValidationResult): void {
+    const config = this.getGeneratorConfig();
+    if (!config) return;
+
+    // Check if minimal mode has models configured
+    if (config.mode === 'minimal' && (!config.models || Object.keys(config.models).length === 0)) {
+      result.errors.push(
+        'Minimal mode requires explicit model configuration. No models are configured for generation.'
+      );
+      result.isValid = false;
+      
+      result.suggestions.push(
+        'Add model configurations to your config file or switch to "full" mode for automatic model inclusion.'
+      );
+    }
+
+    // Check if custom mode has meaningful configuration
+    if (config.mode === 'custom' && (!config.models || Object.keys(config.models).length === 0)) {
+      result.warnings.push(
+        'Custom mode without model configurations will behave like full mode. Consider adding specific model settings.'
+      );
+    }
+  }
+
+  /**
+   * Log filter validation results
+   */
+  static logFilterValidation(validationResult: FilterValidationResult): void {
+    const { isValid, errors, warnings, suggestions } = validationResult;
+
+    if (errors.length > 0) {
+      console.log('❌ Filter Validation Errors:');
+      errors.forEach(error => console.log(`   • ${error}`));
+    }
+
+    if (warnings.length > 0) {
+      console.log('⚠️  Filter Validation Warnings:');
+      warnings.forEach(warning => console.log(`   • ${warning}`));
+    }
+
+    if (suggestions.length > 0) {
+      console.log('💡 Suggestions:');
+      suggestions.forEach(suggestion => console.log(`   • ${suggestion}`));
+    }
+
+    if (isValid && errors.length === 0 && warnings.length === 0) {
+      console.log('✅ Filter configuration validation passed');
+    }
+  }
+
+  /**
+   * Perform comprehensive filter validation
+   */
+  static performFilterValidation(allModels: PrismaDMMF.Model[]): boolean {
+    const validationResult = this.validateFilterCombinations(allModels);
+    this.logFilterValidation(validationResult);
+    
+    return validationResult.isValid;
   }
 
   resolveSelectIncludeImportAndZodSchemaLine(model: PrismaDMMF.Model) {
     const { name: modelName } = model;
 
-    const hasRelationToAnotherModel = checkModelHasModelRelation(model);
+    // Log relationship preservation information
+    Transformer.logRelationshipPreservation(model);
 
-    const selectImport = Transformer.isGenerateSelect
-      ? this.generateImportStatement(`${modelName}SelectObjectSchema`, `./objects/${modelName}Select.schema`)
+    const selectImport = Transformer.shouldGenerateSelectSchema(model)
+      ? this.generateSmartImportStatement(`${modelName}SelectObjectSchema`, `./objects/${modelName}Select.schema`, modelName)
       : '';
 
-    const includeImport =
-      Transformer.isGenerateInclude && hasRelationToAnotherModel
-        ? this.generateImportStatement(`${modelName}IncludeObjectSchema`, `./objects/${modelName}Include.schema`)
-        : '';
+    const includeImport = Transformer.shouldGenerateIncludeSchema(model)
+      ? this.generateSmartImportStatement(`${modelName}IncludeObjectSchema`, `./objects/${modelName}Include.schema`, modelName)
+      : '';
 
     let selectZodSchemaLine = '';
     let includeZodSchemaLine = '';
     let selectZodSchemaLineLazy = '';
     let includeZodSchemaLineLazy = '';
 
-    if (Transformer.isGenerateSelect) {
+    if (Transformer.shouldGenerateSelectSchema(model)) {
       const zodSelectObjectSchema = `${modelName}SelectObjectSchema.optional()`;
       selectZodSchemaLine = `select: ${zodSelectObjectSchema},`;
       selectZodSchemaLineLazy = `select: z.lazy(() => ${zodSelectObjectSchema}),`;
     }
 
-    if (Transformer.isGenerateInclude && hasRelationToAnotherModel) {
+    if (Transformer.shouldGenerateIncludeSchema(model)) {
       const zodIncludeObjectSchema = `${modelName}IncludeObjectSchema.optional()`;
       includeZodSchemaLine = `include: ${zodIncludeObjectSchema},`;
       includeZodSchemaLineLazy = `include: z.lazy(() => ${zodIncludeObjectSchema}),`;
