@@ -55,6 +55,7 @@ describe('Inline @zod Comments Tests', () => {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -68,7 +69,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -79,8 +80,6 @@ model User {
   website  String? /// @zod.url().optional()
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -120,6 +119,7 @@ model User {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -133,7 +133,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model Product {
@@ -145,8 +145,6 @@ model Product {
   weight      Float?  /// @zod.positive().multipleOf(0.01, "Weight precision error")
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -159,14 +157,14 @@ model Product {
           const content = readFileSync(productCreatePath, 'utf-8');
           
           // Should contain validation with custom error messages
-          expect(content).toMatch(/\.min\(1,\s*"Name is required"\)/);
-          expect(content).toMatch(/\.max\(100,\s*"Name too long"\)/);
-          expect(content).toMatch(/\.positive\("Price must be positive"\)/);
+          expect(content).toMatch(/\.min\(1,\s*'Name is required'\)/);
+          expect(content).toMatch(/\.max\(100,\s*'Name too long'\)/);
+          expect(content).toMatch(/\.positive\('Price must be positive'\)/);
           expect(content).toMatch(/\.max\(999999\.99\)/);
-          expect(content).toMatch(/\.multipleOf\(0\.01,\s*"Weight precision error"\)/);
+          expect(content).toMatch(/\.multipleOf\(0\.01,\s*'Weight precision error'\)/);
           
           // Should handle regex with parameters
-          expect(content).toMatch(/\.regex\(\/\^[A-Z0-9-]\+\$\/,\s*"Invalid SKU format"\)/);
+          expect(content).toContain('.regex(/^[A-Z0-9-]+$/, \'Invalid SKU format\')');
         }
 
       } finally {
@@ -179,6 +177,7 @@ model Product {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -192,7 +191,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -216,8 +215,6 @@ model User {
   phone String?
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -252,6 +249,7 @@ model User {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -265,7 +263,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model TestTypes {
@@ -278,8 +276,6 @@ model TestTypes {
   jsonField   Json?    /// @zod.object()
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -322,6 +318,7 @@ model TestTypes {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -335,7 +332,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -347,8 +344,6 @@ model User {
   phone     String? /// @zod.regex(/^\\+?[1-9]\\d{1,14}$/).optional()
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -386,6 +381,7 @@ model User {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -399,7 +395,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model Settings {
@@ -410,8 +406,6 @@ model Settings {
   timeout     Float   @default(30.0) /// @zod.positive().default(30.0)
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -451,6 +445,7 @@ model Settings {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -464,7 +459,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -489,8 +484,6 @@ model User {
   bio   String?
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -526,6 +519,7 @@ model User {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -539,7 +533,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -558,8 +552,6 @@ model User {
   oldBio String?
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -591,6 +583,7 @@ model User {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -604,7 +597,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -623,8 +616,6 @@ model User {
   email  String @unique
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -655,6 +646,7 @@ model User {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -668,7 +660,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -690,8 +682,6 @@ model User {
   points   Int
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -725,6 +715,7 @@ model User {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -738,7 +729,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model Validation {
@@ -760,8 +751,6 @@ model Validation {
   website      String?
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -794,6 +783,7 @@ model Validation {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -807,7 +797,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -829,8 +819,6 @@ model User {
   tags      String
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -867,6 +855,7 @@ model User {
       
       try {
         const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -880,7 +869,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -902,8 +891,6 @@ model Post {
   authorId Int
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 

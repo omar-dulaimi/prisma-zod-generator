@@ -24,13 +24,14 @@ describe('Filtering Logic Tests', () => {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User', 'Post', 'Profile'],
-          generatorOptions: { config: './config.json' }
-        });
-
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User', 'Post', 'Profile'],
+          generatorOptions: { config: configPath }
+        });
+
         writeFileSync(testEnv.schemaPath, schema);
 
         // Build and generate
@@ -41,8 +42,8 @@ describe('Filtering Logic Tests', () => {
         // User model should be generated
         const userFiles = [
           join(schemasDir, 'findManyUser.schema.ts'),
-          join(schemasDir, 'createOneUser.schema.ts'),
-          join(schemasDir, 'updateOneUser.schema.ts')
+          join(schemasDir, 'createManyUser.schema.ts'),
+          join(schemasDir, 'updateManyUser.schema.ts')
         ];
         userFiles.forEach(file => {
           expect(existsSync(file), `User schema file should exist: ${file}`).toBe(true);
@@ -51,8 +52,8 @@ describe('Filtering Logic Tests', () => {
         // Post model should NOT be generated
         const postFiles = [
           join(schemasDir, 'findManyPost.schema.ts'),
-          join(schemasDir, 'createOnePost.schema.ts'),
-          join(schemasDir, 'updateOnePost.schema.ts')
+          join(schemasDir, 'createManyPost.schema.ts'),
+          join(schemasDir, 'updateManyPost.schema.ts')
         ];
         postFiles.forEach(file => {
           expect(existsSync(file), `Post schema file should NOT exist: ${file}`).toBe(false);
@@ -61,7 +62,7 @@ describe('Filtering Logic Tests', () => {
         // Profile model should be generated
         const profileFiles = [
           join(schemasDir, 'findManyProfile.schema.ts'),
-          join(schemasDir, 'createOneProfile.schema.ts')
+          join(schemasDir, 'createManyProfile.schema.ts')
         ];
         profileFiles.forEach(file => {
           expect(existsSync(file), `Profile schema file should exist: ${file}`).toBe(true);
@@ -84,13 +85,14 @@ describe('Filtering Logic Tests', () => {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User', 'Post'],
-          generatorOptions: { config: './config.json' }
-        });
-
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User', 'Post'],
+          generatorOptions: { config: configPath }
+        });
+
         writeFileSync(testEnv.schemaPath, schema);
 
         await testEnv.runGeneration();
@@ -125,13 +127,14 @@ describe('Filtering Logic Tests', () => {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User', 'Post', 'Profile'],
-          generatorOptions: { config: './config.json' }
-        });
-
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User', 'Post', 'Profile'],
+          generatorOptions: { config: configPath }
+        });
+
         writeFileSync(testEnv.schemaPath, schema);
 
         await testEnv.runGeneration();
@@ -173,13 +176,14 @@ describe('Filtering Logic Tests', () => {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User', 'Post'],
-          generatorOptions: { config: './config.json' }
-        });
-
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User', 'Post'],
+          generatorOptions: { config: configPath }
+        });
+
         writeFileSync(testEnv.schemaPath, schema);
 
         await testEnv.runGeneration();
@@ -249,13 +253,14 @@ describe('Filtering Logic Tests', () => {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User', 'Post'],
-          generatorOptions: { config: './config.json' }
-        });
-
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User', 'Post'],
+          generatorOptions: { config: configPath }
+        });
+
         writeFileSync(testEnv.schemaPath, schema);
 
         await testEnv.runGeneration();
@@ -289,13 +294,14 @@ describe('Filtering Logic Tests', () => {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User'],
-          generatorOptions: { config: './config.json' }
-        });
-
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User'],
+          generatorOptions: { config: configPath }
+        });
+
         writeFileSync(testEnv.schemaPath, schema);
 
         // Should handle invalid operations gracefully
@@ -335,6 +341,7 @@ describe('Filtering Logic Tests', () => {
           }
         };
 
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -348,7 +355,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -359,8 +366,6 @@ model User {
   name       String?
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -420,13 +425,14 @@ model User {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User', 'Post'],
-          generatorOptions: { config: './config.json' }
-        });
-
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User', 'Post'],
+          generatorOptions: { config: configPath }
+        });
+
         writeFileSync(testEnv.schemaPath, schema);
 
         await testEnv.runGeneration();
@@ -471,6 +477,7 @@ model User {
           }
         };
 
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -484,7 +491,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -501,8 +508,6 @@ model Post {
   authorId   Int
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -607,6 +612,7 @@ model Post {
           }
         };
 
+        const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -620,7 +626,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
@@ -633,8 +639,6 @@ model User {
   name             String?
 }
 `;
-
-        const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
@@ -679,13 +683,14 @@ model User {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User'],
-          generatorOptions: { config: './config.json' }
-        });
-
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User'],
+          generatorOptions: { config: configPath }
+        });
+
         writeFileSync(testEnv.schemaPath, schema);
 
         // Should handle conflicting configuration gracefully
@@ -723,13 +728,14 @@ model User {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User', 'Post'],
-          generatorOptions: { config: './config.json' }
-        });
-
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User', 'Post'],
+          generatorOptions: { config: configPath }
+        });
+
         writeFileSync(testEnv.schemaPath, schema);
 
         await testEnv.runGeneration();
@@ -772,13 +778,14 @@ model User {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User', 'Post'],
-          generatorOptions: { config: './config.json' }
-        });
-
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User', 'Post'],
+          generatorOptions: { config: configPath }
+        });
+
         writeFileSync(testEnv.schemaPath, schema);
 
         await testEnv.runGeneration();
