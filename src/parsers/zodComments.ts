@@ -352,8 +352,9 @@ export function parseZodAnnotations(comment: string, context: FieldCommentContex
   }
 
   try {
-    // Check if we have chained annotations first
-    const hasChainedAnnotations = /@zod(\.[a-zA-Z_][a-zA-Z0-9_]*\s*\([^)]*\)){2,}/gi.test(comment);
+    // Check if we have multiple method calls (chained) by counting dots after @zod
+    const methodCount = (comment.match(/\.([a-zA-Z_][a-zA-Z0-9_]*)/g) || []).length;
+    const hasChainedAnnotations = methodCount > 1;
     
     if (hasChainedAnnotations) {
       // Handle chained @zod annotations (e.g., @zod.min(1).max(100))
@@ -433,28 +434,23 @@ function parseChainedZodAnnotations(comment: string, context: FieldCommentContex
     isValid: true
   };
 
-  // Pattern for chained methods: @zod.method1().method2().method3()
-  const chainPattern = /@zod(\.[a-zA-Z_][a-zA-Z0-9_]*\s*\([^)]*\))+/gi;
-  
-  let match;
-  const processedPositions = new Set<number>();
-  
-  while ((match = chainPattern.exec(comment)) !== null) {
-    try {
-      // Avoid processing overlapping matches
-      if (match.index !== undefined && processedPositions.has(match.index)) {
-        continue;
-      }
-      if (match.index !== undefined) {
-        processedPositions.add(match.index);
-      }
-      
-      const chainedMethods = parseMethodChain(match[0], context);
-      result.annotations.push(...chainedMethods);
-    } catch (error) {
-      result.parseErrors.push(`Failed to parse chained annotation "${match[0]}": ${error instanceof Error ? error.message : String(error)}`);
-      result.isValid = false;
+  try {
+    // Find the @zod annotation start
+    const zodIndex = comment.indexOf('@zod');
+    if (zodIndex === -1) {
+      return result;
     }
+    
+    // Extract the entire @zod chain starting from @zod
+    const zodChain = comment.slice(zodIndex);
+    
+    // Use the improved parseMethodChain function to handle the entire chain
+    const chainedMethods = parseMethodChain(zodChain, context);
+    result.annotations.push(...chainedMethods);
+    
+  } catch (error) {
+    result.parseErrors.push(`Failed to parse chained annotation: ${error instanceof Error ? error.message : String(error)}`);
+    result.isValid = false;
   }
 
   return result;
@@ -470,13 +466,63 @@ function parseChainedZodAnnotations(comment: string, context: FieldCommentContex
 function parseMethodChain(chainString: string, context: FieldCommentContext): ParsedZodAnnotation[] {
   const annotations: ParsedZodAnnotation[] = [];
   
-  // Extract individual method calls from the chain
-  const methodPattern = /\.([a-zA-Z_][a-zA-Z0-9_]*)\s*(\([^)]*\))/g;
-  
-  let match;
-  while ((match = methodPattern.exec(chainString)) !== null) {
-    const [fullMatch, methodName, parameterString] = match;
+  // Parse method calls manually to handle nested parentheses properly
+  let i = 0;
+  while (i < chainString.length) {
+    // Find next method call starting with a dot
+    const dotIndex = chainString.indexOf('.', i);
+    if (dotIndex === -1) break;
     
+    // Extract method name
+    const methodStart = dotIndex + 1;
+    let methodEnd = methodStart;
+    while (methodEnd < chainString.length && /[a-zA-Z0-9_]/.test(chainString[methodEnd])) {
+      methodEnd++;
+    }
+    
+    if (methodEnd === methodStart) {
+      i = dotIndex + 1;
+      continue;
+    }
+    
+    const methodName = chainString.slice(methodStart, methodEnd);
+    
+    // Skip whitespace
+    while (methodEnd < chainString.length && /\s/.test(chainString[methodEnd])) {
+      methodEnd++;
+    }
+    
+    // Check for parameter list
+    let parameterString = '';
+    if (methodEnd < chainString.length && chainString[methodEnd] === '(') {
+      // Find matching closing parenthesis, handling nested parentheses
+      let parenCount = 1;
+      let paramStart = methodEnd + 1;
+      let paramEnd = paramStart;
+      
+      while (paramEnd < chainString.length && parenCount > 0) {
+        const char = chainString[paramEnd];
+        if (char === '(') {
+          parenCount++;
+        } else if (char === ')') {
+          parenCount--;
+        }
+        paramEnd++;
+      }
+      
+      if (parenCount === 0) {
+        parameterString = chainString.slice(methodEnd, paramEnd);
+        i = paramEnd;
+      } else {
+        throw new Error(`Unmatched parentheses in method ${methodName}`);
+      }
+    } else {
+      // No parameters
+      parameterString = '()';
+      i = methodEnd;
+    }
+    
+    // Parse parameters
     let parameters: unknown[] = [];
     if (parameterString && parameterString.trim() !== '()') {
       try {
@@ -489,8 +535,8 @@ function parseMethodChain(chainString: string, context: FieldCommentContext): Pa
     annotations.push({
       method: methodName,
       parameters,
-      rawMatch: fullMatch,
-      position: match.index || 0
+      rawMatch: `.${methodName}${parameterString}`,
+      position: dotIndex
     });
   }
 
@@ -946,13 +992,13 @@ function mapAnnotationToZodMethod(annotation: ParsedZodAnnotation, context: Fiel
 function getValidationMethodConfig(methodName: string, fieldType?: string): ValidationMethodConfig | null {
   const configs: ValidationMethodConfig[] = [
     // String validation methods
-    { methodName: 'min', zodMethod: 'min', parameterCount: 1, fieldTypeCompatibility: ['String'] },
-    { methodName: 'max', zodMethod: 'max', parameterCount: 1, fieldTypeCompatibility: ['String'] },
-    { methodName: 'length', zodMethod: 'length', parameterCount: 1, fieldTypeCompatibility: ['String'] },
+    { methodName: 'min', zodMethod: 'min', parameterCount: 'variable', fieldTypeCompatibility: ['String'] },
+    { methodName: 'max', zodMethod: 'max', parameterCount: 'variable', fieldTypeCompatibility: ['String'] },
+    { methodName: 'length', zodMethod: 'length', parameterCount: 'variable', fieldTypeCompatibility: ['String'] },
     { methodName: 'email', zodMethod: 'email', parameterCount: 0, fieldTypeCompatibility: ['String'] },
     { methodName: 'url', zodMethod: 'url', parameterCount: 0, fieldTypeCompatibility: ['String'] },
     { methodName: 'uuid', zodMethod: 'uuid', parameterCount: 0, fieldTypeCompatibility: ['String'] },
-    { methodName: 'regex', zodMethod: 'regex', parameterCount: 1, fieldTypeCompatibility: ['String'] },
+    { methodName: 'regex', zodMethod: 'regex', parameterCount: 'variable', fieldTypeCompatibility: ['String'] },
     { methodName: 'includes', zodMethod: 'includes', parameterCount: 1, fieldTypeCompatibility: ['String'] },
     { methodName: 'startsWith', zodMethod: 'startsWith', parameterCount: 1, fieldTypeCompatibility: ['String'] },
     { methodName: 'endsWith', zodMethod: 'endsWith', parameterCount: 1, fieldTypeCompatibility: ['String'] },
@@ -961,15 +1007,16 @@ function getValidationMethodConfig(methodName: string, fieldType?: string): Vali
     { methodName: 'toUpperCase', zodMethod: 'toUpperCase', parameterCount: 0, fieldTypeCompatibility: ['String'] },
     
     // Number validation methods
-    { methodName: 'min', zodMethod: 'min', parameterCount: 1, fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
-    { methodName: 'max', zodMethod: 'max', parameterCount: 1, fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
+    { methodName: 'min', zodMethod: 'min', parameterCount: 'variable', fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
+    { methodName: 'max', zodMethod: 'max', parameterCount: 'variable', fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
     { methodName: 'int', zodMethod: 'int', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float'] },
-    { methodName: 'positive', zodMethod: 'positive', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
+    { methodName: 'positive', zodMethod: 'positive', parameterCount: 'variable', fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
     { methodName: 'negative', zodMethod: 'negative', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
     { methodName: 'nonnegative', zodMethod: 'nonnegative', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
     { methodName: 'nonpositive', zodMethod: 'nonpositive', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
     { methodName: 'finite', zodMethod: 'finite', parameterCount: 0, fieldTypeCompatibility: ['Float'] },
     { methodName: 'safe', zodMethod: 'safe', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float'] },
+    { methodName: 'multipleOf', zodMethod: 'multipleOf', parameterCount: 'variable', fieldTypeCompatibility: ['Int', 'Float'] },
     
     // Array validation methods
     { methodName: 'min', zodMethod: 'min', parameterCount: 1, fieldTypeCompatibility: ['Array'] },
@@ -987,7 +1034,14 @@ function getValidationMethodConfig(methodName: string, fieldType?: string): Vali
     { methodName: 'optional', zodMethod: 'optional', parameterCount: 0 },
     { methodName: 'nullable', zodMethod: 'nullable', parameterCount: 0 },
     { methodName: 'nullish', zodMethod: 'nullish', parameterCount: 0 },
-    { methodName: 'default', zodMethod: 'default', parameterCount: 1 }
+    { methodName: 'default', zodMethod: 'default', parameterCount: 1 },
+    { methodName: 'enum', zodMethod: 'enum', parameterCount: 1, fieldTypeCompatibility: ['String'] },
+    { methodName: 'datetime', zodMethod: 'datetime', parameterCount: 0, fieldTypeCompatibility: ['String'] },
+    { methodName: 'object', zodMethod: 'object', parameterCount: 0 },
+    { methodName: 'array', zodMethod: 'array', parameterCount: 'variable' },
+    { methodName: 'string', zodMethod: 'string', parameterCount: 0 },
+    { methodName: 'number', zodMethod: 'number', parameterCount: 0 },
+    { methodName: 'boolean', zodMethod: 'boolean', parameterCount: 0 }
   ];
 
   // If field type is provided, find the config that matches both method name and field type
