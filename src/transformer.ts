@@ -225,15 +225,16 @@ export default class Transformer {
   static isFieldEnabled(fieldName: string, modelName?: string, variant?: 'pure' | 'input' | 'result'): boolean {
     const config = this.getGeneratorConfig();
     
-    
     // If no configuration is available, include all fields (default behavior)
     if (!config) {
       return true;
     }
 
     // Check global exclusions for the specified variant
-    if (variant && config.globalExclusions?.[variant]?.includes(fieldName)) {
-      return false;
+    if (variant && config.globalExclusions?.[variant]) {
+      if (this.isFieldMatchingPatterns(fieldName, config.globalExclusions[variant])) {
+        return false;
+      }
     }
 
     // Check model-specific field exclusions
@@ -284,6 +285,7 @@ export default class Transformer {
    * Filter fields based on configuration and relationship preservation
    */
   static filterFields(fields: PrismaDMMF.SchemaArg[], modelName?: string, variant?: 'pure' | 'input' | 'result'): PrismaDMMF.SchemaArg[] {
+    
     return fields.filter(field => {
       // Check basic field inclusion rules
       if (!this.isFieldEnabled(field.name, modelName, variant)) {
