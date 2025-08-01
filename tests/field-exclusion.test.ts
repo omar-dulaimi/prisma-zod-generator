@@ -17,7 +17,11 @@ describe('Field Exclusion System Tests', () => {
       try {
         const config = {
           ...ConfigGenerator.createBasicConfig(),
-          globalExclusions: ['password', 'secretKey', 'internalId']
+          globalExclusions: {
+            input: ['password', 'secretKey', 'internalId'],
+            result: ['password', 'secretKey', 'internalId'],
+            pure: ['password', 'secretKey', 'internalId']
+          }
         };
 
         const schema = `
@@ -100,7 +104,11 @@ model Admin {
       try {
         const config = {
           ...ConfigGenerator.createBasicConfig(),
-          globalExclusions: ['*Password', 'internal*', '_*'] // Pattern-based exclusions
+          globalExclusions: {
+            input: ['*Password', 'internal*', 'private*'], // Pattern-based exclusions
+            result: ['*Password', 'internal*', 'private*'],
+            pure: ['*Password', 'internal*', 'private*']
+          }
         };
 
         const schema = `
@@ -126,8 +134,8 @@ model User {
   adminPassword    String  // Should match *Password
   internalId       String  // Should match internal*
   internalMetadata Json?   // Should match internal*
-  _privateField    String  // Should match _*
-  _tempData        String? // Should match _*
+  privateField     String  // Should match private*
+  privateTempData  String? // Should match private*
   name             String?
   publicField      String
 }
@@ -148,7 +156,7 @@ model User {
             excludesFields: [
               'userPassword', 'adminPassword', // *Password pattern
               'internalId', 'internalMetadata', // internal* pattern
-              '_privateField', '_tempData' // _* pattern
+              'privateField', 'privateTempData' // private* pattern
             ]
           });
         }
@@ -273,7 +281,11 @@ model Profile {
       try {
         const config = {
           ...ConfigGenerator.createBasicConfig(),
-          globalExclusions: ['password'], // Global exclusion
+          globalExclusions: {
+            input: ['password'], // Global exclusion
+            result: ['password'], 
+            pure: ['password']
+          },
           models: {
             User: {
               enabled: true,

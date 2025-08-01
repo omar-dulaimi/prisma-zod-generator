@@ -34,29 +34,33 @@ export class PrismaSchemaGenerator {
       .map(([key, value]) => `  ${key} = "${value}"`)
       .join('\n');
 
-    const userModel = `
-model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  posts Post[]
-}`;
-
-    const postModel = `
-model Post {
-  id       Int     @id @default(autoincrement())
-  title    String
-  content  String?
-  author   User    @relation(fields: [authorId], references: [id])
-  authorId Int
-}`;
-
+    // Create models based on what's requested, with appropriate relationships
     const modelDefinitions = models.map(model => {
       switch (model) {
         case 'User':
-          return userModel;
+          // Only include Post relationship if Post model is also being generated
+          const hasPostRelation = models.includes('Post');
+          return `
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?${hasPostRelation ? '\n  posts Post[]' : ''}
+}`;
         case 'Post':
-          return postModel;
+          // Only include User relationship if User model is also being generated
+          const hasUserRelation = models.includes('User');
+          return `
+model Post {
+  id       Int     @id @default(autoincrement())
+  title    String
+  content  String?${hasUserRelation ? '\n  author   User    @relation(fields: [authorId], references: [id])\n  authorId Int' : ''}
+}`;
+        case 'Profile':
+          return `
+model Profile {
+  id   Int    @id @default(autoincrement())
+  bio  String?
+}`;
         default:
           return `
 model ${model} {
