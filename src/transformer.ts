@@ -15,6 +15,7 @@ import { writeIndexFile, addIndexExport } from './utils/writeIndexFile';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import { extractFieldComment, parseZodAnnotations, mapAnnotationsToZodSchema, type FieldCommentContext } from './parsers/zodComments';
+import { processModelsWithZodIntegration, type EnhancedModelInfo, type EnhancedFieldInfo } from './helpers/zod-integration';
 
 /**
  * Filter validation result interface
@@ -34,6 +35,7 @@ export default class Transformer {
   modelOperations: PrismaDMMF.ModelMapping[];
   aggregateOperationSupport: AggregateOperationSupport;
   enumTypes: PrismaDMMF.SchemaEnum[];
+  enhancedModels: EnhancedModelInfo[];
 
   static enumNames: string[] = [];
   static rawOpsMap: { [name: string]: string } = {};
@@ -56,6 +58,14 @@ export default class Transformer {
     this.modelOperations = params.modelOperations ?? [];
     this.aggregateOperationSupport = params.aggregateOperationSupport ?? {};
     this.enumTypes = params.enumTypes ?? [];
+    
+    // Process models with Zod integration on initialization
+    this.enhancedModels = processModelsWithZodIntegration(this.models, {
+      enableZodAnnotations: true,
+      generateFallbackSchemas: true,
+      validateTypeCompatibility: true,
+      collectDetailedErrors: true
+    });
   }
 
   static setOutputPath(outPath: string) {
@@ -745,7 +755,7 @@ export default class Transformer {
   }
 
   /**
-   * Extract @zod validations for a specific field
+   * Extract @zod validations for a specific field using the enhanced model information
    */
   private extractZodValidationsForField(fieldName: string): string | null {
     // IMPORTANT: Don't apply field validations to Select schemas
@@ -753,108 +763,36 @@ export default class Transformer {
     if (this.name && this.name.includes('Select')) {
       return null;
     }
-    
-    
+
     // Basic validation
-    if (!fieldName || !this.models || this.models.length === 0) {
-      try {
-        const fs = require('fs');
-        fs.appendFileSync('/tmp/zod-debug.log', `EARLY EXIT: fieldName=${fieldName}, models=${!!this.models}, modelsLength=${this.models?.length || 0}\n`);
-      } catch (e) {}
+    if (!fieldName || !this.enhancedModels || this.enhancedModels.length === 0) {
       return null;
     }
 
     // Extract model name from the current transformer context
     const modelName = Transformer.extractModelNameFromContext(this.name);
     if (!modelName) {
-      try {
-        const fs = require('fs');
-        fs.appendFileSync('/tmp/zod-debug.log', `NO MODEL NAME: transformerName=${this.name}\n`);
-      } catch (e) {}
       return null;
     }
 
-    // Find the corresponding model in our models array
-    const model = this.models.find(m => m.name === modelName);
-    if (!model || !model.fields) {
-      try {
-        const fs = require('fs');
-        fs.appendFileSync('/tmp/zod-debug.log', `NO MODEL FOUND: modelName=${modelName}, availableModels=${this.models.map(m => m.name).join(',')}\n`);
-      } catch (e) {}
+    // Find the enhanced model information
+    const enhancedModel = this.enhancedModels.find(em => em.model.name === modelName);
+    if (!enhancedModel) {
       return null;
     }
 
-    // Find the field in the model
-    const modelField = model.fields.find(f => f.name === fieldName);
-    if (!modelField) {
-      return null;
-    }
-    
-    // Debug: Check field documentation
-    try {
-      const fs = require('fs');
-      fs.appendFileSync('/tmp/zod-debug.log', `FIELD CHECK: ${fieldName} - documentation: "${modelField.documentation || 'NULL/UNDEFINED'}", hasDoc: ${!!modelField.documentation}\n`);
-    } catch (e) {}
-    
-    if (!modelField.documentation || !modelField.documentation.trim()) {
+    // Find the enhanced field information
+    const enhancedField = enhancedModel.enhancedFields.find(ef => ef.field.name === fieldName);
+    if (!enhancedField) {
       return null;
     }
 
-    // Debug: Let's write debug info to a debug file to see what's happening
-    try {
-      const fs = require('fs');
-      const debugInfo = {
-        fieldName,
-        modelName,
-        transformerName: this.name,
-        fieldDocumentation: modelField.documentation,
-        fieldType: modelField.type,
-        timestamp: new Date().toISOString(),
-      };
-      fs.appendFileSync('/tmp/zod-debug.log', JSON.stringify(debugInfo, null, 2) + '\n---\n');
-    } catch (e) {
-      // Ignore debug errors
+    // Return the Zod schema if it has annotations and is valid
+    if (enhancedField.hasZodAnnotations && enhancedField.zodSchema) {
+      return enhancedField.zodSchema;
     }
 
-    // Create field context for the @zod parser
-    const context: FieldCommentContext = {
-      modelName: model.name,
-      fieldName: modelField.name,
-      fieldType: modelField.type,
-      comment: modelField.documentation,
-      isOptional: !modelField.isRequired,
-      isList: modelField.isList
-    };
-
-    try {
-      // Extract field comment
-      const extractedComment = extractFieldComment(context);
-      if (!extractedComment.hasZodAnnotations) {
-        return null;
-      }
-
-      // Parse @zod annotations
-      const parseResult = parseZodAnnotations(extractedComment.normalizedComment, context);
-      if (!parseResult.isValid || parseResult.annotations.length === 0) {
-        return null;
-      }
-
-      // Map annotations to Zod schema
-      const zodSchemaResult = mapAnnotationsToZodSchema(parseResult.annotations, context);
-      if (!zodSchemaResult.isValid) {
-        return null;
-      }
-
-      // Get the base Zod type for this field
-      const baseZodType = this.getBaseZodTypeForField(modelField);
-      
-      // Combine base type with validations
-      return `${baseZodType}${zodSchemaResult.schemaChain}`;
-
-    } catch (error) {
-      console.warn(`Error processing @zod comments for ${modelName}.${fieldName}:`, error);
-      return null;
-    }
+    return null;
   }
 
   /**
