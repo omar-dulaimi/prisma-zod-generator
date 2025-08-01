@@ -61,7 +61,10 @@ model Admin {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
@@ -143,7 +146,10 @@ model User {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
@@ -238,7 +244,10 @@ model Profile {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
@@ -337,7 +346,10 @@ model Admin {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
@@ -421,7 +433,10 @@ model User {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
@@ -509,7 +524,10 @@ model User {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
@@ -569,7 +587,10 @@ model User {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
@@ -657,7 +678,10 @@ model Profile {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
@@ -740,7 +764,10 @@ model User {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
@@ -793,7 +820,10 @@ model User {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         // Should handle non-existent field exclusions gracefully
         await testEnv.runGeneration();
@@ -858,7 +888,10 @@ model User {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
@@ -927,7 +960,10 @@ model User {
 
         const configPath = join(testEnv.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        
+        // Update schema with correct config path
+        const schemaWithConfigPath = schema.replace('config   = "./config.json"', `config   = "${configPath}"`);
+        writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
         await testEnv.runGeneration();
 
