@@ -711,27 +711,17 @@ export default class Transformer {
     inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
   ) {
     let line: string = mainValidator;
+    let hasEnhancedZodSchema = false;
 
     // Re-enabled @zod comment validations
     try {
       // Add safety check to prevent infinite loops
       if (field.name && typeof field.name === 'string' && field.name.length > 0) {
-        // Debug: Log what we're looking for
-        try {
-          const fs = require('fs');
-          fs.appendFileSync('/tmp/zod-debug.log', `Looking for field: ${field.name}, transformer: ${this.name}\n`);
-        } catch (e) {}
-        
         const zodValidations = this.extractZodValidationsForField(field.name);
-        
-        // Debug: Log what we found
-        try {
-          const fs = require('fs');
-          fs.appendFileSync('/tmp/zod-debug.log', `Found validations: ${zodValidations || 'null'}\n`);
-        } catch (e) {}
         
         if (zodValidations && zodValidations !== mainValidator) {
           line = zodValidations;
+          hasEnhancedZodSchema = true;
         }
       }
     } catch (error) {
@@ -743,7 +733,8 @@ export default class Transformer {
       line += '.array()';
     }
 
-    if (!field.isRequired) {
+    // Only add .optional() if we don't have an enhanced schema (which already includes optionality)
+    if (!field.isRequired && !hasEnhancedZodSchema) {
       line += '.optional()';
     }
 
