@@ -25,6 +25,8 @@ import {
 } from './config/generator-options';
 import { processConfiguration } from './config/defaults';
 import { parseConfiguration, GeneratorConfig as CustomGeneratorConfig } from './config/parser';
+import { writeFileSafely } from './utils/writeFileSafely';
+import path from 'path';
 
 export async function generate(options: GeneratorOptions) {
   try {
@@ -93,9 +95,14 @@ export async function generate(options: GeneratorOptions) {
         generatorOptionOverrides
       );
       
+      
       // Step 4: Process final configuration with defaults (lowest priority)
       const availableModels = prismaClientDmmf.datamodel.models.map(m => m.name);
-      generatorConfig = processConfiguration(mergedConfig, availableModels);
+      const modelFieldInfo: { [modelName: string]: string[] } = {};
+      prismaClientDmmf.datamodel.models.forEach(model => {
+        modelFieldInfo[model.name] = model.fields.map(field => field.name);
+      });
+      generatorConfig = processConfiguration(mergedConfig, availableModels, modelFieldInfo);
       
       // Log configuration precedence information
       logConfigurationPrecedence(extendedOptions, configFileOptions, generatorOptionOverrides);
@@ -194,13 +201,19 @@ export async function generate(options: GeneratorOptions) {
       hiddenModels,
       hiddenFields,
     );
-    await generateObjectSchemas(mutableInputObjectTypes);
+    await generateObjectSchemas(mutableInputObjectTypes, models);
     await generateModelSchemas(
       models,
       [...modelOperations],
       aggregateOperationSupport,
     );
     await generateIndex();
+    
+    // Generate variant schemas if enabled
+    await generateVariantSchemas(models, generatorConfig);
+    
+    // Update main index to include variants
+    await updateIndexWithVariants(generatorConfig);
     
     // Generate filtering summary
     generateFilteringSummary(models, generatorConfig);
@@ -268,9 +281,9 @@ async function generateEnumSchemas(
   await transformer.generateEnumSchemas();
 }
 
-async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[]) {
+async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models: DMMF.Model[]) {
   for (let i = 0; i < inputObjectTypes.length; i += 1) {
-    const fields = inputObjectTypes[i]?.fields;
+    const originalFields = inputObjectTypes[i]?.fields;
     const name = inputObjectTypes[i]?.name;
     
     // Filter object schemas based on enabled models
@@ -278,7 +291,21 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[]) {
       continue;
     }
     
-    const transformer = new Transformer({ name, fields: [...(fields || [])] });
+    // Apply field filtering before creating transformer
+    let filteredFields = [...(originalFields || [])];
+    if (name && originalFields) {
+      // Extract model name from schema name (e.g., "UserCreateInput" -> "User")
+      const modelName = Transformer.extractModelNameFromContext(name);
+      const variant = Transformer.determineSchemaVariant(name);
+      
+      if (modelName) {
+        // Apply field filtering using the transformer's filtering logic
+        // Cast to the expected type to handle ReadonlyDeep wrapper
+        filteredFields = Transformer.filterFields(originalFields as any, modelName, variant);
+      }
+    }
+    
+    const transformer = new Transformer({ name, fields: filteredFields, models });
     await transformer.generateObjectSchema();
   }
 }
@@ -364,6 +391,32 @@ async function generateModelSchemas(
 
 async function generateIndex() {
   await Transformer.generateIndex();
+}
+
+async function updateIndexWithVariants(config: CustomGeneratorConfig) {
+  // Check if variants are enabled and add variants export to main index
+  const variants = config.variants;
+  if (!variants) return;
+  
+  const enabledVariants = Object.entries(variants)
+    .filter(([_, variantConfig]) => variantConfig?.enabled)
+    .map(([variantName]) => variantName);
+  
+  if (enabledVariants.length === 0) return;
+  
+  // Import the addIndexExport function and add the variants directory
+  const { addIndexExport, writeIndexFile } = await import('./utils/writeIndexFile');
+  const outputPath = Transformer.getOutputPath();
+  const variantsIndexPath = `${outputPath}/variants/index.ts`;
+  
+  // Add the variants export to the main index
+  addIndexExport(variantsIndexPath);
+  
+  // Regenerate the main index file to include variants
+  const indexPath = path.join(outputPath, 'schemas', 'index.ts');
+  await writeIndexFile(indexPath);
+  
+  console.log('📦 Updated main index to include variants export');
 }
 
 /**
@@ -478,4 +531,186 @@ function logConfigurationPrecedence(
     
     console.log(''); // Empty line for readability
   }
+}
+
+/**
+ * Generate variant schemas if variants are enabled in configuration
+ */
+async function generateVariantSchemas(models: DMMF.Model[], config: CustomGeneratorConfig) {
+  // Check if variants are enabled and configured
+  const variants = config.variants;
+  if (!variants) return;
+  
+  const enabledVariants = Object.entries(variants)
+    .filter(([_, variantConfig]) => variantConfig?.enabled)
+    .map(([variantName]) => variantName);
+  
+  if (enabledVariants.length === 0) {
+    console.log('📦 No variants enabled, skipping variant generation');
+    return;
+  }
+  
+  console.log(`📦 Generating variant schemas for: ${enabledVariants.join(', ')}`);
+  
+  try {
+    const outputPath = Transformer.getOutputPath();
+    const variantsOutputPath = `${outputPath}/variants`;
+    
+    // Filter models based on configuration
+    const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
+    
+    if (enabledModels.length === 0) {
+      console.log('⚠️  No models enabled for variant generation');
+      return;
+    }
+    
+    // Create variants directory
+    await fs.mkdir(variantsOutputPath, { recursive: true });
+    
+    // Generate each variant type
+    for (const variantName of enabledVariants) {
+      await generateVariantType(enabledModels, variantName, variantsOutputPath, config);
+    }
+    
+    // Generate variants index file
+    await generateVariantsIndex(enabledVariants, variantsOutputPath);
+    
+    console.log(`📦 Generated ${enabledVariants.length} variant types for ${enabledModels.length} models`);
+    
+  } catch (error) {
+    console.error(`❌ Variant generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Don't throw - variant generation failure shouldn't stop the main generation
+  }
+}
+
+/**
+ * Generate schemas for a specific variant type
+ */
+async function generateVariantType(
+  models: DMMF.Model[], 
+  variantName: string, 
+  outputPath: string, 
+  config: CustomGeneratorConfig
+) {
+  const variantPath = `${outputPath}/${variantName}`;
+  await fs.mkdir(variantPath, { recursive: true });
+  
+  const variantConfig = config.variants?.[variantName as keyof typeof config.variants];
+  if (!variantConfig) return;
+  
+  const exports: string[] = [];
+  
+  for (const model of models) {
+    const modelConfig = config.models?.[model.name];
+    const modelVariantConfig = modelConfig?.variants?.[variantName as keyof typeof modelConfig.variants];
+    
+    // Generate schema for this model/variant combination
+    const suffix = variantConfig.suffix?.replace(/^\./, '') || variantName.charAt(0).toUpperCase() + variantName.slice(1);
+    const schemaName = `${model.name}${suffix.charAt(0).toUpperCase() + suffix.slice(1)}Schema`;
+    const fileName = `${model.name}.${variantName}.ts`;
+    const filePath = `${variantPath}/${fileName}`;
+    
+    // Get effective field exclusions
+    const excludeFields = [
+      ...(config.globalExclusions?.[variantName as keyof typeof config.globalExclusions] || []),
+      ...(variantConfig.excludeFields || []),
+      ...(modelVariantConfig?.excludeFields || [])
+    ];
+    
+    // Generate schema content
+    const schemaContent = generateVariantSchemaContent(model, schemaName, excludeFields, variantName);
+    
+    console.log(`   📝 Creating ${variantName} variant: ${fileName} (${schemaName})`);
+    
+    // Write file
+    await writeFileSafely(filePath, schemaContent);
+    
+    exports.push(`export { ${schemaName} } from './${model.name}.${variantName}';`);
+  }
+  
+  // Generate variant index file
+  const variantIndexContent = [
+    '/**',
+    ` * ${variantName.charAt(0).toUpperCase() + variantName.slice(1)} Variant Schemas`,
+    ' * Auto-generated - do not edit manually',
+    ' */',
+    '',
+    ...exports,
+    ''
+  ].join('\n');
+  
+  await writeFileSafely(`${variantPath}/index.ts`, variantIndexContent);
+}
+
+/**
+ * Generate schema content for a specific variant
+ */
+function generateVariantSchemaContent(
+  model: DMMF.Model, 
+  schemaName: string, 
+  excludeFields: string[], 
+  variantName: string
+): string {
+  const enabledFields = model.fields.filter(field => !excludeFields.includes(field.name));
+  
+  const fieldDefinitions = enabledFields.map(field => {
+    const zodType = getZodTypeForField(field);
+    const optional = (!field.isRequired && variantName === 'input') ? '.optional()' : '';
+    const nullable = (!field.isRequired && field.type === 'String') ? '.nullable()' : '';
+    
+    return `    ${field.name}: z.${zodType}${optional}${nullable}`;
+  }).join(',\n');
+  
+  return `import { z } from 'zod';
+
+export const ${schemaName} = z.object({
+${fieldDefinitions}
+}).strict();
+
+export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;
+`;
+}
+
+/**
+ * Get Zod type for a Prisma field
+ */
+function getZodTypeForField(field: DMMF.Field): string {
+  switch (field.type) {
+    case 'String': return 'string()';
+    case 'Int': return 'number().int()';
+    case 'Float': return 'number()';
+    case 'Boolean': return 'boolean()';
+    case 'DateTime': return 'date()';
+    case 'Json': return 'unknown()';
+    case 'Bytes': return 'instanceof(Buffer)';
+    case 'BigInt': return 'bigint()';
+    case 'Decimal': return 'number()'; // Simplified
+    default:
+      // Handle enums and other custom types
+      if (field.kind === 'enum') {
+        return `nativeEnum(${field.type})`;
+      }
+      return 'unknown()';
+  }
+}
+
+/**
+ * Generate main variants index file
+ */
+async function generateVariantsIndex(variantNames: string[], outputPath: string) {
+  const exports = variantNames.map(variant => 
+    `export * from './${variant}';`
+  );
+  
+  const indexContent = [
+    '/**',
+    ' * Schema Variants Index',
+    ' * Auto-generated - do not edit manually',
+    ' */',
+    '',
+    ...exports,
+    ''
+  ].join('\n');
+  
+  await writeFileSafely(`${outputPath}/index.ts`, indexContent);
 }

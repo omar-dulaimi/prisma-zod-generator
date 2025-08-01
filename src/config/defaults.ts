@@ -114,7 +114,7 @@ export class DefaultConfigurationManager {
   /**
    * Get default variant configuration
    */
-  static getDefaultVariantConfig(variantType: 'pure' | 'input' | 'result'): VariantConfig {
+  static getDefaultVariantConfig(variantType: 'pure' | 'input' | 'result', modelFields?: string[]): VariantConfig {
     const defaults = DEFAULT_CONFIG.variants[variantType as keyof typeof DEFAULT_CONFIG.variants];
     
     const baseConfig: VariantConfig = {
@@ -126,9 +126,15 @@ export class DefaultConfigurationManager {
     // Apply variant-specific defaults
     switch (variantType) {
       case 'input':
+        // Only exclude fields that actually exist in the model
+        const commonInputExclusions = ['id', 'createdAt', 'updatedAt'];
+        const actualExclusions = modelFields 
+          ? commonInputExclusions.filter(field => modelFields.includes(field))
+          : commonInputExclusions;
+        
         return {
           ...baseConfig,
-          excludeFields: ['id', 'createdAt', 'updatedAt'] // Common input exclusions
+          excludeFields: actualExclusions
         };
       
       case 'result':
@@ -151,16 +157,16 @@ export class DefaultConfigurationManager {
   /**
    * Get default model configuration
    */
-  static getDefaultModelConfig(modelName: string, mode: string = 'full'): ModelConfig {
+  static getDefaultModelConfig(modelName: string, mode: string = 'full', modelFields?: string[]): ModelConfig {
     const operations = mode === 'minimal' ? [...MINIMAL_OPERATIONS] : [...PRISMA_OPERATIONS];
     
     return {
       enabled: true,
       operations,
       variants: {
-        pure: this.getDefaultVariantConfig('pure'),
-        input: this.getDefaultVariantConfig('input'),
-        result: this.getDefaultVariantConfig('result')
+        pure: this.getDefaultVariantConfig('pure', modelFields),
+        input: this.getDefaultVariantConfig('input', modelFields),
+        result: this.getDefaultVariantConfig('result', modelFields)
       }
     };
   }
@@ -244,7 +250,8 @@ export class DefaultConfigurationManager {
    */
   static fillMissingModelConfigs(
     config: GeneratorConfig, 
-    availableModels: string[]
+    availableModels: string[],
+    modelFieldInfo?: { [modelName: string]: string[] }
   ): GeneratorConfig {
     const result = { ...config };
     
@@ -257,12 +264,12 @@ export class DefaultConfigurationManager {
       const models = result.models;
       if (!models?.[modelName]) {
         if (models) {
-          models[modelName] = this.getDefaultModelConfig(modelName, result.mode);
+          models[modelName] = this.getDefaultModelConfig(modelName, result.mode, modelFieldInfo?.[modelName]);
         }
       } else {
         // Fill in missing properties for existing model configs
         const modelConfig = models[modelName];
-        const defaultModelConfig = this.getDefaultModelConfig(modelName, result.mode);
+        const defaultModelConfig = this.getDefaultModelConfig(modelName, result.mode, modelFieldInfo?.[modelName]);
         
         models[modelName] = deepMerge(
           defaultModelConfig as Record<string, unknown>, 
@@ -502,9 +509,10 @@ export function mergeWithDefaults(userConfig: Partial<GeneratorConfig>): Generat
  */
 export function fillMissingModelConfigs(
   config: GeneratorConfig, 
-  availableModels: string[]
+  availableModels: string[],
+  modelFieldInfo?: { [modelName: string]: string[] }
 ): GeneratorConfig {
-  return DefaultConfigurationManager.fillMissingModelConfigs(config, availableModels);
+  return DefaultConfigurationManager.fillMissingModelConfigs(config, availableModels, modelFieldInfo);
 }
 
 /**
@@ -536,7 +544,8 @@ export function getAvailablePresets(): ConfigurationPresetInfo[] {
  */
 export function processConfiguration(
   userConfig: Partial<GeneratorConfig>,
-  availableModels?: string[]
+  availableModels?: string[],
+  modelFieldInfo?: { [modelName: string]: string[] }
 ): GeneratorConfig {
   // 1. Merge with defaults
   let config = mergeWithDefaults(userConfig);
@@ -546,7 +555,7 @@ export function processConfiguration(
   
   // 3. Fill in missing model configurations if models are provided
   if (availableModels && availableModels.length > 0) {
-    config = fillMissingModelConfigs(config, availableModels);
+    config = fillMissingModelConfigs(config, availableModels, modelFieldInfo);
   }
   
   return config;

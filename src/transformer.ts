@@ -14,6 +14,7 @@ import { writeFileSafely } from './utils/writeFileSafely';
 import { writeIndexFile, addIndexExport } from './utils/writeIndexFile';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
+import { extractFieldComment, parseZodAnnotations, mapAnnotationsToZodSchema, type FieldCommentContext } from './parsers/zodComments';
 
 /**
  * Filter validation result interface
@@ -144,8 +145,26 @@ export default class Transformer {
     // Check if model has specific configuration
     const modelConfig = config.models?.[modelName];
     if (modelConfig && modelConfig.operations) {
-      // If model has specific operations configured, check if this operation is included
-      return modelConfig.operations.includes(operationName);
+      // Map operation names for backward compatibility
+      const operationMapping: Record<string, string[]> = {
+        'findMany': ['findMany'],
+        'findUnique': ['findUnique'], 
+        'findFirst': ['findFirst'],
+        'createOne': ['create', 'createOne'],
+        'createMany': ['create', 'createMany'],
+        'updateOne': ['update', 'updateOne'],
+        'updateMany': ['update', 'updateMany'],
+        'deleteOne': ['delete', 'deleteOne'],
+        'deleteMany': ['delete', 'deleteMany'],
+        'upsertOne': ['upsert', 'upsertOne'],
+        'aggregate': ['aggregate'],
+        'groupBy': ['groupBy']
+      };
+      
+      const allowedOperationNames = operationMapping[operationName] || [operationName];
+      const isEnabled = allowedOperationNames.some(opName => modelConfig.operations!.includes(opName));
+      
+      return isEnabled;
     }
 
     // For minimal mode, only enable basic CRUD operations
@@ -196,6 +215,7 @@ export default class Transformer {
   static isFieldEnabled(fieldName: string, modelName?: string, variant?: 'pure' | 'input' | 'result'): boolean {
     const config = this.getGeneratorConfig();
     
+    
     // If no configuration is available, include all fields (default behavior)
     if (!config) {
       return true;
@@ -209,13 +229,45 @@ export default class Transformer {
     // Check model-specific field exclusions
     if (modelName) {
       const modelConfig = config.models?.[modelName];
-      if (modelConfig?.variants?.[variant || 'pure']?.excludeFields?.includes(fieldName)) {
-        return false;
+      
+      // Check variant-specific exclusions (new format)
+      if (modelConfig?.variants?.[variant || 'pure']?.excludeFields) {
+        if (this.isFieldMatchingPatterns(fieldName, modelConfig.variants[variant || 'pure']!.excludeFields!)) {
+          return false;
+        }
+      }
+      
+      // Check legacy format: fields.exclude (for backward compatibility)
+      if ((modelConfig as any)?.fields?.exclude) {
+        if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.exclude)) {
+          return false;
+        }
       }
     }
 
     // Default: include all fields not explicitly excluded
     return true;
+  }
+
+  /**
+   * Check if a field name matches any pattern in the exclusion list
+   * Supports wildcards: *field, field*, *field*
+   */
+  static isFieldMatchingPatterns(fieldName: string, patterns: string[]): boolean {
+    return patterns.some(pattern => {
+      // Exact match (no wildcards)
+      if (!pattern.includes('*')) {
+        return fieldName === pattern;
+      }
+      
+      // Convert pattern to regex
+      const regexPattern = pattern
+        .replace(/\./g, '\\.')  // Escape dots FIRST
+        .replace(/\*/g, '.*');  // Then replace * with .*
+      
+      const regex = new RegExp(`^${regexPattern}$`);
+      return regex.test(fieldName);
+    });
   }
 
   /**
@@ -248,9 +300,14 @@ export default class Transformer {
     // Check if the field type suggests it's a relation
     return field.inputTypes.some(inputType => {
       return inputType.location === 'inputObjectTypes' && 
-             (inputType.type as string).includes('WhereInput') ||
+             ((inputType.type as string).includes('WhereInput') ||
              (inputType.type as string).includes('CreateInput') ||
-             (inputType.type as string).includes('UpdateInput');
+             (inputType.type as string).includes('UpdateInput') ||
+             (inputType.type as string).includes('ListRelationFilter') ||
+             (inputType.type as string).includes('RelationFilter') ||
+             (inputType.type as string).includes('CreateNested') ||
+             (inputType.type as string).includes('UpdateNested') ||
+             (inputType.type as string).includes('OrderByRelation'));
     });
   }
 
@@ -261,8 +318,16 @@ export default class Transformer {
     for (const inputType of field.inputTypes) {
       if (inputType.location === 'inputObjectTypes') {
         const typeName = inputType.type as string;
-        // Extract model name from types like "PostWhereInput", "UserCreateInput", etc.
-        const match = typeName.match(/^(\w+)(?:Where|Create|Update|OrderBy)/);
+        
+        // Handle specific relation filter patterns first
+        if (typeName.includes('ListRelationFilter')) {
+          // Extract from "PostListRelationFilter" -> "Post"
+          const match = typeName.match(/^(\w+)ListRelationFilter$/);
+          if (match) return match[1];
+        }
+        
+        // Extract model name from other types like "PostWhereInput", "UserCreateInput", etc.
+        const match = typeName.match(/^(\w+)(?:Where|Create|Update|OrderBy|RelationFilter|CreateNested|UpdateNested)/);
         if (match) {
           return match[1];
         }
@@ -508,9 +573,11 @@ export default class Transformer {
     const modelName = Transformer.extractModelNameFromContext(this.name);
     const variant = Transformer.determineSchemaVariant(this.name);
     
+    
     // Apply field filtering
     const originalFieldCount = this.fields.length;
     const filteredFields = Transformer.filterFields(this.fields, modelName || undefined, variant);
+    
     
     // Log field filtering if any fields were excluded
     Transformer.logFieldFiltering(originalFieldCount, filteredFields.length, modelName || undefined, variant);
@@ -540,8 +607,13 @@ export default class Transformer {
     }
 
     let alternatives = lines.reduce<string[]>((result, inputType) => {
+      
       if (inputType.type === 'String') {
         result.push(this.wrapWithZodValidators('z.string()', field, inputType));
+      } else if (inputType.type === 'Boolean') {
+        result.push(
+          this.wrapWithZodValidators('z.boolean()', field, inputType),
+        );
       } else if (inputType.type === 'Int') {
         result.push(this.wrapWithZodValidators('z.number().int()', field, inputType));
       } else if (
@@ -628,8 +700,34 @@ export default class Transformer {
     field: PrismaDMMF.SchemaArg,
     inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
   ) {
-    let line: string = '';
-    line = mainValidator;
+    let line: string = mainValidator;
+
+    // Re-enabled @zod comment validations
+    try {
+      // Add safety check to prevent infinite loops
+      if (field.name && typeof field.name === 'string' && field.name.length > 0) {
+        // Debug: Log what we're looking for
+        try {
+          const fs = require('fs');
+          fs.appendFileSync('/tmp/zod-debug.log', `Looking for field: ${field.name}, transformer: ${this.name}\n`);
+        } catch (e) {}
+        
+        const zodValidations = this.extractZodValidationsForField(field.name);
+        
+        // Debug: Log what we found
+        try {
+          const fs = require('fs');
+          fs.appendFileSync('/tmp/zod-debug.log', `Found validations: ${zodValidations || 'null'}\n`);
+        } catch (e) {}
+        
+        if (zodValidations && zodValidations !== mainValidator) {
+          line = zodValidations;
+        }
+      }
+    } catch (error) {
+      // If @zod processing fails, continue with the default validator
+      console.warn(`Failed to process @zod comments for field ${field.name}:`, error);
+    }
 
     if (inputType.isList) {
       line += '.array()';
@@ -644,6 +742,150 @@ export default class Transformer {
 
   addSchemaImport(name: string) {
     this.schemaImports.add(name);
+  }
+
+  /**
+   * Extract @zod validations for a specific field
+   */
+  private extractZodValidationsForField(fieldName: string): string | null {
+    // IMPORTANT: Don't apply field validations to Select schemas
+    // Select schemas should always use boolean types regardless of the original field type
+    if (this.name && this.name.includes('Select')) {
+      return null;
+    }
+    
+    
+    // Basic validation
+    if (!fieldName || !this.models || this.models.length === 0) {
+      try {
+        const fs = require('fs');
+        fs.appendFileSync('/tmp/zod-debug.log', `EARLY EXIT: fieldName=${fieldName}, models=${!!this.models}, modelsLength=${this.models?.length || 0}\n`);
+      } catch (e) {}
+      return null;
+    }
+
+    // Extract model name from the current transformer context
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    if (!modelName) {
+      try {
+        const fs = require('fs');
+        fs.appendFileSync('/tmp/zod-debug.log', `NO MODEL NAME: transformerName=${this.name}\n`);
+      } catch (e) {}
+      return null;
+    }
+
+    // Find the corresponding model in our models array
+    const model = this.models.find(m => m.name === modelName);
+    if (!model || !model.fields) {
+      try {
+        const fs = require('fs');
+        fs.appendFileSync('/tmp/zod-debug.log', `NO MODEL FOUND: modelName=${modelName}, availableModels=${this.models.map(m => m.name).join(',')}\n`);
+      } catch (e) {}
+      return null;
+    }
+
+    // Find the field in the model
+    const modelField = model.fields.find(f => f.name === fieldName);
+    if (!modelField) {
+      return null;
+    }
+    
+    // Debug: Check field documentation
+    try {
+      const fs = require('fs');
+      fs.appendFileSync('/tmp/zod-debug.log', `FIELD CHECK: ${fieldName} - documentation: "${modelField.documentation || 'NULL/UNDEFINED'}", hasDoc: ${!!modelField.documentation}\n`);
+    } catch (e) {}
+    
+    if (!modelField.documentation || !modelField.documentation.trim()) {
+      return null;
+    }
+
+    // Debug: Let's write debug info to a debug file to see what's happening
+    try {
+      const fs = require('fs');
+      const debugInfo = {
+        fieldName,
+        modelName,
+        transformerName: this.name,
+        fieldDocumentation: modelField.documentation,
+        fieldType: modelField.type,
+        timestamp: new Date().toISOString(),
+      };
+      fs.appendFileSync('/tmp/zod-debug.log', JSON.stringify(debugInfo, null, 2) + '\n---\n');
+    } catch (e) {
+      // Ignore debug errors
+    }
+
+    // Create field context for the @zod parser
+    const context: FieldCommentContext = {
+      modelName: model.name,
+      fieldName: modelField.name,
+      fieldType: modelField.type,
+      comment: modelField.documentation,
+      isOptional: !modelField.isRequired,
+      isList: modelField.isList
+    };
+
+    try {
+      // Extract field comment
+      const extractedComment = extractFieldComment(context);
+      if (!extractedComment.hasZodAnnotations) {
+        return null;
+      }
+
+      // Parse @zod annotations
+      const parseResult = parseZodAnnotations(extractedComment.normalizedComment, context);
+      if (!parseResult.isValid || parseResult.annotations.length === 0) {
+        return null;
+      }
+
+      // Map annotations to Zod schema
+      const zodSchemaResult = mapAnnotationsToZodSchema(parseResult.annotations, context);
+      if (!zodSchemaResult.isValid) {
+        return null;
+      }
+
+      // Get the base Zod type for this field
+      const baseZodType = this.getBaseZodTypeForField(modelField);
+      
+      // Combine base type with validations
+      return `${baseZodType}${zodSchemaResult.schemaChain}`;
+
+    } catch (error) {
+      console.warn(`Error processing @zod comments for ${modelName}.${fieldName}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get the base Zod type for a model field
+   */
+  private getBaseZodTypeForField(field: PrismaDMMF.Field): string {
+    switch (field.type) {
+      case 'String':
+        return 'z.string()';
+      case 'Int':
+        return 'z.number().int()';
+      case 'Float':
+      case 'Decimal':
+        return 'z.number()';
+      case 'Boolean':
+        return 'z.boolean()';
+      case 'DateTime':
+        return 'z.coerce.date()';
+      case 'Json':
+        return 'z.unknown()'; // or jsonSchema depending on context
+      case 'Bytes':
+        return 'z.instanceof(Uint8Array)';
+      case 'BigInt':
+        return 'z.bigint()';
+      default:
+        // Handle enums and other types
+        if (field.kind === 'enum') {
+          return `z.nativeEnum(${field.type})`;
+        }
+        return 'z.unknown()';
+    }
   }
 
   generatePrismaStringLine(
