@@ -383,6 +383,34 @@ export function parseZodAnnotations(comment: string, context: FieldCommentContex
       }
     }
 
+    // Validate and filter the parsed annotations
+    if (result.annotations.length > 0) {
+      const validAnnotations: ParsedZodAnnotation[] = [];
+      const validationErrors: string[] = [];
+      
+      for (const annotation of result.annotations) {
+        try {
+          validateZodMethod(annotation, context);
+          validAnnotations.push(annotation);
+        } catch (error) {
+          validationErrors.push(`${context.modelName}.${context.fieldName}: ${error instanceof Error ? error.message : String(error)}`);
+          // Continue processing other annotations instead of failing completely
+        }
+      }
+      
+      // Only fail if no annotations are valid
+      if (validAnnotations.length === 0 && validationErrors.length > 0) {
+        result.parseErrors.push(...validationErrors);
+        result.isValid = false;
+      } else {
+        result.annotations = validAnnotations;
+        // Log validation errors but don't fail if we have some valid annotations
+        if (validationErrors.length > 0) {
+          console.warn('Some @zod annotations were invalid and filtered out:', validationErrors);
+        }
+      }
+    }
+
   } catch (error) {
     result.parseErrors.push(`General parsing error: ${error instanceof Error ? error.message : String(error)}`);
     result.isValid = false;
@@ -727,12 +755,20 @@ function parseSimpleParameter(paramValue: string): unknown {
     }
   }
   
+  // Complex expressions (like new Date(), function calls, etc.)
+  if (trimmed.includes('(') && trimmed.includes(')')) {
+    // Pass through complex expressions as-is for evaluation at runtime
+    return trimmed;
+  }
+  
   // Unquoted strings (identifiers, etc.)
   if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
     return trimmed;
   }
   
-  throw new Error(`Cannot parse parameter value: ${trimmed}`);
+  // If we can't parse it, pass it through as a raw string
+  // This allows complex expressions to be used in the generated code
+  return trimmed;
 }
 
 /**
@@ -775,15 +811,18 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   const arrayMethods = ['min', 'max', 'length', 'nonempty'];
   
   // Methods that require parameters
-  const requiresParams = ['min', 'max', 'length', 'regex', 'includes', 'startsWith', 'endsWith'];
+  const requiresParams = ['min', 'max', 'length', 'regex', 'includes', 'startsWith', 'endsWith', 'enum', 'default', 'refine', 'transform'];
   
   // Methods that don't allow parameters
   const noParams = ['email', 'url', 'uuid', 'int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite', 'nonempty'];
 
+  // Additional known methods not covered above
+  const additionalMethods = ['default', 'optional', 'nullable', 'nullish', 'refine', 'transform', 'enum', 'object', 'array'];
+  
   // Check if method is known
-  const allKnownMethods = [...new Set([...stringMethods, ...numberMethods, ...arrayMethods])];
+  const allKnownMethods = [...new Set([...stringMethods, ...numberMethods, ...arrayMethods, ...additionalMethods])];
   if (!allKnownMethods.includes(method)) {
-    console.warn(`Unknown @zod method: ${method} (this may be valid but unrecognized)`);
+    throw new Error(`Unknown @zod method: ${method} - this method is not supported`);
   }
 
   // Validate parameter requirements
@@ -1090,7 +1129,11 @@ function formatSingleParameter(param: unknown): string {
   }
   
   if (typeof param === 'string') {
-    return `"${param.replace(/"/g, '\\"')}"`;
+    // Check if it's a complex expression that shouldn't be quoted
+    if (param.includes('(') && param.includes(')')) {
+      return param; // Return complex expressions as-is
+    }
+    return `'${param.replace(/'/g, "\\'")}'`;
   }
   
   if (typeof param === 'number' || typeof param === 'boolean') {
