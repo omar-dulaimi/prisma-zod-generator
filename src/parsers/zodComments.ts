@@ -874,8 +874,14 @@ function validateStringMethodParameters(method: string, parameters: unknown[]): 
       break;
     
     case 'regex':
-      if (parameters.length !== 1 || !(parameters[0] instanceof RegExp || typeof parameters[0] === 'string')) {
-        throw new Error(`regex requires a RegExp or string parameter`);
+      if (parameters.length < 1 || parameters.length > 2) {
+        throw new Error(`regex requires 1-2 parameters (RegExp/string, optional error message)`);
+      }
+      if (!(parameters[0] instanceof RegExp || typeof parameters[0] === 'string')) {
+        throw new Error(`regex first parameter must be a RegExp or string`);
+      }
+      if (parameters.length === 2 && typeof parameters[1] !== 'string') {
+        throw new Error(`regex second parameter (error message) must be a string`);
       }
       break;
     
@@ -1216,7 +1222,15 @@ export function generateCompleteZodSchema(
   }
   
   // Combine base type with validation chain
-  const fullSchema = baseType + validationResult.schemaChain;
+  let schemaChain = validationResult.schemaChain;
+  
+  // Remove redundant .optional() calls if base type already includes .optional()
+  if (baseType.includes('.optional()') && schemaChain.includes('.optional()')) {
+    // Remove all .optional() calls from the chain since base type already handles optionality
+    schemaChain = schemaChain.replace(/\.optional\(\)/g, '');
+  }
+  
+  const fullSchema = baseType + schemaChain;
   
   return {
     schemaChain: fullSchema,
