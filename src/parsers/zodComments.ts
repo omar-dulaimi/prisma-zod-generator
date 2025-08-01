@@ -805,22 +805,25 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   const stringMethods = ['min', 'max', 'length', 'email', 'url', 'uuid', 'regex', 'includes', 'startsWith', 'endsWith', 'trim', 'toLowerCase', 'toUpperCase'];
   
   // Common number validation methods
-  const numberMethods = ['min', 'max', 'int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite'];
+  const numberMethods = ['min', 'max', 'int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite', 'multipleOf', 'step'];
   
   // Common array validation methods
   const arrayMethods = ['min', 'max', 'length', 'nonempty'];
   
   // Methods that require parameters
-  const requiresParams = ['min', 'max', 'length', 'regex', 'includes', 'startsWith', 'endsWith', 'enum', 'default', 'refine', 'transform'];
+  const requiresParams = ['min', 'max', 'length', 'regex', 'includes', 'startsWith', 'endsWith', 'enum', 'default', 'refine', 'transform', 'multipleOf', 'step'];
   
   // Methods that don't allow parameters
-  const noParams = ['email', 'url', 'uuid', 'int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite', 'nonempty', 'trim', 'toLowerCase', 'toUpperCase'];
+  const noParams = ['email', 'url', 'uuid', 'nonempty', 'trim', 'toLowerCase', 'toUpperCase'];
+  
+  // Methods that accept optional error message parameter
+  const optionalErrorMessage = ['int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite'];
 
   // Additional known methods not covered above
   const additionalMethods = ['default', 'optional', 'nullable', 'nullish', 'refine', 'transform', 'enum', 'object', 'array'];
   
   // Check if method is known
-  const allKnownMethods = [...new Set([...stringMethods, ...numberMethods, ...arrayMethods, ...additionalMethods])];
+  const allKnownMethods = [...new Set([...stringMethods, ...numberMethods, ...arrayMethods, ...additionalMethods, ...optionalErrorMessage])];
   if (!allKnownMethods.includes(method)) {
     throw new Error(`Unknown @zod method: ${method} - this method is not supported`);
   }
@@ -832,6 +835,15 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
 
   if (noParams.includes(method) && parameters.length > 0) {
     throw new Error(`Method ${method} does not accept parameters`);
+  }
+  
+  // Validate optional error message methods
+  if (optionalErrorMessage.includes(method) && parameters.length > 1) {
+    throw new Error(`Method ${method} accepts at most one parameter (error message)`);
+  }
+  
+  if (optionalErrorMessage.includes(method) && parameters.length === 1 && typeof parameters[0] !== 'string') {
+    throw new Error(`Method ${method} error message parameter must be a string`);
   }
 
   // Type-specific validations based on field type
@@ -853,8 +865,11 @@ function validateStringMethodParameters(method: string, parameters: unknown[]): 
     case 'min':
     case 'max':
     case 'length':
-      if (parameters.length !== 1 || typeof parameters[0] !== 'number' || parameters[0] < 0) {
-        throw new Error(`${method} requires a non-negative number parameter`);
+      // Allow 1 parameter (number) or 2 parameters (number + error message)
+      if (parameters.length < 1 || parameters.length > 2 || 
+          typeof parameters[0] !== 'number' || parameters[0] < 0 ||
+          (parameters.length === 2 && typeof parameters[1] !== 'string')) {
+        throw new Error(`${method} requires a non-negative number parameter and optional error message`);
       }
       break;
     
@@ -884,8 +899,32 @@ function validateNumberMethodParameters(method: string, parameters: unknown[]): 
   switch (method) {
     case 'min':
     case 'max':
-      if (parameters.length !== 1 || typeof parameters[0] !== 'number') {
-        throw new Error(`${method} requires a number parameter`);
+      // Allow 1 parameter (number) or 2 parameters (number + error message)
+      if (parameters.length < 1 || parameters.length > 2 || 
+          typeof parameters[0] !== 'number' ||
+          (parameters.length === 2 && typeof parameters[1] !== 'string')) {
+        throw new Error(`${method} requires a number parameter and optional error message`);
+      }
+      break;
+    
+    case 'positive':
+    case 'negative':
+    case 'int':
+    case 'finite':
+      // Allow 0 parameters or 1 parameter (error message)
+      if (parameters.length > 1 || 
+          (parameters.length === 1 && typeof parameters[0] !== 'string')) {
+        throw new Error(`${method} accepts optional error message parameter`);
+      }
+      break;
+    
+    case 'multipleOf':
+    case 'step':
+      // Allow 1 parameter (number) or 2 parameters (number + error message)
+      if (parameters.length < 1 || parameters.length > 2 || 
+          typeof parameters[0] !== 'number' ||
+          (parameters.length === 2 && typeof parameters[1] !== 'string')) {
+        throw new Error(`${method} requires a number parameter and optional error message`);
       }
       break;
   }
