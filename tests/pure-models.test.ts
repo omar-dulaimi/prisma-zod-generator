@@ -677,19 +677,19 @@ model User {
         if (existsSync(userRoleEnumPath)) {
           const content = readFileSync(userRoleEnumPath, 'utf-8');
           expect(content).toMatch(/z\.enum\(\[/);
-          expect(content).toMatch(/"ADMIN"/);
-          expect(content).toMatch(/"USER"/);
-          expect(content).toMatch(/"MODERATOR"/);
-          expect(content).toMatch(/"GUEST"/);
+          expect(content).toMatch(/'ADMIN'/);
+          expect(content).toMatch(/'USER'/);
+          expect(content).toMatch(/'MODERATOR'/);
+          expect(content).toMatch(/'GUEST'/);
         }
 
         if (existsSync(statusEnumPath)) {
           const content = readFileSync(statusEnumPath, 'utf-8');
           expect(content).toMatch(/z\.enum\(\[/);
-          expect(content).toMatch(/"ACTIVE"/);
-          expect(content).toMatch(/"INACTIVE"/);
-          expect(content).toMatch(/"PENDING"/);
-          expect(content).toMatch(/"SUSPENDED"/);
+          expect(content).toMatch(/'ACTIVE'/);
+          expect(content).toMatch(/'INACTIVE'/);
+          expect(content).toMatch(/'PENDING'/);
+          expect(content).toMatch(/'SUSPENDED'/);
         }
 
       } finally {

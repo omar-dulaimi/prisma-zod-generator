@@ -31,7 +31,7 @@ export class PrismaSchemaGenerator {
     } = options;
 
     const generatorOptionsStr = Object.entries(generatorOptions)
-      .map(([key, value]) => `  ${key} = ${JSON.stringify(value)}`)
+      .map(([key, value]) => `  ${key} = "${value}"`)
       .join('\n');
 
     const userModel = `
@@ -241,6 +241,7 @@ export class ConfigGenerator {
    */
   static createBasicConfig(): Record<string, unknown> {
     return {
+      mode: 'full',
       output: './generated/schemas',
       relationModel: true,
       modelCase: 'PascalCase',
@@ -250,7 +251,14 @@ export class ConfigGenerator {
       addIncludeType: false,
       addSelectType: false,
       validateWhereUniqueInput: true,
-      prismaClientPath: '@prisma/client'
+      prismaClientPath: '@prisma/client',
+      globalExclusions: {},
+      variants: {
+        pure: { enabled: true },
+        input: { enabled: true },
+        result: { enabled: true }
+      },
+      models: {}
     };
   }
 
@@ -263,17 +271,11 @@ export class ConfigGenerator {
       models: {
         User: {
           enabled: true,
-          operations: ['findMany', 'findUnique', 'create', 'update'],
-          fields: {
-            exclude: ['password']
-          }
+          operations: ['findMany', 'findUnique', 'create', 'update']
         },
         Post: {
           enabled: true,
-          operations: ['findMany', 'create'],
-          fields: {
-            exclude: []
-          }
+          operations: ['findMany', 'create']
         },
         Profile: {
           enabled: true
@@ -291,10 +293,7 @@ export class ConfigGenerator {
   static createMinimalConfig(): Record<string, unknown> {
     return {
       ...this.createBasicConfig(),
-      minimal: true,
-      createInputTypes: false,
-      addIncludeType: false,
-      addSelectType: false
+      mode: 'minimal'
     };
   }
 
@@ -304,23 +303,23 @@ export class ConfigGenerator {
   static createVariantConfig(): Record<string, unknown> {
     return {
       ...this.createBasicConfig(),
-      variants: [
-        {
-          name: 'input',
-          suffix: 'Input',
-          exclude: ['id', 'createdAt', 'updatedAt']
+      variants: {
+        input: {
+          enabled: true,
+          suffix: '.input',
+          excludeFields: ['id', 'createdAt', 'updatedAt']
         },
-        {
-          name: 'result',
-          suffix: 'Result',
-          exclude: ['password']
+        result: {
+          enabled: true,
+          suffix: '.result',
+          excludeFields: ['password']
         },
-        {
-          name: 'pure',
-          suffix: '',
-          exclude: []
+        pure: {
+          enabled: true,
+          suffix: '.model',
+          excludeFields: []
         }
-      ]
+      }
     };
   }
 
@@ -330,26 +329,40 @@ export class ConfigGenerator {
   static createFieldExclusionConfig(): Record<string, unknown> {
     return {
       ...this.createBasicConfig(),
-      globalExclusions: ['password', 'secretKey'],
+      globalExclusions: {
+        input: ['password', 'secretKey'],
+        result: ['password', 'secretKey'],
+        pure: ['password', 'secretKey']
+      },
       models: {
         User: {
-          fields: {
-            exclude: ['internalId', 'metadata']
+          enabled: true,
+          variants: {
+            input: {
+              enabled: true,
+              excludeFields: ['internalId', 'metadata']
+            }
           }
         },
         Post: {
-          fields: {
-            exclude: ['authorId'] // Should exclude relation field
+          enabled: true,
+          variants: {
+            input: {
+              enabled: true,
+              excludeFields: ['authorId']
+            }
           }
         }
       },
-      variants: [
-        {
-          name: 'public',
-          suffix: 'Public',
-          exclude: ['password', 'email', 'internalId']
-        }
-      ]
+      variants: {
+        pure: {
+          enabled: true,
+          suffix: '.public',
+          excludeFields: ['password', 'email', 'internalId']
+        },
+        input: { enabled: true },
+        result: { enabled: true }
+      }
     };
   }
 }

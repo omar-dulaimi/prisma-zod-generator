@@ -427,7 +427,7 @@ ${allFields.join(',\n')}
 
   private generateSchemaName(options: ResultSchemaOptions): string {
     const operationSuffix = this.operationTypeToSuffix(options.operationType);
-    return `${options.modelName}${operationSuffix}Result`;
+    return `${options.modelName}${operationSuffix}ResultSchema`;
   }
 
   private operationTypeToSuffix(operationType: OperationType): string {

@@ -3,7 +3,7 @@ import { SchemaTestUtils } from './schema-test-utils';
 
 // Import generated schemas
 import { UserFindFirstSchema } from '../prisma/generated/schemas/findFirstUser.schema';
-import { UserCreateOneSchema } from '../prisma/generated/schemas/createOneUser.schema';
+import { UserCreateManySchema } from '../prisma/generated/schemas/createManyUser.schema';
 import { PostFindManySchema } from '../prisma/generated/schemas/findManyPost.schema';
 import { UserScalarFieldEnumSchema } from '../prisma/generated/schemas/enums/UserScalarFieldEnum.schema';
 import { SortOrderSchema } from '../prisma/generated/schemas/enums/SortOrder.schema';
@@ -63,7 +63,7 @@ describe('Generated Schema Tests', () => {
       });
     });
 
-    describe('UserCreateOneSchema', () => {
+    describe('UserCreateManySchema', () => {
       it('should validate with required data', () => {
         const validData = {
           data: {
@@ -72,11 +72,28 @@ describe('Generated Schema Tests', () => {
           },
         };
 
-        SchemaTestUtils.testValidData(UserCreateOneSchema, validData);
+        SchemaTestUtils.testValidData(UserCreateManySchema, validData);
+      });
+
+      it('should validate with array data', () => {
+        const validData = {
+          data: [
+            {
+              email: 'test1@example.com',
+              name: 'Test User 1',
+            },
+            {
+              email: 'test2@example.com',
+              name: 'Test User 2',
+            }
+          ],
+        };
+
+        SchemaTestUtils.testValidData(UserCreateManySchema, validData);
       });
 
       it('should reject missing required fields', () => {
-        SchemaTestUtils.testInvalidData(UserCreateOneSchema, {
+        SchemaTestUtils.testInvalidData(UserCreateManySchema, {
           data: {
             name: 'Test User',
             // missing email
