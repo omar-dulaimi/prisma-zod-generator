@@ -301,7 +301,7 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models:
       if (modelName) {
         // Apply field filtering using the transformer's filtering logic
         // Cast to the expected type to handle ReadonlyDeep wrapper
-        filteredFields = Transformer.filterFields(originalFields as any, modelName, variant);
+        filteredFields = Transformer.filterFields(originalFields as any, modelName, variant, models);
       }
     }
     

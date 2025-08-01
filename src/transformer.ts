@@ -230,34 +230,51 @@ export default class Transformer {
       return true;
     }
 
-    // Check global exclusions for the specified variant
-    if (variant && config.globalExclusions?.[variant]) {
-      if (this.isFieldMatchingPatterns(fieldName, config.globalExclusions[variant])) {
-        return false;
+    // Start with a flag indicating whether the field should be excluded
+    let shouldExclude = false;
+
+    // Check global exclusions (basic format - array of strings)
+    if (config.globalExclusions && Array.isArray(config.globalExclusions)) {
+      if (this.isFieldMatchingPatterns(fieldName, config.globalExclusions)) {
+        shouldExclude = true;
       }
     }
 
-    // Check model-specific field exclusions
+    // Check global exclusions for the specified variant
+    if (variant && config.globalExclusions?.[variant]) {
+      if (this.isFieldMatchingPatterns(fieldName, config.globalExclusions[variant])) {
+        shouldExclude = true;
+      }
+    }
+
+    // Check model-specific field exclusions and includes
     if (modelName) {
       const modelConfig = config.models?.[modelName];
       
       // Check variant-specific exclusions (new format)
       if (modelConfig?.variants?.[variant || 'pure']?.excludeFields) {
         if (this.isFieldMatchingPatterns(fieldName, modelConfig.variants[variant || 'pure']!.excludeFields!)) {
-          return false;
+          shouldExclude = true;
         }
       }
       
       // Check legacy format: fields.exclude (for backward compatibility)
       if ((modelConfig as any)?.fields?.exclude) {
         if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.exclude)) {
-          return false;
+          shouldExclude = true;
+        }
+      }
+
+      // Check model-specific includes - these OVERRIDE exclusions (highest precedence)
+      if ((modelConfig as any)?.fields?.include) {
+        if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.include)) {
+          return true; // Include overrides any previous exclusion
         }
       }
     }
 
-    // Default: include all fields not explicitly excluded
-    return true;
+    // Return the opposite of shouldExclude (if should exclude, return false)
+    return !shouldExclude;
   }
 
   /**
@@ -284,9 +301,8 @@ export default class Transformer {
   /**
    * Filter fields based on configuration and relationship preservation
    */
-  static filterFields(fields: PrismaDMMF.SchemaArg[], modelName?: string, variant?: 'pure' | 'input' | 'result'): PrismaDMMF.SchemaArg[] {
-    
-    return fields.filter(field => {
+  static filterFields(fields: PrismaDMMF.SchemaArg[], modelName?: string, variant?: 'pure' | 'input' | 'result', models?: PrismaDMMF.Model[]): PrismaDMMF.SchemaArg[] {
+    const filteredFields = fields.filter(field => {
       // Check basic field inclusion rules
       if (!this.isFieldEnabled(field.name, modelName, variant)) {
         return false;
@@ -303,6 +319,76 @@ export default class Transformer {
       
       return true;
     });
+
+    // Handle foreign key preservation when relation fields are excluded
+    const result = [...filteredFields];
+    
+    if (modelName && variant === 'input' && models) {
+      const model = models.find((m: PrismaDMMF.Model) => m.name === modelName);
+      if (model) {
+        const excludedRelationFields = this.getExcludedRelationFields(fields, filteredFields, model);
+        const foreignKeyFields = this.getForeignKeyFieldsForExcludedRelations(excludedRelationFields, model);
+        
+        
+        // Add foreign key fields that aren't already present
+        for (const fkField of foreignKeyFields) {
+          if (!result.some(field => field.name === fkField.name)) {
+            result.push(fkField);
+          }
+        }
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Get excluded relation fields by comparing original and filtered fields
+   */
+  static getExcludedRelationFields(originalFields: PrismaDMMF.SchemaArg[], filteredFields: PrismaDMMF.SchemaArg[], model: PrismaDMMF.Model): PrismaDMMF.Field[] {
+    const excludedFieldNames = originalFields
+      .filter(originalField => !filteredFields.some(filteredField => filteredField.name === originalField.name))
+      .map(field => field.name);
+
+    return model.fields.filter(field => 
+      excludedFieldNames.includes(field.name) && 
+      field.kind === 'object' && 
+      field.relationFromFields && 
+      field.relationFromFields.length > 0
+    );
+  }
+
+  /**
+   * Get foreign key schema args for excluded relation fields
+   */
+  static getForeignKeyFieldsForExcludedRelations(excludedRelationFields: PrismaDMMF.Field[], model: PrismaDMMF.Model): PrismaDMMF.SchemaArg[] {
+    const foreignKeyFields: PrismaDMMF.SchemaArg[] = [];
+
+    for (const relationField of excludedRelationFields) {
+      if (relationField.relationFromFields) {
+        for (const fkFieldName of relationField.relationFromFields) {
+          const fkField = model.fields.find(f => f.name === fkFieldName);
+          if (fkField && fkField.kind === 'scalar') {
+            // Create a schema arg for the foreign key field
+            const schemaArg: PrismaDMMF.SchemaArg = {
+              name: fkField.name,
+              isRequired: fkField.isRequired,
+              isNullable: !fkField.isRequired,
+              inputTypes: [
+                {
+                  type: fkField.type,
+                  location: 'scalar',
+                  isList: fkField.isList
+                }
+              ]
+            };
+            foreignKeyFields.push(schemaArg);
+          }
+        }
+      }
+    }
+
+    return foreignKeyFields;
   }
 
   /**
@@ -588,7 +674,7 @@ export default class Transformer {
     
     // Apply field filtering
     const originalFieldCount = this.fields.length;
-    const filteredFields = Transformer.filterFields(this.fields, modelName || undefined, variant);
+    const filteredFields = Transformer.filterFields(this.fields, modelName || undefined, variant, this.models);
     
     
     // Log field filtering if any fields were excluded
