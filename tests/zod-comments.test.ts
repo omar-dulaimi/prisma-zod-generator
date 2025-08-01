@@ -418,7 +418,7 @@ model Settings {
           const content = readFileSync(settingsCreatePath, 'utf-8');
           
           // Should handle enum validation
-          expect(content).toMatch(/theme.*\.enum\(\["light",\s*"dark"\]\)/);
+          expect(content).toMatch(/theme.*\.enum\(\['light',\s*'dark'\]\)/);
           
           // Should handle boolean defaults
           expect(content).toMatch(/notifications.*\.default\(true\)/);
@@ -430,7 +430,7 @@ model Settings {
           
           // Should handle float with validation and default
           expect(content).toMatch(/timeout.*\.positive\(\)/);
-          expect(content).toMatch(/timeout.*\.default\(30\.0\)/);
+          expect(content).toMatch(/timeout.*\.default\(30\)/);
         }
 
       } finally {

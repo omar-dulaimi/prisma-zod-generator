@@ -802,7 +802,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   const { method, parameters } = annotation;
 
   // Common string validation methods
-  const stringMethods = ['min', 'max', 'length', 'email', 'url', 'uuid', 'regex', 'includes', 'startsWith', 'endsWith'];
+  const stringMethods = ['min', 'max', 'length', 'email', 'url', 'uuid', 'regex', 'includes', 'startsWith', 'endsWith', 'trim', 'toLowerCase', 'toUpperCase'];
   
   // Common number validation methods
   const numberMethods = ['min', 'max', 'int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite'];
@@ -814,7 +814,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   const requiresParams = ['min', 'max', 'length', 'regex', 'includes', 'startsWith', 'endsWith', 'enum', 'default', 'refine', 'transform'];
   
   // Methods that don't allow parameters
-  const noParams = ['email', 'url', 'uuid', 'int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite', 'nonempty'];
+  const noParams = ['email', 'url', 'uuid', 'int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite', 'nonempty', 'trim', 'toLowerCase', 'toUpperCase'];
 
   // Additional known methods not covered above
   const additionalMethods = ['default', 'optional', 'nullable', 'nullish', 'refine', 'transform', 'enum', 'object', 'array'];
@@ -1130,7 +1130,8 @@ function formatSingleParameter(param: unknown): string {
   
   if (typeof param === 'string') {
     // Check if it's a complex expression that shouldn't be quoted
-    if (param.includes('(') && param.includes(')')) {
+    // Complex expressions include: new Date(), RegExp(), function calls, etc.
+    if (param.match(/^(new\s+\w+\(|RegExp\(|\w+\()/)) {
       return param; // Return complex expressions as-is
     }
     return `'${param.replace(/'/g, "\\'")}'`;
