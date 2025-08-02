@@ -6,6 +6,16 @@ import {
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
+import path from 'path';
+import { processConfiguration } from './config/defaults';
+import {
+  generatorOptionsToConfigOverrides,
+  getLegacyMigrationSuggestions,
+  isLegacyUsage,
+  parseGeneratorOptions,
+  validateGeneratorOptions
+} from './config/generator-options';
+import { GeneratorConfig as CustomGeneratorConfig, parseConfiguration } from './config/parser';
 import {
   addMissingInputObjectTypes,
   hideInputObjectTypesAndRelatedFields,
@@ -16,17 +26,7 @@ import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
 import { AggregateOperationSupport } from './types';
 import removeDir from './utils/removeDir';
-import { 
-  parseGeneratorOptions, 
-  validateGeneratorOptions,
-  generatorOptionsToConfigOverrides,
-  isLegacyUsage,
-  getLegacyMigrationSuggestions
-} from './config/generator-options';
-import { processConfiguration } from './config/defaults';
-import { parseConfiguration, GeneratorConfig as CustomGeneratorConfig } from './config/parser';
 import { writeFileSafely } from './utils/writeFileSafely';
-import path from 'path';
 
 export async function generate(options: GeneratorOptions) {
   try {
@@ -79,11 +79,35 @@ export async function generate(options: GeneratorOptions) {
     try {
       let configFileOptions: Partial<CustomGeneratorConfig> = {};
       
-      // Step 1: Load config file if specified (medium priority)
+      // Step 1: Load config file if specified or try auto-discovery (medium priority)
       if (extendedOptions.config) {
         const parseResult = await parseConfiguration(extendedOptions.config);
         configFileOptions = parseResult.config;
         console.log(`📋 Loaded configuration from: ${parseResult.configPath || 'discovered file'}`);
+      } else {
+        // Try auto-discovery and specific paths
+        try {
+          const parseResult = await parseConfiguration();
+          if (!parseResult.isDefault) {
+            configFileOptions = parseResult.config;
+            console.log(`📋 Auto-discovered configuration from: ${parseResult.configPath || 'discovered file'}`);
+          } else {
+            // Try specific paths for config.json
+            const specificPaths = ['./prisma/config.json', './config.json', './zod-generator.config.json'];
+            for (const path of specificPaths) {
+              try {
+                const parseResult = await parseConfiguration(path);
+                configFileOptions = parseResult.config;
+                console.log(`📋 Found configuration at: ${path}`);
+                break;
+              } catch (e) {
+                // Continue to next path
+              }
+            }
+          }
+        } catch (discoveryError) {
+          console.log(`📋 No configuration file found, using defaults`);
+        }
       }
       
       // Step 2: Apply generator option overrides (highest priority)
