@@ -11,10 +11,9 @@
     "sourceMap": true,
     "resolveJsonModule": true,
     "outDir": "./lib",
-    "rootDir": "./src",
-    "typeRoots": ["src/types.ts"],
+    "typeRoots": ["./node_modules/@types"],
     "skipLibCheck": true,
     "strict": true
   },
-  "include": ["./src/**/*.ts"]
+  "include": ["./src/**/*.ts", "./scripts/**/*.ts"]
 }
