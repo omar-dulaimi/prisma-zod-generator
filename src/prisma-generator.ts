@@ -164,18 +164,18 @@ export async function generate(options: GeneratorOptions) {
       hiddenFields,
     );
 
-    await generateEnumSchemas(
-      [...prismaClientDmmf.schema.enumTypes.prisma],
-      [...(prismaClientDmmf.schema.enumTypes.model ?? [])],
-    );
-
     const dataSource = options.datasources?.[0];
     const previewFeatures = prismaClientGeneratorConfig?.previewFeatures;
     Transformer.provider = dataSource.provider;
     Transformer.previewFeatures = previewFeatures;
     
-    // Set the generator configuration for filtering
+    // Set the generator configuration for filtering BEFORE generating schemas
     Transformer.setGeneratorConfig(generatorConfig);
+
+    await generateEnumSchemas(
+      [...prismaClientDmmf.schema.enumTypes.prisma],
+      [...(prismaClientDmmf.schema.enumTypes.model ?? [])],
+    );
 
     // Validate filtering configuration and provide feedback
     const validationResult = Transformer.validateFilterCombinations(models);
@@ -359,22 +359,73 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
 function extractModelNameFromObjectSchema(objectSchemaName: string): string | null {
   // Common patterns for Prisma object schema names
   const patterns = [
-    /^(\w+)WhereInput$/,
-    /^(\w+)WhereUniqueInput$/,
-    /^(\w+)CreateInput$/,
-    /^(\w+)UpdateInput$/,
+    // Most specific patterns first to avoid false matches
+    /^(\w+)UncheckedCreateNestedManyWithout\w+Input$/,
+    /^(\w+)UncheckedUpdateManyWithout\w+Input$/,
+    /^(\w+)UncheckedUpdateManyWithout\w+NestedInput$/,
+    /^(\w+)UncheckedCreateWithout\w+Input$/,
+    /^(\w+)UncheckedUpdateWithout\w+Input$/,
+    /^(\w+)CreateNestedOneWithout\w+Input$/,
+    /^(\w+)CreateNestedManyWithout\w+Input$/,
+    /^(\w+)UpdateNestedOneWithout\w+Input$/,
+    /^(\w+)UpdateNestedManyWithout\w+Input$/,
+    /^(\w+)UpsertNestedOneWithout\w+Input$/,
+    /^(\w+)UpsertNestedManyWithout\w+Input$/,
+    /^(\w+)CreateOrConnectWithout\w+Input$/,
+    /^(\w+)UpdateOneRequiredWithout\w+NestedInput$/,
+    /^(\w+)UpdateToOneWithWhereWithout\w+Input$/,
+    /^(\w+)UpsertWithout\w+Input$/,
+    /^(\w+)CreateWithout\w+Input$/,
+    /^(\w+)UpdateWithout\w+Input$/,
+    /^(\w+)UpdateManyWithWhereWithout\w+Input$/,
+    /^(\w+)UpdateWithWhereUniqueWithout\w+Input$/,
+    /^(\w+)UpsertWithWhereUniqueWithout\w+Input$/,
+    /^(\w+)UpdateManyWithout\w+NestedInput$/,
+    /^(\w+)CreateManyAuthorInput$/,
+    /^(\w+)CreateManyAuthorInputEnvelope$/,
+    /^(\w+)ScalarWhereInput$/,
+    
+    // Basic input types - more specific patterns first
     /^(\w+)UncheckedCreateInput$/,
     /^(\w+)UncheckedUpdateInput$/,
+    /^(\w+)UncheckedUpdateManyInput$/,
+    /^(\w+)UpdateManyMutationInput$/,
+    /^(\w+)WhereUniqueInput$/,
+    /^(\w+)CreateManyInput$/,
+    /^(\w+)UpdateManyInput$/,
+    /^(\w+)WhereInput$/,
+    /^(\w+)CreateInput$/,
+    /^(\w+)UpdateInput$/,
+    
+    // Order by inputs
     /^(\w+)OrderByWithRelationInput$/,
     /^(\w+)OrderByWithAggregationInput$/,
+    /^(\w+)OrderByRelationAggregateInput$/,
+    
+    // Filter inputs
+    /^(\w+)ScalarWhereInput$/,
     /^(\w+)ScalarWhereWithAggregatesInput$/,
+    /^(\w+)ListRelationFilter$/,
+    /^(\w+)RelationFilter$/,
+    /^(\w+)ScalarRelationFilter$/,
+    
+    // Aggregate inputs
+    /^(\w+)CountAggregateInput$/,
     /^(\w+)CountOrderByAggregateInput$/,
+    /^(\w+)AvgAggregateInput$/,
     /^(\w+)AvgOrderByAggregateInput$/,
+    /^(\w+)MaxAggregateInput$/,
     /^(\w+)MaxOrderByAggregateInput$/,
+    /^(\w+)MinAggregateInput$/,
     /^(\w+)MinOrderByAggregateInput$/,
+    /^(\w+)SumAggregateInput$/,
     /^(\w+)SumOrderByAggregateInput$/,
+    
+    // Select/Include schemas
     /^(\w+)IncludeObjectSchema$/,
     /^(\w+)SelectObjectSchema$/,
+    
+    // Args and other schemas
     /^(\w+)Args$/,
   ];
   

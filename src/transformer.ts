@@ -494,13 +494,74 @@ export default class Transformer {
     // Try to extract model name from common schema naming patterns
     // More specific patterns should come first to avoid false matches
     const patterns = [
+      // Basic input types - more specific patterns first
       /^(\w+)UncheckedCreateInput$/,
       /^(\w+)UncheckedUpdateInput$/,
-      /^(\w+)WhereInput$/,
+      /^(\w+)UncheckedUpdateManyInput$/,
+      /^(\w+)UpdateManyMutationInput$/,
       /^(\w+)WhereUniqueInput$/,
+      /^(\w+)CreateManyInput$/,
+      /^(\w+)UpdateManyInput$/,
+      /^(\w+)WhereInput$/,
       /^(\w+)CreateInput$/,
       /^(\w+)UpdateInput$/,
+      
+      // Order by inputs
       /^(\w+)OrderByWithRelationInput$/,
+      /^(\w+)OrderByWithAggregationInput$/,
+      /^(\w+)OrderByRelationAggregateInput$/,
+      
+      // Filter inputs
+      /^(\w+)ScalarWhereInput$/,
+      /^(\w+)ScalarWhereWithAggregatesInput$/,
+      /^(\w+)ListRelationFilter$/,
+      /^(\w+)RelationFilter$/,
+      /^(\w+)ScalarRelationFilter$/,
+      
+      // Aggregate inputs
+      /^(\w+)CountAggregateInput$/,
+      /^(\w+)CountOrderByAggregateInput$/,
+      /^(\w+)AvgAggregateInput$/,
+      /^(\w+)AvgOrderByAggregateInput$/,
+      /^(\w+)MaxAggregateInput$/,
+      /^(\w+)MaxOrderByAggregateInput$/,
+      /^(\w+)MinAggregateInput$/,
+      /^(\w+)MinOrderByAggregateInput$/,
+      /^(\w+)SumAggregateInput$/,
+      /^(\w+)SumOrderByAggregateInput$/,
+      
+      // Nested operation inputs
+      /^(\w+)CreateNestedOneWithout\w+Input$/,
+      /^(\w+)CreateNestedManyWithout\w+Input$/,
+      /^(\w+)UpdateNestedOneWithout\w+Input$/,
+      /^(\w+)UpdateNestedManyWithout\w+Input$/,
+      /^(\w+)UpsertNestedOneWithout\w+Input$/,
+      /^(\w+)UpsertNestedManyWithout\w+Input$/,
+      /^(\w+)CreateOrConnectWithout\w+Input$/,
+      /^(\w+)UpdateOneRequiredWithout\w+NestedInput$/,
+      /^(\w+)UpdateToOneWithWhereWithout\w+Input$/,
+      /^(\w+)UpsertWithout\w+Input$/,
+      /^(\w+)CreateWithout\w+Input$/,
+      /^(\w+)UpdateWithout\w+Input$/,
+      /^(\w+)UncheckedCreateWithout\w+Input$/,
+      /^(\w+)UncheckedUpdateWithout\w+Input$/,
+      /^(\w+)UncheckedCreateNestedManyWithout\w+Input$/,
+      /^(\w+)UncheckedUpdateManyWithout\w+Input$/,
+      /^(\w+)UncheckedUpdateManyWithout\w+NestedInput$/,
+      
+      // Many-to-many relation inputs  
+      /^(\w+)CreateManyAuthorInput$/,
+      /^(\w+)CreateManyAuthorInputEnvelope$/,
+      /^(\w+)UpdateManyWithWhereWithout\w+Input$/,
+      /^(\w+)UpdateWithWhereUniqueWithout\w+Input$/,
+      /^(\w+)UpsertWithWhereUniqueWithout\w+Input$/,
+      /^(\w+)UpdateManyWithout\w+NestedInput$/,
+      
+      // Additional specific patterns found in generated schemas
+      /^(\w+)ScalarWhereInput$/,
+      /^(\w+)UncheckedUpdateManyInput$/,
+      
+      // Args and other schemas
       /^(\w+)Args$/,
     ];
     
@@ -688,14 +749,51 @@ export default class Transformer {
     for (const enumType of this.enumTypes) {
       const { name, values } = enumType;
 
-      await writeFileSafely(
-        path.join(Transformer.getSchemasPath(), `enums/${name}.schema.ts`),
-        `${this.generateImportZodStatement()}\n${this.generateExportSchemaStatement(
-          `${name}`,
-          `z.enum(${JSON.stringify(values)})`,
-        )}`,
-      );
+      // Filter out enum schemas for disabled models
+      if (this.isEnumSchemaEnabled(name)) {
+        await writeFileSafely(
+          path.join(Transformer.getSchemasPath(), `enums/${name}.schema.ts`),
+          `${this.generateImportZodStatement()}\n${this.generateExportSchemaStatement(
+            `${name}`,
+            `z.enum(${JSON.stringify(values)})`,
+          )}`,
+        );
+      }
     }
+  }
+
+  /**
+   * Check if an enum schema should be generated based on enabled models
+   */
+  private isEnumSchemaEnabled(enumName: string): boolean {
+    // Extract model name from enum names like "PostScalarFieldEnum" -> "Post"
+    const modelName = this.extractModelNameFromEnum(enumName);
+    
+    if (modelName) {
+      return Transformer.isModelEnabled(modelName);
+    }
+    
+    // If we can't determine the model, generate the enum (default behavior)
+    return true;
+  }
+
+  /**
+   * Extract model name from enum name
+   */
+  private extractModelNameFromEnum(enumName: string): string | null {
+    const patterns = [
+      /^(\w+)ScalarFieldEnum$/,
+      /^(\w+)OrderByRelevanceFieldEnum$/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = enumName.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+    
+    return null;
   }
 
   generateImportZodStatement() {
