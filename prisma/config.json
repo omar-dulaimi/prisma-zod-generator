@@ -4,19 +4,13 @@
   "relationModel": true,
   "modelCase": "PascalCase",
   "modelSuffix": "Schema",
+  "useMultipleFiles": true,
   "createInputTypes": true,
+  "addIncludeType": false,
+  "addSelectType": false,
+  "validateWhereUniqueInput": true,
   "prismaClientPath": "@prisma/client",
   "globalExclusions": {},
-  "useMultipleFiles": true,
-  "addInputTypeValidation": true,
-  "addIncludeType": true,
-  "addSelectType": true,
-  "validateWhereUniqueInput": true,
-  "coerceDate": true,
-  "writeNullishInModelTypes": true,
-  "generateResultSchemas": true,
-  "pureModels": true,
-  "generateJSDoc": true,
   "variants": {
     "pure": {
       "enabled": true
@@ -31,29 +25,13 @@
   "models": {
     "User": {
       "enabled": true,
-      "operations": [
-        "findMany",
-        "create"
-      ],
       "fields": {
         "exclude": [
-          "password"
+          "posts"
         ]
       }
     },
     "Post": {
-      "enabled": true,
-      "operations": [
-        "findMany",
-        "update"
-      ],
-      "fields": {
-        "exclude": [
-          "authorId"
-        ]
-      }
-    },
-    "Profile": {
       "enabled": false
     }
   }
