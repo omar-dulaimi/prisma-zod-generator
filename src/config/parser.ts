@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs';
-import { resolve, isAbsolute } from 'path';
+import { isAbsolute, resolve } from 'path';
 
 /**
  * Configuration interface for the Prisma Zod Generator
@@ -164,7 +164,10 @@ export function parseJsonConfig(content: string, filePath?: string): GeneratorCo
       );
     }
     
-    return parsed as GeneratorConfig;
+    // Transform legacy format to new format
+    const transformedConfig = transformLegacyConfig(parsed);
+    
+    return transformedConfig as GeneratorConfig;
   } catch (error) {
     if (error instanceof ConfigParseError) {
       throw error;
@@ -176,6 +179,51 @@ export function parseJsonConfig(content: string, filePath?: string): GeneratorCo
       filePath,
     );
   }
+}
+
+/**
+ * Transform legacy configuration format to new format
+ */
+function transformLegacyConfig(config: any): any {
+  const transformed = { ...config };
+  
+  // Transform model-specific legacy fields.exclude to variants format
+  if (transformed.models) {
+    Object.keys(transformed.models).forEach(modelName => {
+      const modelConfig = transformed.models[modelName];
+      
+      if (modelConfig.fields?.exclude) {
+        console.log(`🔄 Transforming legacy fields.exclude for model ${modelName}:`, modelConfig.fields.exclude);
+        
+        // Initialize variants if it doesn't exist
+        if (!modelConfig.variants) {
+          modelConfig.variants = {};
+        }
+        
+        // Apply fields.exclude to all variants
+        ['pure', 'input', 'result'].forEach(variant => {
+          if (!modelConfig.variants[variant]) {
+            modelConfig.variants[variant] = {};
+          }
+          
+          // Merge with existing excludeFields if any
+          const existingExcludes = modelConfig.variants[variant].excludeFields || [];
+          const legacyExcludes = modelConfig.fields.exclude;
+          
+          modelConfig.variants[variant].excludeFields = [
+            ...new Set([...existingExcludes, ...legacyExcludes])
+          ];
+        });
+        
+        // Remove the legacy fields.exclude
+        delete modelConfig.fields;
+        
+        console.log(`✅ Transformed model ${modelName} variants:`, modelConfig.variants);
+      }
+    });
+  }
+  
+  return transformed;
 }
 
 /**
