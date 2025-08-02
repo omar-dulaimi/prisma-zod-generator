@@ -1,13 +1,13 @@
 import type {
-  ConnectorType,
-  DMMF as PrismaDMMF,
+    ConnectorType,
+    DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-  findModelByName,
-  isMongodbRawOp,
+    findModelByName,
+    isMongodbRawOp,
 } from './helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
@@ -832,7 +832,19 @@ export default class Transformer {
         : `z.union([${alternatives.join(',\r\n')}])${opt}`;
 
     if (field.isNullable) {
-      resString += '.nullable()';
+      // Handle the order correctly: validations -> .optional() -> .nullable()
+      if (field.isNullable && !field.isRequired) {
+        // If both optional and nullable, we need to reorder to get validations.optional().nullable()
+        if (resString.includes('.optional()')) {
+          // Remove the .optional() and add it before .nullable()
+          resString = resString.replace('.optional()', '');
+          resString += '.optional().nullable()';
+        } else {
+          resString += '.nullable()';
+        }
+      } else {
+        resString += '.nullable()';
+      }
     }
 
     return [[`  ${fieldName} ${resString} `, field, true]];
@@ -866,9 +878,26 @@ export default class Transformer {
       line += '.array()';
     }
 
-    // Only add .optional() if we don't have an enhanced schema (which already includes optionality)
-    if (!field.isRequired && !hasEnhancedZodSchema) {
-      line += '.optional()';
+    // Handle optionality correctly - add .optional() before any validations if field is optional
+    if (!field.isRequired) {
+      if (hasEnhancedZodSchema) {
+        // For enhanced schemas, check if optionality is already handled
+        if (!line.includes('.optional()') && !line.includes('.nullable()')) {
+          // Extract base type and validations, then reorder
+          const baseTypeMatch = line.match(/^(z\.[^.]+(?:\(\))?)/);
+          const validationsMatch = line.match(/(\.[^.]+(?:\([^)]*\))?)+$/);
+          
+          if (baseTypeMatch && validationsMatch) {
+            const baseType = baseTypeMatch[1];
+            const validations = validationsMatch[0];
+            line = `${baseType}${validations}.optional()`;
+          } else {
+            line += '.optional()';
+          }
+        }
+      } else {
+        line += '.optional()';
+      }
     }
 
     return line;
