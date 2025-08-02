@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { 
-  TestEnvironment, 
-  ConfigGenerator, 
-  PrismaSchemaGenerator,
+import { describe, expect, it } from 'vitest';
+import {
+  ConfigGenerator,
   FileSystemUtils,
-  GENERATION_TIMEOUT 
+  GENERATION_TIMEOUT,
+  PrismaSchemaGenerator,
+  TestEnvironment
 } from './helpers';
 
 describe('Filtering Logic Tests', () => {
@@ -561,15 +561,72 @@ model Post {
           }
         };
 
-        const schema = PrismaSchemaGenerator.createFilteringSchema();
-
         const configPath = join(testEnv.testDir, 'config.json');
+        
+        // Create schema with absolute config path
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "./generated/schemas"
+  config   = "${configPath}"
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String  // Should be excluded in config
+  name     String?
+  role     String  @default("USER")
+  posts    Post[]
+  profile  Profile?
+}
+
+model Post {
+  id       Int     @id @default(autoincrement())
+  title    String
+  content  String?
+  published Boolean @default(false)
+  author   User    @relation(fields: [authorId], references: [id])
+  authorId Int
+}
+
+model Profile {
+  id     Int    @id @default(autoincrement())
+  bio    String?
+  avatar String?
+  user   User   @relation(fields: [userId], references: [id])
+  userId Int    @unique
+}
+
+model Admin {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  // This entire model should be excluded
+}
+`;
+
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
         await testEnv.runGeneration();
 
         const schemasDir = join(testEnv.outputDir, 'schemas');
+
+        // Debug: List all generated files
+        console.log('🔍 Generated files in:', schemasDir);
+        if (existsSync(schemasDir)) {
+          const files = require('fs').readdirSync(schemasDir);
+          console.log('🔍 Schema files:', files.filter(f => f.endsWith('.ts')));
+        }
 
         // User: should have only findMany and create operations
         expect(existsSync(join(schemasDir, 'findManyUser.schema.ts'))).toBe(true);

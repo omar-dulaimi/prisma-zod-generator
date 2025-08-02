@@ -1,8 +1,8 @@
 import { DMMF } from '@prisma/generator-helper';
 import { exec } from 'child_process';
-import { promisify } from 'util';
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
@@ -183,7 +183,8 @@ model ComprehensiveModel {
   /**
    * Generate schema with filtering configuration
    */
-  static createFilteringSchema(): string {
+  static createFilteringSchema(configPath?: string): string {
+    const configLine = configPath ? `config   = "${configPath}"` : 'config   = "./config.json"';
     return `
 generator client {
   provider = "prisma-client-js"
@@ -197,7 +198,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "./generated/schemas"
-  config   = "./config.json"
+  ${configLine}
 }
 
 model User {

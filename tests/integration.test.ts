@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { 
-  TestEnvironment, 
-  ConfigGenerator, 
-  PrismaSchemaGenerator,
-  SchemaValidationUtils,
-  FileSystemUtils,
-  GENERATION_TIMEOUT 
+import { describe, expect, it } from 'vitest';
+import {
+    ConfigGenerator,
+    FileSystemUtils,
+    GENERATION_TIMEOUT,
+    PrismaSchemaGenerator,
+    SchemaValidationUtils,
+    TestEnvironment
 } from './helpers';
 
 describe('Integration Tests for Combined Features', () => {
@@ -66,6 +66,9 @@ describe('Integration Tests for Combined Features', () => {
           }
         };
 
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -79,7 +82,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 enum UserRole {
@@ -268,6 +271,9 @@ model Post {
           }
         };
 
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+
         const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -281,7 +287,7 @@ datasource db {
 generator zod {
   provider = "node ./lib/generator.js"
   output   = "${testEnv.outputDir}/schemas"
-  config   = "./config.json"
+  config   = "${configPath}"
 }
 
 model User {
