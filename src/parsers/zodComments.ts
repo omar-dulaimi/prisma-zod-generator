@@ -1122,10 +1122,8 @@ function getValidationMethodConfig(methodName: string, fieldType?: string): Vali
     { methodName: 'enum', zodMethod: 'enum', parameterCount: 1, fieldTypeCompatibility: ['String'] },
     { methodName: 'datetime', zodMethod: 'datetime', parameterCount: 0, fieldTypeCompatibility: ['String'] },
     { methodName: 'object', zodMethod: 'object', parameterCount: 0 },
-    { methodName: 'array', zodMethod: 'array', parameterCount: 'variable' },
-    { methodName: 'string', zodMethod: 'string', parameterCount: 0 },
-    { methodName: 'number', zodMethod: 'number', parameterCount: 0 },
-    { methodName: 'boolean', zodMethod: 'boolean', parameterCount: 0 }
+    { methodName: 'array', zodMethod: 'array', parameterCount: 'variable' }
+    // Note: Removed 'string', 'number', 'boolean' method configs as they duplicate base types
   ];
 
   // If field type is provided, find the config that matches both method name and field type
