@@ -81,7 +81,7 @@ datasource db {
 }
 
 generator zod {
-  provider = "node ./lib/generator.js"
+  provider = "node ${join(process.cwd(), 'lib', 'generator.js')}"
   output   = "${outputPath}"
 ${generatorOptionsStr}
 }
@@ -396,8 +396,8 @@ export class TestEnvironment {
 
     // Function to run generation
     const runGeneration = async () => {
-      // Build the generator first
-      await execAsync('tsc', { cwd: process.cwd() });
+      // Always build the generator to ensure latest code is used
+      await execAsync('npx tsc', { cwd: process.cwd() });
       
       // Run prisma generate
       await execAsync(`npx prisma generate --schema="${schemaPath}"`, {
@@ -450,8 +450,8 @@ export class TestEnvironment {
 
     // Function to run generation
     const runGeneration = async () => {
-      // Build the generator first
-      await execAsync('tsc', { cwd: process.cwd() });
+      // Always build the generator to ensure latest code is used
+      await execAsync('npx tsc', { cwd: process.cwd() });
       
       // Run prisma generate
       await execAsync(`npx prisma generate --schema="${env.schemaPath}"`, {

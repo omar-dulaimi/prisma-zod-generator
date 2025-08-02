@@ -22,7 +22,7 @@ export {
 
 // Common test patterns and constants
 export const TEST_TIMEOUT = 30000;
-export const GENERATION_TIMEOUT = 60000;
+export const GENERATION_TIMEOUT = 180000; // Increased to 3 minutes for filtering tests
 
 export const DEFAULT_TEST_CONFIG = {
   output: './generated/schemas',

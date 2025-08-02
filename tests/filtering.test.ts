@@ -790,6 +790,7 @@ model User {
 
         const schema = PrismaSchemaGenerator.createBasicSchema({
           models: ['User', 'Post'],
+          outputPath: join(testEnv.outputDir, 'schemas'),
           generatorOptions: { config: configPath }
         });
 
