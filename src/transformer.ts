@@ -1743,11 +1743,22 @@ export default class Transformer {
         const fileName = `${model.name}${resultSchema.operationType}Result.schema.ts`;
         const filePath = path.join(resultsPath, fileName);
 
+        // Generate imports only for schemas that are actually used
+        const imports: string[] = [];
+        
+        // Add zod import
+        imports.push(this.generateImportZodStatement());
+        
+        // Only add other imports if they're actually referenced in the schema
+        if (resultSchema.dependencies && resultSchema.dependencies.length > 0) {
+          resultSchema.dependencies.forEach(dep => {
+            imports.push(this.generateImportStatement(dep, `../objects/${dep.replace('Schema', '')}.schema`));
+          });
+        }
+
         await writeFileSafely(
           filePath,
-          `${this.generateImportStatements([
-            this.generateImportStatement(`${model.name}ObjectSchema`, `../objects/${model.name}.schema`),
-          ])}${resultSchema.zodSchema}`,
+          `${imports.join('')}${resultSchema.zodSchema}`,
         );
       }
 
