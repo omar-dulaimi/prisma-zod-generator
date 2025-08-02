@@ -6,7 +6,7 @@
  */
 
 import { DMMF } from '@prisma/generator-helper';
-import { extractFieldComment, parseZodAnnotations, mapAnnotationsToZodSchema, type FieldCommentContext } from '../parsers/zodComments';
+import { extractFieldComment, mapAnnotationsToZodSchema, parseZodAnnotations, type FieldCommentContext } from '../parsers/zodComments';
 
 /**
  * Configuration for Prisma type mapping
@@ -736,15 +736,7 @@ export class PrismaTypeMapper {
     
     if (jsonConfig.maxDepth !== undefined && jsonConfig.maxDepth > 0) {
       // Add depth validation function
-      const depthValidation = `
-.refine((val) => {
-  const getDepth = (obj, depth = 0) => {
-    if (depth > ${jsonConfig.maxDepth}) return depth;
-    if (obj === null || typeof obj !== 'object') return depth;
-    return Math.max(...Object.values(obj).map(v => getDepth(v, depth + 1)));
-  };
-  return getDepth(val) <= ${jsonConfig.maxDepth};
-}, "JSON nesting depth exceeds maximum of ${jsonConfig.maxDepth}")`.trim();
+      const depthValidation = `.refine((val) => { const getDepth = (obj, depth = 0) => { if (depth > ${jsonConfig.maxDepth}) return depth; if (obj === null || typeof obj !== 'object') return depth; return Math.max(...Object.values(obj).map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= ${jsonConfig.maxDepth}; }, "JSON nesting depth exceeds maximum of ${jsonConfig.maxDepth}")`;
       
       validations.push(depthValidation);
       result.additionalValidations.push(`// Maximum nesting depth: ${jsonConfig.maxDepth}`);
@@ -758,7 +750,7 @@ export class PrismaTypeMapper {
     
     // Apply validations if any
     if (validations.length > 0) {
-      result.additionalValidations.push(...validations);
+      result.zodSchema = `${result.zodSchema}${validations.join('')}`;
     }
     
     // Add null handling information
@@ -865,7 +857,7 @@ export class PrismaTypeMapper {
    */
   private mapEnumType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const enumName = field.type;
-    result.zodSchema = `z.nativeEnum(${enumName})`;
+    result.zodSchema = `z.enum(${enumName})`;
     result.imports.add(enumName);
     result.additionalValidations.push(`// Enum type: ${enumName}`);
   }
@@ -882,14 +874,14 @@ export class PrismaTypeMapper {
       // This is a relation field
       if (field.relationFromFields && field.relationFromFields.length > 0) {
         // This relation has foreign key fields - we'll handle the FK fields separately
-        result.zodSchema = `z.lazy(() => ${relatedModelName}Schema)`;
-        result.imports.add(`${relatedModelName}Schema`);
+        result.zodSchema = `z.lazy(() => ${relatedModelName}Model)`;
+        result.imports.add(`${relatedModelName}Model`);
         result.requiresSpecialHandling = true;
         result.additionalValidations.push(`// Relation to ${relatedModelName}`);
       } else {
         // This is a back-relation without foreign keys in this model
-        result.zodSchema = `z.lazy(() => ${relatedModelName}Schema)`;
-        result.imports.add(`${relatedModelName}Schema`);
+        result.zodSchema = `z.lazy(() => ${relatedModelName}Model)`;
+        result.imports.add(`${relatedModelName}Model`);
         result.requiresSpecialHandling = true;
         result.additionalValidations.push(`// Back-relation to ${relatedModelName}`);
       }
@@ -1724,7 +1716,7 @@ export class PrismaTypeMapper {
   generateModelSchema(model: DMMF.Model): ModelSchemaComposition {
     const composition: ModelSchemaComposition = {
       modelName: model.name,
-      schemaName: `${model.name}Schema`,
+      schemaName: `${model.name}Model`,
       fields: [],
       imports: new Set(['z']),
       exports: new Set(),
@@ -1905,17 +1897,17 @@ export class PrismaTypeMapper {
     }
     
     // Enum imports
-    const enumImports = imports.filter(imp => imp !== 'z' && !imp.includes('Schema'));
+    const enumImports = imports.filter(imp => imp !== 'z' && !imp.includes('Model'));
     if (enumImports.length > 0) {
       lines.push(`import { ${enumImports.join(', ')} } from '@prisma/client';`);
     }
     
     // Related schema imports
-    const schemaImports = imports.filter(imp => imp.includes('Schema'));
+    const schemaImports = imports.filter(imp => imp.includes('Model'));
     if (schemaImports.length > 0) {
       schemaImports.forEach(schemaImport => {
-        const modelName = schemaImport.replace('Schema', '');
-        lines.push(`import { ${schemaImport} } from './${modelName.toLowerCase()}';`);
+        const modelName = schemaImport.replace('Model', '');
+        lines.push(`import { ${schemaImport} } from './${modelName}.model';`);
       });
     }
     
@@ -1980,8 +1972,8 @@ export class PrismaTypeMapper {
     const dependencies: string[] = [];
     
     composition.fields.forEach(field => {
-      if (field.zodSchema.includes('Schema')) {
-        const matches = field.zodSchema.match(/(\w+Schema)/g);
+      if (field.zodSchema.includes('Model')) {
+        const matches = field.zodSchema.match(/(\w+Model)/g);
         if (matches) {
           matches.forEach(match => {
             if (match !== composition.schemaName && !dependencies.includes(match)) {

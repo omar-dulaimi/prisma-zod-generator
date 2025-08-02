@@ -1,26 +1,26 @@
 import {
-  DMMF,
-  EnvValue,
-  GeneratorConfig,
-  GeneratorOptions,
+    DMMF,
+    EnvValue,
+    GeneratorConfig,
+    GeneratorOptions,
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-  generatorOptionsToConfigOverrides,
-  getLegacyMigrationSuggestions,
-  isLegacyUsage,
-  parseGeneratorOptions,
-  validateGeneratorOptions
+    generatorOptionsToConfigOverrides,
+    getLegacyMigrationSuggestions,
+    isLegacyUsage,
+    parseGeneratorOptions,
+    validateGeneratorOptions
 } from './config/generator-options';
 import { GeneratorConfig as CustomGeneratorConfig, parseConfiguration } from './config/parser';
 import {
-  addMissingInputObjectTypes,
-  hideInputObjectTypesAndRelatedFields,
-  resolveAddMissingInputObjectTypeOptions,
-  resolveModelsComments,
+    addMissingInputObjectTypes,
+    hideInputObjectTypesAndRelatedFields,
+    resolveAddMissingInputObjectTypeOptions,
+    resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -232,6 +232,9 @@ export async function generate(options: GeneratorOptions) {
       aggregateOperationSupport,
     );
     await generateIndex();
+    
+    // Generate pure model schemas if enabled
+    await generatePureModelSchemas(models, generatorConfig);
     
     // Generate variant schemas if enabled
     await generateVariantSchemas(models, generatorConfig);
@@ -712,7 +715,7 @@ function getZodTypeForField(field: DMMF.Field): string {
     default:
       // Handle enums and other custom types
       if (field.kind === 'enum') {
-        return `nativeEnum(${field.type})`;
+        return `enum(${field.type})`;
       }
       return 'unknown()';
   }
@@ -737,4 +740,128 @@ async function generateVariantsIndex(variantNames: string[], outputPath: string)
   ].join('\n');
   
   await writeFileSafely(`${outputPath}/index.ts`, indexContent);
+}
+
+/**
+ * Generate pure model schemas in models/ directory
+ * These are standalone schemas without variant suffixes
+ */
+async function generatePureModelSchemas(models: DMMF.Model[], config: any): Promise<void> {
+  // Check if pure models are enabled and configured
+  if (!config.pureModels) {
+    return;
+  }
+  
+  console.log('📦 Generating pure model schemas');
+  
+  try {
+    const outputPath = Transformer.getOutputPath();
+    const modelsOutputPath = `${outputPath}/models`;
+    
+    // Filter models based on configuration
+    const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
+    
+    if (enabledModels.length === 0) {
+      console.log('⚠️  No models enabled for pure model generation');
+      return;
+    }
+    
+    // Create models directory
+    await fs.mkdir(modelsOutputPath, { recursive: true });
+    
+    // Import the model generator
+    const { PrismaTypeMapper } = await import('./generators/model');
+    const typeMapper = new PrismaTypeMapper();
+    
+    // Generate pure model schemas
+    const schemaCollection = typeMapper.generateSchemaCollection(enabledModels);
+    
+    // Write individual model schema files
+    for (const [modelName, schemaData] of schemaCollection.schemas) {
+      try {
+        const fileName = `${modelName}.model.ts`;
+        const filePath = `${modelsOutputPath}/${fileName}`;
+        
+        if (!schemaData.fileContent?.content) {
+          console.error(`   ❌ No content available for ${modelName}`);
+          continue;
+        }
+        
+        // Transform content for pure models
+        let content = schemaData.fileContent.content;
+        
+        // Fix import paths to use .model extension instead of lowercase names
+        content = content.replace(
+          /import\s+{\s*(\w+)Schema\s*}\s+from\s+['"]\.\/(\w+)['"];/g,
+          (match, schemaName, importPath) => {
+            // Convert lowercase import path to PascalCase.model
+            const modelName = importPath.charAt(0).toUpperCase() + importPath.slice(1);
+            const modelImportName = schemaName.replace('Schema', 'Model');
+            return `import { ${modelImportName} } from './${modelName}.model';`;
+          }
+        );
+        
+        // Also fix any references to the imported schemas in lazy() calls
+        content = content.replace(
+          /z\.lazy\(\(\)\s*=>\s*(\w+)Schema\)/g,
+          'z.lazy(() => $1Model)'
+        );
+        
+        // Change export name from Schema to Model
+        content = content.replace(
+          new RegExp(`export const ${modelName}Schema`, 'g'),
+          `export const ${modelName}Model`
+        );
+        
+        // Update variable references within the file
+        content = content.replace(
+          new RegExp(`typeof ${modelName}Schema`, 'g'),
+          `typeof ${modelName}Model`
+        );
+        
+        // Update JSDoc comments
+        content = content.replace(
+          /Generated Zod schema for (\w+) model/g,
+          'Generated Zod model for $1'
+        );
+        
+        // Update type export
+        content = content.replace(
+          new RegExp(`z\\.infer<typeof ${modelName}Schema>`, 'g'),
+          `z.infer<typeof ${modelName}Model>`
+        );
+        
+        console.log(`   📝 Creating pure model: ${fileName} (${modelName}Model)`);
+        
+        // Use direct file writing to avoid formatting issues
+        await fs.writeFile(filePath, content);
+        
+      } catch (modelError) {
+        console.error(`   ❌ Error processing model ${modelName}: ${modelError instanceof Error ? modelError.message : 'Unknown error'}`);
+        // Continue with other models
+      }
+    }
+    
+    // Generate models index file
+    const modelsIndexContent = [
+      '/**',
+      ' * Pure Model Schemas',
+      ' * Auto-generated - do not edit manually',
+      ' */',
+      '',
+      ...Array.from(schemaCollection.schemas.keys()).map(modelName => 
+        `export { ${modelName}Model } from './${modelName}.model';`
+      ),
+      ''
+    ].join('\n');
+    
+    const indexPath = `${modelsOutputPath}/index.ts`;
+    await fs.writeFile(indexPath, modelsIndexContent);
+    
+    console.log(`📦 Generated pure model schemas for ${enabledModels.length} models`);
+    
+  } catch (error) {
+    console.error(`❌ Pure model generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Don't throw - pure model generation failure shouldn't stop the main generation
+  }
 }

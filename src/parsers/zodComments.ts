@@ -1279,7 +1279,7 @@ export function getBaseZodType(fieldType: string, isOptional: boolean, isList: b
       break;
     default:
       // Enum or model type
-      baseType = `z.nativeEnum(${fieldType})`;
+      baseType = `z.enum(${fieldType})`;
       break;
   }
   

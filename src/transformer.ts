@@ -973,7 +973,7 @@ export default class Transformer {
       default:
         // Handle enums and other types
         if (field.kind === 'enum') {
-          return `z.nativeEnum(${field.type})`;
+          return `z.enum(${field.type})`;
         }
         return 'z.unknown()';
     }
