@@ -3,19 +3,18 @@ import type {
   DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
+import { GeneratorConfig } from './config/parser';
+import ResultSchemaGenerator from './generators/results';
 import {
   findModelByName,
   isMongodbRawOp,
 } from './helpers';
-import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
+import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
+import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
 import { AggregateOperationSupport, TransformerParams } from './types';
 import { writeFileSafely } from './utils/writeFileSafely';
-import { writeIndexFile, addIndexExport } from './utils/writeIndexFile';
-import { GeneratorConfig } from './config/parser';
-import ResultSchemaGenerator from './generators/results';
-import { extractFieldComment, parseZodAnnotations, mapAnnotationsToZodSchema, type FieldCommentContext } from './parsers/zodComments';
-import { processModelsWithZodIntegration, type EnhancedModelInfo, type EnhancedFieldInfo } from './helpers/zod-integration';
+import { addIndexExport, writeIndexFile } from './utils/writeIndexFile';
 
 /**
  * Filter validation result interface
@@ -149,6 +148,7 @@ export default class Transformer {
     
     // If no configuration is available, generate all operations (default behavior)
     if (!config) {
+      console.log(`🔍 Operation check: ${modelName}.${operationName} = true (no config)`);
       return true;
     }
 
@@ -174,6 +174,7 @@ export default class Transformer {
       const allowedOperationNames = operationMapping[operationName] || [operationName];
       const isEnabled = allowedOperationNames.some(opName => modelConfig.operations!.includes(opName));
       
+      console.log(`🔍 Operation check: ${modelName}.${operationName} = ${isEnabled} (configured ops: [${modelConfig.operations.join(', ')}])`);
       return isEnabled;
     }
 
@@ -186,10 +187,13 @@ export default class Transformer {
         'delete', 'deleteOne', 'deleteMany',
         'upsert', 'upsertOne'
       ];
-      return minimalOperations.includes(operationName);
+      const isEnabled = minimalOperations.includes(operationName);
+      console.log(`🔍 Operation check: ${modelName}.${operationName} = ${isEnabled} (minimal mode)`);
+      return isEnabled;
     }
 
     // Default: enable all operations not explicitly disabled
+    console.log(`🔍 Operation check: ${modelName}.${operationName} = true (default)`);
     return true;
   }
 
@@ -225,6 +229,27 @@ export default class Transformer {
   static isFieldEnabled(fieldName: string, modelName?: string, variant?: 'pure' | 'input' | 'result'): boolean {
     const config = this.getGeneratorConfig();
     
+    // Debug: Log the configuration retrieval
+    console.log(`🔍 Configuration check for ${modelName}.${fieldName} (${variant})`);
+    console.log(`   - Config available:`, !!config);
+    if (config && modelName) {
+      const modelConfig = config.models?.[modelName];
+      console.log(`   - Model config operations:`, modelConfig?.operations);
+      console.log(`   - Model variants:`, modelConfig?.variants);
+      if (modelConfig?.variants) {
+        if (modelConfig.variants.pure) {
+          console.log(`     - pure excludeFields:`, modelConfig.variants.pure.excludeFields);
+        }
+        if (modelConfig.variants.input) {
+          console.log(`     - input excludeFields:`, modelConfig.variants.input.excludeFields);
+        }
+        if (modelConfig.variants.result) {
+          console.log(`     - result excludeFields:`, modelConfig.variants.result.excludeFields);
+        }
+      }
+      console.log(`   - Legacy fields config:`, (modelConfig as any)?.fields);
+    }
+    
     // If no configuration is available, include all fields (default behavior)
     if (!config) {
       return true;
@@ -232,11 +257,13 @@ export default class Transformer {
 
     // Start with a flag indicating whether the field should be excluded
     let shouldExclude = false;
+    const debugReasons: string[] = [];
 
     // Check global exclusions (basic format - array of strings)
     if (config.globalExclusions && Array.isArray(config.globalExclusions)) {
       if (this.isFieldMatchingPatterns(fieldName, config.globalExclusions)) {
         shouldExclude = true;
+        debugReasons.push(`global array exclusion`);
       }
     }
 
@@ -244,6 +271,7 @@ export default class Transformer {
     if (variant && config.globalExclusions?.[variant]) {
       if (this.isFieldMatchingPatterns(fieldName, config.globalExclusions[variant])) {
         shouldExclude = true;
+        debugReasons.push(`global ${variant} exclusion`);
       }
     }
 
@@ -255,26 +283,36 @@ export default class Transformer {
       if (modelConfig?.variants?.[variant || 'pure']?.excludeFields) {
         if (this.isFieldMatchingPatterns(fieldName, modelConfig.variants[variant || 'pure']!.excludeFields!)) {
           shouldExclude = true;
+          debugReasons.push(`model ${variant} variant exclusion`);
         }
       }
       
       // Check legacy format: fields.exclude (for backward compatibility)
       if ((modelConfig as any)?.fields?.exclude) {
+        console.log(`🔍 Checking legacy fields.exclude for ${modelName}.${fieldName}: patterns =`, (modelConfig as any).fields.exclude);
         if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.exclude)) {
           shouldExclude = true;
+          debugReasons.push(`model fields.exclude`);
+          console.log(`🚫 Field excluded by legacy fields.exclude: ${modelName}.${fieldName}`);
         }
       }
 
       // Check model-specific includes - these OVERRIDE exclusions (highest precedence)
       if ((modelConfig as any)?.fields?.include) {
         if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.include)) {
+          console.log(`🟢 Field enabled: ${modelName}.${fieldName} (${variant}) = true (model include override)`);
           return true; // Include overrides any previous exclusion
         }
       }
     }
 
+    const result = !shouldExclude;
+    if (debugReasons.length > 0 || (modelName && ['password', 'views', 'internalId', 'metadata'].includes(fieldName))) {
+      console.log(`🔍 Field check: ${modelName || 'unknown'}.${fieldName} (${variant || 'unknown'}) = ${result} ${debugReasons.length > 0 ? `(${debugReasons.join(', ')})` : '(allowed)'}`);
+    }
+
     // Return the opposite of shouldExclude (if should exclude, return false)
-    return !shouldExclude;
+    return result;
   }
 
   /**
@@ -282,10 +320,13 @@ export default class Transformer {
    * Supports wildcards: *field, field*, *field*
    */
   static isFieldMatchingPatterns(fieldName: string, patterns: string[]): boolean {
-    return patterns.some(pattern => {
+    console.log(`🔍 Pattern matching: fieldName='${fieldName}', patterns=`, patterns);
+    const result = patterns.some(pattern => {
       // Exact match (no wildcards)
       if (!pattern.includes('*')) {
-        return fieldName === pattern;
+        const match = fieldName === pattern;
+        console.log(`   - Exact match '${pattern}': ${match}`);
+        return match;
       }
       
       // Convert pattern to regex
@@ -294,8 +335,12 @@ export default class Transformer {
         .replace(/\*/g, '.*');  // Then replace * with .*
       
       const regex = new RegExp(`^${regexPattern}$`);
-      return regex.test(fieldName);
+      const match = regex.test(fieldName);
+      console.log(`   - Regex match '${pattern}' -> /${regexPattern}/: ${match}`);
+      return match;
     });
+    console.log(`🔍 Pattern matching result: ${result}`);
+    return result;
   }
 
   /**
