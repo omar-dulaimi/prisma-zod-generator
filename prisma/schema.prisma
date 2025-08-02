@@ -14,51 +14,48 @@ generator zod {
   isGenerateInclude = true
 }
 
+enum UserRole {
+  ADMIN
+  USER
+  MODERATOR
+}
+
 model User {
-  id    Int     @id @default(autoincrement())
-  /// @zod.email().toLowerCase()
-  email String  @unique
-  /// @zod.min(2).max(50).trim()
-  name  String?
-  posts Post[]
-  books Book[]
+  id         Int      @id @default(autoincrement())
+  
+  /**
+   * User's email address
+   * @example "user@example.com"
+   */
+  email      String   @unique /// @zod.email().toLowerCase()
+  
+  /// User's display name
+  name       String?  /// @zod.min(2).max(50).trim()
+  
+  /// User's age
+  age        Int?     /// @zod.min(0).max(120)
+  
+  password   String   // Should be excluded
+  internalId String   // Should be excluded in variants
+  metadata   Json?    // Should be excluded in public variant
+  role       UserRole @default(USER)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  posts      Post[]
 }
 
 model Post {
   id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  /// @zod.min(1, "Title is required").max(100, "Title too long")
-  title     String
-  /// @zod.max(5000).optional()
-  content   String?
+  
+  /// Post title
+  title     String   /// @zod.min(1).max(200)
+  
+  /// Post content
+  content   String?  /// @zod.min(10)
+  
+  views     Int      @default(0) // Should be excluded
   published Boolean  @default(false)
-  /// @zod.min(0).max(999999)
-  viewCount Int      @default(0)
-  author    User?    @relation(fields: [authorId], references: [id])
-  authorId  Int?
-  likes     BigInt
-  bytes     Bytes
-}
-
-model Product {
-  id          Int     @id @default(autoincrement())
-  name        String  /// @zod.min(1, "Name is required").max(100, "Name too long")
-  price       Float   /// @zod.positive("Price must be positive").max(999999.99)
-  description String? /// @zod.max(1000, "Description too long").optional()
-  sku         String  @unique /// @zod.regex(/^[A-Z0-9-]+$/, "Invalid SKU format")
-  weight      Float?  /// @zod.positive().multipleOf(0.01, "Weight precision error")
-}
-
-/// @@Gen.model(hide: true)
-model Book {
-  id       Int    @unique
-  title    String
-  author   User?  @relation(fields: [authorId], references: [id])
-  authorId Int?
-}
-
-model Map {
-  key   String @id
-  value String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
 }
