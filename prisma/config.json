@@ -4,30 +4,19 @@
   "relationModel": true,
   "modelCase": "PascalCase",
   "modelSuffix": "Schema",
-  "useMultipleFiles": true,
   "createInputTypes": true,
+  "prismaClientPath": "@prisma/client",
+  "globalExclusions": {},
+  "useMultipleFiles": true,
+  "addInputTypeValidation": true,
   "addIncludeType": true,
   "addSelectType": true,
   "validateWhereUniqueInput": true,
-  "prismaClientPath": "@prisma/client",
-  "globalExclusions": {},
-  "variants": [
-    {
-      "name": "public",
-      "suffix": "Public",
-      "exclude": [
-        "internalId",
-        "metadata"
-      ]
-    },
-    {
-      "name": "admin",
-      "suffix": "Admin",
-      "exclude": [
-        "internalId"
-      ]
-    }
-  ],
+  "coerceDate": true,
+  "writeNullishInModelTypes": true,
+  "generateResultSchemas": true,
+  "pureModels": true,
+  "generateJSDoc": true,
   "models": {
     "User": {
       "enabled": true,
@@ -56,12 +45,23 @@
       }
     }
   },
-  "addInputTypeValidation": true,
-  "coerceDate": true,
-  "writeNullishInModelTypes": true,
-  "generateResultSchemas": true,
-  "pureModels": true,
-  "generateJSDoc": true,
+  "variants": [
+    {
+      "name": "public",
+      "suffix": "Public",
+      "exclude": [
+        "internalId",
+        "metadata"
+      ]
+    },
+    {
+      "name": "admin",
+      "suffix": "Admin",
+      "exclude": [
+        "internalId"
+      ]
+    }
+  ],
   "minimalMode": {
     "enabled": true,
     "operations": [

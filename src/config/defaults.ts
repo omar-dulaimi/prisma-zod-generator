@@ -1,9 +1,9 @@
-import { GeneratorConfig, VariantConfig, ModelConfig } from './parser';
-import { 
-  DEFAULT_CONFIG, 
-  MINIMAL_OPERATIONS, 
-  PRISMA_OPERATIONS,
-  GENERATION_MODES
+import { GeneratorConfig, ModelConfig, VariantConfig } from './parser';
+import {
+    DEFAULT_CONFIG,
+    GENERATION_MODES,
+    MINIMAL_OPERATIONS,
+    PRISMA_OPERATIONS
 } from './schema';
 
 /**
@@ -46,6 +46,7 @@ export class DefaultConfigurationManager {
     return {
       mode: DEFAULT_CONFIG.mode,
       output: DEFAULT_CONFIG.output,
+      pureModels: false, // Default to false, can be overridden by user config
       globalExclusions: {
         input: [],
         result: [],
@@ -80,6 +81,7 @@ export class DefaultConfigurationManager {
     return {
       ...baseConfig,
       mode: 'minimal',
+      pureModels: true, // Enable pure models by default in minimal mode
       variants: {
         pure: {
           enabled: true,

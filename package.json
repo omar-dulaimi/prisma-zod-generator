@@ -7,6 +7,7 @@
     "prisma-zod-generator": "lib/generator.js"
   },
   "scripts": {
+    "exec": "npm run gen-example && npm run test:integration -- -t \"should generate schemas with all features enabled together\"",
     "gen-example": "tsc && npx prisma generate",
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish",

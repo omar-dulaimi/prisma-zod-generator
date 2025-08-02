@@ -11,6 +11,9 @@ export interface GeneratorConfig {
   /** Output directory for generated schemas */
   output?: string;
   
+  /** Whether to generate pure model schemas */
+  pureModels?: boolean;
+  
   /** Global field exclusions */
   globalExclusions?: {
     input?: string[];
