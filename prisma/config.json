@@ -17,13 +17,23 @@
   "generateResultSchemas": true,
   "pureModels": true,
   "generateJSDoc": true,
+  "variants": {
+    "pure": {
+      "enabled": true
+    },
+    "input": {
+      "enabled": true
+    },
+    "result": {
+      "enabled": true
+    }
+  },
   "models": {
     "User": {
       "enabled": true,
       "operations": [
         "findMany",
-        "create",
-        "update"
+        "create"
       ],
       "fields": {
         "exclude": [
@@ -35,38 +45,16 @@
       "enabled": true,
       "operations": [
         "findMany",
-        "findUnique",
-        "create"
+        "update"
       ],
       "fields": {
         "exclude": [
-          "views"
+          "authorId"
         ]
       }
-    }
-  },
-  "variants": [
-    {
-      "name": "public",
-      "suffix": "Public",
-      "exclude": [
-        "internalId",
-        "metadata"
-      ]
     },
-    {
-      "name": "admin",
-      "suffix": "Admin",
-      "exclude": [
-        "internalId"
-      ]
+    "Profile": {
+      "enabled": false
     }
-  ],
-  "minimalMode": {
-    "enabled": true,
-    "operations": [
-      "create",
-      "update"
-    ]
   }
 }

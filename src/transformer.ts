@@ -1,13 +1,13 @@
 import type {
-    ConnectorType,
-    DMMF as PrismaDMMF,
+  ConnectorType,
+  DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-    findModelByName,
-    isMongodbRawOp,
+  findModelByName,
+  isMongodbRawOp,
 } from './helpers';
 import { isAggregateInputType } from './helpers/aggregate-helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
@@ -375,10 +375,18 @@ export default class Transformer {
         const foreignKeyFields = this.getForeignKeyFieldsForExcludedRelations(excludedRelationFields, model);
         
         
-        // Add foreign key fields that aren't already present
+        // Add foreign key fields that aren't already present AND aren't explicitly excluded
         for (const fkField of foreignKeyFields) {
           if (!result.some(field => field.name === fkField.name)) {
-            result.push(fkField);
+            // Check if the foreign key field is explicitly excluded by configuration
+            const isFieldAllowed = this.isFieldEnabled(fkField.name, modelName, variant);
+            console.log(`🔑 Foreign key preservation check: ${modelName}.${fkField.name} (${variant}) = ${isFieldAllowed}`);
+            if (isFieldAllowed) {
+              console.log(`🔑 Adding foreign key field: ${modelName}.${fkField.name}`);
+              result.push(fkField);
+            } else {
+              console.log(`🚫 Skipping excluded foreign key field: ${modelName}.${fkField.name}`);
+            }
           }
         }
       }
@@ -484,13 +492,14 @@ export default class Transformer {
    */
   static extractModelNameFromContext(schemaName: string): string | null {
     // Try to extract model name from common schema naming patterns
+    // More specific patterns should come first to avoid false matches
     const patterns = [
+      /^(\w+)UncheckedCreateInput$/,
+      /^(\w+)UncheckedUpdateInput$/,
       /^(\w+)WhereInput$/,
       /^(\w+)WhereUniqueInput$/,
       /^(\w+)CreateInput$/,
       /^(\w+)UpdateInput$/,
-      /^(\w+)UncheckedCreateInput$/,
-      /^(\w+)UncheckedUpdateInput$/,
       /^(\w+)OrderByWithRelationInput$/,
       /^(\w+)Args$/,
     ];
@@ -715,6 +724,9 @@ export default class Transformer {
     // Determine context for field filtering  
     const modelName = Transformer.extractModelNameFromContext(this.name);
     const variant = Transformer.determineSchemaVariant(this.name);
+    
+    // Debug: Log the raw context name and extracted model name
+    console.log(`🔍 Schema context: "${this.name}" -> extracted model: "${modelName}"`);
     
     
     // Apply field filtering
