@@ -229,26 +229,26 @@ export default class Transformer {
   static isFieldEnabled(fieldName: string, modelName?: string, variant?: 'pure' | 'input' | 'result'): boolean {
     const config = this.getGeneratorConfig();
     
-    // Debug: Log the configuration retrieval
-    console.log(`🔍 Configuration check for ${modelName}.${fieldName} (${variant})`);
-    console.log(`   - Config available:`, !!config);
-    if (config && modelName) {
-      const modelConfig = config.models?.[modelName];
-      console.log(`   - Model config operations:`, modelConfig?.operations);
-      console.log(`   - Model variants:`, modelConfig?.variants);
-      if (modelConfig?.variants) {
-        if (modelConfig.variants.pure) {
-          console.log(`     - pure excludeFields:`, modelConfig.variants.pure.excludeFields);
-        }
-        if (modelConfig.variants.input) {
-          console.log(`     - input excludeFields:`, modelConfig.variants.input.excludeFields);
-        }
-        if (modelConfig.variants.result) {
-          console.log(`     - result excludeFields:`, modelConfig.variants.result.excludeFields);
-        }
-      }
-      console.log(`   - Legacy fields config:`, (modelConfig as any)?.fields);
-    }
+    // Debug: Reduced verbosity for performance (uncomment for detailed debugging)
+    // console.log(`🔍 Configuration check for ${modelName}.${fieldName} (${variant})`);
+    // console.log(`   - Config available:`, !!config);
+    // if (config && modelName) {
+    //   const modelConfig = config.models?.[modelName];
+    //   console.log(`   - Model config operations:`, modelConfig?.operations);
+    //   console.log(`   - Model variants:`, modelConfig?.variants);
+    //   if (modelConfig?.variants) {
+    //     if (modelConfig.variants.pure) {
+    //       console.log(`     - pure excludeFields:`, modelConfig.variants.pure.excludeFields);
+    //     }
+    //     if (modelConfig.variants.input) {
+    //       console.log(`     - input excludeFields:`, modelConfig.variants.input.excludeFields);
+    //     }
+    //     if (modelConfig.variants.result) {
+    //       console.log(`     - result excludeFields:`, modelConfig.variants.result.excludeFields);
+    //     }
+    //   }
+    //   console.log(`   - Legacy fields config:`, (modelConfig as any)?.fields);
+    // }
     
     // If no configuration is available, include all fields (default behavior)
     if (!config) {
@@ -320,12 +320,13 @@ export default class Transformer {
    * Supports wildcards: *field, field*, *field*
    */
   static isFieldMatchingPatterns(fieldName: string, patterns: string[]): boolean {
-    console.log(`🔍 Pattern matching: fieldName='${fieldName}', patterns=`, patterns);
+    // Debug: Reduced verbosity for performance (uncomment for detailed debugging)
+    // console.log(`🔍 Pattern matching: fieldName='${fieldName}', patterns=`, patterns);
     const result = patterns.some(pattern => {
       // Exact match (no wildcards)
       if (!pattern.includes('*')) {
         const match = fieldName === pattern;
-        console.log(`   - Exact match '${pattern}': ${match}`);
+        // console.log(`   - Exact match '${pattern}': ${match}`);
         return match;
       }
       
@@ -336,10 +337,10 @@ export default class Transformer {
       
       const regex = new RegExp(`^${regexPattern}$`);
       const match = regex.test(fieldName);
-      console.log(`   - Regex match '${pattern}' -> /${regexPattern}/: ${match}`);
+      // console.log(`   - Regex match '${pattern}' -> /${regexPattern}/: ${match}`);
       return match;
     });
-    console.log(`🔍 Pattern matching result: ${result}`);
+    // console.log(`🔍 Pattern matching result: ${result}`);
     return result;
   }
 
@@ -728,7 +729,7 @@ export default class Transformer {
    * If the output path already ends with 'schemas', use it directly.
    * Otherwise, append 'schemas' to the output path.
    */
-  private static getSchemasPath(): string {
+  static getSchemasPath(): string {
     const normalizedOutputPath = path.normalize(this.outputPath);
     const pathSegments = normalizedOutputPath.split(path.sep);
     const lastSegment = pathSegments[pathSegments.length - 1];
@@ -1178,7 +1179,8 @@ export default class Transformer {
     // Args types like UserArgs, ProfileArgs don't exist in Prisma client
     // Use generic typing instead of non-existent Prisma type
     if (name.endsWith('Args')) {
-      return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
+      return `const Schema = ${schema};\n\n ${end}`;
+      // return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
     }
     
     // For schemas with complex relations, omit explicit typing
@@ -1189,16 +1191,19 @@ export default class Transformer {
       name.includes('CreateNestedOne') ||
       name.includes('CreateNestedMany')
     )) {
-      return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
+      return `const Schema = ${schema};\n\n ${end}`;
+      // return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
     }
     
     // Check if the Prisma type actually exists before using it
     // Many filter and input types don't exist in the Prisma client
     if (this.isPrismaTypeAvailable(name)) {
-      return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
+      return `const Schema = ${schema};\n\n ${end}`;
+      // return `const Schema: z.ZodType<Prisma.${name}> = ${schema};\n\n ${end}`;
     } else {
       // Fallback to generic schema with explicit any type annotation to avoid TypeScript errors
-      return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
+      return `const Schema = ${schema};\n\n ${end}`;
+      // return `const Schema: z.ZodType<any> = ${schema};\n\n ${end}`;
     }
   }
 

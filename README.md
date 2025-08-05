@@ -111,7 +111,6 @@ generator zod {
 {
   "compilerOptions": {
     "strict": true,
-    "exactOptionalPropertyTypes": true
   }
 }
 ```
@@ -1035,7 +1034,6 @@ generator zod {
 {
   "compilerOptions": {
     "strict": true,
-    "exactOptionalPropertyTypes": true
   }
 }
 ```

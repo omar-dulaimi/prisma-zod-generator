@@ -10,7 +10,6 @@ datasource db {
 generator zod {
   provider          = "node ./lib/generator.js"
   output            = "./generated"
-  config   = "./prisma/config.json"
 }
 
 model User {
@@ -18,12 +17,30 @@ model User {
   email String  @unique
   name  String?
   posts Post[]
+  books Book[]
 }
 
 model Post {
-  id       Int     @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  viewCount Int      @default(0)
+  author    User?    @relation(fields: [authorId], references: [id])
+  authorId  Int?
+  likes     BigInt
+}
+
+model Book {
+  id       Int    @unique
   title    String
-  content  String?
-  author   User    @relation(fields: [authorId], references: [id])
-  authorId Int
+  author   User?  @relation(fields: [authorId], references: [id])
+  authorId Int?
+}
+
+model Map {
+  key   String @id
+  value String
 }

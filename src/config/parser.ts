@@ -30,6 +30,10 @@ export interface GeneratorConfig {
   
   /** Per-model configuration */
   models?: Record<string, ModelConfig>;
+  
+  /** Legacy options for backward compatibility */
+  addSelectType?: boolean;
+  addIncludeType?: boolean;
 }
 
 /**
@@ -189,6 +193,17 @@ export function parseJsonConfig(content: string, filePath?: string): GeneratorCo
  */
 function transformLegacyConfig(config: any): any {
   const transformed = { ...config };
+  
+  // Handle legacy Include/Select options
+  if (config.addSelectType !== undefined) {
+    console.log(`🔄 Preserving legacy addSelectType: ${config.addSelectType}`);
+    transformed.addSelectType = Boolean(config.addSelectType);
+  }
+  
+  if (config.addIncludeType !== undefined) {
+    console.log(`🔄 Preserving legacy addIncludeType: ${config.addIncludeType}`);
+    transformed.addIncludeType = Boolean(config.addIncludeType);
+  }
   
   // Transform model-specific legacy fields.exclude to variants format
   if (transformed.models) {

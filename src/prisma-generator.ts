@@ -196,9 +196,16 @@ export async function generate(options: GeneratorOptions) {
     }
 
     // Merge backward compatibility options with new configuration
+    // Priority: 1. Legacy generator options, 2. New config file options (addSelectType/addIncludeType)
     const backwardCompatibleOptions = {
-      isGenerateSelect: extendedOptions.isGenerateSelect?.toString() || 'false',
-      isGenerateInclude: extendedOptions.isGenerateInclude?.toString() || 'false',
+      isGenerateSelect: (
+        extendedOptions.isGenerateSelect?.toString() || 
+        (generatorConfig.addSelectType !== undefined ? generatorConfig.addSelectType.toString() : 'false')
+      ),
+      isGenerateInclude: (
+        extendedOptions.isGenerateInclude?.toString() || 
+        (generatorConfig.addIncludeType !== undefined ? generatorConfig.addIncludeType.toString() : 'false')
+      ),
     };
 
     const addMissingInputObjectTypeOptions =
@@ -338,18 +345,89 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models:
 }
 
 /**
- * Check if an object schema should be generated based on enabled models
+ * Check if an object schema should be generated based on enabled models and operations
  */
 function isObjectSchemaEnabled(objectSchemaName: string): boolean {
   // Extract potential model name from object schema name
   const modelName = extractModelNameFromObjectSchema(objectSchemaName);
   
   if (modelName) {
-    return Transformer.isModelEnabled(modelName);
+    // First check if the model itself is enabled
+    const isModelEnabled = Transformer.isModelEnabled(modelName);
+    console.log(`🔍 Object schema check: ${objectSchemaName} -> model: ${modelName}, enabled: ${isModelEnabled}`);
+    if (!isModelEnabled) {
+      return false;
+    }
+    
+    // Then check if any operations that use this schema are enabled
+    const requiredOperations = getRequiredOperationsForObjectSchema(objectSchemaName);
+    if (requiredOperations.length > 0) {
+      // If we can determine required operations, check if any of them are enabled
+      const hasEnabledOperation = requiredOperations.some(operation => 
+        Transformer.isOperationEnabled(modelName, operation)
+      );
+      console.log(`🔍 Operation check: ${objectSchemaName} -> operations: ${requiredOperations}, hasEnabled: ${hasEnabledOperation}`);
+      return hasEnabledOperation;
+    }
   }
   
-  // If we can't determine the model, generate the schema (default behavior)
+  // If we can't determine the model or operations, generate the schema (default behavior)
+  console.log(`🔍 Default behavior: ${objectSchemaName} -> generating (could not determine model)`);
   return true;
+}
+
+/**
+ * Get the operations that require a specific object schema
+ */
+function getRequiredOperationsForObjectSchema(objectSchemaName: string): string[] {
+  // Map object schema patterns to the operations that use them
+  const operationMappings = [
+    // Create operations
+    { patterns: [/CreateInput$/, /UncheckedCreateInput$/, /CreateManyInput$/], operations: ['createOne', 'createMany'] },
+    { patterns: [/CreateWithout\w+Input$/, /UncheckedCreateWithout\w+Input$/], operations: ['createOne'] },
+    { patterns: [/CreateNestedOneWithout\w+Input$/, /CreateNestedManyWithout\w+Input$/], operations: ['createOne'] },
+    { patterns: [/CreateOrConnectWithout\w+Input$/], operations: ['createOne'] },
+    
+    // Update operations
+    { patterns: [/UpdateInput$/, /UncheckedUpdateInput$/, /UpdateManyInput$/, /UncheckedUpdateManyInput$/], operations: ['updateOne', 'updateMany'] },
+    { patterns: [/UpdateManyMutationInput$/], operations: ['updateMany'] },
+    { patterns: [/UpdateWithout\w+Input$/, /UncheckedUpdateWithout\w+Input$/], operations: ['updateOne'] },
+    { patterns: [/UpdateNestedOneWithout\w+Input$/, /UpdateNestedManyWithout\w+Input$/], operations: ['updateOne'] },
+    { patterns: [/UpdateOneRequiredWithout\w+NestedInput$/, /UpdateToOneWithWhereWithout\w+Input$/], operations: ['updateOne'] },
+    { patterns: [/UpdateManyWithWhereWithout\w+Input$/, /UpdateWithWhereUniqueWithout\w+Input$/], operations: ['updateOne'] },
+    { patterns: [/UpdateManyWithout\w+NestedInput$/], operations: ['updateOne'] },
+    
+    // Upsert operations
+    { patterns: [/UpsertWithout\w+Input$/, /UpsertNestedOneWithout\w+Input$/, /UpsertNestedManyWithout\w+Input$/], operations: ['upsertOne'] },
+    { patterns: [/UpsertWithWhereUniqueWithout\w+Input$/], operations: ['upsertOne'] },
+    
+    // Delete operations (through where clauses)
+    { patterns: [/WhereInput$/, /WhereUniqueInput$/], operations: ['findMany', 'findUnique', 'findFirst', 'updateOne', 'updateMany', 'deleteOne', 'deleteMany', 'upsertOne'] },
+    { patterns: [/ScalarWhereInput$/], operations: ['updateMany', 'deleteMany'] },
+    
+    // Aggregate operations
+    { patterns: [/CountAggregateInput$/, /AvgAggregateInput$/, /MaxAggregateInput$/, /MinAggregateInput$/, /SumAggregateInput$/], operations: ['aggregate'] },
+    { patterns: [/OrderByWithAggregationInput$/, /ScalarWhereWithAggregatesInput$/], operations: ['groupBy'] },
+    { patterns: [/CountOrderByAggregateInput$/, /AvgOrderByAggregateInput$/, /MaxOrderByAggregateInput$/, /MinOrderByAggregateInput$/, /SumOrderByAggregateInput$/], operations: ['groupBy'] },
+    
+    // Order by inputs
+    { patterns: [/OrderByWithRelationInput$/], operations: ['findMany', 'findFirst'] },
+    { patterns: [/OrderByRelationAggregateInput$/], operations: ['findMany', 'findFirst'] },
+    
+    // Filter inputs
+    { patterns: [/ListRelationFilter$/, /RelationFilter$/, /ScalarRelationFilter$/], operations: ['findMany', 'findUnique', 'findFirst', 'updateOne', 'updateMany', 'deleteOne', 'deleteMany'] },
+  ];
+  
+  for (const mapping of operationMappings) {
+    for (const pattern of mapping.patterns) {
+      if (pattern.test(objectSchemaName)) {
+        return mapping.operations;
+      }
+    }
+  }
+  
+  // If no specific mapping found, return empty array (will generate by default)
+  return [];
 }
 
 /**
@@ -490,8 +568,9 @@ async function updateIndexWithVariants(config: CustomGeneratorConfig) {
   // Add the variants export to the main index
   addIndexExport(variantsIndexPath);
   
-  // Regenerate the main index file to include variants
-  const indexPath = path.join(outputPath, 'schemas', 'index.ts');
+  // Regenerate the main index file to include all exports (including variants)
+  // Use the same path resolution as the transformer to avoid path mismatches
+  const indexPath = path.join(Transformer.getSchemasPath(), 'index.ts');
   await writeIndexFile(indexPath);
   
   console.log('📦 Updated main index to include variants export');
@@ -908,6 +987,10 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
     
     const indexPath = `${modelsOutputPath}/index.ts`;
     await fs.writeFile(indexPath, modelsIndexContent);
+    
+    // Add the models directory to the main index exports
+    const { addIndexExport } = await import('./utils/writeIndexFile');
+    addIndexExport(indexPath);
     
     console.log(`📦 Generated pure model schemas for ${enabledModels.length} models`);
     

@@ -103,7 +103,15 @@ export function getEnabledRelationFields(model: DMMF.Model): DMMF.Field[] {
     if (!checkIsModelRelationField(field)) {
       return false;
     }
-    return Transformer.isModelEnabled(field.type);
+    // Check if the related model is enabled
+    if (!Transformer.isModelEnabled(field.type)) {
+      return false;
+    }
+    // Check if the field itself is enabled according to configuration (not excluded)
+    if (!Transformer.isFieldEnabled(field.name, model.name, 'result')) {
+      return false;
+    }
+    return true;
   });
 }
 

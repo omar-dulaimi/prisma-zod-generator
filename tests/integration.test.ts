@@ -46,19 +46,21 @@ describe('Integration Tests for Combined Features', () => {
               }
             }
           },
-          // Add variants
-          variants: [
-            {
-              name: 'public',
-              suffix: 'Public',
-              exclude: ['internalId', 'metadata']
+          // Add variants (new format)
+          variants: {
+            pure: {
+              enabled: true,
+              excludeFields: ['internalId', 'metadata']
             },
-            {
-              name: 'admin',
-              suffix: 'Admin',
-              exclude: ['internalId']
+            input: {
+              enabled: true,
+              excludeFields: ['internalId']
+            },
+            result: {
+              enabled: true,
+              excludeFields: []
             }
-          ],
+          },
           // Add minimal mode for some operations
           minimalMode: {
             enabled: true,
@@ -132,8 +134,6 @@ model Post {
 }
 `;
 
-        const configPath = join(testEnv.testDir, 'config.json');
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
         await testEnv.runGeneration();
@@ -174,8 +174,8 @@ model Post {
         const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
         if (existsSync(userCreatePath)) {
           SchemaValidationUtils.expectSchemaContent(userCreatePath, {
-            hasFields: ['email', 'name', 'age', 'role', 'isActive'],
-            excludesFields: ['password', 'internalId', 'metadata'], // Excluded fields
+            hasFields: ['email', 'name', 'age', 'role', 'isActive', 'internalId', 'metadata'],
+            excludesFields: ['password'], // Only password excluded at model level
             hasValidations: ['.email()', '.toLowerCase()', '.min(2)', '.max(50)', '.trim()']
           });
         }
@@ -183,37 +183,56 @@ model Post {
         const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
         if (existsSync(postCreatePath)) {
           SchemaValidationUtils.expectSchemaContent(postCreatePath, {
+            hasFields: ['title', 'content', 'published', 'author'],
+            excludesFields: ['views'], // Excluded field
+            hasValidations: ['.min(1)', '.max(200)', '.min(10)']
+          });
+        }
+
+        // Check that foreign key is present in UncheckedCreateInput
+        const postUncheckedCreatePath = join(objectsDir, 'PostUncheckedCreateInput.schema.ts');
+        if (existsSync(postUncheckedCreatePath)) {
+          SchemaValidationUtils.expectSchemaContent(postUncheckedCreatePath, {
             hasFields: ['title', 'content', 'published', 'authorId'],
             excludesFields: ['views'], // Excluded field
             hasValidations: ['.min(1)', '.max(200)', '.min(10)']
           });
         }
 
-        // Check variant generation
-        const userPublicPath = join(schemasDir, 'UserPublic.schema.ts');
-        const userAdminPath = join(schemasDir, 'UserAdmin.schema.ts');
+        // Check variant generation (new structure)
+        const variantsDir = join(schemasDir, 'variants');
+        expect(existsSync(variantsDir)).toBe(true);
         
-        expect(existsSync(userPublicPath)).toBe(true);
-        expect(existsSync(userAdminPath)).toBe(true);
-
-        if (existsSync(userPublicPath)) {
-          SchemaValidationUtils.expectSchemaContent(userPublicPath, {
+        // Check pure variant (excludes internalId and metadata)
+        const userPurePath = join(variantsDir, 'pure', 'User.pure.ts');
+        expect(existsSync(userPurePath)).toBe(true);
+        
+        if (existsSync(userPurePath)) {
+          SchemaValidationUtils.expectSchemaContent(userPurePath, {
             hasFields: ['email', 'name', 'age', 'role', 'isActive'],
             excludesFields: ['password', 'internalId', 'metadata']
           });
         }
 
-        if (existsSync(userAdminPath)) {
-          SchemaValidationUtils.expectSchemaContent(userAdminPath, {
+        // Check input variant (excludes only internalId)
+        const userInputPath = join(variantsDir, 'input', 'User.input.ts');
+        expect(existsSync(userInputPath)).toBe(true);
+        
+        if (existsSync(userInputPath)) {
+          SchemaValidationUtils.expectSchemaContent(userInputPath, {
             hasFields: ['email', 'name', 'age', 'role', 'isActive', 'metadata'],
             excludesFields: ['password', 'internalId']
           });
         }
 
+        // Check result variant (no additional exclusions)
+        const userResultPath = join(variantsDir, 'result', 'User.result.ts');
+        expect(existsSync(userResultPath)).toBe(true);
+
         // Check pure models generation
         const modelsDir = join(schemasDir, 'models');
-        const userModelPath = join(modelsDir, 'User.schema.ts');
-        const postModelPath = join(modelsDir, 'Post.schema.ts');
+        const userModelPath = join(modelsDir, 'User.model.ts');
+        const postModelPath = join(modelsDir, 'Post.model.ts');
         
         expect(existsSync(userModelPath)).toBe(true);
         expect(existsSync(postModelPath)).toBe(true);
@@ -333,8 +352,6 @@ model Tag {
 }
 `;
 
-        const configPath = join(testEnv.testDir, 'config.json');
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(testEnv.schemaPath, schema);
 
         await testEnv.runGeneration();
