@@ -36,7 +36,6 @@ model Post {
   bytes     Bytes
 }
 
-/// @@Gen.model(hide: true)
 model Book {
   id       Int    @unique
   title    String

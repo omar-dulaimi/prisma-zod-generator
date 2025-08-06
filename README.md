@@ -222,7 +222,6 @@ generator zod {
 {
   "compilerOptions": {
     "strict": true,
-    "exactOptionalPropertyTypes": true
   }
 }
 ```
@@ -600,7 +599,6 @@ Examples:
 **TypeScript errors in generated schemas**
 - Make sure all dependencies are installed and up to date
 - Ensure `strict: true` is enabled in `tsconfig.json`
-- Verify exactOptionalPropertyTypes is enabled
 
 **Generated schemas not updating**
 - Run `npx prisma generate` after modifying your schema

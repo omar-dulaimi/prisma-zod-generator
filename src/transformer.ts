@@ -144,7 +144,7 @@ export default class Transformer {
 
         return value.trim();
       });
-    
+
     return zodObjectSchemaFields;
   }
 
@@ -226,11 +226,11 @@ export default class Transformer {
     // This happens when inputsLength === 1 for all alternatives
     // We check if alternatives start with the field name pattern (spaces + fieldname + colon)
     const fieldNamePattern = `  ${field.name}:`;
-    const allAlternativesHaveFieldName = alternatives.every((alt) => alt.startsWith(fieldNamePattern));
-    
-    const fieldName = allAlternativesHaveFieldName
-      ? ''
-      : fieldNamePattern;
+    const allAlternativesHaveFieldName = alternatives.every((alt) =>
+      alt.startsWith(fieldNamePattern),
+    );
+
+    const fieldName = allAlternativesHaveFieldName ? '' : fieldNamePattern;
 
     const opt = !field.isRequired ? '.optional()' : '';
 
@@ -306,8 +306,8 @@ export default class Transformer {
 
     if (needsLazyLoading) {
       return inputsLength === 1
-        ? `  ${field.name}: z.lazy((): z.ZodTypeAny => ${schema})${arr}${opt}`
-        : `z.lazy((): z.ZodTypeAny => ${schema})${arr}${opt}`;
+        ? `  ${field.name}: z.lazy(() => ${schema})${arr}${opt}`
+        : `z.lazy(() => ${schema})${arr}${opt}`;
     } else {
       return inputsLength === 1
         ? `  ${field.name}: ${schema}${arr}${opt}`
@@ -369,7 +369,7 @@ export default class Transformer {
     if (this.hasJson) {
       jsonSchemaImplementation += `\n`;
       jsonSchemaImplementation += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
-      jsonSchemaImplementation += `const jsonSchema = z.lazy((): z.ZodTypeAny =>\n`;
+      jsonSchemaImplementation += `const jsonSchema = z.lazy(() =>\n`;
       jsonSchemaImplementation += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])\n`;
       jsonSchemaImplementation += `);\n\n`;
     }
@@ -511,14 +511,23 @@ export default class Transformer {
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
         ];
+
+        // Use composition approach: separate base and relation schemas
+        const baseSchemaFields = `${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional()`;
+        const relationSchemaFields =
+          `${selectZodSchemaLineLazy} ${includeZodSchemaLineLazy}`.trim();
+
+        const baseSchema = `const ${modelName}FindFirstBaseSchema = z.object({ ${baseSchemaFields} });`;
+        const relationSchema = relationSchemaFields
+          ? `const ${modelName}FindFirstRelationSchema = z.object({ ${relationSchemaFields} });`
+          : '';
+        const composedSchema = relationSchemaFields
+          ? `export const ${modelName}FindFirstSchema = ${modelName}FindFirstBaseSchema.merge(${modelName}FindFirstRelationSchema);`
+          : `export const ${modelName}FindFirstSchema = ${modelName}FindFirstBaseSchema;`;
+
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${findFirst}.schema.ts`),
-          `${this.generateImportStatements(
-            imports,
-          )}${this.generateExportSchemaStatement(
-            `${modelName}FindFirst`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional() })`,
-          )}`,
+          `${this.generateImportStatements(imports)}${baseSchema}\n\n${relationSchema}${relationSchema ? '\n\n' : ''}${composedSchema}`,
         );
       }
 
@@ -531,14 +540,23 @@ export default class Transformer {
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
         ];
+
+        // Use composition approach: separate base and relation schemas
+        const baseSchemaFields = `${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional()`;
+        const relationSchemaFields =
+          `${selectZodSchemaLineLazy} ${includeZodSchemaLineLazy}`.trim();
+
+        const baseSchema = `const ${modelName}FindManyBaseSchema = z.object({ ${baseSchemaFields} });`;
+        const relationSchema = relationSchemaFields
+          ? `const ${modelName}FindManyRelationSchema = z.object({ ${relationSchemaFields} });`
+          : '';
+        const composedSchema = relationSchemaFields
+          ? `export const ${modelName}FindManySchema = ${modelName}FindManyBaseSchema.merge(${modelName}FindManyRelationSchema);`
+          : `export const ${modelName}FindManySchema = ${modelName}FindManyBaseSchema;`;
+
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${findMany}.schema.ts`),
-          `${this.generateImportStatements(
-            imports,
-          )}${this.generateExportSchemaStatement(
-            `${modelName}FindMany`,
-            `z.object({ ${selectZodSchemaLineLazy} ${includeZodSchemaLineLazy} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional()  })`,
-          )}`,
+          `${this.generateImportStatements(imports)}${baseSchema}\n\n${relationSchema}${relationSchema ? '\n\n' : ''}${composedSchema}`,
         );
       }
 
@@ -779,13 +797,13 @@ export default class Transformer {
     if (Transformer.isGenerateSelect) {
       const zodSelectObjectSchema = `${modelName}SelectObjectSchema.optional()`;
       selectZodSchemaLine = `select: ${zodSelectObjectSchema},`;
-      selectZodSchemaLineLazy = `select: z.lazy((): z.ZodTypeAny => ${zodSelectObjectSchema}),`;
+      selectZodSchemaLineLazy = `select: z.lazy(() => ${zodSelectObjectSchema}),`;
     }
 
     if (Transformer.isGenerateInclude && hasRelationToAnotherModel) {
       const zodIncludeObjectSchema = `${modelName}IncludeObjectSchema.optional()`;
       includeZodSchemaLine = `include: ${zodIncludeObjectSchema},`;
-      includeZodSchemaLineLazy = `include: z.lazy((): z.ZodTypeAny => ${zodIncludeObjectSchema}),`;
+      includeZodSchemaLineLazy = `include: z.lazy(() => ${zodIncludeObjectSchema}),`;
     }
 
     return {
