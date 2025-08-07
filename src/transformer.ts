@@ -513,9 +513,9 @@ export default class Transformer {
         ];
 
         // Generate single operation schema with selective inlining (community generator approach)
-        // Use direct reference to existing Select schema to avoid complexity
-        const selectField = selectZodSchemaLineLazy;
-        const includeField = includeZodSchemaLineLazy;
+        // Inline simple scalar select fields, use lazy loading for complex relations
+        const selectField = this.shouldInlineSelectSchema(model) ? selectZodSchemaLine : selectZodSchemaLineLazy;
+        const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading for relations
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
@@ -540,9 +540,9 @@ export default class Transformer {
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
         ];
 
-        // Use direct reference to existing Select schema to avoid complexity  
-        const selectField = selectZodSchemaLineLazy;
-        const includeField = includeZodSchemaLineLazy;
+        // Use selective inlining for select, lazy loading for include
+        const selectField = this.shouldInlineSelectSchema(model) ? selectZodSchemaLine : selectZodSchemaLineLazy;
+        const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading for relations
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
@@ -830,5 +830,16 @@ export default class Transformer {
     const orderByZodSchemaLine = `orderBy: z.union([${modelOrderBy}ObjectSchema, ${modelOrderBy}ObjectSchema.array()]).optional(),`;
 
     return { orderByImport, orderByZodSchemaLine };
+  }
+
+  /**
+   * Determines if a select schema should be inlined to avoid circular dependencies.
+   * Inlines when the model has only scalar fields in its select schema.
+   */
+  shouldInlineSelectSchema(model: PrismaDMMF.Model): boolean {
+    // For now, use a simple heuristic: only inline if the model has minimal relations
+    // This avoids the complex circular references we see in UserSelect -> PostFindMany -> PostSelect -> UserArgs
+    const relationCount = model.fields.filter(field => field.relationName).length;
+    return relationCount === 0; // Only inline models with no relations for safety
   }
 }
