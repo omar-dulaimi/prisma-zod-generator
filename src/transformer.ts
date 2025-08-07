@@ -505,28 +505,31 @@ export default class Transformer {
       if (findFirst) {
         const shouldInline = this.shouldInlineSelectSchema(model);
         
-        // Conditional imports based on inlining decision
-        const imports = [
-          !shouldInline ? selectImport : '', // Skip select import if inlining
-          includeImport,
+        // Build imports based on aggressive inlining strategy
+        const baseImports = [
+          includeImport, // Include always external
           orderByImport,
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
-        ].filter(imp => imp); // Remove empty imports
+        ];
+        
+        // Add select import only if NOT inlining, add inline imports if inlining
+        const imports = shouldInline 
+          ? [...baseImports, ...this.generateInlineSelectImports(model)]
+          : [...baseImports, selectImport];
 
-        // Generate single operation schema with selective inlining (community generator approach)
-        // Inline simple scalar select fields, use lazy loading for complex relations
+        // Community generator aggressive inlining: always inline select, lazy load include
         const selectField = shouldInline 
           ? `select: ${modelName}SelectSchema.optional(),` 
           : selectZodSchemaLineLazy;
-        const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading for relations
+        const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
         let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
 
-        // Add inline select schema definition if needed
+        // Add inline select schema definition (community generator pattern)
         if (shouldInline) {
           schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateInlineSelectSchema(model)}\n\n`;
         }
@@ -543,27 +546,31 @@ export default class Transformer {
       if (findMany) {
         const shouldInline = this.shouldInlineSelectSchema(model);
         
-        // Conditional imports based on inlining decision
-        const imports = [
-          !shouldInline ? selectImport : '', // Skip select import if inlining
-          includeImport,
+        // Build imports based on aggressive inlining strategy
+        const baseImports = [
+          includeImport, // Include always external
           orderByImport,
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
-        ].filter(imp => imp); // Remove empty imports
+        ];
+        
+        // Add select import only if NOT inlining, add inline imports if inlining
+        const imports = shouldInline 
+          ? [...baseImports, ...this.generateInlineSelectImports(model)]
+          : [...baseImports, selectImport];
 
-        // Use selective inlining for select, lazy loading for include
+        // Community generator aggressive inlining: always inline select, lazy load include
         const selectField = shouldInline 
           ? `select: ${modelName}SelectSchema.optional(),` 
           : selectZodSchemaLineLazy;
-        const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading for relations
+        const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
         let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
 
-        // Add inline select schema definition if needed
+        // Add inline select schema definition (community generator pattern)
         if (shouldInline) {
           schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateInlineSelectSchema(model)}\n\n`;
         }
@@ -854,18 +861,20 @@ export default class Transformer {
 
   /**
    * Determines if a select schema should be inlined to avoid circular dependencies.
-   * Inlines when the model has only scalar fields in its select schema.
+   * Following community generator approach: ALWAYS inline select schemas.
+   * Use lazy loading only for specific relation fields within the inlined schema.
    */
-  shouldInlineSelectSchema(model: PrismaDMMF.Model): boolean {
-    // For now, use a simple heuristic: only inline if the model has minimal relations
-    // This avoids the complex circular references we see in UserSelect -> PostFindMany -> PostSelect -> UserArgs
-    const relationCount = model.fields.filter(field => field.relationName).length;
-    return relationCount === 0; // Only inline models with no relations for safety
+  shouldInlineSelectSchema(_model: PrismaDMMF.Model): boolean {
+    // Community generator approach: Always inline select schemas
+    // This prevents circular imports by keeping select definitions local
+    // Use z.lazy() only for relation fields within the inlined schema
+    return true; // Always inline - aggressive inlining like community generator
   }
 
   /**
    * Generates inline select schema definition code within the FindMany file.
    * This prevents circular imports by defining the schema locally.
+   * Follows community generator pattern with aggressive inlining.
    */
   generateInlineSelectSchema(model: PrismaDMMF.Model): string {
     const { name: modelName, fields } = model;
@@ -874,26 +883,51 @@ export default class Transformer {
     const selectFields: string[] = [];
     
     for (const field of fields) {
-      const { name: fieldName, relationName, isList, type } = field;
+      const { name: fieldName, relationName, type } = field;
       
       if (relationName) {
-        // Relation field: allow boolean OR lazy-loaded args
-        const argsType = isList ? `${type}FindManyArgs` : `${type}Args`;
-        selectFields.push(`  ${fieldName}: z.union([z.boolean(),z.lazy(() => ${argsType}Schema)]).optional()`);
+        // Relation field: boolean OR lazy-loaded args schema (community generator pattern)
+        // Use ArgsObjectSchema for related model (both single and array relations)
+        const argsSchema = `${type}ArgsObjectSchema`;
+        selectFields.push(`  ${fieldName}: z.union([z.boolean(),z.lazy(() => ${argsSchema})]).optional()`);
       } else {
         // Scalar field: just boolean
         selectFields.push(`  ${fieldName}: z.boolean().optional()`);
       }
     }
     
-    // Add _count field if model has relations
-    const hasRelations = fields.some(field => field.relationName);
-    if (hasRelations) {
+    // Add _count field if model has array relations (for aggregation support)
+    const hasArrayRelations = fields.some(field => field.relationName && field.isList);
+    if (hasArrayRelations) {
       selectFields.push(`  _count: z.union([z.boolean(),z.lazy(() => ${modelName}CountOutputTypeArgsObjectSchema)]).optional()`);
     }
     
     return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select> = z.object({
 ${selectFields.join(',\n')}
 }).strict()`;
+  }
+
+  /**
+   * Generates the additional imports needed for inlined select schemas.
+   * Returns import statements for Args schemas referenced in relation fields.
+   */
+  generateInlineSelectImports(model: PrismaDMMF.Model): string[] {
+    const imports: string[] = [];
+    
+    for (const field of model.fields) {
+      if (field.relationName) {
+        const argsSchema = `${field.type}ArgsObjectSchema`;
+        imports.push(`import { ${argsSchema} } from './objects/${field.type}Args.schema'`);
+      }
+    }
+    
+    // Add _count import if model has array relations (only these get count output types)
+    const hasArrayRelations = model.fields.some(field => field.relationName && field.isList);
+    if (hasArrayRelations) {
+      imports.push(`import { ${model.name}CountOutputTypeArgsObjectSchema } from './objects/${model.name}CountOutputTypeArgs.schema'`);
+    }
+    
+    // Remove duplicates
+    return [...new Set(imports)];
   }
 }
