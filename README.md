@@ -376,6 +376,75 @@ This breakthrough solves what other generators describe as an **unsolvable trade
 
 **You get BOTH worlds - no compromises!** 🎉
 
+### 🎓 **How to Choose Your Configuration**
+
+The dual export system gives you complete control. Here are common configurations and when to use them:
+
+#### 📋 **Configuration Scenarios**
+
+**🔒 Type-Safe Only** (Perfect Prisma Integration):
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = true     # Keep type-safe versions
+  exportZodSchemas   = false    # Skip method-friendly versions
+}
+```
+**Best for:** API validation, runtime type checking, perfect Prisma integration
+**You get:** `PostFindManySchema: z.ZodType<Prisma.PostFindManyArgs>`
+
+**🔧 Method-Friendly Only** (Full Zod Capabilities):
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"  
+  exportTypedSchemas = false    # Skip type-safe versions
+  exportZodSchemas   = true     # Keep method-friendly versions
+}
+```
+**Best for:** Schema composition, form validation, custom transformations
+**You get:** `PostFindManyZodSchema` (supports `.extend()`, `.omit()`, `.merge()`)
+
+**🎯 Both Versions** (Maximum Flexibility):
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = true     # Include type-safe versions  
+  exportZodSchemas   = true     # Include method-friendly versions
+}
+```
+**Best for:** Teams with mixed use cases, gradual migration, maximum flexibility
+**You get:** Both `PostFindManySchema` AND `PostFindManyZodSchema`
+
+**🎨 Custom Naming** (Your Preferred Style):
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = true
+  exportZodSchemas   = true
+  typedSchemaSuffix  = "Args"      # PostFindManyArgs
+  zodSchemaSuffix    = "Validator" # PostFindManyValidator
+}
+```
+
+#### 🚀 **Quick Migration Guide**
+
+**From Other Generators:**
+1. Start with `exportTypedSchemas = true, exportZodSchemas = false`
+2. Test your existing API validation code - should work perfectly
+3. Optionally enable `exportZodSchemas = true` for new schema composition needs
+
+**New Projects:**
+- Use **Type-Safe Only** for API endpoints and data validation
+- Use **Both Versions** if you need schema composition AND perfect typing
+- Use **Method-Friendly Only** for form validation and schema transformations
+
+#### 💡 **Pro Tips**
+
+- **Smaller bundles**: Use single export mode (`exportZodSchemas = false` OR `exportTypedSchemas = false`)
+- **Team consistency**: Choose one naming convention and stick with it
+- **Gradual adoption**: Start with type-safe schemas, add method-friendly as needed
+- **IDE performance**: Fewer exports = faster IntelliSense in large projects
+
 ## ⚙️ Configuration Options
 
 | Option | Description | Type | Default |
