@@ -187,7 +187,7 @@ export default class Transformer {
       } else if (inputType.type === 'Bytes') {
         result.push(
           this.wrapWithZodValidators(
-            'z.instanceof(Uint8Array)',
+            'z.instanceof(Buffer)',
             field,
             inputType,
           ),
@@ -512,22 +512,21 @@ export default class Transformer {
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
         ];
 
-        // Use composition approach: separate base and relation schemas
-        const baseSchemaFields = `${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional()`;
-        const relationSchemaFields =
-          `${selectZodSchemaLineLazy} ${includeZodSchemaLineLazy}`.trim();
+        // Generate single operation schema with selective inlining (community generator approach)
+        // Use direct reference to existing Select schema to avoid complexity
+        const selectField = selectZodSchemaLineLazy;
+        const includeField = includeZodSchemaLineLazy;
+        const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
-        const baseSchema = `const ${modelName}FindFirstBaseSchema = z.object({ ${baseSchemaFields} });`;
-        const relationSchema = relationSchemaFields
-          ? `const ${modelName}FindFirstRelationSchema = z.object({ ${relationSchemaFields} });`
-          : '';
-        const composedSchema = relationSchemaFields
-          ? `export const ${modelName}FindFirstSchema = ${modelName}FindFirstBaseSchema.merge(${modelName}FindFirstRelationSchema);`
-          : `export const ${modelName}FindFirstSchema = ${modelName}FindFirstBaseSchema;`;
+        // Add Prisma type import for explicit type binding
+        let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
+
+        const explicitType = `: z.ZodType<Prisma.${modelName}FindFirstArgs>`;
+        const schemaDefinition = `export const ${modelName}FindFirstSchema${explicitType} = z.object({ ${schemaFields} }).strict();`;
 
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${findFirst}.schema.ts`),
-          `${this.generateImportStatements(imports)}${baseSchema}\n\n${relationSchema}${relationSchema ? '\n\n' : ''}${composedSchema}`,
+          schemaContent + schemaDefinition,
         );
       }
 
@@ -541,22 +540,20 @@ export default class Transformer {
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
         ];
 
-        // Use composition approach: separate base and relation schemas
-        const baseSchemaFields = `${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.array(${modelName}ScalarFieldEnumSchema).optional()`;
-        const relationSchemaFields =
-          `${selectZodSchemaLineLazy} ${includeZodSchemaLineLazy}`.trim();
+        // Use direct reference to existing Select schema to avoid complexity  
+        const selectField = selectZodSchemaLineLazy;
+        const includeField = includeZodSchemaLineLazy;
+        const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
-        const baseSchema = `const ${modelName}FindManyBaseSchema = z.object({ ${baseSchemaFields} });`;
-        const relationSchema = relationSchemaFields
-          ? `const ${modelName}FindManyRelationSchema = z.object({ ${relationSchemaFields} });`
-          : '';
-        const composedSchema = relationSchemaFields
-          ? `export const ${modelName}FindManySchema = ${modelName}FindManyBaseSchema.merge(${modelName}FindManyRelationSchema);`
-          : `export const ${modelName}FindManySchema = ${modelName}FindManyBaseSchema;`;
+        // Add Prisma type import for explicit type binding
+        let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
+
+        const explicitType = `: z.ZodType<Prisma.${modelName}FindManyArgs>`;
+        const schemaDefinition = `export const ${modelName}FindManySchema${explicitType} = z.object({ ${schemaFields} }).strict();`;
 
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${findMany}.schema.ts`),
-          `${this.generateImportStatements(imports)}${baseSchema}\n\n${relationSchema}${relationSchema ? '\n\n' : ''}${composedSchema}`,
+          schemaContent + schemaDefinition,
         );
       }
 
