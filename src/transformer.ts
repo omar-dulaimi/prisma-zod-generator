@@ -33,6 +33,12 @@ export default class Transformer {
   private static prismaClientConfig: Record<string, any> = {};
   private static isGenerateSelect: boolean = false;
   private static isGenerateInclude: boolean = false;
+  
+  // Dual schema export configuration
+  private static exportTypedSchemas: boolean = true;      // Export z.ZodType<Prisma.Type> versions (type-safe)
+  private static exportZodSchemas: boolean = true;        // Export pure Zod versions (method-friendly)
+  private static typedSchemaSuffix: string = 'Schema';    // Suffix for typed schemas (PostFindManySchema)
+  private static zodSchemaSuffix: string = 'ZodSchema';   // Suffix for Zod schemas (PostFindManyZodSchema)
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
@@ -53,6 +59,22 @@ export default class Transformer {
 
   static setIsGenerateInclude(isGenerateInclude: boolean) {
     this.isGenerateInclude = isGenerateInclude;
+  }
+
+  static setExportTypedSchemas(exportTypedSchemas: boolean) {
+    this.exportTypedSchemas = exportTypedSchemas;
+  }
+
+  static setExportZodSchemas(exportZodSchemas: boolean) {
+    this.exportZodSchemas = exportZodSchemas;
+  }
+
+  static setTypedSchemaSuffix(suffix: string) {
+    this.typedSchemaSuffix = suffix;
+  }
+
+  static setZodSchemaSuffix(suffix: string) {
+    this.zodSchemaSuffix = suffix;
   }
 
   static getOutputPath() {
@@ -519,27 +541,37 @@ export default class Transformer {
           ? [...baseImports, ...this.generateInlineSelectImports(model)]
           : [...baseImports, selectImport];
 
-        // Community generator aggressive inlining: always inline select, lazy load include
-        const selectField = shouldInline 
-          ? `select: ${modelName}SelectSchema.optional(),` 
-          : selectZodSchemaLineLazy;
+        // Determine select field reference based on dual export strategy
+        const selectFieldReference = shouldInline 
+          ? (Transformer.exportTypedSchemas 
+              ? `${modelName}Select${Transformer.typedSchemaSuffix}.optional()`
+              : `${modelName}Select${Transformer.zodSchemaSuffix}.optional()`)
+          : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
+        
+        const selectField = `select: ${selectFieldReference},`;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
         let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
 
-        // Add inline select schema definition (community generator pattern)
+        // Add inline select schema definitions (dual export pattern)
         if (shouldInline) {
-          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateInlineSelectSchema(model)}\n\n`;
+          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model)}\n\n`;
         }
 
-        const explicitType = `: z.ZodType<Prisma.${modelName}FindFirstArgs>`;
-        const schemaDefinition = `export const ${modelName}FindFirstSchema${explicitType} = z.object({ ${schemaFields} }).strict();`;
+        // Generate dual schema exports for FindFirst operation
+        const schemaObjectDefinition = `z.object({ ${schemaFields } }).strict()`;
+        const dualExports = this.generateDualSchemaExports(
+          modelName, 
+          'FindFirst', 
+          schemaObjectDefinition,
+          `Prisma.${modelName}FindFirstArgs`
+        );
 
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${findFirst}.schema.ts`),
-          schemaContent + schemaDefinition,
+          schemaContent + dualExports,
         );
       }
 
@@ -560,27 +592,37 @@ export default class Transformer {
           ? [...baseImports, ...this.generateInlineSelectImports(model)]
           : [...baseImports, selectImport];
 
-        // Community generator aggressive inlining: always inline select, lazy load include
-        const selectField = shouldInline 
-          ? `select: ${modelName}SelectSchema.optional(),` 
-          : selectZodSchemaLineLazy;
+        // Determine select field reference based on dual export strategy
+        const selectFieldReference = shouldInline 
+          ? (Transformer.exportTypedSchemas 
+              ? `${modelName}Select${Transformer.typedSchemaSuffix}.optional()`
+              : `${modelName}Select${Transformer.zodSchemaSuffix}.optional()`)
+          : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
+        
+        const selectField = `select: ${selectFieldReference},`;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
         let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
 
-        // Add inline select schema definition (community generator pattern)
+        // Add inline select schema definitions (dual export pattern)
         if (shouldInline) {
-          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateInlineSelectSchema(model)}\n\n`;
+          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model)}\n\n`;
         }
 
-        const explicitType = `: z.ZodType<Prisma.${modelName}FindManyArgs>`;
-        const schemaDefinition = `export const ${modelName}FindManySchema${explicitType} = z.object({ ${schemaFields} }).strict();`;
+        // Generate dual schema exports for FindMany operation
+        const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
+        const dualExports = this.generateDualSchemaExports(
+          modelName, 
+          'FindMany', 
+          schemaObjectDefinition,
+          `Prisma.${modelName}FindManyArgs`
+        );
 
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${findMany}.schema.ts`),
-          schemaContent + schemaDefinition,
+          schemaContent + dualExports,
         );
       }
 
@@ -929,5 +971,88 @@ ${selectFields.join(',\n')}
     
     // Remove duplicates
     return [...new Set(imports)];
+  }
+
+  /**
+   * Generates dual schema exports: typed version and Zod-method-friendly version
+   */
+  generateDualSchemaExports(
+    modelName: string, 
+    operationType: string, 
+    schemaDefinition: string,
+    prismaType: string
+  ): string {
+    const exports: string[] = [];
+
+    // Generate typed schema (perfect inference, no methods)
+    if (Transformer.exportTypedSchemas) {
+      const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
+      exports.push(`export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition};`);
+    }
+
+    // Generate Zod schema (methods available, loose inference) 
+    if (Transformer.exportZodSchemas) {
+      const zodName = `${modelName}${operationType}${Transformer.zodSchemaSuffix}`;
+      exports.push(`export const ${zodName} = ${schemaDefinition};`);
+    }
+
+    return exports.join('\n\n');
+  }
+
+  /**
+   * Generates dual select schema exports for inlined schemas
+   */
+  generateDualSelectSchemaExports(model: PrismaDMMF.Model): string {
+    const modelName = model.name;
+    const schemaDefinition = this.generateInlineSelectSchemaDefinition(model);
+    const exports: string[] = [];
+
+    // Generate typed select schema
+    if (Transformer.exportTypedSchemas) {
+      const typedName = `${modelName}Select${Transformer.typedSchemaSuffix}`;
+      exports.push(`export const ${typedName}: z.ZodType<Prisma.${modelName}Select> = ${schemaDefinition};`);
+    }
+
+    // Generate Zod select schema  
+    if (Transformer.exportZodSchemas) {
+      const zodName = `${modelName}Select${Transformer.zodSchemaSuffix}`;
+      exports.push(`export const ${zodName} = ${schemaDefinition};`);
+    }
+
+    return exports.join('\n\n');
+  }
+
+  /**
+   * Generates just the schema definition without export statement
+   */
+  generateInlineSelectSchemaDefinition(model: PrismaDMMF.Model): string {
+    const { name: modelName, fields } = model;
+    
+    // Generate field definitions for the select schema
+    const selectFields: string[] = [];
+    
+    for (const field of fields) {
+      const { name: fieldName, relationName, type } = field;
+      
+      if (relationName) {
+        // Relation field: boolean OR lazy-loaded args schema (community generator pattern)
+        // Use ArgsObjectSchema for related model (both single and array relations)
+        const argsSchema = `${type}ArgsObjectSchema`;
+        selectFields.push(`    ${fieldName}: z.union([z.boolean(),z.lazy(() => ${argsSchema})]).optional()`);
+      } else {
+        // Scalar field: just boolean
+        selectFields.push(`    ${fieldName}: z.boolean().optional()`);
+      }
+    }
+    
+    // Add _count field if model has array relations (for aggregation support)
+    const hasArrayRelations = fields.some(field => field.relationName && field.isList);
+    if (hasArrayRelations) {
+      selectFields.push(`    _count: z.union([z.boolean(),z.lazy(() => ${modelName}CountOutputTypeArgsObjectSchema)]).optional()`);
+    }
+    
+    return `z.object({
+${selectFields.join(',\n')}
+  }).strict()`;
   }
 }
