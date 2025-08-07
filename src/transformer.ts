@@ -69,13 +69,14 @@ export default class Transformer {
     this.exportZodSchemas = exportZodSchemas;
   }
 
-  static setTypedSchemaSuffix(suffix: string) {
-    this.typedSchemaSuffix = suffix;
+  static setTypedSchemaSuffix(typedSchemaSuffix: string) {
+    this.typedSchemaSuffix = typedSchemaSuffix;
   }
 
-  static setZodSchemaSuffix(suffix: string) {
-    this.zodSchemaSuffix = suffix;
+  static setZodSchemaSuffix(zodSchemaSuffix: string) {
+    this.zodSchemaSuffix = zodSchemaSuffix;
   }
+
 
   static getOutputPath() {
     return this.outputPath;

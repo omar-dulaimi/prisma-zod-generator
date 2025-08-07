@@ -109,6 +109,14 @@ export async function generate(options: GeneratorOptions) {
       mutableInputObjectTypes,
     );
 
+    // Set dual export configuration options on Transformer
+    Transformer.setIsGenerateSelect(addMissingInputObjectTypeOptions.isGenerateSelect);
+    Transformer.setIsGenerateInclude(addMissingInputObjectTypeOptions.isGenerateInclude);
+    Transformer.setExportTypedSchemas(addMissingInputObjectTypeOptions.exportTypedSchemas);
+    Transformer.setExportZodSchemas(addMissingInputObjectTypeOptions.exportZodSchemas);
+    Transformer.setTypedSchemaSuffix(addMissingInputObjectTypeOptions.typedSchemaSuffix);
+    Transformer.setZodSchemaSuffix(addMissingInputObjectTypeOptions.zodSchemaSuffix);
+
     hideInputObjectTypesAndRelatedFields(
       mutableInputObjectTypes,
       hiddenModels,
