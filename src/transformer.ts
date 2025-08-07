@@ -503,23 +503,33 @@ export default class Transformer {
       }
 
       if (findFirst) {
+        const shouldInline = this.shouldInlineSelectSchema(model);
+        
+        // Conditional imports based on inlining decision
         const imports = [
-          selectImport,
+          !shouldInline ? selectImport : '', // Skip select import if inlining
           includeImport,
           orderByImport,
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
-        ];
+        ].filter(imp => imp); // Remove empty imports
 
         // Generate single operation schema with selective inlining (community generator approach)
         // Inline simple scalar select fields, use lazy loading for complex relations
-        const selectField = this.shouldInlineSelectSchema(model) ? selectZodSchemaLine : selectZodSchemaLineLazy;
+        const selectField = shouldInline 
+          ? `select: ${modelName}SelectSchema.optional(),` 
+          : selectZodSchemaLineLazy;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading for relations
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
         let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
+
+        // Add inline select schema definition if needed
+        if (shouldInline) {
+          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateInlineSelectSchema(model)}\n\n`;
+        }
 
         const explicitType = `: z.ZodType<Prisma.${modelName}FindFirstArgs>`;
         const schemaDefinition = `export const ${modelName}FindFirstSchema${explicitType} = z.object({ ${schemaFields} }).strict();`;
@@ -531,22 +541,32 @@ export default class Transformer {
       }
 
       if (findMany) {
+        const shouldInline = this.shouldInlineSelectSchema(model);
+        
+        // Conditional imports based on inlining decision
         const imports = [
-          selectImport,
+          !shouldInline ? selectImport : '', // Skip select import if inlining
           includeImport,
           orderByImport,
           `import { ${modelName}WhereInputObjectSchema } from './objects/${modelName}WhereInput.schema'`,
           `import { ${modelName}WhereUniqueInputObjectSchema } from './objects/${modelName}WhereUniqueInput.schema'`,
           `import { ${modelName}ScalarFieldEnumSchema } from './enums/${modelName}ScalarFieldEnum.schema'`,
-        ];
+        ].filter(imp => imp); // Remove empty imports
 
         // Use selective inlining for select, lazy loading for include
-        const selectField = this.shouldInlineSelectSchema(model) ? selectZodSchemaLine : selectZodSchemaLineLazy;
+        const selectField = shouldInline 
+          ? `select: ${modelName}SelectSchema.optional(),` 
+          : selectZodSchemaLineLazy;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading for relations
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
         let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
+
+        // Add inline select schema definition if needed
+        if (shouldInline) {
+          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateInlineSelectSchema(model)}\n\n`;
+        }
 
         const explicitType = `: z.ZodType<Prisma.${modelName}FindManyArgs>`;
         const schemaDefinition = `export const ${modelName}FindManySchema${explicitType} = z.object({ ${schemaFields} }).strict();`;
@@ -841,5 +861,39 @@ export default class Transformer {
     // This avoids the complex circular references we see in UserSelect -> PostFindMany -> PostSelect -> UserArgs
     const relationCount = model.fields.filter(field => field.relationName).length;
     return relationCount === 0; // Only inline models with no relations for safety
+  }
+
+  /**
+   * Generates inline select schema definition code within the FindMany file.
+   * This prevents circular imports by defining the schema locally.
+   */
+  generateInlineSelectSchema(model: PrismaDMMF.Model): string {
+    const { name: modelName, fields } = model;
+    
+    // Generate field definitions for the select schema
+    const selectFields: string[] = [];
+    
+    for (const field of fields) {
+      const { name: fieldName, relationName, isList, type } = field;
+      
+      if (relationName) {
+        // Relation field: allow boolean OR lazy-loaded args
+        const argsType = isList ? `${type}FindManyArgs` : `${type}Args`;
+        selectFields.push(`  ${fieldName}: z.union([z.boolean(),z.lazy(() => ${argsType}Schema)]).optional()`);
+      } else {
+        // Scalar field: just boolean
+        selectFields.push(`  ${fieldName}: z.boolean().optional()`);
+      }
+    }
+    
+    // Add _count field if model has relations
+    const hasRelations = fields.some(field => field.relationName);
+    if (hasRelations) {
+      selectFields.push(`  _count: z.union([z.boolean(),z.lazy(() => ${modelName}CountOutputTypeArgsObjectSchema)]).optional()`);
+    }
+    
+    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select> = z.object({
+${selectFields.join(',\n')}
+}).strict()`;
   }
 }
