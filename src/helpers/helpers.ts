@@ -10,6 +10,10 @@ import { changeOptionalToRequiredFields } from './whereUniqueInput-helpers';
 interface AddMissingInputObjectTypeOptions {
   isGenerateSelect: boolean;
   isGenerateInclude: boolean;
+  exportTypedSchemas: boolean;
+  exportZodSchemas: boolean;
+  typedSchemaSuffix: string;
+  zodSchemaSuffix: string;
 }
 
 export function addMissingInputObjectTypes(
@@ -86,5 +90,9 @@ export function resolveAddMissingInputObjectTypeOptions(
   return {
     isGenerateSelect: generatorConfigOptions.isGenerateSelect === 'true',
     isGenerateInclude: generatorConfigOptions.isGenerateInclude === 'true',
+    exportTypedSchemas: generatorConfigOptions.exportTypedSchemas === undefined ? true : generatorConfigOptions.exportTypedSchemas === 'true', // default true
+    exportZodSchemas: generatorConfigOptions.exportZodSchemas === undefined ? true : generatorConfigOptions.exportZodSchemas === 'true',     // default true
+    typedSchemaSuffix: generatorConfigOptions.typedSchemaSuffix || 'Schema',   // default 'Schema'
+    zodSchemaSuffix: generatorConfigOptions.zodSchemaSuffix || 'ZodSchema',    // default 'ZodSchema'
   };
 }

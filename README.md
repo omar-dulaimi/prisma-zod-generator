@@ -51,33 +51,6 @@
   
 </div>
 
-<div align="center">
-  
-  ## 🚀 **Latest Stable Release** - Now with Schema Compilation Fixes!
-  
-  <table>
-    <tr>
-      <td align="center">
-        <img src="https://img.shields.io/badge/🎉_STABLE_RELEASE-green?style=for-the-badge&logo=checkmark" alt="Stable Release">
-      </td>
-    </tr>
-    <tr>
-      <td align="center">
-        <strong>🎉 Production Ready with New Prisma Client Generator Support!</strong>
-      </td>
-    </tr>
-  </table>
-  
-</div>
-
-### ✨ **Latest Features**
-
-🐛 **Schema Compilation Fixes** - Resolved critical schema compilation errors:
-- **SortOrderInput schemas** now use direct enum references instead of unnecessary lazy loading
-- **Args schemas** (UserArgs, ProfileArgs, etc.) no longer cause TypeScript compilation errors  
-- **All generated schemas** now compile cleanly without type constraint issues
-
-🔧 **Test Infrastructure** - Enhanced test reliability with improved CI/CD pipeline
 
 ### ✨ **Core Features**
 
@@ -209,10 +182,14 @@ pnpm add prisma-zod-generator
 
 ```prisma
 generator zod {
-  provider          = "prisma-zod-generator"
-  output            = "./generated/schemas"
-  isGenerateSelect  = true
-  isGenerateInclude = true
+  provider           = "prisma-zod-generator"
+  output             = "./generated/schemas"   // default: "./generated"
+  isGenerateSelect   = false                   // default: false
+  isGenerateInclude  = false                   // default: false
+  exportTypedSchemas = true                    // default: true
+  exportZodSchemas   = true                    // default: true  
+  typedSchemaSuffix  = "Schema"                // default: "Schema"
+  zodSchemaSuffix    = "ZodSchema"             // default: "ZodSchema"
 }
 ```
 
@@ -222,7 +199,6 @@ generator zod {
 {
   "compilerOptions": {
     "strict": true,
-    "exactOptionalPropertyTypes": true
   }
 }
 ```
@@ -233,93 +209,6 @@ generator zod {
 npx prisma generate
 ```
 
-## 🆕 Prisma Client Generator Support
-
-The latest stable version includes full support for both the legacy and new ESM-compatible `prisma-client` generator introduced in Prisma 6.12.0, plus important schema compilation fixes!
-
-### Generator Compatibility
-
-The Zod generator now supports both Prisma client generators:
-
-#### Legacy Generator (Existing Projects)
-```prisma
-generator client {
-  provider = "prisma-client-js"
-}
-
-generator zod {
-  provider = "prisma-zod-generator"
-  output   = "./generated/schemas"
-}
-```
-
-#### New ESM-Compatible Generator (Prisma 6.12.0+)
-```prisma
-generator client {
-  provider = "prisma-client"
-  output = "./src/generated/client"
-  runtime = "nodejs"
-  moduleFormat = "esm"
-  generatedFileExtension = "ts"
-  importFileExtension = "ts"
-}
-
-generator zod {
-  provider = "prisma-zod-generator"
-  output   = "./generated/schemas"
-}
-```
-
-### Key Benefits of the New Generator
-
-- **🔗 ESM Compatibility** - Full ES Module support
-- **📂 Custom Output Location** - Generate client outside `node_modules`
-- **🔧 Runtime Flexibility** - Support for Bun, Deno, Cloudflare Workers
-- **⚡ Better Performance** - Optimized code generation
-- **🔮 Future-Ready** - Will become the default in Prisma v7
-
-### Migration Guide
-
-**Existing Projects**: No changes needed - continue using `prisma-client-js`
-
-**New Projects**: Consider using the new `prisma-client` generator for modern features
-
-**Gradual Migration**: Both generators are supported simultaneously during the transition
-
-## 🧪 Preview Features Support
-
-The Prisma Zod Generator supports various Prisma preview features, providing seamless compatibility with the latest Prisma capabilities.
-
-### Implemented Preview Features
-
-| Preview Feature | Support Status | Since Version | Description |
-|----------------|----------------|---------------|-------------|
-| **prisma-client** | ✅ Full Support | v1.1.0 | ESM-compatible Prisma Client generator with custom output paths and improved modularity |
-
-### Usage with Preview Features
-
-To use supported preview features, enable them in your Prisma schema:
-
-```prisma
-generator client {
-  provider = "prisma-client"
-  output   = "./src/generated/client"
-  previewFeatures = ["driverAdapters", "queryCompiler"]
-}
-
-generator zod {
-  provider = "prisma-zod-generator"
-  output   = "./src/generated/zod"
-}
-```
-
-The Zod generator automatically detects enabled preview features and adapts its behavior accordingly.
-
-### Compatibility Notes
-
-- **Backward Compatibility**: All preview feature support maintains full compatibility with existing schemas
-- **Progressive Enhancement**: New features are additive and don't break existing functionality
-- **Automatic Detection**: No additional configuration required - the generator detects enabled features automatically
 
 ## 📋 Generated Output
 
@@ -363,14 +252,198 @@ The generator creates:
 └── 📄 index.ts         # Barrel exports
 ```
 
-### Version Compatibility
+## 🚀 Dual Schema Export Strategy - Breakthrough Feature!
 
-| Version | Prisma | Zod | TypeScript | Node.js | Status |
-|---------|--------|-----|------------|---------|--------|
-| **Latest** | 6.12.0+ | 4.0.5+ | 5.8+ | 18+ | ✅ **Stable** - Full Features + Preview Support |
-| **Legacy** | 4.8.0+ | 3.20+ | 4.9+ | 16+ | 📦 **Deprecated** - Limited Support |
+### 🎯 **Solving the Type Safety vs Method Availability Trade-off**
 
-> **Recommendation**: Use `npm install prisma-zod-generator` for the latest stable release with full features and important bug fixes.
+This generator implements a **revolutionary dual export strategy** that solves a fundamental limitation in TypeScript + Zod integration!
+
+#### The Problem
+With Zod schemas, you traditionally face a choice:
+- **Type-Safe**: `z.ZodType<Prisma.Type>` gives perfect inference but breaks Zod methods (`.extend()`, `.omit()`, `.merge()`)
+- **Method-Friendly**: Pure Zod schemas support all methods but lose perfect type binding
+
+#### Our Solution: **Export Both Versions!**
+
+```typescript
+// Perfect type safety (no methods)
+export const PostFindManySchema: z.ZodType<Prisma.PostFindManyArgs> = schema;
+
+// Full method availability (good inference)  
+export const PostFindManyZodSchema = schema;
+```
+
+#### Usage Examples
+
+**🔒 Type-Safe Version** (Perfect Prisma integration):
+```typescript
+import { PostFindManySchema } from './generated/schemas/findManyPost.schema';
+
+// Perfect type inference
+type FindManyArgs = z.infer<typeof PostFindManySchema>; // Prisma.PostFindManyArgs
+
+// Runtime validation
+const validatedInput = PostFindManySchema.parse(queryParams);
+const posts = await prisma.post.findMany(validatedInput); // ✅ Perfect type safety
+```
+
+**🔧 Method-Friendly Version** (Full Zod capabilities):
+```typescript
+import { PostFindManyZodSchema } from './generated/schemas/findManyPost.schema';
+
+// All Zod methods work perfectly!
+const customSchema = PostFindManyZodSchema
+  .extend({ customField: z.string() })     // ✅ Works!
+  .omit({ take: true })                   // ✅ Works!
+  .merge(otherSchema);                    // ✅ Works!
+
+const partialSchema = PostFindManyZodSchema.partial(); // ✅ Works!
+```
+
+#### Configuration Options
+
+Configure dual exports to match your needs:
+
+```prisma
+generator zod {
+  provider          = "prisma-zod-generator"
+  output            = "./generated/schemas"
+  
+  // Dual export configuration
+  exportTypedSchemas = true        # Export z.ZodType<Prisma.Type> versions
+  exportZodSchemas   = true        # Export pure Zod versions
+  typedSchemaSuffix  = "Schema"    # Suffix for typed versions
+  zodSchemaSuffix    = "ZodSchema" # Suffix for method-friendly versions
+}
+```
+
+#### Generated Schema Examples
+
+**For `PostFindManySchema`**:
+```typescript
+// Type-safe version (perfect inference, no methods)
+export const PostFindManySchema: z.ZodType<Prisma.PostFindManyArgs> = z.object({
+  select: PostSelectSchema.optional(),
+  where: PostWhereInputObjectSchema.optional(),
+  take: z.number().optional(),
+  // ...
+}).strict();
+
+// Method-friendly version (full methods, good inference)
+export const PostFindManyZodSchema = z.object({
+  select: PostSelectSchema.optional(),
+  where: PostWhereInputObjectSchema.optional(), 
+  take: z.number().optional(),
+  // ...
+}).strict();
+```
+
+**For inlined Select schemas**:
+```typescript
+// Type-safe select schema
+export const PostSelectSchema: z.ZodType<Prisma.PostSelect> = z.object({
+  id: z.boolean().optional(),
+  title: z.boolean().optional(),
+  author: z.union([z.boolean(), z.lazy(() => UserArgsObjectSchema)]).optional(),
+}).strict();
+
+// Method-friendly select schema
+export const PostSelectZodSchema = z.object({
+  id: z.boolean().optional(),
+  title: z.boolean().optional(), 
+  author: z.union([z.boolean(), z.lazy(() => UserArgsObjectSchema)]).optional(),
+}).strict();
+```
+
+#### When to Use Which Version
+
+| Use Case | Recommended Version | Why |
+|----------|-------------------|-----|
+| **API Validation** | `PostFindManySchema` | Perfect type safety with Prisma |
+| **Schema Composition** | `PostFindManyZodSchema` | Need `.extend()`, `.omit()`, `.merge()` |
+| **Runtime Validation** | Either | Identical runtime behavior |
+| **Type Inference** | Either | Both provide excellent IntelliSense |
+
+#### Competitive Advantage
+
+This breakthrough solves what other generators describe as an **unsolvable trade-off**:
+
+- ✅ **Perfect Type Safety**: Full Prisma type integration
+- ✅ **Full Method Support**: All Zod methods available
+- ✅ **Zero Runtime Overhead**: Both versions are identical at runtime
+- ✅ **Developer Choice**: Pick the right tool for each use case
+- ✅ **Future Proof**: Configurable for different preferences
+
+**You get BOTH worlds - no compromises!** 🎉
+
+### 🎓 **How to Choose Your Configuration**
+
+The dual export system gives you complete control. Here are common configurations and when to use them:
+
+#### 📋 **Configuration Scenarios**
+
+**🔒 Type-Safe Only** (Perfect Prisma Integration):
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = true     # Keep type-safe versions
+  exportZodSchemas   = false    # Skip method-friendly versions
+}
+```
+**Best for:** API validation, runtime type checking, perfect Prisma integration
+**You get:** `PostFindManySchema: z.ZodType<Prisma.PostFindManyArgs>`
+
+**🔧 Method-Friendly Only** (Full Zod Capabilities):
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"  
+  exportTypedSchemas = false    # Skip type-safe versions
+  exportZodSchemas   = true     # Keep method-friendly versions
+}
+```
+**Best for:** Schema composition, form validation, custom transformations
+**You get:** `PostFindManyZodSchema` (supports `.extend()`, `.omit()`, `.merge()`)
+
+**🎯 Both Versions** (Maximum Flexibility):
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = true     # Include type-safe versions  
+  exportZodSchemas   = true     # Include method-friendly versions
+}
+```
+**Best for:** Teams with mixed use cases, gradual migration, maximum flexibility
+**You get:** Both `PostFindManySchema` AND `PostFindManyZodSchema`
+
+**🎨 Custom Naming** (Your Preferred Style):
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = true
+  exportZodSchemas   = true
+  typedSchemaSuffix  = "Args"      # PostFindManyArgs
+  zodSchemaSuffix    = "Validator" # PostFindManyValidator
+}
+```
+
+#### 🚀 **Quick Migration Guide**
+
+**From Other Generators:**
+1. Start with `exportTypedSchemas = true, exportZodSchemas = false`
+2. Test your existing API validation code - should work perfectly
+3. Optionally enable `exportZodSchemas = true` for new schema composition needs
+
+**New Projects:**
+- Use **Type-Safe Only** for API endpoints and data validation
+- Use **Both Versions** if you need schema composition AND perfect typing
+- Use **Method-Friendly Only** for form validation and schema transformations
+
+#### 💡 **Pro Tips**
+
+- **Smaller bundles**: Use single export mode (`exportZodSchemas = false` OR `exportTypedSchemas = false`)
+- **Team consistency**: Choose one naming convention and stick with it
+- **Gradual adoption**: Start with type-safe schemas, add method-friendly as needed
+- **IDE performance**: Fewer exports = faster IntelliSense in large projects
 
 ## ⚙️ Configuration Options
 
@@ -379,6 +452,10 @@ The generator creates:
 | `output` | Output directory for generated files | `string` | `"./generated"` |
 | `isGenerateSelect` | Generate Select-related schemas | `boolean` | `false` |
 | `isGenerateInclude` | Generate Include-related schemas | `boolean` | `false` |
+| `exportTypedSchemas` | Export z.ZodType versions (type-safe) | `boolean` | `true` |
+| `exportZodSchemas` | Export pure Zod versions (method-friendly) | `boolean` | `true` |  
+| `typedSchemaSuffix` | Suffix for typed schemas | `string` | `"Schema"` |
+| `zodSchemaSuffix` | Suffix for Zod schemas | `string` | `"ZodSchema"` |
 
 ### Example Configuration
 
@@ -600,7 +677,6 @@ Examples:
 **TypeScript errors in generated schemas**
 - Make sure all dependencies are installed and up to date
 - Ensure `strict: true` is enabled in `tsconfig.json`
-- Verify exactOptionalPropertyTypes is enabled
 
 **Generated schemas not updating**
 - Run `npx prisma generate` after modifying your schema
