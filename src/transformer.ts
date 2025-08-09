@@ -206,7 +206,7 @@ export default class Transformer {
         );
       } else if (inputType.type === 'DateTime') {
         result.push(
-          this.wrapWithZodValidators('z.coerce.date()', field, inputType),
+          this.wrapWithZodValidators('z.union([z.date(), z.string().datetime()])', field, inputType),
         );
       } else if (inputType.type === 'Json') {
         this.hasJson = true;
@@ -287,7 +287,11 @@ export default class Transformer {
     line = mainValidator;
 
     if (inputType.isList) {
-      line += '.array()';
+      if (inputType.type === 'DateTime') {
+        line = 'z.union([z.date().array(), z.string().datetime().array()])';
+      } else {
+        line += '.array()';
+      }
     }
 
     if (!field.isRequired) {
@@ -986,7 +990,7 @@ export default class Transformer {
       selectFields.push(`  _count: z.union([z.boolean(),z.lazy(() => ${modelName}CountOutputTypeArgsObjectSchema)]).optional()`);
     }
     
-    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select> = z.object({
+    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = z.object({
 ${selectFields.join(',\n')}
 }).strict()`;
   }
@@ -1029,7 +1033,7 @@ ${selectFields.join(',\n')}
     // Generate typed schema (perfect inference, no methods)
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
-      exports.push(`export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition};`);
+      exports.push(`export const ${typedName}: z.ZodType<${prismaType}, ${prismaType}> = ${schemaDefinition};`);
     }
 
     // Generate Zod schema (methods available, loose inference) 
@@ -1052,7 +1056,7 @@ ${selectFields.join(',\n')}
     // Generate typed select schema
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}Select${Transformer.typedSchemaSuffix}`;
-      exports.push(`export const ${typedName}: z.ZodType<Prisma.${modelName}Select> = ${schemaDefinition};`);
+      exports.push(`export const ${typedName}: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = ${schemaDefinition};`);
     }
 
     // Generate Zod select schema  
