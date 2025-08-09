@@ -10,6 +10,25 @@ export interface GeneratorConfig {
   
   /** Output directory for generated schemas */
   output?: string;
+
+  /**
+   * Control file output mode.
+   * When true (default), generate multiple files (current behavior).
+   * When false, generate a single bundled file with all schemas.
+   */
+  useMultipleFiles?: boolean;
+
+  /**
+   * Name of the single bundled file when useMultipleFiles is false.
+   * Default: "schemas.ts"
+   */
+  singleFileName?: string;
+  
+  /**
+   * When useMultipleFiles is false, place the single bundled file at the generator output root
+   * instead of inside the schemas/ subdirectory. Default: true (root).
+   */
+  placeSingleFileAtRoot?: boolean;
   
   /** Whether to generate pure model schemas */
   pureModels?: boolean;
@@ -34,6 +53,18 @@ export interface GeneratorConfig {
   /** Legacy options for backward compatibility */
   addSelectType?: boolean;
   addIncludeType?: boolean;
+
+  /**
+   * When using array-based variants, place generated variant files at schemas root.
+   * If false, place them under a variants/ directory with an index.ts. Default: true (root).
+   */
+  placeArrayVariantsAtRoot?: boolean;
+
+  /**
+   * Whether to run formatter on generated schemas. Skipping formatting improves performance.
+   * Default: false (do not format schemas).
+   */
+  formatGeneratedSchemas?: boolean;
 }
 
 /**
@@ -233,10 +264,9 @@ function transformLegacyConfig(config: any): any {
           ];
         });
         
-        // Remove the legacy fields.exclude
-        delete modelConfig.fields;
-        
-        console.log(`✅ Transformed model ${modelName} variants:`, modelConfig.variants);
+  // Preserve legacy fields.exclude so it can apply to custom array-based variants too
+  // (Do not delete here; generator will honor it for all variants.)
+  console.log(`✅ Transformed model ${modelName} variants (preserving fields.exclude for compatibility):`, modelConfig.variants);
       }
     });
   }

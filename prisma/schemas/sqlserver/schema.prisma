@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = "sqlserver://localhost:1433;database=test;user=sa;password=password;encrypt=true;trustServerCertificate=true"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "./generated"
+}
+
+model SQLServerUser {
+  id      Int           @id @default(autoincrement())
+  email   String        @unique
+  name    String?
+  posts   SQLServerPost[]
+}
+
+model SQLServerPost {
+  id        Int           @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean        @default(false)
+  createdAt DateTime       @default(now())
+  author    SQLServerUser? @relation(fields: [authorId], references: [id])
+  authorId  Int?
+}

@@ -1,3 +1,28 @@
+## [1.2.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.1.1...v1.2.0) (2025-08-07)
+
+### 🚀 Features
+
+* implement community generator aggressive inlining pattern ([d5675c0](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d5675c0b4938da374927c8f448193c411ccf8a68))
+* implement dual schema export strategy to solve TypeScript method trade-off ([9cba538](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9cba5386b5fd83f91d41c6a688bb336d0587bc81))
+* implement selective inlining for select schemas ([0a1c921](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0a1c921f3e61b4c0ea510df2986ff63bed694d9f))
+* implement true select schema inlining following community generator pattern ([be01d20](https://github.com/omar-dulaimi/prisma-zod-generator/commit/be01d20fe4a29acddd9c1ae2f9c28df1f54d46ff))
+* removes the forced ZodType to allow the use of ZodObject properties and methods ([df36da4](https://github.com/omar-dulaimi/prisma-zod-generator/commit/df36da4a21322597ca27ab1781c6f04fe4cdd2bb))
+
+### 🐛 Bug Fixes
+
+* dual export configuration parsing bug ([e4b6853](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e4b68534f1ef184b8b2ef19786c2d254cdb44c07))
+* improve TypeScript type inference with explicit Prisma bindings ([cb14493](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cb144935524eb2dc53c304ae098fc7994d2d5ebe))
+* model hiding functionality for @@Gen.model(hide: true) ([fe4567e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/fe4567e7e222156cae22a05777d54a99cc9b67d6))
+* resolve field name detection bug in generateObjectSchemaField ([94508ae](https://github.com/omar-dulaimi/prisma-zod-generator/commit/94508aefb9f21b68d59f0512b2bbfd548605f9a8))
+* resolve FindMany union validation issue and improve composition approach ([92d9301](https://github.com/omar-dulaimi/prisma-zod-generator/commit/92d9301bf3cfdb9c2d51de678f85038549cc91ba))
+* use Buffer instead of Uint8Array for bytes field in test ([4608156](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4608156460e91dc394c7d37c87e02bca734de7d4))
+
+### 📚 Documentation
+
+* add composition approach design documentation ([dc4ecc5](https://github.com/omar-dulaimi/prisma-zod-generator/commit/dc4ecc5c6ef2649be5613825b0ed22df08aac3a0))
+* add comprehensive dual export configuration guide ([6628842](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6628842436641b8e67af2d3006c01cf1204be779))
+* update comparison with aggressive inlining achievement ([b47449f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b47449fa2a2ecaabd106fa2261c50dcf195fe17b))
+
 ## [1.1.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.1.0...v1.1.1) (2025-07-30)
 
 ### 🐛 Bug Fixes

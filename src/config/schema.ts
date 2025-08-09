@@ -26,6 +26,48 @@ export const ConfigurationSchema: JSONSchema7 = {
       pattern: '^[^<>:"|?*\\x00-\\x1f]+$',
       description: 'Output directory path for generated schemas'
     },
+
+    useMultipleFiles: {
+      type: 'boolean',
+      default: true,
+      description: 'When true (default), generate multiple files; when false, generate a single bundled file'
+    },
+    singleFileName: {
+      type: 'string',
+      minLength: 1,
+      default: 'schemas.ts',
+      description: 'Name of the single bundled file when useMultipleFiles is false'
+    },
+    placeSingleFileAtRoot: {
+      type: 'boolean',
+      default: true,
+      description: 'When bundling to a single file, place it at the output root instead of a schemas/ subdirectory'
+    },
+    placeArrayVariantsAtRoot: {
+      type: 'boolean',
+      default: true,
+      description: 'When using array-based variants, place them at schemas root; if false, under variants/'
+    },
+    formatGeneratedSchemas: {
+      type: 'boolean',
+      default: false,
+      description: 'Whether to run a formatter on generated schemas'
+    },
+    pureModels: {
+      type: 'boolean',
+      default: false,
+      description: 'Whether to generate pure model schemas'
+    },
+    addSelectType: {
+      type: 'boolean',
+      default: false,
+      description: 'Legacy option: also generate Select type'
+    },
+    addIncludeType: {
+      type: 'boolean',
+      default: false,
+      description: 'Legacy option: also generate Include type'
+    },
     
     globalExclusions: {
       type: 'object',
@@ -292,8 +334,7 @@ export const MINIMAL_OPERATIONS = [
   'findUnique',
   'create',
   'update',
-  'delete',
-  'upsert'
+  'delete'
 ] as const;
 
 /**

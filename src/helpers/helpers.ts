@@ -10,6 +10,10 @@ import { changeOptionalToRequiredFields } from './whereUniqueInput-helpers';
 interface AddMissingInputObjectTypeOptions {
   isGenerateSelect: boolean;
   isGenerateInclude: boolean;
+  exportTypedSchemas: boolean;
+  exportZodSchemas: boolean;
+  typedSchemaSuffix: string;
+  zodSchemaSuffix: string;
 }
 
 export function addMissingInputObjectTypes(
@@ -20,6 +24,8 @@ export function addMissingInputObjectTypes(
   dataSourceProvider: ConnectorType,
   options: AddMissingInputObjectTypeOptions,
 ) {
+  const cfg = Transformer.getGeneratorConfig();
+  const isMinimal = cfg?.mode === 'minimal';
   // TODO: remove once Prisma fix this issue: https://github.com/prisma/prisma/issues/14900
   if (dataSourceProvider === 'mongodb') {
     addMissingInputObjectTypesForMongoDbRawOpsAndQueries(
@@ -32,8 +38,10 @@ export function addMissingInputObjectTypes(
   // Filter out fieldRefTypes from input types to avoid generating non-existent schemas
   filterFieldRefTypes(inputObjectTypes);
 
-  addMissingInputObjectTypesForAggregate(inputObjectTypes, outputObjectTypes);
-  if (options.isGenerateSelect) {
+  if (!isMinimal) {
+    addMissingInputObjectTypesForAggregate(inputObjectTypes, outputObjectTypes);
+  }
+  if (!isMinimal && options.isGenerateSelect) {
     addMissingInputObjectTypesForSelect(
       inputObjectTypes,
       outputObjectTypes,
@@ -41,7 +49,7 @@ export function addMissingInputObjectTypes(
     );
     Transformer.setIsGenerateSelect(true);
   }
-  if (options.isGenerateSelect || options.isGenerateInclude) {
+  if (!isMinimal && (options.isGenerateSelect || options.isGenerateInclude)) {
     addMissingInputObjectTypesForModelArgs(
       inputObjectTypes,
       models,
@@ -49,7 +57,7 @@ export function addMissingInputObjectTypes(
       options.isGenerateInclude,
     );
   }
-  if (options.isGenerateInclude) {
+  if (!isMinimal && options.isGenerateInclude) {
     addMissingInputObjectTypesForInclude(
       inputObjectTypes,
       models,
@@ -86,5 +94,9 @@ export function resolveAddMissingInputObjectTypeOptions(
   return {
     isGenerateSelect: generatorConfigOptions.isGenerateSelect === 'true',
     isGenerateInclude: generatorConfigOptions.isGenerateInclude === 'true',
+    exportTypedSchemas: generatorConfigOptions.exportTypedSchemas === undefined ? true : generatorConfigOptions.exportTypedSchemas === 'true', // default true
+    exportZodSchemas: generatorConfigOptions.exportZodSchemas === undefined ? true : generatorConfigOptions.exportZodSchemas === 'true',     // default true
+    typedSchemaSuffix: generatorConfigOptions.typedSchemaSuffix || 'Schema',   // default 'Schema'
+    zodSchemaSuffix: generatorConfigOptions.zodSchemaSuffix || 'ZodSchema',    // default 'ZodSchema'
   };
 }

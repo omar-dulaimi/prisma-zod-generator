@@ -23,7 +23,7 @@
   </p>
 
   <p>
-    <strong>🎯 Zero-config • 🛡️ Type-safe • ⚡ Fast • 🔧 Customizable</strong>
+    <strong>:dart: Zero-config • :shield: Type-safe • :zap: Fast • :wrench: Customizable</strong>
   </p>
 
 </div>
@@ -31,52 +31,55 @@
 ---
 
 <div align="center">
-  <h3>💡 Transform your Prisma schema into type-safe validation schemas</h3>
+  <h3>:bulb: Transform your Prisma schema into type-safe validation schemas</h3>
   <p><em>Automatically generates Zod schemas for all Prisma operations with full TypeScript support</em></p>
 </div>
 
 <div align="center">
   
-  ## 💖 **Support This Project**
+  <a id="sponsor"></a>
+  ## :sparkling_heart: Sponsor to Keep This Project Active
   
-  <p><em>If this tool accelerates your development, consider supporting its growth</em></p>
+  <p><strong>:rotating_light: Active maintenance depends on your sponsorship. If this generator saves you time, please consider sponsoring.</strong></p>
   
   <a href="https://github.com/sponsors/omar-dulaimi">
     <img src="https://img.shields.io/badge/💝_Sponsor_on_GitHub-ea4aaa?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Sponsors" height="45">
   </a>
   
-  <p><strong>✨ Your sponsorship drives innovation and keeps this project thriving ✨</strong></p>
+  <p><em>Your support funds maintenance, issue triage, new features, documentation, and community help.</em></p>
   
 </div>
 
 ---
 
-## 📋 **Table of Contents**
+
+
+## :clipboard: **Table of Contents**
 
 <table>
   <tr>
-    <td><a href="#-quick-start">🚀 Quick Start</a></td>
-    <td><a href="#-generated-output">📋 Generated Output</a></td>
-    <td><a href="#-version-compatibility">📦 Compatibility</a></td>
-    <td><a href="#-core-examples">📚 Core Examples</a></td>
+  <td><a href="#sponsor">:sparkling_heart: Sponsor</a></td>
+  <td><a href="#-quick-start">:rocket: Quick Start</a></td>
+  <td><a href="#-generated-output">:clipboard: Generated Output</a></td>
+  <td><a href="#-version-compatibility">:package: Compatibility</a></td>
+  <td><a href="#-core-examples">:books: Core Examples</a></td>
   </tr>
   <tr>
-    <td><a href="#-advanced-features">🔧 Advanced Features</a></td>
-    <td><a href="#-configuration">⚙️ Configuration</a></td>
-    <td><a href="#-api-reference">📖 API Reference</a></td>
-    <td><a href="#-framework-examples">🌐 Framework Examples</a></td>
+  <td><a href="#-advanced-features">:wrench: Advanced Features</a></td>
+  <td><a href="#-configuration">:gear: Configuration</a></td>
+  <td><a href="#-api-reference">:book: API Reference</a></td>
+  <td><a href="#-framework-examples">:globe_with_meridians: Framework Examples</a></td>
   </tr>
-  <tr>
-    <td><a href="#-testing--development">🧪 Testing & Development</a></td>
-    <td><a href="#-troubleshooting">🔍 Troubleshooting</a></td>
-    <td><a href="#-contributing">🤝 Contributing</a></td>
+  <td><a href="#-testing--development">:test_tube: Testing & Development</a></td>
+  <td><a href="#-troubleshooting">:mag: Troubleshooting</a></td>
+  <td><a href="#-contributing">:handshake: Contributing</a></td>
     <td></td>
   </tr>
 </table>
 
 ---
 
-## 🚀 Quick Start
+## :rocket: Quick Start
 
 ### Installation
 
@@ -91,39 +94,102 @@ yarn add prisma-zod-generator
 pnpm add prisma-zod-generator
 ```
 
-<details>
-<summary><strong>📝 Setup Instructions</strong></summary>
+### 2. Add generator block to your Prisma schema
 
-### 1. Add to your Prisma schema
+Add the Prisma Zod Generator to your `schema.prisma` with inline options. You can also supply a JSON config via `config` for advanced/nested settings.
 
 ```prisma
 generator zod {
-  provider          = "prisma-zod-generator"
-  output            = "./generated/schemas"
-  isGenerateSelect  = true
-  isGenerateInclude = true
+  provider = "prisma-zod-generator"        // required: package id
+  output   = "./generated"                  // required: where to write output
+
+  // File output mode
+  useMultipleFiles       = true              // true: multi-file (default), false: single-file bundle
+  singleFileName         = "schemas.ts"     // only when useMultipleFiles=false
+  placeSingleFileAtRoot  = true              // single-file at output root (true) or under schemas/ (false)
+
+  // Legacy select/include flags (override JSON config if both provided)
+  isGenerateSelect       = false
+  isGenerateInclude      = false
+
+  // Optional: external JSON config for nested options (models, variants, exclusions, etc.)
+  // When both sources specify the same simple option, this generator block wins.
+  config                 = "./zod-generator.config.json"
 }
 ```
 
-### 2. Configure TypeScript (required)
+### 3. Configure TypeScript (required)
 
 ```json
 {
   "compilerOptions": {
-    "strict": true,
+    "strict": true
   }
 }
 ```
 
-### 3. Generate schemas
+### 4. Generate schemas
 
 ```bash
 npx prisma generate
 ```
 
-</details>
-
 ---
+
+## ✨ Why Choose Prisma Zod Generator?
+
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/🚀-Zero_Config-blue?style=for-the-badge" alt="Zero Config"><br>
+      <strong>Works instantly</strong><br><em>Sensible defaults included</em>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/🔄-Auto_Generated-green?style=for-the-badge" alt="Auto Generated"><br>
+      <strong>Always in sync</strong><br><em>Updates with schema changes</em>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/🛡️-Type_Safe-purple?style=for-the-badge" alt="Type Safe"><br>
+      <strong>100% TypeScript</strong><br><em>Catch errors at compile time</em>
+    </td>
+    <td align="center" width="25%">
+      <img src="https://img.shields.io/badge/🎯-Comprehensive-orange?style=for-the-badge" alt="Comprehensive"><br>
+      <strong>Full CRUD coverage</strong><br><em>All Prisma operations included</em>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="https://img.shields.io/badge/⚙️-Configurable-red?style=for-the-badge" alt="Configurable"><br>
+      <strong>Highly customizable</strong><br><em>Adapt to your needs</em>
+    </td>
+    <td align="center">
+      <img src="https://img.shields.io/badge/📦-Lightweight-yellow?style=for-the-badge" alt="Lightweight"><br>
+      <strong>Minimal footprint</strong><br><em>Fast generation & runtime</em>
+    </td>
+    <td align="center">
+      <img src="https://img.shields.io/badge/🗄️-Multi_DB-cyan?style=for-the-badge" alt="Multi Database"><br>
+      <strong>All databases</strong><br><em>PostgreSQL, MySQL, MongoDB+</em>
+    </td>
+    <td align="center">
+      <img src="https://img.shields.io/badge/🎨-Flexible-pink?style=for-the-badge" alt="Flexible"><br>
+      <strong>Your way</strong><br><em>Custom paths & options</em>
+    </td>
+  </tr>
+</table>
+
+### 🔄 Upgrading
+
+The latest stable version maintains full API compatibility. Requirements:
+- Node.js 18+
+- Prisma 6.12.0+
+- Zod 4.0.5+
+
+Update and regenerate:
+
+```bash
+npm update prisma-zod-generator
+npx prisma generate
+```
 
 ## 📋 Generated Output
 
@@ -169,7 +235,120 @@ The generator creates:
 
 ---
 
-## 📦 Version Compatibility
+## :rocket: Dual Schema Export Strategy - Breakthrough Feature!
+
+### 🎯 Solving the Type Safety vs Method Availability Trade-off
+
+This generator implements a dual export strategy that gives you both perfect Prisma typing and full Zod method support.
+
+#### The Problem
+With Zod schemas, you traditionally face a choice:
+- Type-safe: `z.ZodType<Prisma.Type>` gives perfect inference but restricts Zod method chaining
+- Method-friendly: Pure Zod schemas support all methods but lose perfect type binding
+
+#### Our Solution: Export Both Versions
+
+```ts
+// Perfect type safety (no Zod method chaining)
+export const PostFindManySchema: z.ZodType<Prisma.PostFindManyArgs> = schema;
+
+// Full method availability (great inference)
+export const PostFindManyZodSchema = schema;
+```
+
+#### Usage Examples
+
+Type-safe version (perfect Prisma integration):
+
+```ts
+import { PostFindManySchema } from './generated/schemas/findManyPost.schema';
+
+type FindManyArgs = z.infer<typeof PostFindManySchema>; // Prisma.PostFindManyArgs
+
+const validatedInput = PostFindManySchema.parse(queryParams);
+const posts = await prisma.post.findMany(validatedInput);
+```
+
+Method-friendly version (full Zod capabilities):
+
+```ts
+import { PostFindManyZodSchema } from './generated/schemas/findManyPost.schema';
+
+const customSchema = PostFindManyZodSchema
+  .extend({ customField: z.string() })
+  .omit({ take: true })
+  .merge(otherSchema);
+
+const partialSchema = PostFindManyZodSchema.partial();
+```
+
+#### Configuration Options
+
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  output             = "./generated/schemas"
+  exportTypedSchemas = true        // Export z.ZodType<Prisma.Type> versions
+  exportZodSchemas   = true        // Export pure Zod versions
+  typedSchemaSuffix  = "Schema"    // Suffix for typed versions
+  zodSchemaSuffix    = "ZodSchema" // Suffix for method-friendly versions
+}
+```
+
+#### Configuration Scenarios
+
+Type-safe only:
+
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = true
+  exportZodSchemas   = false
+}
+```
+
+Method-friendly only:
+
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = false
+  exportZodSchemas   = true
+}
+```
+
+Both versions:
+
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = true
+  exportZodSchemas   = true
+}
+```
+
+Custom naming:
+
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = true
+  exportZodSchemas   = true
+  typedSchemaSuffix  = "Args"
+  zodSchemaSuffix    = "Validator"
+}
+```
+
+Pro tips:
+
+- Smaller bundles: use a single export mode
+- Team consistency: choose one naming convention and stick with it
+- Gradual adoption: start with type-safe schemas, add method-friendly as needed
+- IDE performance: fewer exports -> faster IntelliSense in huge projects
+
+---
+
+## :package: Version Compatibility
 
 <details>
 <summary><strong>🔄 Supported Versions & Migration Guide</strong></summary>
@@ -280,6 +459,8 @@ const createPost = async (data: unknown) => {
 
 <details>
 <summary><strong>🎯 Configuration System</strong></summary>
+
+Looking for ready-made configs? See the new Recipes catalog in `recipes/` for common setups (single file, models-only, minimal CRUD, tRPC, API result schemas, hide fields, and more).
 
 ### JSON-Based Configuration
 
@@ -667,6 +848,13 @@ app.post('/users', async (req, res) => {
 | `output` | Output directory for generated files | `string` | `"./generated"` |
 | `isGenerateSelect` | Generate Select-related schemas | `boolean` | `false` |
 | `isGenerateInclude` | Generate Include-related schemas | `boolean` | `false` |
+| `exportTypedSchemas` | Export z.ZodType versions (type-safe) | `boolean` | `true` |
+| `exportZodSchemas` | Export pure Zod versions (method-friendly) | `boolean` | `true` |  
+| `typedSchemaSuffix` | Suffix for typed schemas | `string` | `"Schema"` |
+| `zodSchemaSuffix` | Suffix for Zod schemas | `string` | `"ZodSchema"` |
+| `useMultipleFiles` | Output multiple files (true) or single bundle (false) | `boolean` | `true` |
+| `singleFileName` | Name of the single-file bundle when `useMultipleFiles=false` | `string` | `"schemas.ts"` |
+| `placeSingleFileAtRoot` | When `useMultipleFiles=false`, place the single file at the generator output root instead of a `schemas/` subfolder | `boolean` | `true` |
 
 ### Advanced Configuration
 
@@ -674,6 +862,16 @@ app.post('/users', async (req, res) => {
 generator zod {
   provider          = "prisma-zod-generator"
   output            = "./src/schemas"
+  // File output mode
+  // true  -> multiple files (default)
+  // false -> single file bundle (see singleFileName below)
+  useMultipleFiles  = true
+  // Optional: name of the single-file bundle when useMultipleFiles = false
+  // Defaults to "schemas.ts"
+  singleFileName    = "schemas.ts"
+  // Optional: when useMultipleFiles = false, place the single file at the
+  // generator output root (true) or inside a schemas/ subdir (false)
+  placeSingleFileAtRoot = true
   isGenerateSelect  = true
   isGenerateInclude = true
   config            = "./zod-config.json"
@@ -701,6 +899,7 @@ model InternalLog {
   "modelCase": "PascalCase", 
   "modelSuffix": "Schema",
   "useMultipleFiles": true,
+  "placeSingleFileAtRoot": true,
   "createInputTypes": true,
   "addIncludeType": true,
   "addSelectType": true,
@@ -714,6 +913,77 @@ model InternalLog {
 ---
 
 ## 📖 API Reference
+
+## ⚙️ Configuration sources, precedence, and availability
+
+This generator accepts configuration from two sources. When the same option is provided in multiple places, the value is resolved using a simple precedence.
+
+### Sources
+
+- Prisma generator block (schema.prisma)
+  - Standard Prisma fields like `output`.
+  - Simple override flags/strings (e.g., `useMultipleFiles`, `singleFileName`, etc.).
+  - Optional `config = "./zod-generator.config.json"` to point to a JSON file.
+- JSON config file (recommended for complex/nested settings)
+  - Full configuration surface, including nested structures like `models` and `variants`.
+  - Can be provided explicitly via `config = "./path.json"` or auto-discovered (e.g., `zod-generator.config.json`, `.zod-generator.json`).
+
+### Precedence (highest → lowest)
+
+1) Prisma generator block options (direct attributes in `generator zod { ... }`)
+2) JSON config file (explicit or auto-discovered)
+3) Built-in defaults (computed based on `mode`, etc.)
+
+Notes and special cases:
+- Output path: The Prisma generator’s `output` always decides where files go. Any `output` set in the JSON config is ignored.
+- Minimal mode: If `mode = "minimal"` (or legacy `minimal = true`), select/include schemas are forcibly disabled and many complex nested inputs are suppressed to speed up generation and shrink output.
+- Legacy flags: `isGenerateSelect` / `isGenerateInclude` (Prisma block) override the newer `addSelectType` / `addIncludeType` (config JSON). Minimal mode will still force them off.
+
+### Option availability matrix
+
+| Option | Prisma generator block | JSON config file | Notes |
+|---|---|---|---|
+| `output` | Yes (authoritative) | Ignored if present | Use the Prisma generator `output` only |
+| `useMultipleFiles` | Yes | Yes | `false` enables strict single-file mode |
+| `singleFileName` | Yes | Yes | File name for the single bundle (default `schemas.ts`) |
+| `placeSingleFileAtRoot` | Yes | Yes | Place single file at output root (true, default) or under `schemas/` (false) |
+| `placeArrayVariantsAtRoot` | Yes | Yes | For array-based variants placement (root vs `variants/`) |
+| `mode` (`full|minimal|custom`) | Yes | Yes | Minimal mode applies opinionated defaults |
+| `pureModels` | Yes | Yes | Generates `models/` set when multi-file; N/A in single-file (content is bundled) |
+| `globalExclusions` | — | Yes | Object keyed by variant (`input`, `result`, `pure`) |
+| `variants` (object-based) | — | Yes | Nested structure; configure `pure/input/result` |
+| `models.*` (per-model) | — | Yes | Nested per-model rules, operations, and variant overrides |
+| `addSelectType` / `addIncludeType` | Yes (as legacy `isGenerateSelect` / `isGenerateInclude`) | Yes | Prisma block flags override the JSON values; minimal mode forces off |
+| `formatGeneratedSchemas` | — | Yes | Formatting can be skipped for speed (default: false) |
+| `config` (path to JSON) | Yes | — | Points to the JSON file; not a config value itself |
+
+Example: Prisma block overrides JSON file
+
+```prisma
+generator zod {
+  provider              = "prisma-zod-generator"
+  output                = "./generated"
+  // Overrides values from the JSON config below
+  useMultipleFiles      = false
+  singleFileName        = "bundle.ts"
+  placeSingleFileAtRoot = true
+  // Load additional (nested) settings from a JSON file
+  config                = "./zod-generator.config.json"
+}
+```
+
+When both sources specify the same simple option (e.g., `useMultipleFiles`), the Prisma block wins. Nested settings (like `models` and `variants`) should live in the JSON file.
+
+### How @zod schema comments fit into precedence
+
+Inline `@zod` comments in your Prisma schema are not a separate “config source,” but they do affect field-level validation and are always respected when that field is generated.
+
+- Scope: Applies only to the field where the comment appears, and only in schemas that include that field (subject to filtering, variants, minimal mode).
+- Merge behavior: Field validation is built by combining pieces. In practice, the chain is composed of the base Zod type plus any optional/nullable handling, any config-driven validations (e.g., variant `additionalValidation`), and your `@zod` comment directives. If multiple validations of the same kind are present, they’re appended in order; the latter call wins when there’s a conflict.
+- Not a global override: `@zod` comments do not override global settings like `output`, `mode`, or file layout; they only enrich the field’s Zod chain.
+- Filtering/minimal mode: If a field or schema is excluded by filters/variants/minimal mode, its comments simply won’t apply because that schema isn’t emitted.
+
+See the “@zod Comment Annotations” section for syntax and examples.
 
 <details>
 <summary><strong>📚 Generated Schema Types</strong></summary>
@@ -1125,6 +1395,24 @@ A: Enums are automatically converted to Zod enum schemas in the `enums/` directo
 <details>
 <summary><strong>🛠️ Development Guidelines</strong></summary>
 
+
+<details>
+<summary><strong>🚀 Release Process</strong></summary>
+
+This project uses semantic versioning and automated releases:
+
+- Patch: Bug fixes and small improvements
+- Minor: New features and enhancements
+- Major: Breaking changes
+
+Helpful commands:
+
+```bash
+npm run prerelease   # Build, type-check, lint
+npm run release:dry  # Preview the next release
+```
+
+</details>
 ### Contribution Process
 
 1. **Create an issue** for bugs or feature requests

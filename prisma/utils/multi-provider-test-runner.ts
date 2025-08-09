@@ -2,13 +2,12 @@
 // Orchestrates testing across all database providers
 
 import { execSync } from 'child_process';
-import { existsSync, readFileSync, writeFileSync, statSync } from 'fs';
-import { join, dirname } from 'path';
-import { 
-  ProviderConfig, 
-  PROVIDER_CONFIGS, 
-  getAllProviders, 
+import { existsSync, readFileSync, statSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import {
+  getAllProviders,
   getProviderConfig,
+  ProviderConfig,
   TestCase,
   ValidationRule
 } from './provider-config';
@@ -423,7 +422,8 @@ export class MultiProviderTestRunner {
       case 'CRUD Operations':
         return schemas.some(schema => schema.includes('create') || schema.includes('findMany'));
       case 'Aggregations':
-        return schemas.some(schema => schema.includes('aggregate'));
+  // Match aggregate-related schemas/results regardless of casing
+  return schemas.some(schema => /aggregate/i.test(schema));
       case 'Relationships':
         return schemas.some(schema => schema.includes('include') || schema.includes('select'));
       case 'Enums':

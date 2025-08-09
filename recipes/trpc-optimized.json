@@ -1,0 +1,15 @@
+{
+  "mode": "custom",
+  "output": "./src/zod",
+  "pureModels": false,
+  "globalExclusions": {
+    "input": ["id", "createdAt", "updatedAt"],
+    "result": [],
+    "pure": ["password", "hashedPassword"]
+  },
+  "variants": {
+    "pure": { "enabled": true, "suffix": ".model" },
+    "input": { "enabled": true, "suffix": ".input" },
+    "result": { "enabled": true, "suffix": ".output" }
+  }
+}

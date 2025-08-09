@@ -388,22 +388,11 @@ ${allFields.join(',\n')}
    * Generate count result schema
    */
   private generateCountResultSchema(context: ResultGenerationContext): GeneratedResultSchema {
-    const { model, options } = context;
+  const { model, options } = context;
     const schemaName = this.generateSchemaName(options);
 
-    // Simple count returns number, count with relations returns object
-    const relationFields = model.fields.filter(f => f.kind === 'object');
-    
-    let zodSchema: string;
-    if (relationFields.length > 0) {
-      const countFields = relationFields.map(field => 
-        `  ${field.name}: z.number()`
-      ).join(',\n');
-      
-      zodSchema = `z.object({\n${countFields}\n})`;
-    } else {
-      zodSchema = 'z.number()';
-    }
+  // Simple count should be a number schema
+  const zodSchema: string = 'z.number()';
 
     const documentation = this.generateDocumentation(options, 'Count operation result');
     const examples = this.generateExamples(context, 'count');
@@ -415,7 +404,7 @@ ${allFields.join(',\n')}
       typeDefinition: `export type ${schemaName}Type = z.infer<typeof ${schemaName}>;`,
       imports: new Set(['z']),
       exports: new Set([schemaName, `${schemaName}Type`]),
-      dependencies: [],
+  dependencies: [],
       documentation,
       examples
     };
@@ -496,25 +485,32 @@ ${allFields.join(',\n')}
 
   private buildAggregateFields(model: DMMF.Model): string {
     const numericFields = model.fields.filter(f => 
-      ['Int', 'Float', 'Decimal'].includes(f.type)
+      ['Int', 'Float', 'Decimal', 'BigInt'].includes(f.type)
     );
 
+    // _count: object with per-field counts (including booleans and relations), optional
+    const countObjectFields = model.fields.map(field => `    ${field.name}: z.number()`);
     const aggregateFields: string[] = [
-      '  _count: z.number()',
+      `  _count: z.object({\n${countObjectFields.join(',\n')}\n  }).optional()`,
     ];
 
     if (numericFields.length > 0) {
-      // Sum and average only for numeric fields
+      // Sum: numbers for numeric fields; BigInt as bigint
       const sumFields = numericFields.map(field => 
+        `    ${field.name}: ${field.type === 'BigInt' ? 'z.bigint()' : 'z.number()'}.nullable()`
+      );
+      aggregateFields.push(`  _sum: z.object({\n${sumFields.join(',\n')}\n  }).nullable().optional()`);
+
+      // Avg: average results are numbers
+      const avgFields = numericFields.map(field => 
         `    ${field.name}: z.number().nullable()`
       );
-      aggregateFields.push(`  _sum: z.object({\n${sumFields.join(',\n')}\n  }).nullable()`);
-      aggregateFields.push(`  _avg: z.object({\n${sumFields.join(',\n')}\n  }).nullable()`);
+      aggregateFields.push(`  _avg: z.object({\n${avgFields.join(',\n')}\n  }).nullable().optional()`);
     }
 
-    // Min/max for all comparable fields
+    // Min/max for comparable fields (include BigInt)
     const comparableFields = model.fields.filter(field => 
-      ['Int', 'Float', 'Decimal', 'DateTime', 'String'].includes(field.type)
+      ['Int', 'Float', 'Decimal', 'DateTime', 'String', 'BigInt'].includes(field.type)
     );
     
     if (comparableFields.length > 0) {
@@ -522,8 +518,8 @@ ${allFields.join(',\n')}
         const zodType = this.mapPrismaTypeToZod(field);
         return `    ${field.name}: ${zodType}.nullable()`;
       });
-      aggregateFields.push(`  _min: z.object({\n${minMaxFields.join(',\n')}\n  }).nullable()`);
-      aggregateFields.push(`  _max: z.object({\n${minMaxFields.join(',\n')}\n  }).nullable()`);
+      aggregateFields.push(`  _min: z.object({\n${minMaxFields.join(',\n')}\n  }).nullable().optional()`);
+      aggregateFields.push(`  _max: z.object({\n${minMaxFields.join(',\n')}\n  }).nullable().optional()`);
     }
 
     return aggregateFields.join(',\n');

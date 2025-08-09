@@ -1,17 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { SchemaTestUtils } from './schema-test-utils';
 
 // Import generated schemas (updated to match current filtering config)
-import { UserFindManySchema } from '../prisma/generated/schemas/findManyUser.schema';
 import { UserCreateManySchema } from '../prisma/generated/schemas/createManyUser.schema';
-import { PostFindManySchema } from '../prisma/generated/schemas/findManyPost.schema';
-import { UserScalarFieldEnumSchema } from '../prisma/generated/schemas/enums/UserScalarFieldEnum.schema';
 import { SortOrderSchema } from '../prisma/generated/schemas/enums/SortOrder.schema';
+import { UserScalarFieldEnumSchema } from '../prisma/generated/schemas/enums/UserScalarFieldEnum.schema';
+import { PostFindManySchema } from '../prisma/generated/schemas/findManyPost.schema';
+import { UserFindManySchema } from '../prisma/generated/schemas/findManyUser.schema';
 
 // Import object schemas
+import { StringFilterObjectSchema } from '../prisma/generated/schemas/objects/StringFilter.schema';
 import { UserCreateInputObjectSchema } from '../prisma/generated/schemas/objects/UserCreateInput.schema';
 import { UserWhereInputObjectSchema } from '../prisma/generated/schemas/objects/UserWhereInput.schema';
-import { StringFilterObjectSchema } from '../prisma/generated/schemas/objects/StringFilter.schema';
 
 describe('Generated Schema Tests', () => {
   describe('Operation Schemas', () => {
@@ -123,7 +123,7 @@ describe('Generated Schema Tests', () => {
         const invalidValues = ['invalid', 'createdAt', 'updatedAt'];
 
         SchemaTestUtils.testEnumValues(
-          UserScalarFieldEnumSchema,
+          UserScalarFieldEnumSchema as any,
           validValues,
           invalidValues,
         );
@@ -136,7 +136,7 @@ describe('Generated Schema Tests', () => {
         const invalidValues = ['ascending', 'descending', 'ASC', 'DESC'];
 
         SchemaTestUtils.testEnumValues(
-          SortOrderSchema,
+          SortOrderSchema as any,
           validValues,
           invalidValues,
         );
@@ -165,6 +165,8 @@ describe('Generated Schema Tests', () => {
             create: {
               title: 'Test Post',
               content: 'Test content',
+              likes: BigInt(0),
+              bytes: Buffer.from([1,2,3])
             },
           },
         };

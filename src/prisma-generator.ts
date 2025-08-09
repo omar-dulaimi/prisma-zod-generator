@@ -26,6 +26,7 @@ import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
 import { AggregateOperationSupport } from './types';
 import removeDir from './utils/removeDir';
+import { flushSingleFile, initSingleFile, isSingleFileEnabled } from './utils/singleFileAggregator';
 import { writeFileSafely } from './utils/writeFileSafely';
 
 export async function generate(options: GeneratorOptions) {
@@ -47,22 +48,25 @@ export async function generate(options: GeneratorOptions) {
 
     await handleGeneratorOutputValue(options.generator.output as EnvValue);
 
-    const prismaClientGeneratorConfig = 
-      getGeneratorConfigByProvider(options.otherGenerators, 'prisma-client-js') ||
+    const prismaClientGeneratorConfig =
+      getGeneratorConfigByProvider(
+        options.otherGenerators,
+        'prisma-client-js',
+      ) ||
       getGeneratorConfigByProvider(options.otherGenerators, 'prisma-client');
 
     if (!prismaClientGeneratorConfig) {
       throw new Error(
         'Prisma Zod Generator requires either "prisma-client-js" or "prisma-client" generator to be present in your schema.prisma file.\n\n' +
-        'Please add one of the following to your schema.prisma:\n\n' +
-        '// For the legacy generator:\n' +
-        'generator client {\n' +
-        '  provider = "prisma-client-js"\n' +
-        '}\n\n' +
-        '// Or for the new generator (Prisma 6.12.0+):\n' +
-        'generator client {\n' +
-        '  provider = "prisma-client"\n' +
-        '}'
+          'Please add one of the following to your schema.prisma:\n\n' +
+          '// For the legacy generator:\n' +
+          'generator client {\n' +
+          '  provider = "prisma-client-js"\n' +
+          '}\n\n' +
+          '// Or for the new generator (Prisma 6.12.0+):\n' +
+          'generator client {\n' +
+          '  provider = "prisma-client"\n' +
+          '}',
       );
     }
 
@@ -77,17 +81,18 @@ export async function generate(options: GeneratorOptions) {
     // 3. Default options (lowest priority - applied by processConfiguration)
     let generatorConfig: CustomGeneratorConfig;
     try {
+      const schemaBaseDir = path.dirname(options.schemaPath);
       let configFileOptions: Partial<CustomGeneratorConfig> = {};
       
       // Step 1: Load config file if specified or try auto-discovery (medium priority)
       if (extendedOptions.config) {
-        const parseResult = await parseConfiguration(extendedOptions.config);
+        const parseResult = await parseConfiguration(extendedOptions.config, schemaBaseDir);
         configFileOptions = parseResult.config;
         console.log(`📋 Loaded configuration from: ${parseResult.configPath || 'discovered file'}`);
       } else {
         // Try auto-discovery and specific paths
         try {
-          const parseResult = await parseConfiguration();
+          const parseResult = await parseConfiguration(undefined, schemaBaseDir);
           if (!parseResult.isDefault) {
             configFileOptions = parseResult.config;
             console.log(`📋 Auto-discovered configuration from: ${parseResult.configPath || 'discovered file'}`);
@@ -96,7 +101,7 @@ export async function generate(options: GeneratorOptions) {
             const specificPaths = ['./prisma/config.json', './config.json', './zod-generator.config.json'];
             for (const path of specificPaths) {
               try {
-                const parseResult = await parseConfiguration(path);
+                const parseResult = await parseConfiguration(path, schemaBaseDir);
                 configFileOptions = parseResult.config;
                 console.log(`📋 Found configuration at: ${path}`);
                 break;
@@ -135,9 +140,7 @@ export async function generate(options: GeneratorOptions) {
       console.warn(`⚠️  Configuration loading failed, using defaults: ${configError}`);
       // Fall back to defaults
       generatorConfig = processConfiguration({});
-    }
-
-
+  }
     checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
     setPrismaClientProvider(prismaClientGeneratorConfig);
     setPrismaClientConfig(prismaClientGeneratorConfig);
@@ -151,15 +154,17 @@ export async function generate(options: GeneratorOptions) {
       );
     const enumTypes = prismaClientDmmf.schema.enumTypes;
     const models: DMMF.Model[] = [...prismaClientDmmf.datamodel.models];
+    const mutableModelOperations = [...modelOperations];
+    const mutableEnumTypes = {
+      model: enumTypes.model ? [...enumTypes.model] : undefined,
+      prisma: [...enumTypes.prisma],
+    };
     const hiddenModels: string[] = [];
     const hiddenFields: string[] = [];
     resolveModelsComments(
       models,
-      [...modelOperations],
-      {
-        model: enumTypes.model ? [...enumTypes.model] : undefined,
-        prisma: [...enumTypes.prisma],
-      },
+      mutableModelOperations,
+      mutableEnumTypes,
       hiddenModels,
       hiddenFields,
     );
@@ -172,9 +177,19 @@ export async function generate(options: GeneratorOptions) {
     // Set the generator configuration for filtering BEFORE generating schemas
     Transformer.setGeneratorConfig(generatorConfig);
 
+    // Init single-file mode if configured
+    const singleFileMode = generatorConfig.useMultipleFiles === false;
+    if (singleFileMode) {
+      const bundleName = (generatorConfig.singleFileName || 'schemas.ts').trim();
+      const placeAtRoot = (generatorConfig as any).placeSingleFileAtRoot !== false; // default true
+      const baseDir = placeAtRoot ? Transformer.getOutputPath() : Transformer.getSchemasPath();
+      const bundlePath = path.join(baseDir, bundleName);
+      initSingleFile(bundlePath);
+    }
+
     await generateEnumSchemas(
-      [...prismaClientDmmf.schema.enumTypes.prisma],
-      [...(prismaClientDmmf.schema.enumTypes.model ?? [])],
+      mutableEnumTypes.prisma,
+      mutableEnumTypes.model ?? [],
     );
 
     // Validate filtering configuration and provide feedback
@@ -184,12 +199,10 @@ export async function generate(options: GeneratorOptions) {
       validationResult.errors.forEach(error => console.error(`  - ${error}`));
       throw new Error('Invalid filtering configuration. Please fix the errors above.');
     }
-    
     if (validationResult.warnings.length > 0) {
       console.warn('⚠️  Configuration warnings:');
       validationResult.warnings.forEach(warning => console.warn(`  - ${warning}`));
     }
-    
     if (validationResult.suggestions.length > 0) {
       console.log('💡 Suggestions:');
       validationResult.suggestions.forEach(suggestion => console.log(`  - ${suggestion}`));
@@ -198,18 +211,21 @@ export async function generate(options: GeneratorOptions) {
     // Merge backward compatibility options with new configuration
     // Priority: 1. Legacy generator options, 2. New config file options (addSelectType/addIncludeType)
     const backwardCompatibleOptions = {
-      isGenerateSelect: (
-        extendedOptions.isGenerateSelect?.toString() || 
-        (generatorConfig.addSelectType !== undefined ? generatorConfig.addSelectType.toString() : 'false')
-      ),
-      isGenerateInclude: (
-        extendedOptions.isGenerateInclude?.toString() || 
-        (generatorConfig.addIncludeType !== undefined ? generatorConfig.addIncludeType.toString() : 'false')
-      ),
+      isGenerateSelect:
+        (extendedOptions.isGenerateSelect?.toString() ||
+          (generatorConfig.addSelectType !== undefined
+            ? generatorConfig.addSelectType.toString()
+            : 'true')),
+      isGenerateInclude:
+        (extendedOptions.isGenerateInclude?.toString() ||
+          (generatorConfig.addIncludeType !== undefined
+            ? generatorConfig.addIncludeType.toString()
+            : 'true')),
     };
 
-    const addMissingInputObjectTypeOptions =
-      resolveAddMissingInputObjectTypeOptions(backwardCompatibleOptions);
+    const addMissingInputObjectTypeOptions = resolveAddMissingInputObjectTypeOptions(
+      backwardCompatibleOptions,
+    );
 
     const mutableInputObjectTypes = [...inputObjectTypes];
     const mutableOutputObjectTypes = [...outputObjectTypes];
@@ -218,7 +234,7 @@ export async function generate(options: GeneratorOptions) {
       mutableInputObjectTypes,
       mutableOutputObjectTypes,
       models,
-      [...modelOperations],
+      mutableModelOperations,
       dataSource.provider,
       addMissingInputObjectTypeOptions,
     );
@@ -227,43 +243,89 @@ export async function generate(options: GeneratorOptions) {
       mutableInputObjectTypes,
     );
 
+    // Set dual export configuration options on Transformer
+    // In minimal mode, forcibly disable select/include types regardless of legacy flags
+    const minimalMode =
+      generatorConfig.mode === 'minimal' || (generatorConfig as any).minimal === true;
+    Transformer.setIsGenerateSelect(
+      minimalMode ? false : addMissingInputObjectTypeOptions.isGenerateSelect,
+    );
+    Transformer.setIsGenerateInclude(
+      minimalMode ? false : addMissingInputObjectTypeOptions.isGenerateInclude,
+    );
+    Transformer.setExportTypedSchemas(
+      addMissingInputObjectTypeOptions.exportTypedSchemas,
+    );
+    Transformer.setExportZodSchemas(
+      addMissingInputObjectTypeOptions.exportZodSchemas,
+    );
+    Transformer.setTypedSchemaSuffix(
+      addMissingInputObjectTypeOptions.typedSchemaSuffix,
+    );
+    Transformer.setZodSchemaSuffix(
+      addMissingInputObjectTypeOptions.zodSchemaSuffix,
+    );
+
     hideInputObjectTypesAndRelatedFields(
       mutableInputObjectTypes,
       hiddenModels,
       hiddenFields,
     );
+
     await generateObjectSchemas(mutableInputObjectTypes, models);
     await generateModelSchemas(
       models,
-      [...modelOperations],
+      mutableModelOperations,
       aggregateOperationSupport,
     );
     await generateIndex();
-    
+
     // Generate pure model schemas if enabled
-    await generatePureModelSchemas(models, generatorConfig);
-    
-    // Generate variant schemas if enabled
+    await generatePureModelSchemas(models, generatorConfig as any);
+
+    // Generate variant schemas if enabled (skipped in single-file mode by function itself)
     await generateVariantSchemas(models, generatorConfig);
-    
-    // Update main index to include variants
-    await updateIndexWithVariants(generatorConfig);
-    
+
+    // Update main index to include variants (skip when single-file mode to avoid wasted work)
+    if (!singleFileMode) {
+      await updateIndexWithVariants(generatorConfig);
+    }
+
     // Generate filtering summary
     generateFilteringSummary(models, generatorConfig);
+
+    // If single-file mode is enabled, flush aggregator and clean directory around the bundle
+    if (singleFileMode) {
+      await flushSingleFile();
+      const placeAtRoot = (generatorConfig as any).placeSingleFileAtRoot !== false; // default true
+      const baseDir = placeAtRoot ? Transformer.getOutputPath() : Transformer.getSchemasPath();
+      const bundleName = (generatorConfig.singleFileName || 'schemas.ts').trim();
+      const bundlePath = path.join(baseDir, bundleName);
+      try {
+        const entries = await fs.readdir(baseDir, { withFileTypes: true });
+        for (const entry of entries) {
+          const full = path.join(baseDir, entry.name);
+          if (full === bundlePath) continue;
+          if (entry.isDirectory()) {
+            await removeDir(full, false);
+          } else {
+            await fs.unlink(full);
+          }
+        }
+      } catch {}
+    }
   } catch (error) {
     console.error(error);
   }
 }
 
+// Create output directory, wipe previous contents, and set Transformer output path
 async function handleGeneratorOutputValue(generatorOutputValue: EnvValue) {
   const outputDirectoryPath = parseEnvValue(generatorOutputValue);
-
   // create the output directory and delete contents that might exist from a previous run
   await fs.mkdir(outputDirectoryPath, { recursive: true });
   const isRemoveContentsOnly = true;
   await removeDir(outputDirectoryPath, isRemoveContentsOnly);
-
   Transformer.setOutputPath(outputDirectoryPath);
 }
 
@@ -350,6 +412,34 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models:
 function isObjectSchemaEnabled(objectSchemaName: string): boolean {
   // Extract potential model name from object schema name
   const modelName = extractModelNameFromObjectSchema(objectSchemaName);
+  
+  // In minimal mode, suppress complex/nested input schemas proactively
+  const cfg = Transformer.getGeneratorConfig();
+  if (cfg?.mode === 'minimal') {
+    // Allow-list of basic inputs still needed in minimal mode
+    const allowedBasics = [
+      /WhereInput$/, /WhereUniqueInput$/, /CreateInput$/, /UpdateInput$/,
+      /OrderByWithRelationInput$/
+    ];
+    if (allowedBasics.some((p) => p.test(objectSchemaName))) {
+      // continue to further checks below (model/ops) but do not block by minimal-mode rules
+    } else {
+      const disallowedPatterns = [
+      // Block Include/Select helper schemas entirely in minimal mode
+      /Include$/, /Select$/,
+      /OrderByWithAggregationInput$/, /ScalarWhereWithAggregatesInput$/,
+      /CountAggregateInput$/, /AvgAggregateInput$/, /SumAggregateInput$/, /MinAggregateInput$/, /MaxAggregateInput$/,
+      /CreateNested\w+Input$/, /UpdateNested\w+Input$/, /UpsertNested\w+Input$/,
+      /UpdateManyWithout\w+NestedInput$/, /UncheckedUpdateManyWithout\w+NestedInput$/,
+      /CreateMany\w+InputEnvelope$/,
+      /ListRelationFilter$/, /RelationFilter$/, /ScalarRelationFilter$/,
+      ];
+      if (disallowedPatterns.some((p) => p.test(objectSchemaName))) {
+        console.log(`⏭️  Minimal mode: skipping object schema ${objectSchemaName}`);
+        return false;
+      }
+    }
+  }
   
   if (modelName) {
     // First check if the model itself is enabled
@@ -543,10 +633,60 @@ async function generateModelSchemas(
   });
   await transformer.generateModelSchemas();
   await transformer.generateResultSchemas();
+  // Ensure objects index exists for integration expectations
+  await generateObjectsIndex();
 }
 
 async function generateIndex() {
   await Transformer.generateIndex();
+}
+
+/**
+ * Generate an index.ts inside the objects directory and add it to the main index
+ */
+async function generateObjectsIndex() {
+  try {
+    const schemasPath = Transformer.getSchemasPath();
+    const objectsDir = path.join(schemasPath, 'objects');
+
+    // Ensure directory exists; if not, nothing to do
+    try {
+      await fs.mkdir(objectsDir, { recursive: true });
+    } catch {}
+
+    // Read all .schema.ts files in objects directory
+    let entries: string[] = [];
+    try {
+      const dirents = await fs.readdir(objectsDir, { withFileTypes: true });
+      entries = dirents
+        .filter((d) => d.isFile() && d.name.endsWith('.schema.ts'))
+        .map((d) => d.name.replace(/\.ts$/, ''));
+    } catch {
+      // If reading fails, skip creating index content
+      entries = [];
+    }
+
+    const exportLines = entries.map((base) => `export * from './${base}';`);
+    const content = [
+      '/**',
+      ' * Object Schemas Index',
+      ' * Auto-generated - do not edit manually',
+      ' */',
+      '',
+      ...exportLines,
+      '',
+    ].join('\n');
+
+    const indexPath = path.join(objectsDir, 'index.ts');
+    // Write without formatting overhead
+    await fs.writeFile(indexPath, content);
+
+    // Add objects index to the main index exports
+    const { addIndexExport } = await import('./utils/writeIndexFile');
+    addIndexExport(indexPath);
+  } catch (err) {
+    console.error('⚠️  Failed to generate objects index:', err);
+  }
 }
 
 async function updateIndexWithVariants(config: CustomGeneratorConfig) {
@@ -554,6 +694,13 @@ async function updateIndexWithVariants(config: CustomGeneratorConfig) {
   const variants = config.variants;
   if (!variants) return;
   
+  // If variants are array-based and are placed at root, we don't add a variants index
+  if (Array.isArray(variants)) {
+    const placeAtRoot = (config as any).placeArrayVariantsAtRoot !== false; // default true
+    if (placeAtRoot) return;
+    // else proceed to add variants/index.ts below
+  }
+
   const enabledVariants = Object.entries(variants)
     .filter(([_, variantConfig]) => variantConfig?.enabled)
     .map(([variantName]) => variantName);
@@ -629,6 +776,9 @@ function generateFilteringSummary(models: DMMF.Model[], config: CustomGeneratorC
  * Merge configuration with proper precedence handling
  * Generator options override config file options
  */
+
+/**
+ */
 function mergeConfigurationWithPrecedence(
   configFileOptions: Partial<CustomGeneratorConfig>,
   generatorOverrides: Partial<CustomGeneratorConfig>
@@ -694,49 +844,177 @@ function logConfigurationPrecedence(
  * Generate variant schemas if variants are enabled in configuration
  */
 async function generateVariantSchemas(models: DMMF.Model[], config: CustomGeneratorConfig) {
-  // Check if variants are enabled and configured
-  const variants = config.variants;
-  if (!variants) return;
-  
-  const enabledVariants = Object.entries(variants)
-    .filter(([_, variantConfig]) => variantConfig?.enabled)
-    .map(([variantName]) => variantName);
-  
-  if (enabledVariants.length === 0) {
-    console.log('📦 No variants enabled, skipping variant generation');
+  // In strict single-file mode, skip generating any variant artifacts entirely.
+  if (!isSingleFileEnabled()) {
+    // continue
+  } else {
     return;
   }
-  
-  console.log(`📦 Generating variant schemas for: ${enabledVariants.join(', ')}`);
-  
-  try {
-    const outputPath = Transformer.getOutputPath();
-    const variantsOutputPath = `${outputPath}/variants`;
-    
-    // Filter models based on configuration
-    const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
-    
-    if (enabledModels.length === 0) {
-      console.log('⚠️  No models enabled for variant generation');
+  // Check if variants are configured
+  const variants = config.variants as any;
+  if (!variants) return;
+
+  // Support two formats:
+  // 1) Object-based variants (pure/input/result)
+  // 2) Array-based custom variants [{ name, suffix, exclude, ... }]
+  const isArrayVariants = Array.isArray(variants);
+
+  if (isArrayVariants) {
+    // Custom array-based variants: generate files directly under variants/ as Model{Suffix}.schema.ts
+    try {
+      const placeAtRoot = (config as any).placeArrayVariantsAtRoot !== false; // default true
+      const variantsOutputPath = placeAtRoot
+        ? Transformer.getSchemasPath()
+        : path.join(Transformer.getOutputPath(), 'variants');
+
+      // Filter models based on configuration
+      const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
+      if (enabledModels.length === 0) {
+        console.log('⚠️  No models enabled for variant generation');
+        return;
+      }
+
+      await fs.mkdir(variantsOutputPath, { recursive: true });
+
+  const exportLines: string[] = [];
+
+      for (const variantDef of variants as Array<any>) {
+        const suffix: string = variantDef.suffix || (variantDef.name ? (variantDef.name.charAt(0).toUpperCase() + variantDef.name.slice(1)) : 'Variant');
+        const exclude: string[] = Array.isArray(variantDef.exclude) ? variantDef.exclude : [];
+
+        for (const model of enabledModels) {
+          const schemaName = `${model.name}${suffix}Schema`;
+          const fileBase = `${model.name}${suffix}.schema`;
+          const filePath = `${variantsOutputPath}/${fileBase}.ts`;
+
+          // Merge exclusion sources: global, variant, and model-specific
+          const modelConfig = (config.models?.[model.name] as any) || {};
+          const modelVariant = modelConfig?.variants?.[variantDef.name];
+          const ge: any = (config as any).globalExclusions;
+          let globalExcludes: string[] = [];
+          if (Array.isArray(ge)) {
+            globalExcludes = ge as string[];
+          } else if (ge && variantDef.name && Array.isArray(ge[variantDef.name])) {
+            globalExcludes = ge[variantDef.name] as string[];
+          }
+          // Apply only legacy model-level excludes globally; variant-specific excludes are applied per-variant below
+          const baseModelExcludes: string[] = Array.isArray(modelConfig?.fields?.exclude) ? modelConfig.fields.exclude : [];
+          const modelExcludes: string[] = (modelVariant?.exclude as string[]) || (modelVariant?.excludeFields as string[]) || [];
+          const excludeFields = Array.from(new Set([...(exclude || []), ...globalExcludes, ...baseModelExcludes, ...modelExcludes]));
+
+          // Support simple variant-specific transformations
+          const variantNameForRules = variantDef.name || 'input';
+          const additionalValidation = (variantDef.additionalValidation || {}) as Record<string, string>;
+          const makeOptional: string[] = (variantDef.makeOptional || []);
+          const transformRequiredToOptional: string[] = (variantDef.transformRequiredToOptional || []);
+          const transformOptionalToRequired: boolean = Boolean(variantDef.transformOptionalToRequired);
+          const removeValidation: boolean = Boolean(variantDef.removeValidation);
+
+          // Build field definitions with basic rules
+          const enabledFields = model.fields.filter(field => !excludeFields.includes(field.name));
+          const fieldLines = enabledFields.map(field => {
+            // Base zod type
+            let zod = `z.${getZodTypeForField(field)}`;
+
+            // Apply optionality rules
+            const wasRequired = field.isRequired;
+            const shouldOptional = makeOptional.includes(field.name) || transformRequiredToOptional.includes(field.name) || (!wasRequired && variantNameForRules === 'input');
+            if (transformOptionalToRequired && !wasRequired) {
+              // force required: do nothing (skip .optional())
+            } else if (shouldOptional) {
+              zod += '.optional()';
+            }
+
+            // Apply validations
+            if (!removeValidation) {
+              // From config.additionalValidation
+              const v = additionalValidation[field.name];
+              if (v && typeof v === 'string' && v.startsWith('@zod')) {
+                zod += v.replace('@zod', '');
+              }
+              // From Prisma field documentation comments (/// @zod...)
+              const doc: string | undefined = (field as any).documentation || (field as any).doc || undefined;
+              if (doc && doc.includes('@zod')) {
+                const m = doc.match(/@zod(.*)$/m);
+                if (m && m[1]) {
+                  zod += m[1];
+                }
+              }
+            }
+
+            // Nullable for optional string in input
+            if (!field.isRequired && field.type === 'String') {
+              zod += '.nullable()';
+            }
+
+            return `  ${field.name}: ${zod}`;
+          }).join(',\n');
+
+          const content = `import { z } from 'zod';\n\n// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema','Type')} = z.infer<typeof ${schemaName}>;\n`;
+      await writeFileSafely(filePath, content);
+      exportLines.push(`export { ${schemaName} } from './${fileBase}';`);
+        }
+      }
+
+      if (!placeAtRoot) {
+        // Write a local variants index when not at root
+        const variantIndexContent = [
+          '/**',
+          ' * Schema Variants Index',
+          ' * Auto-generated - do not edit manually',
+          ' */',
+          '',
+          ...exportLines,
+          ''
+        ].join('\n');
+        await writeFileSafely(`${variantsOutputPath}/index.ts`, variantIndexContent);
+      }
+
+      console.log(`📦 Generated ${exportLines.length} variant schemas across ${enabledModels.length} models (${placeAtRoot ? 'top-level' : 'variants/ directory'})`);
+    } catch (error) {
+      console.error(`❌ Variant generation (array) failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  } else {
+    // Existing object-based variants path
+    const enabledVariants = Object.entries(variants)
+      .filter(([_, variantConfig]) => (variantConfig as any)?.enabled)
+      .map(([variantName]) => variantName);
+
+    if (enabledVariants.length === 0) {
+      console.log('📦 No variants enabled, skipping variant generation');
       return;
     }
-    
-    // Create variants directory
-    await fs.mkdir(variantsOutputPath, { recursive: true });
-    
-    // Generate each variant type
-    for (const variantName of enabledVariants) {
-      await generateVariantType(enabledModels, variantName, variantsOutputPath, config);
+
+    console.log(`📦 Generating variant schemas for: ${enabledVariants.join(', ')}`);
+
+    try {
+      const outputPath = Transformer.getOutputPath();
+      const variantsOutputPath = `${outputPath}/variants`;
+
+      // Filter models based on configuration
+      const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
+
+      if (enabledModels.length === 0) {
+        console.log('⚠️  No models enabled for variant generation');
+        return;
+      }
+
+      // Create variants directory
+      await fs.mkdir(variantsOutputPath, { recursive: true });
+
+      // Generate each variant type (object-based)
+      for (const variantName of enabledVariants) {
+        await generateVariantType(enabledModels, variantName, variantsOutputPath, config);
+      }
+
+      // Generate variants index file (object-based)
+      await generateVariantsIndex(enabledVariants, variantsOutputPath);
+
+      console.log(`📦 Generated ${enabledVariants.length} variant types for ${enabledModels.length} models`);
+
+    } catch (error) {
+      console.error(`❌ Variant generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    
-    // Generate variants index file
-    await generateVariantsIndex(enabledVariants, variantsOutputPath);
-    
-    console.log(`📦 Generated ${enabledVariants.length} variant types for ${enabledModels.length} models`);
-    
-  } catch (error) {
-    console.error(`❌ Variant generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    // Don't throw - variant generation failure shouldn't stop the main generation
   }
 }
 
@@ -820,6 +1098,7 @@ function generateVariantSchemaContent(
   
   return `import { z } from 'zod';
 
+// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
 }).strict();
@@ -979,15 +1258,26 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
       ' * Auto-generated - do not edit manually',
       ' */',
       '',
-      ...Array.from(schemaCollection.schemas.keys()).map(modelName => 
+      ...Array.from(schemaCollection.schemas.keys()).map(modelName => [
+        // Backward-compatible alias export as Schema for tests expecting *Schema
+        `export { ${modelName}Model as ${modelName}Schema } from './${modelName}.model';`,
+        // Primary export as Model
         `export { ${modelName}Model } from './${modelName}.model';`
-      ),
+      ].join('\n')),
       ''
     ].join('\n');
     
     const indexPath = `${modelsOutputPath}/index.ts`;
     await fs.writeFile(indexPath, modelsIndexContent);
     
+    // Create compatibility .schema.ts files that re-export from .model.ts to satisfy tests
+    for (const modelName of Array.from(schemaCollection.schemas.keys())) {
+      const compatPath = `${modelsOutputPath}/${modelName}.schema.ts`;
+      const target = `./${modelName}.model`;
+      const compatContent = `export { ${modelName}Model as ${modelName}Schema, ${modelName}Model } from '${target}';\n`;
+      await fs.writeFile(compatPath, compatContent);
+    }
+
     // Add the models directory to the main index exports
     const { addIndexExport } = await import('./utils/writeIndexFile');
     addIndexExport(indexPath);

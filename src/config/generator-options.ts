@@ -13,6 +13,8 @@ export interface ExtendedGeneratorOptions {
   config?: string;           // Path to external config file
   minimal?: boolean;         // Enable minimal mode
   variants?: string[];       // List of enabled variants
+  useMultipleFiles?: boolean; // Output multiple files (default true) or single bundle
+  singleFileName?: string;    // Name of the single bundle file when useMultipleFiles=false
   
   // Existing options (for backward compatibility)
   isGenerateSelect?: boolean;
@@ -45,6 +47,14 @@ export function parseGeneratorOptions(
   // Parse variants list
   if (generatorConfig.variants) {
     options.variants = parseVariantsList(generatorConfig.variants);
+  }
+
+  // Parse file output mode
+  if (generatorConfig.useMultipleFiles !== undefined) {
+    options.useMultipleFiles = parseBoolean(generatorConfig.useMultipleFiles, 'useMultipleFiles');
+  }
+  if (generatorConfig.singleFileName !== undefined) {
+    options.singleFileName = generatorConfig.singleFileName;
   }
 
   // Parse existing options for backward compatibility
@@ -206,6 +216,8 @@ export function createDefaultGeneratorOptions(): ExtendedGeneratorOptions {
     minimal: false,
     isGenerateSelect: false,
     isGenerateInclude: false,
+  useMultipleFiles: true,
+  singleFileName: 'schemas.ts',
     raw: {}
   };
 }
@@ -241,6 +253,11 @@ export function generatorOptionsToConfigOverrides(
   // Apply minimal mode override
   if (options.minimal !== undefined) {
     overrides.mode = options.minimal ? 'minimal' : undefined;
+    if (options.minimal) {
+      // Force-disable select/include when minimal flag is set in generator options
+      overrides.isGenerateSelect = false;
+      overrides.isGenerateInclude = false;
+    }
   }
 
   // Apply variants override
@@ -258,6 +275,14 @@ export function generatorOptionsToConfigOverrides(
     });
   }
 
+  // Apply file output mode overrides
+  if (options.useMultipleFiles !== undefined) {
+    overrides.useMultipleFiles = options.useMultipleFiles;
+  }
+  if (options.singleFileName) {
+    overrides.singleFileName = options.singleFileName;
+  }
+
   return overrides;
 }
 
@@ -267,6 +292,11 @@ export function generatorOptionsToConfigOverrides(
 export interface GeneratorConfigOverrides {
   mode?: 'full' | 'minimal' | 'custom';
   output?: string;
+  // Back-compat flags, consumed earlier in pipeline
+  isGenerateSelect?: boolean;
+  isGenerateInclude?: boolean;
+  useMultipleFiles?: boolean;
+  singleFileName?: string;
   variants?: {
     pure?: { enabled?: boolean };
     input?: { enabled?: boolean };
@@ -346,6 +376,13 @@ export function formatGeneratorOptions(options: ExtendedGeneratorOptions): strin
   
   if (options.variants) {
     lines.push(`  variants: [${options.variants.join(', ')}]`);
+  }
+
+  if (options.useMultipleFiles !== undefined) {
+    lines.push(`  useMultipleFiles: ${options.useMultipleFiles}`);
+  }
+  if (options.singleFileName !== undefined) {
+    lines.push(`  singleFileName: ${options.singleFileName}`);
   }
   
   if (options.isGenerateSelect !== undefined) {

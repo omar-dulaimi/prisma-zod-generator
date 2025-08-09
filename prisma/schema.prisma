@@ -10,12 +10,17 @@ datasource db {
 generator zod {
   provider          = "node ./lib/generator.js"
   output            = "./generated"
+  // Enable single-file output mode for validation of bundling
+  useMultipleFiles  = false
+  // Optional: customize the bundle filename (defaults to "schemas.ts")
+  singleFileName    = "schemas.ts"
 }
 
 model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
   name  String?
+  role  Role?
   posts Post[]
   books Book[]
 }
@@ -31,6 +36,7 @@ model Post {
   author    User?    @relation(fields: [authorId], references: [id])
   authorId  Int?
   likes     BigInt
+  bytes     Bytes?
 }
 
 model Book {
@@ -43,4 +49,9 @@ model Book {
 model Map {
   key   String @id
   value String
+}
+
+enum Role {
+  USER
+  ADMIN
 }

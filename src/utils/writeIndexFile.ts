@@ -37,6 +37,23 @@ export const writeIndexFile = async (indexPath: string) => {
     const normalized = normalizePath(relativePath);
     return `export * from './${normalized}'`;
   });
-  const content = rows.join('\n');
+  // Additionally, ensure directory-level exports for common folders if their index.ts was not added explicitly
+  const dirExports: string[] = [];
+  const baseDir = path.dirname(indexPath);
+  for (const dir of ['enums', 'objects', 'models']) {
+    const dirIndex = path.join(baseDir, dir, 'index.ts');
+    // If an index.ts exists, ensure it's exported
+    try {
+      const fs = await import('fs');
+      if (fs.existsSync(dirIndex)) {
+        const rel = normalizePath(path.relative(baseDir, dirIndex).replace(/\.ts$/, ''));
+        const line = `export * from './${rel}'`;
+        if (!rows.includes(line)) dirExports.push(line);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  const content = [...rows, ...dirExports].join('\n');
   await writeFileSafely(indexPath, content, false);
 };

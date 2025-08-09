@@ -1,18 +1,23 @@
 import { DMMF } from '@prisma/generator-helper';
-import {
-  checkModelHasEnabledModelRelation,
-  checkModelHasEnabledManyModelRelation,
-  getEnabledModels,
-  getEnabledRelationFields,
-  isOperationEnabledForModel
-} from './model-helpers';
 import Transformer from '../transformer';
+import {
+    checkModelHasEnabledManyModelRelation,
+    checkModelHasEnabledModelRelation,
+    getEnabledModels,
+    getEnabledRelationFields,
+    isOperationEnabledForModel
+} from './model-helpers';
 
 export function addMissingInputObjectTypesForInclude(
   inputObjectTypes: DMMF.InputType[],
   models: DMMF.Model[],
   isGenerateSelect: boolean,
 ) {
+  // In minimal mode, do not generate Include types at all
+  const cfg = Transformer.getGeneratorConfig();
+  if (cfg?.mode === 'minimal') {
+    return;
+  }
   // Filter models to only include enabled ones
   const enabledModels = getEnabledModels(models);
   

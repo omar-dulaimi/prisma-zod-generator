@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://user:password@localhost:3306/test"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "./generated"
+}
+
+model MySQLUser {
+  id      Int        @id @default(autoincrement())
+  email   String     @unique
+  name    String?
+  posts   MySQLPost[]
+}
+
+model MySQLPost {
+  id        Int        @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  author    MySQLUser?  @relation(fields: [authorId], references: [id])
+  authorId  Int?
+}

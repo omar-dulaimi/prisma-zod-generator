@@ -46,6 +46,8 @@ export class DefaultConfigurationManager {
     return {
       mode: DEFAULT_CONFIG.mode,
       output: DEFAULT_CONFIG.output,
+  useMultipleFiles: true,
+  singleFileName: 'schemas.ts',
       pureModels: false, // Default to false, can be overridden by user config
       globalExclusions: {
         input: [],
@@ -289,6 +291,11 @@ export class DefaultConfigurationManager {
   static normalizeConfiguration(config: GeneratorConfig): GeneratorConfig {
     const result = { ...config };
 
+    // Support legacy/minimal boolean flag by mapping to mode
+    if ((result as any).minimal === true && result.mode !== 'minimal') {
+      result.mode = 'minimal';
+    }
+
     // Normalize mode
     if (!result.mode || !GENERATION_MODES.includes(result.mode)) {
       result.mode = DEFAULT_CONFIG.mode;
@@ -338,6 +345,14 @@ export class DefaultConfigurationManager {
     if (!result.models) {
       result.models = {};
     }
+    
+      // Normalize file options
+      if (typeof (result as any).useMultipleFiles !== 'boolean') {
+        (result as any).useMultipleFiles = true;
+      }
+      if (!(result as any).singleFileName || typeof (result as any).singleFileName !== 'string') {
+        (result as any).singleFileName = 'schemas.ts';
+      }
 
     return result;
   }

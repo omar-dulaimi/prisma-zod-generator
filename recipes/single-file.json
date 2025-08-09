@@ -1,0 +1,13 @@
+{
+  "mode": "full",
+  "output": "./prisma/generated",
+  "useMultipleFiles": false,
+  "singleFileName": "schemas.ts",
+  "placeSingleFileAtRoot": true,
+  "pureModels": true,
+  "variants": {
+    "pure": { "enabled": true, "suffix": ".model" },
+    "input": { "enabled": true, "suffix": ".input" },
+    "result": { "enabled": true, "suffix": ".result" }
+  }
+}
