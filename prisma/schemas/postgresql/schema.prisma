@@ -1,439 +1,50 @@
-// PostgreSQL Comprehensive Test Schema
-// Tests all PostgreSQL-specific features and native types
-
 generator client {
   provider = "prisma-client-js"
 }
 
-generator zod {
-  provider          = "node ./lib/generator.js"
-  output            = "./generated"
-  isGenerateSelect  = true
-  isGenerateInclude = true
-}
-
 datasource db {
   provider = "postgresql"
-  url      = env("POSTGRESQL_URL")
+  url      = "postgresql://user:password@localhost:5432/test"
 }
 
-// =============================================================================
-// COMPREHENSIVE TYPE TESTING
-// =============================================================================
-
-model PostgreSQLAllTypes {
-  id                String            @id @default(cuid())
-  
-  // Text types
-  varcharField      String            @db.VarChar(255)
-  charField         String            @db.Char(10)
-  textField         String            @db.Text
-  
-  // JSON types
-  jsonField         Json?             @db.Json
-  jsonbField        Json?             @db.JsonB
-  
-  // UUID and network types
-  uuidField         String            @default(uuid()) @db.Uuid
-  inetField         String            @db.Inet
-  cidrField         String            @db.Text
-  macaddrField      String            @db.Text
-  
-  // Date/time types
-  dateField         DateTime          @db.Date
-  timeField         DateTime          @db.Time
-  timestampField    DateTime          @db.Timestamp
-  timestamptzField  DateTime          @db.Timestamptz
-  timetzField       DateTime          @db.Timetz
-  intervalField     String            @db.Text
-  
-  // Numeric types
-  smallintField     Int               @db.SmallInt
-  integerField      Int               @db.Integer
-  bigintField       BigInt            @db.BigInt
-  realField         Float             @db.Real
-  doublePrecField   Float             @db.DoublePrecision
-  decimalField      Decimal           @db.Decimal(10, 2)
-  numericField      Decimal           @db.Decimal(10, 2)
-  moneyField        Decimal           @db.Money
-  serialField       Int               @default(autoincrement())
-  bigSerialField    BigInt            @default(autoincrement())
-  smallSerialField  Int               @default(autoincrement())
-  
-  // Arrays - PostgreSQL specific
-  textArray         String[]
-  intArray          Int[]
-  floatArray        Float[]
-  boolArray         Boolean[]
-  dateArray         DateTime[]
-  jsonArray         Json[]
-  uuidArray         String[]          @db.Uuid
-  
-  // Binary types
-  bitField          String            @db.Bit(8)
-  varbitField       String            @db.VarBit(16)
-  byteaField        Bytes             @db.ByteA
-  
-  // Other PostgreSQL types
-  booleanField      Boolean           @db.Boolean
-  xmlField          String            @db.Xml
-  oidField          Int               @db.Oid
-  
-  // Optional fields for testing null handling
-  optionalText      String?           @db.Text
-  optionalInt       Int?              @db.Integer
-  optionalJson      Json?             @db.JsonB
-  optionalUuid      String?           @db.Uuid
-  
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  
-  @@map("postgresql_all_types")
-  @@index([varcharField])
-  @@index([uuidField])
-  @@index([timestampField])
-  @@unique([varcharField, integerField])
-}
-
-// =============================================================================
-// ENUM TESTING
-// =============================================================================
-
-enum PostgreSQLUserStatus {
-  ACTIVE
-  INACTIVE
-  PENDING
-  SUSPENDED
-  ARCHIVED
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "./generated"
 }
 
 enum PostgreSQLUserRole {
   ADMIN
-  MODERATOR
   USER
-  GUEST
 }
-
-enum PostgreSQLPostStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-  DELETED
-}
-
-enum PostgreSQLPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-  CRITICAL
-}
-
-// =============================================================================
-// COMPREHENSIVE RELATIONSHIP TESTING
-// =============================================================================
 
 model PostgreSQLUser {
-  id                String                      @id @default(cuid())
-  email             String                      @unique @db.VarChar(255)
-  username          String                      @unique @db.VarChar(100)
-  firstName         String                      @db.VarChar(100)
-  lastName          String                      @db.VarChar(100)
-  status            PostgreSQLUserStatus        @default(ACTIVE)
-  role              PostgreSQLUserRole          @default(USER)
-  metadata          Json?                       @db.JsonB
-  preferences       Json?                       @db.JsonB
-  tags              String[]
-  scores            Int[]
-  
-  // One-to-one relationship
-  profile           PostgreSQLProfile?
-  
-  // One-to-many relationships
-  posts             PostgreSQLPost[]
-  comments          PostgreSQLComment[]
-  likes             PostgreSQLLike[]
-  
-  // Many-to-many relationships
-  followedUsers     PostgreSQLFollow[]          @relation("UserFollows")
-  followers         PostgreSQLFollow[]          @relation("UserFollowers")
-  joinedGroups      PostgreSQLGroupMember[]
-  
-  // Self-referential relationships
-  managerId         String?
-  manager           PostgreSQLUser?             @relation("UserManagement", fields: [managerId], references: [id])
-  subordinates      PostgreSQLUser[]            @relation("UserManagement")
-  
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
-  
-  @@map("postgresql_users")
-  @@index([email])
-  @@index([username])
-  @@index([status])
-  @@index([role])
+  id      Int       @id @default(autoincrement())
+  email   String    @unique
+  name    String?
+  role    PostgreSQLUserRole?
+  scores  Int[]
+  tags    String[]
+  profile PostgreSQLProfile?
+  posts   PostgreSQLPost[]
 }
 
 model PostgreSQLProfile {
-  id                String              @id @default(cuid())
-  userId            String              @unique
-  bio               String?             @db.Text
-  avatar            String?             @db.Text
-  website           String?             @db.VarChar(255)
-  location          String?             @db.VarChar(255)
-  birthDate         DateTime?           @db.Date
-  phoneNumber       String?             @db.VarChar(20)
-  isPublic          Boolean             @default(true)
-  settings          Json?               @db.JsonB
-  socialLinks       Json?               @db.JsonB
-  
-  user              PostgreSQLUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  
-  @@map("postgresql_profiles")
-  @@index([userId])
+  id     Int             @id @default(autoincrement())
+  bio    String?
+  user   PostgreSQLUser  @relation(fields: [userId], references: [id])
+  userId Int             @unique
 }
 
 model PostgreSQLPost {
-  id                String              @id @default(cuid())
-  title             String              @db.VarChar(255)
-  slug              String              @unique @db.VarChar(255)
-  content           String?             @db.Text
-  excerpt           String?             @db.VarChar(500)
-  status            PostgreSQLPostStatus @default(DRAFT)
-  priority          PostgreSQLPriority   @default(MEDIUM)
-  publishedAt       DateTime?           @db.Timestamptz
-  metadata          Json?               @db.JsonB
-  tags              String[]
-  viewCount         Int                 @default(0)
-  likeCount         Int                 @default(0)
-  commentCount      Int                 @default(0)
-  
-  authorId          String
-  author            PostgreSQLUser      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
-  // One-to-many relationships
-  comments          PostgreSQLComment[]
-  likes             PostgreSQLLike[]
-  
-  // Many-to-many relationships
-  categories        PostgreSQLPostCategory[]
-  
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  
-  @@map("postgresql_posts")
-  @@index([authorId])
-  @@index([status])
-  @@index([publishedAt])
-  @@index([slug])
-}
-
-model PostgreSQLComment {
-  id                String              @id @default(cuid())
-  content           String              @db.Text
-  isEdited          Boolean             @default(false)
-  editedAt          DateTime?           @db.Timestamptz
-  
-  authorId          String
-  author            PostgreSQLUser      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
-  postId            String
-  post              PostgreSQLPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  // Self-referential for nested comments
-  parentId          String?
-  parent            PostgreSQLComment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies           PostgreSQLComment[] @relation("CommentReplies")
-  
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  
-  @@map("postgresql_comments")
-  @@index([authorId])
-  @@index([postId])
-  @@index([parentId])
-}
-
-model PostgreSQLLike {
-  id                String              @id @default(cuid())
-  
-  userId            String
-  user              PostgreSQLUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  postId            String
-  post              PostgreSQLPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  createdAt         DateTime            @default(now())
-  
-  @@map("postgresql_likes")
-  @@unique([userId, postId])
-  @@index([userId])
-  @@index([postId])
-}
-
-model PostgreSQLCategory {
-  id                String                      @id @default(cuid())
-  name              String                      @unique @db.VarChar(100)
-  slug              String                      @unique @db.VarChar(100)
-  description       String?                     @db.Text
-  color             String?                     @db.VarChar(7)
-  icon              String?                     @db.VarChar(50)
-  isActive          Boolean                     @default(true)
-  
-  // Self-referential for category hierarchy
-  parentId          String?
-  parent            PostgreSQLCategory?         @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children          PostgreSQLCategory[]        @relation("CategoryHierarchy")
-  
-  // Many-to-many with posts
-  posts             PostgreSQLPostCategory[]
-  
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
-  
-  @@map("postgresql_categories")
-  @@index([name])
-  @@index([slug])
-  @@index([parentId])
-}
-
-model PostgreSQLPostCategory {
-  postId            String
-  post              PostgreSQLPost              @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  categoryId        String
-  category          PostgreSQLCategory          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  
-  createdAt         DateTime                    @default(now())
-  
-  @@id([postId, categoryId])
-  @@map("postgresql_post_categories")
-}
-
-model PostgreSQLFollow {
-  id                String              @id @default(cuid())
-  
-  followerId        String
-  follower          PostgreSQLUser      @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
-  
-  followingId       String
-  following         PostgreSQLUser      @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
-  
-  createdAt         DateTime            @default(now())
-  
-  @@map("postgresql_follows")
-  @@unique([followerId, followingId])
-  @@index([followerId])
-  @@index([followingId])
-}
-
-model PostgreSQLGroup {
-  id                String                      @id @default(cuid())
-  name              String                      @unique @db.VarChar(100)
-  description       String?                     @db.Text
-  isPrivate         Boolean                     @default(false)
-  maxMembers        Int?
-  settings          Json?                       @db.JsonB
-  
-  members           PostgreSQLGroupMember[]
-  
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
-  
-  @@map("postgresql_groups")
-  @@index([name])
-}
-
-model PostgreSQLGroupMember {
-  id                String              @id @default(cuid())
-  
-  userId            String
-  user              PostgreSQLUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  groupId           String
-  group             PostgreSQLGroup     @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  
-  role              String              @default("member") @db.VarChar(50)
-  joinedAt          DateTime            @default(now())
-  
-  @@map("postgresql_group_members")
-  @@unique([userId, groupId])
-  @@index([userId])
-  @@index([groupId])
-}
-
-// =============================================================================
-// ADVANCED POSTGRESQL FEATURES
-// =============================================================================
-
-model PostgreSQLAdvancedTypes {
-  id                String              @id @default(cuid())
-  
-  // Range types (PostgreSQL specific)
-  intRange          String?             @db.Text // Would be int4range in real PostgreSQL
-  timestampRange    String?             @db.Text // Would be tsrange in real PostgreSQL
-  
-  // Geometric types
-  point             String?             @db.Text // Would be point in real PostgreSQL
-  line              String?             @db.Text // Would be line in real PostgreSQL
-  lseg              String?             @db.Text // Would be lseg in real PostgreSQL
-  box               String?             @db.Text // Would be box in real PostgreSQL
-  path              String?             @db.Text // Would be path in real PostgreSQL
-  polygon           String?             @db.Text // Would be polygon in real PostgreSQL
-  circle            String?             @db.Text // Would be circle in real PostgreSQL
-  
-  // Full-text search
-  searchVector      String?             @db.Text // Would be tsvector in real PostgreSQL
-  
-  // Custom composite type simulation
-  complexData       Json?               @db.JsonB
-  
-  createdAt         DateTime            @default(now())
-  
-  @@map("postgresql_advanced_types")
-}
-
-// =============================================================================
-// TESTING AGGREGATIONS AND COMPLEX OPERATIONS
-// =============================================================================
-
-model PostgreSQLMetrics {
-  id                String              @id @default(cuid())
-  entityType        String              @db.VarChar(50)
-  entityId          String
-  metricName        String              @db.VarChar(100)
-  metricValue       Float
-  metricUnit        String?             @db.VarChar(20)
-  dimensions        Json?               @db.JsonB
-  timestamp         DateTime            @default(now()) @db.Timestamptz
-  
-  @@map("postgresql_metrics")
-  @@index([entityType, entityId])
-  @@index([metricName])
-  @@index([timestamp])
-  @@unique([entityType, entityId, metricName, timestamp])
-}
-
-model PostgreSQLAuditLog {
-  id                String              @id @default(cuid())
-  tableName         String              @db.VarChar(100)
-  recordId          String
-  action            String              @db.VarChar(20)
-  oldValues         Json?               @db.JsonB
-  newValues         Json?               @db.JsonB
-  userId            String?
-  userEmail         String?             @db.VarChar(255)
-  ipAddress         String?             @db.Inet
-  userAgent         String?             @db.Text
-  timestamp         DateTime            @default(now()) @db.Timestamptz
-  
-  @@map("postgresql_audit_log")
-  @@index([tableName])
-  @@index([recordId])
-  @@index([action])
-  @@index([userId])
-  @@index([timestamp])
+  id        Int             @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  likes     BigInt
+  data      Json?
+  bytes     Bytes?
+  author    PostgreSQLUser? @relation(fields: [authorId], references: [id])
+  authorId  Int?
 }

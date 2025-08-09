@@ -1,0 +1,18 @@
+{
+  "mode": "custom",
+  "output": "./prisma/generated",
+  "globalExclusions": {
+    "pure": ["password", "hashedPassword"],
+    "input": [],
+    "result": []
+  },
+  "models": {
+    "User": {
+      "variants": {
+        "pure": { "excludeFields": ["emailVerifiedAt"] },
+        "input": { "excludeFields": ["role", "permissions"] },
+        "result": { "excludeFields": ["password"] }
+      }
+    }
+  }
+}

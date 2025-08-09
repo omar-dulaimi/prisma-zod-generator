@@ -3,3 +3,6 @@ contact_links:
   - name: Ask a question
     url: https://github.com/omar-dulaimi/prisma-zod-generator/discussions/new
     about: Ask questions and discuss with others
+  - name: 💖 Sponsor this project
+    url: https://github.com/sponsors/omar-dulaimi
+    about: Help keep the project actively maintained and support new features

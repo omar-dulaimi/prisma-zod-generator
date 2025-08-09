@@ -24,6 +24,8 @@ export function addMissingInputObjectTypes(
   dataSourceProvider: ConnectorType,
   options: AddMissingInputObjectTypeOptions,
 ) {
+  const cfg = Transformer.getGeneratorConfig();
+  const isMinimal = cfg?.mode === 'minimal';
   // TODO: remove once Prisma fix this issue: https://github.com/prisma/prisma/issues/14900
   if (dataSourceProvider === 'mongodb') {
     addMissingInputObjectTypesForMongoDbRawOpsAndQueries(
@@ -36,8 +38,10 @@ export function addMissingInputObjectTypes(
   // Filter out fieldRefTypes from input types to avoid generating non-existent schemas
   filterFieldRefTypes(inputObjectTypes);
 
-  addMissingInputObjectTypesForAggregate(inputObjectTypes, outputObjectTypes);
-  if (options.isGenerateSelect) {
+  if (!isMinimal) {
+    addMissingInputObjectTypesForAggregate(inputObjectTypes, outputObjectTypes);
+  }
+  if (!isMinimal && options.isGenerateSelect) {
     addMissingInputObjectTypesForSelect(
       inputObjectTypes,
       outputObjectTypes,
@@ -45,7 +49,7 @@ export function addMissingInputObjectTypes(
     );
     Transformer.setIsGenerateSelect(true);
   }
-  if (options.isGenerateSelect || options.isGenerateInclude) {
+  if (!isMinimal && (options.isGenerateSelect || options.isGenerateInclude)) {
     addMissingInputObjectTypesForModelArgs(
       inputObjectTypes,
       models,
@@ -53,7 +57,7 @@ export function addMissingInputObjectTypes(
       options.isGenerateInclude,
     );
   }
-  if (options.isGenerateInclude) {
+  if (!isMinimal && options.isGenerateInclude) {
     addMissingInputObjectTypesForInclude(
       inputObjectTypes,
       models,

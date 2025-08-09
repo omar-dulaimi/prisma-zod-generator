@@ -1,59 +1,88 @@
 name: Bug report
-description: Create a bug report to help us improve Prisma Zod Generator
-labels: 'kind/bug'
+description: Report a problem to help improve Prisma Zod Generator
+labels: ['kind/bug']
+title: '[Bug]: '
 body:
   - type: markdown
     attributes:
       value: |
-        Please consider supporting me for faster fixes, responses and features [Sponsor Me](https://github.com/sponsors/omar-dulaimi)
-  - type: textarea
+        ## 🐛 Bug Report
+
+        Thanks for taking the time to report an issue.
+
+        🚨 Sponsor to keep this project active (faster fixes and responses): [GitHub Sponsors →](https://github.com/sponsors/omar-dulaimi)
+
+  - type: checkboxes
+    id: preflight
     attributes:
-      label: Bug description
-      description: A clear and concise description of what the bug is.
+      label: Before you start
+      options:
+        - label: I searched existing issues and discussions for duplicates
+          required: true
+        - label: I’m using the latest version of prisma-zod-generator
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug
     validations:
       required: true
+
   - type: textarea
+    id: reproduction
     attributes:
-      label: How to reproduce
+      label: Reproduction
       description: Steps to reproduce the behavior
       value: |
         <!--
         1. Go to '...'
-        2. Change '....'
-        3. Run '....'
+        2. Change '...'
+        3. Run '...'
         4. See error
         -->
     validations:
       required: true
+
   - type: textarea
+    id: expected
     attributes:
       label: Expected behavior
-      description: A clear and concise description of what you expected to happen.
+      description: What did you expect to happen?
+
   - type: textarea
+    id: prisma
     attributes:
-      label: Prisma information
-      description: Your Prisma schema, Prisma Client queries, ...
+      label: Prisma schema / query snippet
+      description: Your Prisma schema or relevant query code (do not include secrets)
       value: |
-        <!-- Do not include your database credentials when sharing your Prisma schema! -->
+        <!-- Do not include database credentials when sharing your Prisma schema! -->
     validations:
       required: true
+
   - type: textarea
+    id: env
     attributes:
-      label: Environment & setup
-      description: In which environment does the problem occur
+      label: Environment
+      description: Where does this problem occur?
       value: |
-        - OS: <!--[e.g. Mac OS, Windows, Debian, CentOS, ...]-->
-        - Database: <!--[PostgreSQL, MySQL, MariaDB or SQLite]-->
-        - Node.js version: <!--[Run `node -v` to see your Node.js version]-->
+        - OS: <!-- e.g. macOS, Windows, Ubuntu -->
+        - Database: <!-- PostgreSQL, MySQL, MongoDB, SQLite, SQL Server -->
+        - Node.js: <!-- node -v -->
+        - Prisma: <!-- prisma -v (paste in next field too) -->
     validations:
       required: true
+
   - type: textarea
+    id: versions
     attributes:
-      label: Prisma Version
-      description: Run `prisma -v` to see your Prisma version and paste it between the ´´´
+      label: Prisma and related versions
+      description: Output of `npx prisma -v` (and relevant package versions)
       value: |
         ```
-
+        # prisma -v
+        
         ```
     validations:
       required: true

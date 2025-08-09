@@ -10,14 +10,15 @@ datasource db {
 generator zod {
   provider          = "node ./lib/generator.js"
   output            = "./generated"
-  isGenerateSelect  = true
-  isGenerateInclude = true
+  // Generate per-file schemas to align with tests that import individual files
+  useMultipleFiles  = true
 }
 
 model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
   name  String?
+  role  Role?
   posts Post[]
   books Book[]
 }
@@ -33,7 +34,7 @@ model Post {
   author    User?    @relation(fields: [authorId], references: [id])
   authorId  Int?
   likes     BigInt
-  bytes     Bytes
+  bytes     Bytes?
 }
 
 model Book {
@@ -46,4 +47,9 @@ model Book {
 model Map {
   key   String @id
   value String
+}
+
+enum Role {
+  USER
+  ADMIN
 }

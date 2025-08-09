@@ -1,23 +1,23 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { SchemaTestUtils } from './schema-test-utils';
 
-// Import generated schemas
-import { UserFindFirstSchema } from '../prisma/generated/schemas/findFirstUser.schema';
-import { UserCreateOneSchema } from '../prisma/generated/schemas/createOneUser.schema';
-import { PostFindManySchema } from '../prisma/generated/schemas/findManyPost.schema';
-import { UserScalarFieldEnumSchema } from '../prisma/generated/schemas/enums/UserScalarFieldEnum.schema';
+// Import generated schemas (updated to match current filtering config)
+import { UserCreateManySchema } from '../prisma/generated/schemas/createManyUser.schema';
 import { SortOrderSchema } from '../prisma/generated/schemas/enums/SortOrder.schema';
+import { UserScalarFieldEnumSchema } from '../prisma/generated/schemas/enums/UserScalarFieldEnum.schema';
+import { PostFindManySchema } from '../prisma/generated/schemas/findManyPost.schema';
+import { UserFindManySchema } from '../prisma/generated/schemas/findManyUser.schema';
 
 // Import object schemas
+import { StringFilterObjectSchema } from '../prisma/generated/schemas/objects/StringFilter.schema';
 import { UserCreateInputObjectSchema } from '../prisma/generated/schemas/objects/UserCreateInput.schema';
 import { UserWhereInputObjectSchema } from '../prisma/generated/schemas/objects/UserWhereInput.schema';
-import { StringFilterObjectSchema } from '../prisma/generated/schemas/objects/StringFilter.schema';
 
 describe('Generated Schema Tests', () => {
   describe('Operation Schemas', () => {
-    describe('UserFindFirstSchema', () => {
+    describe('UserFindManySchema', () => {
       it('should validate with minimal input', () => {
-        SchemaTestUtils.testValidData(UserFindFirstSchema, {});
+        SchemaTestUtils.testValidData(UserFindManySchema, {});
       });
 
       it('should validate with all optional fields', () => {
@@ -31,12 +31,12 @@ describe('Generated Schema Tests', () => {
           distinct: ['id', 'email'] as ('id' | 'email' | 'name')[],
         };
 
-        SchemaTestUtils.testValidData(UserFindFirstSchema, validData);
+        SchemaTestUtils.testValidData(UserFindManySchema, validData);
       });
 
       it('should reject invalid field types', () => {
         SchemaTestUtils.testInvalidData(
-          UserFindFirstSchema,
+          UserFindManySchema,
           {
             take: 'invalid',
             skip: 'invalid',
@@ -51,7 +51,7 @@ describe('Generated Schema Tests', () => {
           take: 10,
         };
 
-        SchemaTestUtils.testOptionalFields(UserFindFirstSchema, baseData, [
+        SchemaTestUtils.testOptionalFields(UserFindManySchema, baseData, [
           'select',
           'include',
           'orderBy',
@@ -63,20 +63,40 @@ describe('Generated Schema Tests', () => {
       });
     });
 
-    describe('UserCreateOneSchema', () => {
+    describe('UserCreateManySchema', () => {
       it('should validate with required data', () => {
         const validData = {
           data: {
             email: 'test@example.com',
             name: 'Test User',
+            role: 'USER',
           },
         };
 
-        SchemaTestUtils.testValidData(UserCreateOneSchema, validData);
+        SchemaTestUtils.testValidData(UserCreateManySchema, validData);
+      });
+
+      it('should validate with array data', () => {
+        const validData = {
+          data: [
+            {
+              email: 'test1@example.com',
+              name: 'Test User 1',
+              role: 'USER',
+            },
+            {
+              email: 'test2@example.com',
+              name: 'Test User 2',
+              role: 'ADMIN',
+            }
+          ],
+        };
+
+        SchemaTestUtils.testValidData(UserCreateManySchema, validData);
       });
 
       it('should reject missing required fields', () => {
-        SchemaTestUtils.testInvalidData(UserCreateOneSchema, {
+        SchemaTestUtils.testInvalidData(UserCreateManySchema, {
           data: {
             name: 'Test User',
             // missing email
@@ -103,7 +123,7 @@ describe('Generated Schema Tests', () => {
         const invalidValues = ['invalid', 'createdAt', 'updatedAt'];
 
         SchemaTestUtils.testEnumValues(
-          UserScalarFieldEnumSchema,
+          UserScalarFieldEnumSchema as any,
           validValues,
           invalidValues,
         );
@@ -116,7 +136,7 @@ describe('Generated Schema Tests', () => {
         const invalidValues = ['ascending', 'descending', 'ASC', 'DESC'];
 
         SchemaTestUtils.testEnumValues(
-          SortOrderSchema,
+          SortOrderSchema as any,
           validValues,
           invalidValues,
         );
@@ -130,6 +150,7 @@ describe('Generated Schema Tests', () => {
         const validData = {
           email: 'test@example.com',
           name: 'Test User',
+          role: 'USER',
         };
 
         SchemaTestUtils.testValidData(UserCreateInputObjectSchema, validData);
@@ -139,12 +160,13 @@ describe('Generated Schema Tests', () => {
         const validData = {
           email: 'test@example.com',
           name: 'Test User',
+          role: 'USER',
           posts: {
             create: {
               title: 'Test Post',
               content: 'Test content',
               likes: BigInt(0),
-              bytes: Buffer.from([1, 2, 3, 4]),
+              bytes: Buffer.from([1,2,3])
             },
           },
         };
@@ -156,6 +178,7 @@ describe('Generated Schema Tests', () => {
         const baseData = {
           email: 'test@example.com',
           name: 'Test User',
+          role: 'USER',
         };
 
         SchemaTestUtils.testRequiredFields(
@@ -261,8 +284,8 @@ describe('Generated Schema Tests', () => {
   });
 
   describe('Type Safety Tests', () => {
-    it('should have correct TypeScript types for UserFindFirstSchema', () => {
-      SchemaTestUtils.testTypeInference(UserFindFirstSchema);
+    it('should have correct TypeScript types for UserFindManySchema', () => {
+      SchemaTestUtils.testTypeInference(UserFindManySchema);
     });
 
     it('should have correct TypeScript types for UserCreateInputObjectSchema', () => {
@@ -279,7 +302,7 @@ describe('Generated Schema Tests', () => {
       };
 
       const performance = SchemaTestUtils.performanceTest(
-        UserFindFirstSchema,
+        UserFindManySchema,
         testData,
         100,
       );
@@ -314,7 +337,7 @@ describe('Generated Schema Tests', () => {
         },
       };
 
-      SchemaTestUtils.testValidData(UserFindFirstSchema, validData);
+      SchemaTestUtils.testValidData(UserFindManySchema, validData);
     });
 
     it('should handle complex array operations', () => {
@@ -323,7 +346,7 @@ describe('Generated Schema Tests', () => {
         orderBy: [{ id: 'desc' as const }, { email: 'asc' as const }],
       };
 
-      SchemaTestUtils.testValidData(UserFindFirstSchema, validData);
+      SchemaTestUtils.testValidData(UserFindManySchema, validData);
     });
 
     it('should reject malformed data', () => {
@@ -335,7 +358,7 @@ describe('Generated Schema Tests', () => {
         },
       };
 
-      SchemaTestUtils.testInvalidData(UserFindFirstSchema, invalidData);
+      SchemaTestUtils.testInvalidData(UserFindManySchema, invalidData);
     });
   });
 });

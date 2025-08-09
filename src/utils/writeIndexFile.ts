@@ -37,6 +37,35 @@ export const writeIndexFile = async (indexPath: string) => {
     const normalized = normalizePath(relativePath);
     return `export * from './${normalized}'`;
   });
-  const content = rows.join('\n');
+  // Additionally, ensure directory-level exports for common folders if their index.ts was not added explicitly
+  const dirExports: string[] = [];
+  const baseDir = path.dirname(indexPath);
+  for (const dir of ['enums', 'objects', 'models']) {
+    const dirIndex = path.join(baseDir, dir, 'index.ts');
+    // If an index.ts exists, ensure it's exported
+    try {
+      const fs = await import('fs');
+      if (fs.existsSync(dirIndex)) {
+        const rel = normalizePath(path.relative(baseDir, dirIndex).replace(/\.ts$/, ''));
+        const line = `export * from './${rel}'`;
+        if (!rows.includes(line)) dirExports.push(line);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  // If variants/index.ts exists under schemas, ensure it's exported as well
+  try {
+    const fs = await import('fs');
+    const variantsIndex = path.join(baseDir, 'variants', 'index.ts');
+    if (fs.existsSync(variantsIndex)) {
+      const rel = normalizePath(path.relative(baseDir, variantsIndex).replace(/\.ts$/, ''));
+      const line = `export * from './${rel}'`;
+      if (!rows.includes(line) && !dirExports.includes(line)) dirExports.push(line);
+    }
+  } catch {
+    // ignore
+  }
+  const content = [...rows, ...dirExports].join('\n');
   await writeFileSafely(indexPath, content, false);
 };

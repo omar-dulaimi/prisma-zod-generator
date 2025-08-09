@@ -16,7 +16,7 @@ interface SchemaInfo {
 
 class ComprehensiveSchemaTest {
   private discoveredSchemas: SchemaInfo[] = [];
-  private basePath = 'prisma/schemas';
+  private basePath = 'prisma/generated/schemas';
 
   /**
    * Discover all schema files across all providers

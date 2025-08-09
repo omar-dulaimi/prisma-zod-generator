@@ -1,0 +1,91 @@
+name: Feature request
+description: Suggest an idea or improvement for Prisma Zod Generator
+labels: ['kind/feature', 'enhancement']
+title: '[Feature]: '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 💡 Feature Request
+
+        Thank you for helping improve Prisma Zod Generator.
+
+        🚨 Sponsor to keep this project active: [GitHub Sponsors →](https://github.com/sponsors/omar-dulaimi)
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start
+      options:
+        - label: I searched existing issues and discussions to avoid duplicates
+          required: true
+        - label: I’m using the latest version of prisma-zod-generator
+          required: true
+        - label: I’m willing to sponsor this work to help keep the project active
+        - label: I can help with a PR (implementation or review)
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line summary of the feature or improvement
+      placeholder: e.g. Add schema variants for public API responses
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What problem does this feature solve? Who is affected?
+      placeholder: Describe the use case and pain points
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the ideal solution. Include example config, Prisma schema, or code if helpful.
+      placeholder: |
+        // Example API / config sketch
+        {
+          "variants": { "public": { "enabled": true } }
+        }
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or alternatives did you try?
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact / use cases
+      description: Who benefits and how? Any metrics or scale considerations?
+
+  - type: input
+    id: links
+    attributes:
+      label: Related issues / links
+      description: Reference issues, PRs, or external resources
+      placeholder: e.g. #123, prior art, docs, blog posts
+
+  - type: dropdown
+    id: breaking
+    attributes:
+      label: Breaking change
+      options:
+        - No
+        - Yes (requires a major release)
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Add any other context, sketches, or screenshots
