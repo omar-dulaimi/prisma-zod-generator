@@ -357,6 +357,28 @@ export class VariantFileGenerationCoordinator {
       customizedContent = customizedContent.replace(/\/\*\*[\s\S]*?\*\//g, '');
     }
 
+    // Ensure enum imports are present for enum usages like z.enum(UserRole)
+    // Detect used enum identifiers and add import line from @prisma/client if missing
+    const usedEnums = new Set<string>();
+    const enumUsageRe = /z\.(?:enum|nativeEnum)\(([_A-Za-z][_A-Za-z0-9]*)\)/g;
+    let m: RegExpExecArray | null;
+    while ((m = enumUsageRe.exec(customizedContent)) !== null) {
+      usedEnums.add(m[1]);
+    }
+    if (usedEnums.size > 0) {
+      const enumImportLine = `import { ${Array.from(usedEnums).join(', ')} } from '@prisma/client';`;
+      const hasImport = new RegExp(
+        `import\\s*\\{[^}]*\\b${Array.from(usedEnums).join('\\b|\\b')}\\b[^}]*\\}\\s*from\\s*['"]@prisma/client['"];?`
+      ).test(customizedContent);
+      if (!hasImport) {
+        // Insert after zod import
+        customizedContent = customizedContent.replace(
+          /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?\s*)/,
+          `$1\n${enumImportLine}\n`
+        );
+      }
+    }
+
     return customizedContent;
   }
 

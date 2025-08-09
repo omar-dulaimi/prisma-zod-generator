@@ -1088,6 +1088,12 @@ function generateVariantSchemaContent(
   variantName: string
 ): string {
   const enabledFields = model.fields.filter(field => !excludeFields.includes(field.name));
+  // Collect enum types used in this model to generate proper imports
+  const enumTypes = Array.from(new Set(
+    enabledFields
+      .filter(field => field.kind === 'enum')
+      .map(field => String(field.type))
+  ));
   
   const fieldDefinitions = enabledFields.map(field => {
     const zodType = getZodTypeForField(field);
@@ -1097,7 +1103,11 @@ function generateVariantSchemaContent(
     return `    ${field.name}: z.${zodType}${optional}${nullable}`;
   }).join(',\n');
   
-  return `import { z } from 'zod';
+  const enumImportLine = enumTypes.length > 0
+    ? `import { ${enumTypes.join(', ')} } from '@prisma/client';\n`
+    : '';
+
+  return `import { z } from 'zod';\n${enumImportLine}
 
 // prettier-ignore
 export const ${schemaName} = z.object({
