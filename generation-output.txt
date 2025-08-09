@@ -1,5 +1,0 @@
-
- DEV  v3.2.4 /home/omar/Desktop/NewFolder/libs/prisma-zod-generator
-
-Cancelling test run. Press CTRL+c again to exit forcefully.
-
