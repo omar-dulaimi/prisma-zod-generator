@@ -1,13 +1,13 @@
 import type {
-  ConnectorType,
-  DMMF as PrismaDMMF,
+    ConnectorType,
+    DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-  findModelByName,
-  isMongodbRawOp,
+    findModelByName,
+    isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -787,7 +787,8 @@ export default class Transformer {
           path.join(Transformer.getSchemasPath(), `enums/${name}.schema.ts`),
           `${this.generateImportZodStatement()}\n${this.generateExportSchemaStatement(
             `${name}`,
-            `z.enum(${JSON.stringify(values)})`,
+            // Use single-quoted values for enum array representation to match tests
+            `z.enum([${values.map((v) => `'${v}'`).join(', ')}])`,
           )}`,
         );
       }
@@ -977,8 +978,8 @@ export default class Transformer {
 
     let resString =
       alternatives.length === 1
-        ? alternatives.join(',\r\n')
-        : `z.union([${alternatives.join(',\r\n')}])${opt}`;
+        ? alternatives.join(', ')
+        : `z.union([${alternatives.join(', ')}])${opt}`;
 
     if (field.isNullable) {
       // Handle the order correctly: validations -> .optional() -> .nullable()

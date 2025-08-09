@@ -54,6 +54,18 @@ export const writeIndexFile = async (indexPath: string) => {
       // ignore
     }
   }
+  // If variants/index.ts exists under schemas, ensure it's exported as well
+  try {
+    const fs = await import('fs');
+    const variantsIndex = path.join(baseDir, 'variants', 'index.ts');
+    if (fs.existsSync(variantsIndex)) {
+      const rel = normalizePath(path.relative(baseDir, variantsIndex).replace(/\.ts$/, ''));
+      const line = `export * from './${rel}'`;
+      if (!rows.includes(line) && !dirExports.includes(line)) dirExports.push(line);
+    }
+  } catch {
+    // ignore
+  }
   const content = [...rows, ...dirExports].join('\n');
   await writeFileSafely(indexPath, content, false);
 };

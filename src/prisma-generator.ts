@@ -1,26 +1,26 @@
 import {
-    DMMF,
-    EnvValue,
-    GeneratorConfig,
-    GeneratorOptions,
+  DMMF,
+  EnvValue,
+  GeneratorConfig,
+  GeneratorOptions,
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-    generatorOptionsToConfigOverrides,
-    getLegacyMigrationSuggestions,
-    isLegacyUsage,
-    parseGeneratorOptions,
-    validateGeneratorOptions
+  generatorOptionsToConfigOverrides,
+  getLegacyMigrationSuggestions,
+  isLegacyUsage,
+  parseGeneratorOptions,
+  validateGeneratorOptions
 } from './config/generator-options';
 import { GeneratorConfig as CustomGeneratorConfig, parseConfiguration } from './config/parser';
 import {
-    addMissingInputObjectTypes,
-    hideInputObjectTypesAndRelatedFields,
-    resolveAddMissingInputObjectTypeOptions,
-    resolveModelsComments,
+  addMissingInputObjectTypes,
+  hideInputObjectTypesAndRelatedFields,
+  resolveAddMissingInputObjectTypeOptions,
+  resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -694,9 +694,9 @@ async function updateIndexWithVariants(config: CustomGeneratorConfig) {
   const variants = config.variants;
   if (!variants) return;
   
-  // If variants are array-based and are placed at root, we don't add a variants index
+  // If variants are array-based and explicitly placed at root, skip variants barrel export
   if (Array.isArray(variants)) {
-    const placeAtRoot = (config as any).placeArrayVariantsAtRoot !== false; // default true
+    const placeAtRoot = (config as any).placeArrayVariantsAtRoot === true; // default false
     if (placeAtRoot) return;
     // else proceed to add variants/index.ts below
   }
@@ -709,8 +709,7 @@ async function updateIndexWithVariants(config: CustomGeneratorConfig) {
   
   // Import the addIndexExport function and add the variants directory
   const { addIndexExport, writeIndexFile } = await import('./utils/writeIndexFile');
-  const outputPath = Transformer.getOutputPath();
-  const variantsIndexPath = `${outputPath}/variants/index.ts`;
+  const variantsIndexPath = path.join(Transformer.getSchemasPath(), 'variants', 'index.ts');
   
   // Add the variants export to the main index
   addIndexExport(variantsIndexPath);
@@ -862,10 +861,11 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
   if (isArrayVariants) {
     // Custom array-based variants: generate files directly under variants/ as Model{Suffix}.schema.ts
     try {
-      const placeAtRoot = (config as any).placeArrayVariantsAtRoot !== false; // default true
+      // Default behavior: place array-based variants under schemas/variants unless explicitly configured to place at root
+      const placeAtRoot = (config as any).placeArrayVariantsAtRoot === true; // default false
       const variantsOutputPath = placeAtRoot
         ? Transformer.getSchemasPath()
-        : path.join(Transformer.getOutputPath(), 'variants');
+        : path.join(Transformer.getSchemasPath(), 'variants');
 
       // Filter models based on configuration
       const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
@@ -956,7 +956,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
         }
       }
 
-      if (!placeAtRoot) {
+  if (!placeAtRoot) {
         // Write a local variants index when not at root
         const variantIndexContent = [
           '/**',
@@ -967,7 +967,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
           ...exportLines,
           ''
         ].join('\n');
-        await writeFileSafely(`${variantsOutputPath}/index.ts`, variantIndexContent);
+  await writeFileSafely(`${variantsOutputPath}/index.ts`, variantIndexContent);
       }
 
       console.log(`📦 Generated ${exportLines.length} variant schemas across ${enabledModels.length} models (${placeAtRoot ? 'top-level' : 'variants/ directory'})`);
@@ -988,8 +988,8 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
     console.log(`📦 Generating variant schemas for: ${enabledVariants.join(', ')}`);
 
     try {
-      const outputPath = Transformer.getOutputPath();
-      const variantsOutputPath = `${outputPath}/variants`;
+  // Object-based variants are always placed under schemas/variants
+  const variantsOutputPath = path.join(Transformer.getSchemasPath(), 'variants');
 
       // Filter models based on configuration
       const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
@@ -1180,12 +1180,40 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
     
     // Import the model generator
     const { PrismaTypeMapper } = await import('./generators/model');
-    const typeMapper = new PrismaTypeMapper();
-    
+    const typeMapper = new PrismaTypeMapper({
+      // Propagate provider for type decisions if available
+      provider: (Transformer as any).config?.provider || 'postgresql'
+    } as any);
+
+    // Compute per-model field exclusions for pure models
+    const getPureExclusions = (modelName: string): Set<string> => {
+      const excludes = new Set<string>();
+      // Global exclusions for pure variant
+      (config.globalExclusions?.pure || []).forEach((f: string) => excludes.add(f));
+      // Legacy fields.exclude preserved in parser
+      const legacy = config.models?.[modelName]?.fields?.exclude || [];
+      legacy.forEach((f: string) => excludes.add(f));
+      // New variants.pure.excludeFields
+      const variantPure = config.models?.[modelName]?.variants?.pure?.excludeFields || [];
+      variantPure.forEach((f: string) => excludes.add(f));
+      return excludes;
+    };
+
+    // Create filtered copies of models applying exclusions
+    const filteredModels = enabledModels.map(model => {
+      const excludes = getPureExclusions(model.name);
+      if (excludes.size === 0) return model;
+      const filtered = {
+        ...model,
+        fields: model.fields.filter(f => !excludes.has(f.name))
+      } as unknown as DMMF.Model;
+      return filtered;
+    });
+
     // Generate pure model schemas
-    const schemaCollection = typeMapper.generateSchemaCollection(enabledModels);
+    const schemaCollection = typeMapper.generateSchemaCollection(filteredModels);
     
-    // Write individual model schema files
+  // Write individual model schema files
     for (const [modelName, schemaData] of schemaCollection.schemas) {
       try {
         const fileName = `${modelName}.model.ts`;
@@ -1196,8 +1224,11 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
           continue;
         }
         
+    // Preserve original schema content (uses *Schema naming)
+    const originalContent = schemaData.fileContent.content;
+
         // Transform content for pure models
-        let content = schemaData.fileContent.content;
+    let content = originalContent;
         
         // Fix import paths to use .model extension instead of lowercase names
         content = content.replace(
@@ -1242,8 +1273,18 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
         
         console.log(`   📝 Creating pure model: ${fileName} (${modelName}Model)`);
         
-        // Use direct file writing to avoid formatting issues
-        await fs.writeFile(filePath, content);
+  // Use direct file writing to avoid formatting issues
+  await fs.writeFile(filePath, content);
+
+  // Also write a compatibility .schema.ts file using Schema naming
+  const schemaCompatPath = `${modelsOutputPath}/${modelName}.schema.ts`;
+  let schemaCompatContent = originalContent
+    // Rename exported constant from Model -> Schema
+    .replace(new RegExp(`export const ${modelName}Model`, 'g'), `export const ${modelName}Schema`)
+    // Update typeof references
+    .replace(new RegExp(`typeof ${modelName}Model`, 'g'), `typeof ${modelName}Schema`);
+
+  await fs.writeFile(schemaCompatPath, schemaCompatContent);
         
       } catch (modelError) {
         console.error(`   ❌ Error processing model ${modelName}: ${modelError instanceof Error ? modelError.message : 'Unknown error'}`);
@@ -1270,13 +1311,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
     const indexPath = `${modelsOutputPath}/index.ts`;
     await fs.writeFile(indexPath, modelsIndexContent);
     
-    // Create compatibility .schema.ts files that re-export from .model.ts to satisfy tests
-    for (const modelName of Array.from(schemaCollection.schemas.keys())) {
-      const compatPath = `${modelsOutputPath}/${modelName}.schema.ts`;
-      const target = `./${modelName}.model`;
-      const compatContent = `export { ${modelName}Model as ${modelName}Schema, ${modelName}Model } from '${target}';\n`;
-      await fs.writeFile(compatPath, compatContent);
-    }
+  // Compatibility files already written with full schema content per model above
 
     // Add the models directory to the main index exports
     const { addIndexExport } = await import('./utils/writeIndexFile');

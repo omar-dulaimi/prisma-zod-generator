@@ -820,7 +820,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   const optionalErrorMessage = ['int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite'];
 
   // Additional known methods not covered above
-  const additionalMethods = ['default', 'optional', 'nullable', 'nullish', 'refine', 'transform', 'enum', 'object', 'array'];
+  const additionalMethods = ['default', 'optional', 'nullable', 'nullish', 'refine', 'transform', 'enum', 'object', 'array', 'record'];
   
   // Check if method is known
   const allKnownMethods = [...new Set([...stringMethods, ...numberMethods, ...arrayMethods, ...additionalMethods, ...optionalErrorMessage])];
@@ -1173,8 +1173,8 @@ function formatSingleParameter(param: unknown): string {
   
   if (typeof param === 'string') {
     // Check if it's a complex expression that shouldn't be quoted
-    // Complex expressions include: new Date(), RegExp(), function calls, etc.
-    if (param.match(/^(new\s+\w+\(|RegExp\(|\w+\()/)) {
+    // Complex expressions include: new Date(), RegExp(), function calls, or dotted calls like z.string()
+    if (param.match(/^(new\s+\w+\(|RegExp\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\()/)) {
       return param; // Return complex expressions as-is
     }
     return `'${param.replace(/'/g, "\\'")}'`;

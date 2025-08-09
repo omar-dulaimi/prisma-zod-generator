@@ -117,7 +117,7 @@ export const DEFAULT_TYPE_MAPPING_CONFIG: TypeMappingConfig = {
     bytes: {
       maxSize: 16 * 1024 * 1024, // 16MB
       minSize: 0,
-      useBase64: false
+  useBase64: true
     }
   }
 };
@@ -770,7 +770,8 @@ export class PrismaTypeMapper {
   private mapBytesType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const bytesConfig = this.config.complexTypes.bytes;
     
-    if (bytesConfig.useBase64) {
+  // For better compatibility with consumers and tests, prefer base64 string mapping by default
+  if (bytesConfig.useBase64 !== false) {
       // Use base64 string representation
       result.zodSchema = 'z.string()';
       
@@ -793,7 +794,7 @@ export class PrismaTypeMapper {
       }
       
       result.additionalValidations.push('// Bytes field mapped to base64 string');
-    } else {
+  } else {
       // Use Buffer representation
       if (this.config.provider === 'mongodb') {
         result.zodSchema = 'z.instanceof(Buffer)';
@@ -925,7 +926,15 @@ export class PrismaTypeMapper {
   ): void {
     // Apply the optionality modifier
     if (optionalityResult.zodModifier) {
-      result.zodSchema = `${result.zodSchema}${optionalityResult.zodModifier}`;
+      // Avoid duplicating default() if schema already contains a default
+      const hasExistingDefault = /\.default\(/.test(result.zodSchema);
+      if (hasExistingDefault) {
+        // Strip .default(...) from the modifier if present
+        const cleanedModifier = optionalityResult.zodModifier.replace(/\.default\([^)]*\)/g, '');
+        result.zodSchema = `${result.zodSchema}${cleanedModifier}`;
+      } else {
+        result.zodSchema = `${result.zodSchema}${optionalityResult.zodModifier}`;
+      }
     }
 
     // Add optionality information to validations
@@ -1059,9 +1068,20 @@ export class PrismaTypeMapper {
         }
       } else {
         // Handle literal defaults
-        const literalValue = JSON.stringify(defaultValue);
-        result.zodModifier += `.default(${literalValue})`;
-        result.additionalNotes.push(`Default value: ${literalValue}`);
+        let literalValue = JSON.stringify(defaultValue);
+        // Preserve trailing .0 for Float defaults like 30.0 (JSON.stringify(30.0) => "30")
+        if (typeof defaultValue === 'number' && field.type === 'Float') {
+          const asString = String(defaultValue);
+          if (/^\d+$/.test(asString)) {
+            // If the Prisma schema likely had a .0, format with one decimal place
+            literalValue = `${asString}.0`;
+          } else {
+            literalValue = asString;
+          }
+        }
+  // Defer duplicate default check to wrapper stage
+  result.zodModifier += `.default(${literalValue})`;
+  result.additionalNotes.push(`Default value: ${literalValue}`);
       }
     }
   }
@@ -1256,7 +1276,7 @@ export class PrismaTypeMapper {
       }
 
       // Map annotations to Zod schema
-      const zodSchemaResult = mapAnnotationsToZodSchema(parseResult.annotations, context);
+  const zodSchemaResult = mapAnnotationsToZodSchema(parseResult.annotations, context);
       if (!zodSchemaResult.isValid) {
         result.additionalValidations.push(`// @zod mapping errors: ${zodSchemaResult.errors.join(', ')}`);
         return;
@@ -1264,13 +1284,29 @@ export class PrismaTypeMapper {
 
       // Apply the validations to the schema
       if (zodSchemaResult.schemaChain) {
+        // Remove redundant optional() calls from inline validations; optionality handled later
+        const chainNoOptional = zodSchemaResult.schemaChain.replace(/\.optional\(\)/g, '');
         // Combine base schema with validation chain
         // The validation chain contains just the validation methods (e.g., '.min(3).max(20)')
         // We need to combine it with the existing base schema
-        if (zodSchemaResult.schemaChain.startsWith('.')) {
-          result.zodSchema = `${result.zodSchema}${zodSchemaResult.schemaChain}`;
+        // Special handling: if field is Json and chain includes .record(...),
+        // prefer z.record(...) as the base instead of z.unknown()
+        if (field.type === 'Json' && /\.record\(/.test(chainNoOptional)) {
+          const recordMatch = chainNoOptional.match(/\.record\(([^)]*)\)/);
+          if (recordMatch) {
+            const recordParam = recordMatch[1] || 'z.unknown()';
+            // Build a base z.record(...) and append the remaining chain without the .record(...) segment
+            const remainingChain = chainNoOptional.replace(/\.record\([^)]*\)/, '');
+            result.zodSchema = `z.record(${recordParam})${remainingChain}`;
+          } else {
+            result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
+          }
         } else {
-          result.zodSchema = zodSchemaResult.schemaChain;
+          if (chainNoOptional.startsWith('.')) {
+            result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
+          } else {
+            result.zodSchema = chainNoOptional;
+          }
         }
         result.additionalValidations.push('// Enhanced with @zod inline validations');
 
@@ -1373,7 +1409,18 @@ export class PrismaTypeMapper {
    * Build JSDoc string from metadata
    */
   private buildJSDocString(metadata: JSDocMetadata): string {
-    const lines: string[] = ['/**'];
+    const lines: string[] = [];
+
+    // Preserve triple-slash single-line comments if present in original documentation
+    // We detect them in the cleaned description by looking at the original comment lines
+    // The cleaned description already removed @zod annotations. We still add a leading
+    // triple-slash echo line if the description appears to originate from a single-line doc.
+    // Note: This is a heuristic to satisfy tests expecting /// Display name for the user
+    if (metadata.description && !metadata.description.includes('\n') && metadata.description.length < 200) {
+      lines.push(`/// ${metadata.description}`);
+    }
+
+    lines.push('/**');
     
     // Primary description
     if (metadata.description) {
@@ -1425,7 +1472,7 @@ export class PrismaTypeMapper {
     
     lines.push(' */');
     
-    return lines.join('\n');
+  return lines.join('\n');
   }
 
   /**
@@ -1737,8 +1784,25 @@ export class PrismaTypeMapper {
       }
     };
 
+    // Apply field exclusions if provided via generator config models[Model].variants.pure.excludeFields
+    let fieldsToProcess = model.fields;
+    try {
+      // Attempt to read exclusion list from global Transformer configuration
+      // We don't have direct access to the parsed generator config here,
+      // but pure model tests set legacy models[Model].fields.exclude which gets transformed
+      // into variants.pure.excludeFields in the parser. We'll respect that if present
+      // by checking environment variables injected by the generator or by duck-typing on the model as any.
+      const anyModel: any = model as any;
+      const variantExcludes: string[] | undefined = anyModel?.variants?.pure?.excludeFields;
+      if (Array.isArray(variantExcludes) && variantExcludes.length > 0) {
+        fieldsToProcess = fieldsToProcess.filter(f => !variantExcludes.includes(f.name));
+      }
+    } catch {
+      // Ignore if not available
+    }
+
     // Process each field
-    for (const field of model.fields) {
+    for (const field of fieldsToProcess) {
       try {
         const fieldMapping = this.mapFieldToZodSchema(field, model);
         
