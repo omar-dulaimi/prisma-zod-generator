@@ -1,13 +1,13 @@
 import type {
-    ConnectorType,
-    DMMF as PrismaDMMF,
+  ConnectorType,
+  DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-    findModelByName,
-    isMongodbRawOp,
+  findModelByName,
+  isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -358,10 +358,20 @@ export default class Transformer {
   /**
    * Filter fields based on configuration and relationship preservation
    */
-  static filterFields(fields: PrismaDMMF.SchemaArg[], modelName?: string, variant?: 'pure' | 'input' | 'result', models?: PrismaDMMF.Model[]): PrismaDMMF.SchemaArg[] {
+  static filterFields(
+    fields: PrismaDMMF.SchemaArg[],
+    modelName?: string,
+    variant?: 'pure' | 'input' | 'result',
+    models?: PrismaDMMF.Model[],
+    schemaName?: string,
+  ): PrismaDMMF.SchemaArg[] {
+    // Special case: WhereUniqueInput must retain unique identifier fields (e.g., id, unique columns)
+    // Do NOT apply variant-based exclusions to this schema type
+    const isWhereUniqueInput = !!schemaName && /WhereUniqueInput$/.test(schemaName);
+
     const filteredFields = fields.filter(field => {
       // Check basic field inclusion rules
-      if (!this.isFieldEnabled(field.name, modelName, variant)) {
+      if (!isWhereUniqueInput && !this.isFieldEnabled(field.name, modelName, variant)) {
         return false;
       }
       
@@ -861,8 +871,8 @@ export default class Transformer {
     
     
     // Apply field filtering
-    const originalFieldCount = this.fields.length;
-    const filteredFields = Transformer.filterFields(this.fields, modelName || undefined, variant, this.models);
+  const originalFieldCount = this.fields.length;
+  const filteredFields = Transformer.filterFields(this.fields, modelName || undefined, variant, this.models, this.name);
     
     
     // Log field filtering if any fields were excluded
@@ -1211,19 +1221,59 @@ export default class Transformer {
         exportName = name.replace('Args', '');
       }
     }
+    // Build dual exports: a typed Prisma-bound schema and a pure Zod schema
+    // Always export the typed name as `${exportName}ObjectSchema` for compatibility
+    const lines: string[] = [];
 
-  const end = `export const ${exportName}ObjectSchema = Schema`;
-    
-    // Args types like UserArgs, ProfileArgs don't exist in Prisma client
-    // Use generic typing instead of non-existent Prisma type
-    if (name.endsWith('Args')) {
-      // Ensure Prettier does not split the chained calls (keeps `z.object` contiguous)
-      return `// prettier-ignore\nconst Schema = ${schema};\n\n ${end}`;
+    const supportsPrismaType = !name.endsWith('Args');
+
+    if (Transformer.exportTypedSchemas) {
+      if (supportsPrismaType) {
+        // Determine correct Prisma type binding (some inputs use a *Type suffix)
+        const prismaType = this.resolvePrismaTypeForObject(exportName);
+        if (prismaType) {
+          lines.push(
+            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}> = ${schema};`,
+          );
+        } else {
+          // Fallback to untyped if we cannot resolve a safe Prisma type
+          lines.push(`export const ${exportName}ObjectSchema = ${schema};`);
+        }
+      } else {
+        // Args-like types may not exist on Prisma namespace; export untyped for compatibility
+        lines.push(`export const ${exportName}ObjectSchema = ${schema};`);
+      }
     }
-    
-  // (Simplified) Always return untyped schema to avoid referencing unavailable Prisma types
-  // Add a harmless type-only alias to ensure a 'Prisma.' identifier appears for tests
-  return `// prettier-ignore\nconst Schema = ${schema};\n\n type __PrismaAlias = Prisma.JsonValue | Prisma.InputJsonValue;\n\n ${end}`;
+
+    if (Transformer.exportZodSchemas) {
+      const zodName = `${exportName}Object${Transformer.zodSchemaSuffix}`;
+      lines.push(`export const ${zodName} = ${schema};`);
+    }
+
+    // Fallback: if neither flag produced output, emit a basic (untyped) export
+    if (lines.length === 0) {
+      lines.push(`export const ${exportName}ObjectSchema = ${schema};`);
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Resolve the appropriate Prisma type identifier for an object schema export.
+   * In Prisma 6, certain aggregate input types are exported with a `Type` suffix.
+   * Example: Prisma.PlanetCountAggregateInputType instead of Prisma.PlanetCountAggregateInput
+   */
+  private resolvePrismaTypeForObject(exportName: string): string | null {
+    // No Prisma types for generic Args wrappers here
+    if (exportName.endsWith('Args')) return null;
+
+    // Handle aggregate input objects that use the `Type` suffix
+    if (/(Count|Min|Max|Avg|Sum)AggregateInput$/.test(exportName)) {
+      return `Prisma.${exportName}Type`;
+    }
+
+    // Default mapping: Prisma.<ExportName>
+    return `Prisma.${exportName}`;
   }
 
   addFinalWrappers({ zodStringFields }: { zodStringFields: string[] }) {
@@ -1520,8 +1570,8 @@ export default class Transformer {
         // Determine select field reference based on dual export strategy
         const selectFieldReference = shouldInline 
           ? (Transformer.exportTypedSchemas 
-              ? `${modelName}Select${Transformer.typedSchemaSuffix}.optional()`
-              : `${modelName}Select${Transformer.zodSchemaSuffix}.optional()`)
+              ? `${modelName}FindFirstSelect${Transformer.typedSchemaSuffix}.optional()`
+              : `${modelName}FindFirstSelect${Transformer.zodSchemaSuffix}.optional()`)
           : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
         
         const selectField = `select: ${selectFieldReference},`;
@@ -1533,7 +1583,7 @@ export default class Transformer {
 
         // Add inline select schema definitions (dual export pattern)
         if (shouldInline) {
-          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model)}\n\n`;
+          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model, 'FindFirst')}\n\n`;
         }
 
         // Generate dual schema exports for FindFirst operation
@@ -1571,8 +1621,8 @@ export default class Transformer {
         // Determine select field reference based on dual export strategy
         const selectFieldReference = shouldInline 
           ? (Transformer.exportTypedSchemas 
-              ? `${modelName}Select${Transformer.typedSchemaSuffix}.optional()`
-              : `${modelName}Select${Transformer.zodSchemaSuffix}.optional()`)
+              ? `${modelName}FindManySelect${Transformer.typedSchemaSuffix}.optional()`
+              : `${modelName}FindManySelect${Transformer.zodSchemaSuffix}.optional()`)
           : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
         
         const selectField = `select: ${selectFieldReference},`;
@@ -1584,7 +1634,7 @@ export default class Transformer {
 
         // Add inline select schema definitions (dual export pattern)
         if (shouldInline) {
-          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model)}\n\n`;
+          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model, 'FindMany')}\n\n`;
         }
 
         // Generate dual schema exports for FindMany operation
@@ -1949,7 +1999,7 @@ export default class Transformer {
         
         // Only add other imports if they're actually referenced in the schema
         if (resultSchema.dependencies && resultSchema.dependencies.length > 0) {
-          resultSchema.dependencies.forEach(dep => {
+          resultSchema.dependencies.forEach((dep: string) => {
             imports.push(this.generateImportStatement(dep, `../objects/${dep.replace('Schema', '')}.schema`));
           });
         }
@@ -2475,20 +2525,20 @@ ${selectFields.join(',\n')}
   /**
    * Generates dual select schema exports for inlined schemas
    */
-  generateDualSelectSchemaExports(model: PrismaDMMF.Model): string {
+  generateDualSelectSchemaExports(model: PrismaDMMF.Model, operation?: 'FindFirst' | 'FindMany' | 'FindUnique'): string {
     const modelName = model.name;
     const schemaDefinition = this.generateInlineSelectSchemaDefinition(model);
     const exports: string[] = [];
 
     // Generate typed select schema
     if (Transformer.exportTypedSchemas) {
-      const typedName = `${modelName}Select${Transformer.typedSchemaSuffix}`;
+      const typedName = `${modelName}${operation ? operation : ''}Select${Transformer.typedSchemaSuffix}`;
       exports.push(`export const ${typedName}: z.ZodType<Prisma.${modelName}Select> = ${schemaDefinition};`);
     }
 
     // Generate Zod select schema  
     if (Transformer.exportZodSchemas) {
-      const zodName = `${modelName}Select${Transformer.zodSchemaSuffix}`;
+      const zodName = `${modelName}${operation ? operation : ''}Select${Transformer.zodSchemaSuffix}`;
       exports.push(`export const ${zodName} = ${schemaDefinition};`);
     }
 
