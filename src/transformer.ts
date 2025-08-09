@@ -1,13 +1,13 @@
 import type {
-    ConnectorType,
-    DMMF as PrismaDMMF,
+  ConnectorType,
+  DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-    findModelByName,
-    isMongodbRawOp,
+  findModelByName,
+  isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -1019,15 +1019,18 @@ export default class Transformer {
     }
 
     if (inputType.isList) {
-      line += '.array()';
       if (inputType.type === 'DateTime') {
+        // For DateTime lists, support both Date and ISO datetime arrays
         line = 'z.union([z.date().array(), z.iso.datetime().array()])';
       } else {
-        line += '.array()';
+        // Append array() only once to avoid duplication
+        if (!line.includes('.array()')) {
+          line += '.array()';
+        }
       }
     }
 
-    // Handle optionality correctly - add .optional() before any validations if field is optional
+  // Handle optionality correctly - add .optional() before any validations if field is optional
     if (!field.isRequired) {
       if (hasEnhancedZodSchema) {
         // For enhanced schemas, check if optionality is already handled
@@ -1048,6 +1051,9 @@ export default class Transformer {
         line += '.optional()';
       }
     }
+
+  // Final safety: collapse any accidental duplicate array() chaining (e.g., .array().array())
+  line = line.replace(/(\.array\(\))+$/, '.array()');
 
     return line;
   }
