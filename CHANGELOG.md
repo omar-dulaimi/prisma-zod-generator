@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.3.1...v1.4.0) (2025-08-09)
+
+### 🚀 Features
+
+* **logging:** hide verbose logs by default and gate them behind DEBUG_PRISMA_ZOD/DEBUG\n\n- Add central logger (src/utils/logger.ts)\n- Convert noisy console.log to logger.debug/info/warn\n- Keep warnings/errors visible without DEBUG ([703f716](https://github.com/omar-dulaimi/prisma-zod-generator/commit/703f716e1de8d76b27921aedaab460d7512f40f7))
+
 ## [1.3.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.3.0...v1.3.1) (2025-08-09)
 
 ### 🐛 Bug Fixes

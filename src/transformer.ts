@@ -1,17 +1,18 @@
 import type {
-  ConnectorType,
-  DMMF as PrismaDMMF,
+    ConnectorType,
+    DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-  findModelByName,
-  isMongodbRawOp,
+    findModelByName,
+    isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
 import { AggregateOperationSupport, TransformerParams } from './types';
+import { logger } from './utils/logger';
 import { writeFileSafely } from './utils/writeFileSafely';
 import { addIndexExport, writeIndexFile } from './utils/writeIndexFile';
 
@@ -136,11 +137,11 @@ export default class Transformer {
     const disabledModels = allModels.filter(model => !this.isModelEnabled(model.name));
 
     if (disabledModels.length > 0) {
-      console.log(`🚫 Models excluded from generation: ${disabledModels.map(m => m.name).join(', ')}`);
+      logger.debug(`🚫 Models excluded from generation: ${disabledModels.map(m => m.name).join(', ')}`);
     }
 
     if (config.mode === 'minimal' && enabledModels.length < allModels.length) {
-      console.log(`⚡ Minimal mode: generating ${enabledModels.length}/${allModels.length} models`);
+      logger.debug(`⚡ Minimal mode: generating ${enabledModels.length}/${allModels.length} models`);
     }
   }
 
@@ -152,7 +153,7 @@ export default class Transformer {
     
     // If no configuration is available, generate all operations (default behavior)
     if (!config) {
-      console.log(`🔍 Operation check: ${modelName}.${operationName} = true (no config)`);
+      logger.debug(`🔍 Operation check: ${modelName}.${operationName} = true (no config)`);
       return true;
     }
 
@@ -178,7 +179,7 @@ export default class Transformer {
       const allowedOperationNames = operationMapping[operationName] || [operationName];
       const isEnabled = allowedOperationNames.some(opName => modelConfig.operations!.includes(opName));
       
-      console.log(`🔍 Operation check: ${modelName}.${operationName} = ${isEnabled} (configured ops: [${modelConfig.operations.join(', ')}])`);
+      logger.debug(`🔍 Operation check: ${modelName}.${operationName} = ${isEnabled} (configured ops: [${modelConfig.operations.join(', ')}])`);
       return isEnabled;
     }
 
@@ -199,12 +200,12 @@ export default class Transformer {
       };
       const canonical = opAliasMap[operationName] || operationName;
       const isEnabled = baseAllowed.includes(canonical);
-      console.log(`🔍 Operation check: ${modelName}.${operationName} -> ${canonical} = ${isEnabled} (minimal mode)`);
+      logger.debug(`🔍 Operation check: ${modelName}.${operationName} -> ${canonical} = ${isEnabled} (minimal mode)`);
       return isEnabled;
     }
 
     // Default: enable all operations not explicitly disabled
-    console.log(`🔍 Operation check: ${modelName}.${operationName} = true (default)`);
+    logger.debug(`🔍 Operation check: ${modelName}.${operationName} = true (default)`);
     return true;
   }
 
@@ -226,11 +227,11 @@ export default class Transformer {
     const disabledOperations = allOperations.filter(op => !this.isOperationEnabled(modelName, op));
 
     if (disabledOperations.length > 0) {
-      console.log(`   🔧 ${modelName}: excluded operations [${disabledOperations.join(', ')}]`);
+      logger.debug(`   🔧 ${modelName}: excluded operations [${disabledOperations.join(', ')}]`);
     }
 
     if (config.mode === 'minimal' && enabledOperations.length < allOperations.length) {
-      console.log(`   ⚡ ${modelName}: minimal mode - ${enabledOperations.length}/${allOperations.length} operations`);
+      logger.debug(`   ⚡ ${modelName}: minimal mode - ${enabledOperations.length}/${allOperations.length} operations`);
     }
   }
 
@@ -239,27 +240,6 @@ export default class Transformer {
    */
   static isFieldEnabled(fieldName: string, modelName?: string, variant?: 'pure' | 'input' | 'result'): boolean {
     const config = this.getGeneratorConfig();
-    
-    // Debug: Reduced verbosity for performance (uncomment for detailed debugging)
-    // console.log(`🔍 Configuration check for ${modelName}.${fieldName} (${variant})`);
-    // console.log(`   - Config available:`, !!config);
-    // if (config && modelName) {
-    //   const modelConfig = config.models?.[modelName];
-    //   console.log(`   - Model config operations:`, modelConfig?.operations);
-    //   console.log(`   - Model variants:`, modelConfig?.variants);
-    //   if (modelConfig?.variants) {
-    //     if (modelConfig.variants.pure) {
-    //       console.log(`     - pure excludeFields:`, modelConfig.variants.pure.excludeFields);
-    //     }
-    //     if (modelConfig.variants.input) {
-    //       console.log(`     - input excludeFields:`, modelConfig.variants.input.excludeFields);
-    //     }
-    //     if (modelConfig.variants.result) {
-    //       console.log(`     - result excludeFields:`, modelConfig.variants.result.excludeFields);
-    //     }
-    //   }
-    //   console.log(`   - Legacy fields config:`, (modelConfig as any)?.fields);
-    // }
     
     // If no configuration is available, include all fields (default behavior)
     if (!config) {
@@ -270,7 +250,7 @@ export default class Transformer {
     let shouldExclude = false;
     const debugReasons: string[] = [];
 
-  // Check global exclusions (basic format - array of strings)
+    // Check global exclusions (basic format - array of strings)
     if (config.globalExclusions && Array.isArray(config.globalExclusions)) {
       if (this.isFieldMatchingPatterns(fieldName, config.globalExclusions)) {
         shouldExclude = true;
@@ -293,7 +273,7 @@ export default class Transformer {
       // Check model-specific includes FIRST - these OVERRIDE exclusions (highest precedence)
       if ((modelConfig as any)?.fields?.include) {
         if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.include)) {
-          console.log(`🟢 Field enabled: ${modelName}.${fieldName} (${variant}) = true (model include override)`);
+          logger.debug(`🟢 Field enabled: ${modelName}.${fieldName} (${variant}) = true (model include override)`);
           return true; // Include overrides any previous or subsequent exclusion
         }
       }
@@ -308,18 +288,18 @@ export default class Transformer {
       
       // Check legacy format: fields.exclude (for backward compatibility)
       if ((modelConfig as any)?.fields?.exclude) {
-        console.log(`🔍 Checking legacy fields.exclude for ${modelName}.${fieldName}: patterns =`, (modelConfig as any).fields.exclude);
+        logger.debug(`🔍 Checking legacy fields.exclude for ${modelName}.${fieldName}: patterns =`, (modelConfig as any).fields.exclude);
         if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.exclude)) {
           shouldExclude = true;
           debugReasons.push(`model fields.exclude`);
-          console.log(`🚫 Field excluded by legacy fields.exclude: ${modelName}.${fieldName}`);
+          logger.debug(`🚫 Field excluded by legacy fields.exclude: ${modelName}.${fieldName}`);
         }
       }
     }
 
     const result = !shouldExclude;
     if (debugReasons.length > 0 || (modelName && ['password', 'views', 'internalId', 'metadata'].includes(fieldName))) {
-      console.log(`🔍 Field check: ${modelName || 'unknown'}.${fieldName} (${variant || 'unknown'}) = ${result} ${debugReasons.length > 0 ? `(${debugReasons.join(', ')})` : '(allowed)'}`);
+      logger.debug(`🔍 Field check: ${modelName || 'unknown'}.${fieldName} (${variant || 'unknown'}) = ${result} ${debugReasons.length > 0 ? `(${debugReasons.join(', ')})` : '(allowed)'}`);
     }
 
     // Return the opposite of shouldExclude (if should exclude, return false)
@@ -402,12 +382,12 @@ export default class Transformer {
           if (!result.some(field => field.name === fkField.name)) {
             // Check if the foreign key field is explicitly excluded by configuration
             const isFieldAllowed = this.isFieldEnabled(fkField.name, modelName, variant);
-            console.log(`🔑 Foreign key preservation check: ${modelName}.${fkField.name} (${variant}) = ${isFieldAllowed}`);
+            logger.debug(`🔑 Foreign key preservation check: ${modelName}.${fkField.name} (${variant}) = ${isFieldAllowed}`);
             if (isFieldAllowed) {
-              console.log(`🔑 Adding foreign key field: ${modelName}.${fkField.name}`);
+              logger.debug(`🔑 Adding foreign key field: ${modelName}.${fkField.name}`);
               result.push(fkField);
             } else {
-              console.log(`🚫 Skipping excluded foreign key field: ${modelName}.${fkField.name}`);
+              logger.debug(`🚫 Skipping excluded foreign key field: ${modelName}.${fkField.name}`);
             }
           }
         }
@@ -619,7 +599,7 @@ export default class Transformer {
   static logFieldFiltering(originalCount: number, filteredCount: number, modelName?: string, variant?: string): void {
     if (originalCount !== filteredCount) {
       const context = modelName ? `${modelName}${variant ? ` (${variant})` : ''}` : 'schema';
-      console.log(`   🎯 ${context}: filtered ${originalCount - filteredCount} fields (${filteredCount}/${originalCount} remaining)`);
+      logger.debug(`   🎯 ${context}: filtered ${originalCount - filteredCount} fields (${filteredCount}/${originalCount} remaining)`);
     }
   }
 
@@ -715,11 +695,11 @@ export default class Transformer {
 
     if (totalRelationFields > enabledRelationFields) {
       const disabledRelations = totalRelationFields - enabledRelationFields;
-      console.log(`   🔗 ${model.name}: ${disabledRelations} disabled relation(s) to filtered models`);
+      logger.debug(`   🔗 ${model.name}: ${disabledRelations} disabled relation(s) to filtered models`);
     }
 
     if (enabledRelatedModels.length > 0) {
-      console.log(`   ✅ ${model.name}: active relations to [${enabledRelatedModels.join(', ')}]`);
+      logger.debug(`   ✅ ${model.name}: active relations to [${enabledRelatedModels.join(', ')}]`);
     }
   }
   // Dual export setters
@@ -867,7 +847,7 @@ export default class Transformer {
     const variant = Transformer.determineSchemaVariant(this.name);
     
     // Debug: Log the raw context name and extracted model name
-    console.log(`🔍 Schema context: "${this.name}" -> extracted model: "${modelName}"`);
+    logger.debug(`🔍 Schema context: "${this.name}" -> extracted model: "${modelName}"`);
     
     
     // Apply field filtering
@@ -1673,7 +1653,7 @@ export default class Transformer {
       if (createMany && Transformer.isOperationEnabled(modelName, 'createMany')) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
-          console.log(`⏭️  Minimal mode: skipping ${modelName}.createMany`);
+          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createMany`);
         } else {
         const imports = [
           this.generateImportStatement(`${modelName}CreateManyInputObjectSchema`, `./objects/${modelName}CreateManyInput.schema`),
@@ -1700,7 +1680,7 @@ export default class Transformer {
         if (cfg?.mode === 'minimal') {
           const ops = (cfg as any).minimalOperations as string[] | undefined;
           if (Array.isArray(ops) && !ops.includes('delete') && !ops.includes('deleteOne')) {
-            console.log(`⏭️  Minimal mode (custom ops): skipping ${modelName}.deleteOne`);
+            logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.deleteOne`);
           } else {
         const imports = [
           selectImport,
@@ -1738,7 +1718,7 @@ export default class Transformer {
       if (deleteMany && Transformer.isOperationEnabled(modelName, 'deleteMany')) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
-          console.log(`⏭️  Minimal mode: skipping ${modelName}.deleteMany`);
+          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.deleteMany`);
         } else {
         const imports = [
           this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
@@ -1760,7 +1740,7 @@ export default class Transformer {
         if (cfg?.mode === 'minimal') {
           const ops = (cfg as any).minimalOperations as string[] | undefined;
           if (Array.isArray(ops) && !ops.includes('update') && !ops.includes('updateOne')) {
-            console.log(`⏭️  Minimal mode (custom ops): skipping ${modelName}.updateOne`);
+            logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.updateOne`);
             // Do not generate
           } else {
         const imports = [
@@ -1803,7 +1783,7 @@ export default class Transformer {
       if (updateMany && Transformer.isOperationEnabled(modelName, 'updateMany')) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
-          console.log(`⏭️  Minimal mode: skipping ${modelName}.updateMany`);
+          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.updateMany`);
         } else {
         const imports = [
           this.generateImportStatement(`${modelName}UpdateManyMutationInputObjectSchema`, `./objects/${modelName}UpdateManyMutationInput.schema`),
@@ -1824,7 +1804,7 @@ export default class Transformer {
       if (upsertOne && Transformer.isOperationEnabled(modelName, 'upsertOne')) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
-          console.log(`⏭️  Minimal mode: skipping ${modelName}.upsertOne`);
+          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.upsertOne`);
         } else {
         const imports = [
           selectImport,
@@ -1936,11 +1916,11 @@ export default class Transformer {
     
     // Check if result schemas are enabled globally
     if (config?.mode === 'minimal') {
-      console.log('⏭️  Skipping result schema generation in minimal mode');
+      logger.debug('⏭️  Skipping result schema generation in minimal mode');
       return;
     }
     if (config?.variants?.result?.enabled === false) {
-      console.log('⏭️  Result schema generation is disabled globally');
+      logger.debug('⏭️  Result schema generation is disabled globally');
       return;
     }
 
@@ -1974,11 +1954,11 @@ export default class Transformer {
       // Check if result schemas are enabled for this specific model
       const modelConfig = config?.models?.[model.name];
       if (modelConfig?.variants?.result?.enabled === false) {
-        console.log(`⏭️  Result schema generation is disabled for model: ${model.name}`);
+        logger.debug(`⏭️  Result schema generation is disabled for model: ${model.name}`);
         continue;
       }
 
-      console.log(`🎯 Generating result schemas for model: ${model.name}`);
+      logger.debug(`🎯 Generating result schemas for model: ${model.name}`);
 
       // Generate all result schemas for this model
       const resultSchemas = resultGenerator.generateAllResultSchemas(model);
@@ -2124,7 +2104,7 @@ export default class Transformer {
     
     if (originalCount !== cleanedCount) {
       const contextStr = context ? ` for ${context}` : '';
-      console.log(`   📦 Import cleanup${contextStr}: ${originalCount - cleanedCount} filtered (${cleanedCount}/${originalCount} kept)`);
+      logger.debug(`   📦 Import cleanup${contextStr}: ${originalCount - cleanedCount} filtered (${cleanedCount}/${originalCount} kept)`);
     }
   }
 
@@ -2337,22 +2317,22 @@ export default class Transformer {
     const { isValid, errors, warnings, suggestions } = validationResult;
 
     if (errors.length > 0) {
-      console.log('❌ Filter Validation Errors:');
-      errors.forEach(error => console.log(`   • ${error}`));
+      logger.warn('❌ Filter Validation Errors:');
+      errors.forEach(error => logger.warn(`   • ${error}`));
     }
 
     if (warnings.length > 0) {
-      console.log('⚠️  Filter Validation Warnings:');
-      warnings.forEach(warning => console.log(`   • ${warning}`));
+      logger.warn('⚠️  Filter Validation Warnings:');
+      warnings.forEach(warning => logger.warn(`   • ${warning}`));
     }
 
     if (suggestions.length > 0) {
-      console.log('💡 Suggestions:');
-      suggestions.forEach(suggestion => console.log(`   • ${suggestion}`));
+      logger.info('💡 Suggestions:');
+      suggestions.forEach(suggestion => logger.info(`   • ${suggestion}`));
     }
 
     if (isValid && errors.length === 0 && warnings.length === 0) {
-      console.log('✅ Filter configuration validation passed');
+      logger.debug('✅ Filter configuration validation passed');
     }
   }
 
