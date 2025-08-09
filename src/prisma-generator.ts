@@ -25,6 +25,7 @@ import {
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
 import { AggregateOperationSupport } from './types';
+import { logger } from './utils/logger';
 import removeDir from './utils/removeDir';
 import { flushSingleFile, initSingleFile, isSingleFileEnabled } from './utils/singleFileAggregator';
 import { writeFileSafely } from './utils/writeFileSafely';
@@ -39,10 +40,10 @@ export async function generate(options: GeneratorOptions) {
     if (isLegacyUsage(extendedOptions)) {
       const suggestions = getLegacyMigrationSuggestions(extendedOptions);
       if (suggestions.length > 0) {
-        console.log('ℹ️ Prisma Zod Generator: Legacy usage detected.');
-        console.log('Consider migrating to the new configuration system for better control:');
-        suggestions.forEach(suggestion => console.log(`  ${suggestion}`));
-        console.log(''); // Add blank line for readability
+        logger.debug('ℹ️ Prisma Zod Generator: Legacy usage detected.');
+        logger.debug('Consider migrating to the new configuration system for better control:');
+        suggestions.forEach(suggestion => logger.debug(`  ${suggestion}`));
+        logger.debug(''); // Add blank line for readability
       }
     }
 
@@ -88,14 +89,14 @@ export async function generate(options: GeneratorOptions) {
       if (extendedOptions.config) {
         const parseResult = await parseConfiguration(extendedOptions.config, schemaBaseDir);
         configFileOptions = parseResult.config;
-        console.log(`📋 Loaded configuration from: ${parseResult.configPath || 'discovered file'}`);
+        logger.debug(`📋 Loaded configuration from: ${parseResult.configPath || 'discovered file'}`);
       } else {
         // Try auto-discovery and specific paths
         try {
           const parseResult = await parseConfiguration(undefined, schemaBaseDir);
           if (!parseResult.isDefault) {
             configFileOptions = parseResult.config;
-            console.log(`📋 Auto-discovered configuration from: ${parseResult.configPath || 'discovered file'}`);
+            logger.debug(`📋 Auto-discovered configuration from: ${parseResult.configPath || 'discovered file'}`);
           } else {
             // Try specific paths for config.json
             const specificPaths = ['./prisma/config.json', './config.json', './zod-generator.config.json'];
@@ -103,7 +104,7 @@ export async function generate(options: GeneratorOptions) {
               try {
                 const parseResult = await parseConfiguration(path, schemaBaseDir);
                 configFileOptions = parseResult.config;
-                console.log(`📋 Found configuration at: ${path}`);
+                logger.debug(`📋 Found configuration at: ${path}`);
                 break;
               } catch {
                 // Continue to next path
@@ -111,7 +112,7 @@ export async function generate(options: GeneratorOptions) {
             }
           }
   } catch {
-          console.log(`📋 No configuration file found, using defaults`);
+          logger.debug(`📋 No configuration file found, using defaults`);
         }
       }
       
@@ -204,8 +205,8 @@ export async function generate(options: GeneratorOptions) {
       validationResult.warnings.forEach(warning => console.warn(`  - ${warning}`));
     }
     if (validationResult.suggestions.length > 0) {
-      console.log('💡 Suggestions:');
-      validationResult.suggestions.forEach(suggestion => console.log(`  - ${suggestion}`));
+      logger.debug('💡 Suggestions:');
+      validationResult.suggestions.forEach(suggestion => logger.debug(`  - ${suggestion}`));
     }
 
     // Merge backward compatibility options with new configuration
@@ -435,7 +436,7 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
       /ListRelationFilter$/, /RelationFilter$/, /ScalarRelationFilter$/,
       ];
       if (disallowedPatterns.some((p) => p.test(objectSchemaName))) {
-        console.log(`⏭️  Minimal mode: skipping object schema ${objectSchemaName}`);
+        logger.debug(`⏭️  Minimal mode: skipping object schema ${objectSchemaName}`);
         return false;
       }
     }
@@ -444,7 +445,7 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
   if (modelName) {
     // First check if the model itself is enabled
     const isModelEnabled = Transformer.isModelEnabled(modelName);
-    console.log(`🔍 Object schema check: ${objectSchemaName} -> model: ${modelName}, enabled: ${isModelEnabled}`);
+    logger.debug(`🔍 Object schema check: ${objectSchemaName} -> model: ${modelName}, enabled: ${isModelEnabled}`);
     if (!isModelEnabled) {
       return false;
     }
@@ -456,13 +457,13 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
       const hasEnabledOperation = requiredOperations.some(operation => 
         Transformer.isOperationEnabled(modelName, operation)
       );
-      console.log(`🔍 Operation check: ${objectSchemaName} -> operations: ${requiredOperations}, hasEnabled: ${hasEnabledOperation}`);
+      logger.debug(`🔍 Operation check: ${objectSchemaName} -> operations: ${requiredOperations}, hasEnabled: ${hasEnabledOperation}`);
       return hasEnabledOperation;
     }
   }
   
   // If we can't determine the model or operations, generate the schema (default behavior)
-  console.log(`🔍 Default behavior: ${objectSchemaName} -> generating (could not determine model)`);
+  logger.debug(`🔍 Default behavior: ${objectSchemaName} -> generating (could not determine model)`);
   return true;
 }
 
@@ -719,7 +720,7 @@ async function updateIndexWithVariants(config: CustomGeneratorConfig) {
   const indexPath = path.join(Transformer.getSchemasPath(), 'index.ts');
   await writeIndexFile(indexPath);
   
-  console.log('📦 Updated main index to include variants export');
+  logger.debug('📦 Updated main index to include variants export');
 }
 
 /**
@@ -731,28 +732,28 @@ function generateFilteringSummary(models: DMMF.Model[], config: CustomGeneratorC
   const enabledModelCount = enabledModels.length;
   const disabledModelCount = totalModels - enabledModelCount;
   
-  console.log('\n📊 Generation Summary:');
-  console.log(`   Models: ${enabledModelCount}/${totalModels} enabled`);
+  logger.debug('\n📊 Generation Summary:');
+  logger.debug(`   Models: ${enabledModelCount}/${totalModels} enabled`);
   
   if (disabledModelCount > 0) {
     const disabledModels = models
       .filter(model => !Transformer.isModelEnabled(model.name))
       .map(model => model.name);
-    console.log(`   Disabled models: ${disabledModels.join(', ')}`);
+    logger.debug(`   Disabled models: ${disabledModels.join(', ')}`);
   }
   
   // Show configuration mode
   if (config.mode) {
-    console.log(`   Mode: ${config.mode}`);
+    logger.debug(`   Mode: ${config.mode}`);
   }
   
   // Show global exclusions if any
   const globalExclusions = config.globalExclusions;
   if (globalExclusions && Object.values(globalExclusions).some(arr => arr && arr.length > 0)) {
-    console.log('   Global exclusions:');
+    logger.debug('   Global exclusions:');
     Object.entries(globalExclusions).forEach(([variant, fields]) => {
       if (fields && fields.length > 0) {
-        console.log(`     ${variant}: ${fields.join(', ')}`);
+        logger.debug(`     ${variant}: ${fields.join(', ')}`);
       }
     });
   }
@@ -764,11 +765,11 @@ function generateFilteringSummary(models: DMMF.Model[], config: CustomGeneratorC
       Transformer.isModelEnabled(modelName)
     );
     if (configuredModels.length > 0) {
-      console.log(`   Custom configurations: ${configuredModels.length} models`);
+      logger.debug(`   Custom configurations: ${configuredModels.length} models`);
     }
   }
   
-  console.log('✅ Zod schemas generated successfully with filtering applied\n');
+  logger.info('✅ Zod schemas generated successfully with filtering applied\n');
 }
 
 /**
@@ -820,22 +821,22 @@ function logConfigurationPrecedence(
   const hasGeneratorOverrides = Object.keys(generatorOverrides).length > 0;
   
   if (hasConfigFile || hasGeneratorOverrides) {
-    console.log('🔧 Configuration precedence applied:');
+    logger.debug('🔧 Configuration precedence applied:');
     
     if (hasConfigFile) {
-      console.log('   📁 Config file options loaded');
+      logger.debug('   📁 Config file options loaded');
     }
     
     if (hasGeneratorOverrides) {
-      console.log('   ⚡ Generator options override:', 
+      logger.debug('   ⚡ Generator options override:', 
         Object.keys(generatorOverrides).join(', '));
     }
     
     if (hasConfigFile && hasGeneratorOverrides) {
-      console.log('   💡 Generator options take precedence over config file settings');
+      logger.debug('   💡 Generator options take precedence over config file settings');
     }
     
-    console.log(''); // Empty line for readability
+    logger.debug(''); // Empty line for readability
   }
 }
 
@@ -870,7 +871,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
       // Filter models based on configuration
       const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
       if (enabledModels.length === 0) {
-        console.log('⚠️  No models enabled for variant generation');
+        logger.warn('⚠️  No models enabled for variant generation');
         return;
       }
 
@@ -970,7 +971,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
   await writeFileSafely(`${variantsOutputPath}/index.ts`, variantIndexContent);
       }
 
-      console.log(`📦 Generated ${exportLines.length} variant schemas across ${enabledModels.length} models (${placeAtRoot ? 'top-level' : 'variants/ directory'})`);
+      logger.debug(`📦 Generated ${exportLines.length} variant schemas across ${enabledModels.length} models (${placeAtRoot ? 'top-level' : 'variants/ directory'})`);
     } catch (error) {
       console.error(`❌ Variant generation (array) failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -981,11 +982,11 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
       .map(([variantName]) => variantName);
 
     if (enabledVariants.length === 0) {
-      console.log('📦 No variants enabled, skipping variant generation');
+      logger.debug('📦 No variants enabled, skipping variant generation');
       return;
     }
 
-    console.log(`📦 Generating variant schemas for: ${enabledVariants.join(', ')}`);
+    logger.debug(`📦 Generating variant schemas for: ${enabledVariants.join(', ')}`);
 
     try {
   // Object-based variants are always placed under schemas/variants
@@ -995,7 +996,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
       const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
 
       if (enabledModels.length === 0) {
-        console.log('⚠️  No models enabled for variant generation');
+        logger.warn('⚠️  No models enabled for variant generation');
         return;
       }
 
@@ -1010,7 +1011,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
       // Generate variants index file (object-based)
       await generateVariantsIndex(enabledVariants, variantsOutputPath);
 
-      console.log(`📦 Generated ${enabledVariants.length} variant types for ${enabledModels.length} models`);
+      logger.debug(`📦 Generated ${enabledVariants.length} variant types for ${enabledModels.length} models`);
 
     } catch (error) {
       console.error(`❌ Variant generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -1055,7 +1056,7 @@ async function generateVariantType(
     // Generate schema content
     const schemaContent = generateVariantSchemaContent(model, schemaName, excludeFields, variantName);
     
-    console.log(`   📝 Creating ${variantName} variant: ${fileName} (${schemaName})`);
+    logger.debug(`   📝 Creating ${variantName} variant: ${fileName} (${schemaName})`);
     
     // Write file
     await writeFileSafely(filePath, schemaContent);
@@ -1161,7 +1162,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
     return;
   }
   
-  console.log('📦 Generating pure model schemas');
+  logger.debug('📦 Generating pure model schemas');
   
   try {
     const outputPath = Transformer.getOutputPath();
@@ -1171,7 +1172,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
     const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
     
     if (enabledModels.length === 0) {
-      console.log('⚠️  No models enabled for pure model generation');
+      logger.warn('⚠️  No models enabled for pure model generation');
       return;
     }
     
@@ -1271,7 +1272,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
           `z.infer<typeof ${modelName}Model>`
         );
         
-        console.log(`   📝 Creating pure model: ${fileName} (${modelName}Model)`);
+        logger.debug(`   📝 Creating pure model: ${fileName} (${modelName}Model)`);
         
   // Use direct file writing to avoid formatting issues
   await fs.writeFile(filePath, content);
@@ -1317,7 +1318,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
     const { addIndexExport } = await import('./utils/writeIndexFile');
     addIndexExport(indexPath);
     
-    console.log(`📦 Generated pure model schemas for ${enabledModels.length} models`);
+    logger.debug(`📦 Generated pure model schemas for ${enabledModels.length} models`);
     
   } catch (error) {
     console.error(`❌ Pure model generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

@@ -7,6 +7,7 @@
 
 import { DMMF } from '@prisma/generator-helper';
 import { extractFieldComment, mapAnnotationsToZodSchema, parseZodAnnotations, type FieldCommentContext } from '../parsers/zodComments';
+import { logger } from '../utils/logger';
 
 /**
  * Configuration for Prisma type mapping
@@ -1470,7 +1471,7 @@ export class PrismaTypeMapper {
     lines.push(' *');
     lines.push(` * @generated Zod schema for ${metadata.metadata.modelName}.${metadata.metadata.fieldName}`);
     
-    lines.push(' */');
+    lines.push('*/');
     
   return lines.join('\n');
   }
@@ -2091,7 +2092,7 @@ export class PrismaTypeMapper {
     // Process each model
     for (const model of models) {
       try {
-        console.log(`Generating schema for model: ${model.name}`);
+        logger.debug(`Generating schema for model: ${model.name}`);
         
         const composition = this.generateModelSchema(model);
         const fileContent = this.generateSchemaFileContent(composition);

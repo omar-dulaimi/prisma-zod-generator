@@ -136,6 +136,19 @@ npx prisma generate
 
 ---
 
+## 🐞 Debug logging
+
+Verbose logs are off by default.
+
+- One-off run (Linux/macOS):
+  - `DEBUG_PRISMA_ZOD=1 npx prisma generate`
+  - or use a namespace: `DEBUG=prisma-zod npx prisma generate`
+- Via npm script in this repo: `npm run gen-example:debug`
+
+Unset the env var to return to quiet mode.
+
+---
+
 ## ✨ Why Choose Prisma Zod Generator?
 
 <table>
