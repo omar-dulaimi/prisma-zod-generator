@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import { isAbsolute, resolve } from 'path';
+import { logger } from '../utils/logger';
 
 /**
  * Configuration interface for the Prisma Zod Generator
@@ -227,12 +228,12 @@ function transformLegacyConfig(config: any): any {
   
   // Handle legacy Include/Select options
   if (config.addSelectType !== undefined) {
-    console.log(`🔄 Preserving legacy addSelectType: ${config.addSelectType}`);
+    logger.debug(`🔄 Preserving legacy addSelectType: ${config.addSelectType}`);
     transformed.addSelectType = Boolean(config.addSelectType);
   }
   
   if (config.addIncludeType !== undefined) {
-    console.log(`🔄 Preserving legacy addIncludeType: ${config.addIncludeType}`);
+    logger.debug(`🔄 Preserving legacy addIncludeType: ${config.addIncludeType}`);
     transformed.addIncludeType = Boolean(config.addIncludeType);
   }
   
@@ -242,7 +243,7 @@ function transformLegacyConfig(config: any): any {
       const modelConfig = transformed.models[modelName];
       
       if (modelConfig.fields?.exclude) {
-        console.log(`🔄 Transforming legacy fields.exclude for model ${modelName}:`, modelConfig.fields.exclude);
+        logger.debug(`🔄 Transforming legacy fields.exclude for model ${modelName}:`, modelConfig.fields.exclude);
         
         // Initialize variants if it doesn't exist
         if (!modelConfig.variants) {
@@ -264,9 +265,9 @@ function transformLegacyConfig(config: any): any {
           ];
         });
         
-  // Preserve legacy fields.exclude so it can apply to custom array-based variants too
-  // (Do not delete here; generator will honor it for all variants.)
-  console.log(`✅ Transformed model ${modelName} variants (preserving fields.exclude for compatibility):`, modelConfig.variants);
+        // Preserve legacy fields.exclude so it can apply to custom array-based variants too
+        // (Do not delete here; generator will honor it for all variants.)
+        logger.debug(`✅ Transformed model ${modelName} variants (preserving fields.exclude for compatibility):`, modelConfig.variants);
       }
     });
   }
