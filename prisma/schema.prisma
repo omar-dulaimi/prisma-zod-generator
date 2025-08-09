@@ -10,10 +10,8 @@ datasource db {
 generator zod {
   provider          = "node ./lib/generator.js"
   output            = "./generated"
-  // Enable single-file output mode for validation of bundling
-  useMultipleFiles  = false
-  // Optional: customize the bundle filename (defaults to "schemas.ts")
-  singleFileName    = "schemas.ts"
+  // Generate per-file schemas to align with tests that import individual files
+  useMultipleFiles  = true
 }
 
 model User {
