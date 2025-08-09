@@ -1,16 +1,16 @@
 import type {
-    ConnectorType,
-    DMMF as PrismaDMMF,
+  ConnectorType,
+  DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
-import {
-    findModelByName,
-    isMongodbRawOp,
-} from './helpers';
+import { findModelByName, isMongodbRawOp } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
-import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
+import {
+  processModelsWithZodIntegration,
+  type EnhancedModelInfo,
+} from './helpers/zod-integration';
 import { AggregateOperationSupport, TransformerParams } from './types';
 import { logger } from './utils/logger';
 import { writeFileSafely } from './utils/writeFileSafely';
@@ -50,10 +50,10 @@ export default class Transformer {
   private static isGenerateInclude: boolean = false;
   private static generatorConfig: GeneratorConfig | null = null;
   // Dual schema export configuration
-  private static exportTypedSchemas: boolean = true;      // Export z.ZodType<Prisma.Type> versions (type-safe)
-  private static exportZodSchemas: boolean = true;        // Export pure Zod versions (method-friendly)
-  private static typedSchemaSuffix: string = 'Schema';    // Suffix for typed schemas (PostFindManySchema)
-  private static zodSchemaSuffix: string = 'ZodSchema';   // Suffix for Zod schemas (PostFindManyZodSchema)
+  private static exportTypedSchemas: boolean = true; // Export z.ZodType<Prisma.Type> versions (type-safe)
+  private static exportZodSchemas: boolean = true; // Export pure Zod versions (method-friendly)
+  private static typedSchemaSuffix: string = 'Schema'; // Suffix for typed schemas (PostFindManySchema)
+  private static zodSchemaSuffix: string = 'ZodSchema'; // Suffix for Zod schemas (PostFindManyZodSchema)
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
@@ -62,13 +62,13 @@ export default class Transformer {
     this.modelOperations = params.modelOperations ?? [];
     this.aggregateOperationSupport = params.aggregateOperationSupport ?? {};
     this.enumTypes = params.enumTypes ?? [];
-    
+
     // Process models with Zod integration on initialization
     this.enhancedModels = processModelsWithZodIntegration(this.models, {
       enableZodAnnotations: true,
       generateFallbackSchemas: true,
       validateTypeCompatibility: true,
-      collectDetailedErrors: true
+      collectDetailedErrors: true,
     });
   }
 
@@ -97,7 +97,7 @@ export default class Transformer {
    */
   static isModelEnabled(modelName: string): boolean {
     const config = this.getGeneratorConfig();
-    
+
     // If no configuration is available, generate all models (default behavior)
     if (!config) {
       return true;
@@ -123,7 +123,7 @@ export default class Transformer {
    * Get list of enabled models for generation
    */
   static getEnabledModels(allModels: PrismaDMMF.Model[]): PrismaDMMF.Model[] {
-    return allModels.filter(model => this.isModelEnabled(model.name));
+    return allModels.filter((model) => this.isModelEnabled(model.name));
   }
 
   /**
@@ -134,14 +134,20 @@ export default class Transformer {
     if (!config) return;
 
     const enabledModels = this.getEnabledModels(allModels);
-    const disabledModels = allModels.filter(model => !this.isModelEnabled(model.name));
+    const disabledModels = allModels.filter(
+      (model) => !this.isModelEnabled(model.name),
+    );
 
     if (disabledModels.length > 0) {
-      logger.debug(`🚫 Models excluded from generation: ${disabledModels.map(m => m.name).join(', ')}`);
+      logger.debug(
+        `🚫 Models excluded from generation: ${disabledModels.map((m) => m.name).join(', ')}`,
+      );
     }
 
     if (config.mode === 'minimal' && enabledModels.length < allModels.length) {
-      logger.debug(`⚡ Minimal mode: generating ${enabledModels.length}/${allModels.length} models`);
+      logger.debug(
+        `⚡ Minimal mode: generating ${enabledModels.length}/${allModels.length} models`,
+      );
     }
   }
 
@@ -150,10 +156,12 @@ export default class Transformer {
    */
   static isOperationEnabled(modelName: string, operationName: string): boolean {
     const config = this.getGeneratorConfig();
-    
+
     // If no configuration is available, generate all operations (default behavior)
     if (!config) {
-      logger.debug(`🔍 Operation check: ${modelName}.${operationName} = true (no config)`);
+      logger.debug(
+        `🔍 Operation check: ${modelName}.${operationName} = true (no config)`,
+      );
       return true;
     }
 
@@ -162,34 +170,50 @@ export default class Transformer {
     if (modelConfig && modelConfig.operations) {
       // Map operation names for backward compatibility
       const operationMapping: Record<string, string[]> = {
-        'findMany': ['findMany'],
-        'findUnique': ['findUnique'], 
-        'findFirst': ['findFirst'],
-        'createOne': ['create', 'createOne'],
-        'createMany': ['create', 'createMany'],
-        'updateOne': ['update', 'updateOne'],
-        'updateMany': ['update', 'updateMany'],
-        'deleteOne': ['delete', 'deleteOne'],
-        'deleteMany': ['delete', 'deleteMany'],
-        'upsertOne': ['upsert', 'upsertOne'],
-        'aggregate': ['aggregate'],
-        'groupBy': ['groupBy']
+        findMany: ['findMany'],
+        findUnique: ['findUnique'],
+        findFirst: ['findFirst'],
+        createOne: ['create', 'createOne'],
+        createMany: ['create', 'createMany'],
+        updateOne: ['update', 'updateOne'],
+        updateMany: ['update', 'updateMany'],
+        deleteOne: ['delete', 'deleteOne'],
+        deleteMany: ['delete', 'deleteMany'],
+        upsertOne: ['upsert', 'upsertOne'],
+        aggregate: ['aggregate'],
+        groupBy: ['groupBy'],
       };
-      
-      const allowedOperationNames = operationMapping[operationName] || [operationName];
-      const isEnabled = allowedOperationNames.some(opName => modelConfig.operations!.includes(opName));
-      
-      logger.debug(`🔍 Operation check: ${modelName}.${operationName} = ${isEnabled} (configured ops: [${modelConfig.operations.join(', ')}])`);
+
+      const allowedOperationNames = operationMapping[operationName] || [
+        operationName,
+      ];
+      const isEnabled = allowedOperationNames.some((opName) =>
+        modelConfig.operations!.includes(opName),
+      );
+
+      logger.debug(
+        `🔍 Operation check: ${modelName}.${operationName} = ${isEnabled} (configured ops: [${modelConfig.operations.join(', ')}])`,
+      );
       return isEnabled;
     }
 
     // For minimal mode, only enable essential operations (no *Many, no upsert, no aggregate/groupBy)
     if (config.mode === 'minimal') {
       // Allow overrides via config.minimalOperations when present
-      const configured = (config as any).minimalOperations as string[] | undefined;
-      const baseAllowed = configured && Array.isArray(configured) && configured.length > 0
-        ? configured
-        : ['findMany', 'findUnique', 'findFirst', 'create', 'update', 'delete'];
+      const configured = (config as any).minimalOperations as
+        | string[]
+        | undefined;
+      const baseAllowed =
+        configured && Array.isArray(configured) && configured.length > 0
+          ? configured
+          : [
+              'findMany',
+              'findUnique',
+              'findFirst',
+              'create',
+              'update',
+              'delete',
+            ];
 
       // Map legacy op names used in model mappings to these canonical names
       const opAliasMap: Record<string, string> = {
@@ -200,47 +224,75 @@ export default class Transformer {
       };
       const canonical = opAliasMap[operationName] || operationName;
       const isEnabled = baseAllowed.includes(canonical);
-      logger.debug(`🔍 Operation check: ${modelName}.${operationName} -> ${canonical} = ${isEnabled} (minimal mode)`);
+      logger.debug(
+        `🔍 Operation check: ${modelName}.${operationName} -> ${canonical} = ${isEnabled} (minimal mode)`,
+      );
       return isEnabled;
     }
 
     // Default: enable all operations not explicitly disabled
-    logger.debug(`🔍 Operation check: ${modelName}.${operationName} = true (default)`);
+    logger.debug(
+      `🔍 Operation check: ${modelName}.${operationName} = true (default)`,
+    );
     return true;
   }
 
   /**
    * Get list of enabled operations for a model
    */
-  static getEnabledOperations(modelName: string, allOperations: string[]): string[] {
-    return allOperations.filter(operation => this.isOperationEnabled(modelName, operation));
+  static getEnabledOperations(
+    modelName: string,
+    allOperations: string[],
+  ): string[] {
+    return allOperations.filter((operation) =>
+      this.isOperationEnabled(modelName, operation),
+    );
   }
 
   /**
    * Log information about operation filtering for a model
    */
-  static logOperationFiltering(modelName: string, allOperations: string[]): void {
+  static logOperationFiltering(
+    modelName: string,
+    allOperations: string[],
+  ): void {
     const config = this.getGeneratorConfig();
     if (!config) return;
 
-    const enabledOperations = this.getEnabledOperations(modelName, allOperations);
-    const disabledOperations = allOperations.filter(op => !this.isOperationEnabled(modelName, op));
+    const enabledOperations = this.getEnabledOperations(
+      modelName,
+      allOperations,
+    );
+    const disabledOperations = allOperations.filter(
+      (op) => !this.isOperationEnabled(modelName, op),
+    );
 
     if (disabledOperations.length > 0) {
-      logger.debug(`   🔧 ${modelName}: excluded operations [${disabledOperations.join(', ')}]`);
+      logger.debug(
+        `   🔧 ${modelName}: excluded operations [${disabledOperations.join(', ')}]`,
+      );
     }
 
-    if (config.mode === 'minimal' && enabledOperations.length < allOperations.length) {
-      logger.debug(`   ⚡ ${modelName}: minimal mode - ${enabledOperations.length}/${allOperations.length} operations`);
+    if (
+      config.mode === 'minimal' &&
+      enabledOperations.length < allOperations.length
+    ) {
+      logger.debug(
+        `   ⚡ ${modelName}: minimal mode - ${enabledOperations.length}/${allOperations.length} operations`,
+      );
     }
   }
 
   /**
    * Check if a field should be included in schema generation
    */
-  static isFieldEnabled(fieldName: string, modelName?: string, variant?: 'pure' | 'input' | 'result'): boolean {
+  static isFieldEnabled(
+    fieldName: string,
+    modelName?: string,
+    variant?: 'pure' | 'input' | 'result',
+  ): boolean {
     const config = this.getGeneratorConfig();
-    
+
     // If no configuration is available, include all fields (default behavior)
     if (!config) {
       return true;
@@ -260,7 +312,12 @@ export default class Transformer {
 
     // Check global exclusions for the specified variant
     if (variant && config.globalExclusions?.[variant]) {
-      if (this.isFieldMatchingPatterns(fieldName, config.globalExclusions[variant])) {
+      if (
+        this.isFieldMatchingPatterns(
+          fieldName,
+          config.globalExclusions[variant],
+        )
+      ) {
         shouldExclude = true;
         debugReasons.push(`global ${variant} exclusion`);
       }
@@ -269,37 +326,65 @@ export default class Transformer {
     // Check model-specific field exclusions and includes
     if (modelName) {
       const modelConfig = config.models?.[modelName];
-      
+
       // Check model-specific includes FIRST - these OVERRIDE exclusions (highest precedence)
       if ((modelConfig as any)?.fields?.include) {
-        if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.include)) {
-          logger.debug(`🟢 Field enabled: ${modelName}.${fieldName} (${variant}) = true (model include override)`);
+        if (
+          this.isFieldMatchingPatterns(
+            fieldName,
+            (modelConfig as any).fields.include,
+          )
+        ) {
+          logger.debug(
+            `🟢 Field enabled: ${modelName}.${fieldName} (${variant}) = true (model include override)`,
+          );
           return true; // Include overrides any previous or subsequent exclusion
         }
       }
-      
+
       // Check variant-specific exclusions (new format)
       if (modelConfig?.variants?.[variant || 'pure']?.excludeFields) {
-        if (this.isFieldMatchingPatterns(fieldName, modelConfig.variants[variant || 'pure']!.excludeFields!)) {
+        if (
+          this.isFieldMatchingPatterns(
+            fieldName,
+            modelConfig.variants[variant || 'pure']!.excludeFields!,
+          )
+        ) {
           shouldExclude = true;
           debugReasons.push(`model ${variant} variant exclusion`);
         }
       }
-      
+
       // Check legacy format: fields.exclude (for backward compatibility)
       if ((modelConfig as any)?.fields?.exclude) {
-        logger.debug(`🔍 Checking legacy fields.exclude for ${modelName}.${fieldName}: patterns =`, (modelConfig as any).fields.exclude);
-        if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.exclude)) {
+        logger.debug(
+          `🔍 Checking legacy fields.exclude for ${modelName}.${fieldName}: patterns =`,
+          (modelConfig as any).fields.exclude,
+        );
+        if (
+          this.isFieldMatchingPatterns(
+            fieldName,
+            (modelConfig as any).fields.exclude,
+          )
+        ) {
           shouldExclude = true;
           debugReasons.push(`model fields.exclude`);
-          logger.debug(`🚫 Field excluded by legacy fields.exclude: ${modelName}.${fieldName}`);
+          logger.debug(
+            `🚫 Field excluded by legacy fields.exclude: ${modelName}.${fieldName}`,
+          );
         }
       }
     }
 
     const result = !shouldExclude;
-    if (debugReasons.length > 0 || (modelName && ['password', 'views', 'internalId', 'metadata'].includes(fieldName))) {
-      logger.debug(`🔍 Field check: ${modelName || 'unknown'}.${fieldName} (${variant || 'unknown'}) = ${result} ${debugReasons.length > 0 ? `(${debugReasons.join(', ')})` : '(allowed)'}`);
+    if (
+      debugReasons.length > 0 ||
+      (modelName &&
+        ['password', 'views', 'internalId', 'metadata'].includes(fieldName))
+    ) {
+      logger.debug(
+        `🔍 Field check: ${modelName || 'unknown'}.${fieldName} (${variant || 'unknown'}) = ${result} ${debugReasons.length > 0 ? `(${debugReasons.join(', ')})` : '(allowed)'}`,
+      );
     }
 
     // Return the opposite of shouldExclude (if should exclude, return false)
@@ -310,22 +395,25 @@ export default class Transformer {
    * Check if a field name matches any pattern in the exclusion list
    * Supports wildcards: *field, field*, *field*
    */
-  static isFieldMatchingPatterns(fieldName: string, patterns: string[]): boolean {
+  static isFieldMatchingPatterns(
+    fieldName: string,
+    patterns: string[],
+  ): boolean {
     // Debug: Reduced verbosity for performance (uncomment for detailed debugging)
     // console.log(`🔍 Pattern matching: fieldName='${fieldName}', patterns=`, patterns);
-    const result = patterns.some(pattern => {
+    const result = patterns.some((pattern) => {
       // Exact match (no wildcards)
       if (!pattern.includes('*')) {
         const match = fieldName === pattern;
         // console.log(`   - Exact match '${pattern}': ${match}`);
         return match;
       }
-      
+
       // Convert pattern to regex
       const regexPattern = pattern
-        .replace(/\./g, '\\.')  // Escape dots FIRST
-        .replace(/\*/g, '.*');  // Then replace * with .*
-      
+        .replace(/\./g, '\\.') // Escape dots FIRST
+        .replace(/\*/g, '.*'); // Then replace * with .*
+
       const regex = new RegExp(`^${regexPattern}$`);
       const match = regex.test(fieldName);
       // console.log(`   - Regex match '${pattern}' -> /${regexPattern}/: ${match}`);
@@ -347,14 +435,18 @@ export default class Transformer {
   ): PrismaDMMF.SchemaArg[] {
     // Special case: WhereUniqueInput must retain unique identifier fields (e.g., id, unique columns)
     // Do NOT apply variant-based exclusions to this schema type
-    const isWhereUniqueInput = !!schemaName && /WhereUniqueInput$/.test(schemaName);
+    const isWhereUniqueInput =
+      !!schemaName && /WhereUniqueInput$/.test(schemaName);
 
-    const filteredFields = fields.filter(field => {
+    const filteredFields = fields.filter((field) => {
       // Check basic field inclusion rules
-      if (!isWhereUniqueInput && !this.isFieldEnabled(field.name, modelName, variant)) {
+      if (
+        !isWhereUniqueInput &&
+        !this.isFieldEnabled(field.name, modelName, variant)
+      ) {
         return false;
       }
-      
+
       // For relation fields, also check if the related model is enabled
       // This is a safety check for schema args that might represent relation fields
       if (this.isRelationFieldArg(field)) {
@@ -363,66 +455,95 @@ export default class Transformer {
           return false;
         }
       }
-      
+
       return true;
     });
 
     // Handle foreign key preservation when relation fields are excluded
     const result = [...filteredFields];
-    
+
     if (modelName && variant === 'input' && models) {
       const model = models.find((m: PrismaDMMF.Model) => m.name === modelName);
       if (model) {
-        const excludedRelationFields = this.getExcludedRelationFields(fields, filteredFields, model);
-        const foreignKeyFields = this.getForeignKeyFieldsForExcludedRelations(excludedRelationFields, model);
-        
-        
+        const excludedRelationFields = this.getExcludedRelationFields(
+          fields,
+          filteredFields,
+          model,
+        );
+        const foreignKeyFields = this.getForeignKeyFieldsForExcludedRelations(
+          excludedRelationFields,
+          model,
+        );
+
         // Add foreign key fields that aren't already present AND aren't explicitly excluded
         for (const fkField of foreignKeyFields) {
-          if (!result.some(field => field.name === fkField.name)) {
+          if (!result.some((field) => field.name === fkField.name)) {
             // Check if the foreign key field is explicitly excluded by configuration
-            const isFieldAllowed = this.isFieldEnabled(fkField.name, modelName, variant);
-            logger.debug(`🔑 Foreign key preservation check: ${modelName}.${fkField.name} (${variant}) = ${isFieldAllowed}`);
+            const isFieldAllowed = this.isFieldEnabled(
+              fkField.name,
+              modelName,
+              variant,
+            );
+            logger.debug(
+              `🔑 Foreign key preservation check: ${modelName}.${fkField.name} (${variant}) = ${isFieldAllowed}`,
+            );
             if (isFieldAllowed) {
-              logger.debug(`🔑 Adding foreign key field: ${modelName}.${fkField.name}`);
+              logger.debug(
+                `🔑 Adding foreign key field: ${modelName}.${fkField.name}`,
+              );
               result.push(fkField);
             } else {
-              logger.debug(`🚫 Skipping excluded foreign key field: ${modelName}.${fkField.name}`);
+              logger.debug(
+                `🚫 Skipping excluded foreign key field: ${modelName}.${fkField.name}`,
+              );
             }
           }
         }
       }
     }
-    
+
     return result;
   }
 
   /**
    * Get excluded relation fields by comparing original and filtered fields
    */
-  static getExcludedRelationFields(originalFields: PrismaDMMF.SchemaArg[], filteredFields: PrismaDMMF.SchemaArg[], model: PrismaDMMF.Model): PrismaDMMF.Field[] {
+  static getExcludedRelationFields(
+    originalFields: PrismaDMMF.SchemaArg[],
+    filteredFields: PrismaDMMF.SchemaArg[],
+    model: PrismaDMMF.Model,
+  ): PrismaDMMF.Field[] {
     const excludedFieldNames = originalFields
-      .filter(originalField => !filteredFields.some(filteredField => filteredField.name === originalField.name))
-      .map(field => field.name);
+      .filter(
+        (originalField) =>
+          !filteredFields.some(
+            (filteredField) => filteredField.name === originalField.name,
+          ),
+      )
+      .map((field) => field.name);
 
-    return model.fields.filter(field => 
-      excludedFieldNames.includes(field.name) && 
-      field.kind === 'object' && 
-      field.relationFromFields && 
-      field.relationFromFields.length > 0
+    return model.fields.filter(
+      (field) =>
+        excludedFieldNames.includes(field.name) &&
+        field.kind === 'object' &&
+        field.relationFromFields &&
+        field.relationFromFields.length > 0,
     );
   }
 
   /**
    * Get foreign key schema args for excluded relation fields
    */
-  static getForeignKeyFieldsForExcludedRelations(excludedRelationFields: PrismaDMMF.Field[], model: PrismaDMMF.Model): PrismaDMMF.SchemaArg[] {
+  static getForeignKeyFieldsForExcludedRelations(
+    excludedRelationFields: PrismaDMMF.Field[],
+    model: PrismaDMMF.Model,
+  ): PrismaDMMF.SchemaArg[] {
     const foreignKeyFields: PrismaDMMF.SchemaArg[] = [];
 
     for (const relationField of excludedRelationFields) {
       if (relationField.relationFromFields) {
         for (const fkFieldName of relationField.relationFromFields) {
-          const fkField = model.fields.find(f => f.name === fkFieldName);
+          const fkField = model.fields.find((f) => f.name === fkFieldName);
           if (fkField && fkField.kind === 'scalar') {
             // Create a schema arg for the foreign key field
             const schemaArg: PrismaDMMF.SchemaArg = {
@@ -433,9 +554,9 @@ export default class Transformer {
                 {
                   type: fkField.type,
                   location: 'scalar',
-                  isList: fkField.isList
-                }
-              ]
+                  isList: fkField.isList,
+                },
+              ],
             };
             foreignKeyFields.push(schemaArg);
           }
@@ -451,36 +572,42 @@ export default class Transformer {
    */
   static isRelationFieldArg(field: PrismaDMMF.SchemaArg): boolean {
     // Check if the field type suggests it's a relation
-    return field.inputTypes.some(inputType => {
-      return inputType.location === 'inputObjectTypes' && 
-             ((inputType.type as string).includes('WhereInput') ||
-             (inputType.type as string).includes('CreateInput') ||
-             (inputType.type as string).includes('UpdateInput') ||
-             (inputType.type as string).includes('ListRelationFilter') ||
-             (inputType.type as string).includes('RelationFilter') ||
-             (inputType.type as string).includes('CreateNested') ||
-             (inputType.type as string).includes('UpdateNested') ||
-             (inputType.type as string).includes('OrderByRelation'));
+    return field.inputTypes.some((inputType) => {
+      return (
+        inputType.location === 'inputObjectTypes' &&
+        ((inputType.type as string).includes('WhereInput') ||
+          (inputType.type as string).includes('CreateInput') ||
+          (inputType.type as string).includes('UpdateInput') ||
+          (inputType.type as string).includes('ListRelationFilter') ||
+          (inputType.type as string).includes('RelationFilter') ||
+          (inputType.type as string).includes('CreateNested') ||
+          (inputType.type as string).includes('UpdateNested') ||
+          (inputType.type as string).includes('OrderByRelation'))
+      );
     });
   }
 
   /**
    * Extract related model name from field arg
    */
-  static extractRelatedModelFromFieldArg(field: PrismaDMMF.SchemaArg): string | null {
+  static extractRelatedModelFromFieldArg(
+    field: PrismaDMMF.SchemaArg,
+  ): string | null {
     for (const inputType of field.inputTypes) {
       if (inputType.location === 'inputObjectTypes') {
         const typeName = inputType.type as string;
-        
+
         // Handle specific relation filter patterns first
         if (typeName.includes('ListRelationFilter')) {
           // Extract from "PostListRelationFilter" -> "Post"
           const match = typeName.match(/^(\w+)ListRelationFilter$/);
           if (match) return match[1];
         }
-        
+
         // Extract model name from other types like "PostWhereInput", "UserCreateInput", etc.
-        const match = typeName.match(/^(\w+)(?:Where|Create|Update|OrderBy|RelationFilter|CreateNested|UpdateNested)/);
+        const match = typeName.match(
+          /^(\w+)(?:Where|Create|Update|OrderBy|RelationFilter|CreateNested|UpdateNested)/,
+        );
         if (match) {
           return match[1];
         }
@@ -507,19 +634,19 @@ export default class Transformer {
       /^(\w+)WhereInput$/,
       /^(\w+)CreateInput$/,
       /^(\w+)UpdateInput$/,
-      
+
       // Order by inputs
       /^(\w+)OrderByWithRelationInput$/,
       /^(\w+)OrderByWithAggregationInput$/,
       /^(\w+)OrderByRelationAggregateInput$/,
-      
+
       // Filter inputs
       /^(\w+)ScalarWhereInput$/,
       /^(\w+)ScalarWhereWithAggregatesInput$/,
       /^(\w+)ListRelationFilter$/,
       /^(\w+)RelationFilter$/,
       /^(\w+)ScalarRelationFilter$/,
-      
+
       // Aggregate inputs
       /^(\w+)CountAggregateInput$/,
       /^(\w+)CountOrderByAggregateInput$/,
@@ -531,7 +658,7 @@ export default class Transformer {
       /^(\w+)MinOrderByAggregateInput$/,
       /^(\w+)SumAggregateInput$/,
       /^(\w+)SumOrderByAggregateInput$/,
-      
+
       // Nested operation inputs
       /^(\w+)CreateNestedOneWithout\w+Input$/,
       /^(\w+)CreateNestedManyWithout\w+Input$/,
@@ -550,56 +677,71 @@ export default class Transformer {
       /^(\w+)UncheckedCreateNestedManyWithout\w+Input$/,
       /^(\w+)UncheckedUpdateManyWithout\w+Input$/,
       /^(\w+)UncheckedUpdateManyWithout\w+NestedInput$/,
-      
-      // Many-to-many relation inputs  
+
+      // Many-to-many relation inputs
       /^(\w+)CreateManyAuthorInput$/,
       /^(\w+)CreateManyAuthorInputEnvelope$/,
       /^(\w+)UpdateManyWithWhereWithout\w+Input$/,
       /^(\w+)UpdateWithWhereUniqueWithout\w+Input$/,
       /^(\w+)UpsertWithWhereUniqueWithout\w+Input$/,
       /^(\w+)UpdateManyWithout\w+NestedInput$/,
-      
+
       // Additional specific patterns found in generated schemas
       /^(\w+)ScalarWhereInput$/,
       /^(\w+)UncheckedUpdateManyInput$/,
-      
+
       // Args and other schemas
       /^(\w+)Args$/,
     ];
-    
+
     for (const pattern of patterns) {
       const match = schemaName.match(pattern);
       if (match) {
         return match[1];
       }
     }
-    
+
     return null;
   }
 
   /**
    * Determine schema variant from context
    */
-  static determineSchemaVariant(schemaName: string): 'pure' | 'input' | 'result' {
+  static determineSchemaVariant(
+    schemaName: string,
+  ): 'pure' | 'input' | 'result' {
     // Determine variant based on schema name patterns
-    if (schemaName.includes('Create') || schemaName.includes('Update') || schemaName.includes('Where')) {
+    if (
+      schemaName.includes('Create') ||
+      schemaName.includes('Update') ||
+      schemaName.includes('Where')
+    ) {
       return 'input';
     }
-    
+
     if (schemaName.includes('Result') || schemaName.includes('Output')) {
       return 'result';
     }
-    
+
     return 'pure'; // Default variant
   }
 
   /**
    * Log information about field filtering
    */
-  static logFieldFiltering(originalCount: number, filteredCount: number, modelName?: string, variant?: string): void {
+  static logFieldFiltering(
+    originalCount: number,
+    filteredCount: number,
+    modelName?: string,
+    variant?: string,
+  ): void {
     if (originalCount !== filteredCount) {
-      const context = modelName ? `${modelName}${variant ? ` (${variant})` : ''}` : 'schema';
-      logger.debug(`   🎯 ${context}: filtered ${originalCount - filteredCount} fields (${filteredCount}/${originalCount} remaining)`);
+      const context = modelName
+        ? `${modelName}${variant ? ` (${variant})` : ''}`
+        : 'schema';
+      logger.debug(
+        `   🎯 ${context}: filtered ${originalCount - filteredCount} fields (${filteredCount}/${originalCount} remaining)`,
+      );
     }
   }
 
@@ -622,7 +764,7 @@ export default class Transformer {
    */
   static isEnabledRelationField(modelField: PrismaDMMF.Field): boolean {
     const { kind, relationName, type } = modelField;
-    
+
     // Must be an object relation field
     if (kind !== 'object' || !relationName) {
       return false;
@@ -637,12 +779,12 @@ export default class Transformer {
    * Filter relation fields to only include those pointing to enabled models
    */
   static filterRelationFields(fields: PrismaDMMF.Field[]): PrismaDMMF.Field[] {
-    return fields.filter(field => {
+    return fields.filter((field) => {
       // Include non-relation fields
       if (field.kind !== 'object' || !field.relationName) {
         return true;
       }
-      
+
       // Only include relation fields if the related model is enabled
       return this.isEnabledRelationField(field);
     });
@@ -653,13 +795,13 @@ export default class Transformer {
    */
   static getEnabledRelatedModels(model: PrismaDMMF.Model): string[] {
     const relatedModels = new Set<string>();
-    
+
     for (const field of model.fields) {
       if (this.isEnabledRelationField(field)) {
         relatedModels.add(field.type);
       }
     }
-    
+
     return Array.from(relatedModels);
   }
 
@@ -668,18 +810,21 @@ export default class Transformer {
    * Only if it has relationships to other enabled models
    */
   static shouldGenerateIncludeSchema(model: PrismaDMMF.Model): boolean {
-  const config = this.getGeneratorConfig();
-  if (config?.mode === 'minimal') return false;
-  return Transformer.isGenerateInclude && this.checkModelHasEnabledModelRelation(model);
+    const config = this.getGeneratorConfig();
+    if (config?.mode === 'minimal') return false;
+    return (
+      Transformer.isGenerateInclude &&
+      this.checkModelHasEnabledModelRelation(model)
+    );
   }
 
   /**
-   * Check if a model should have select schemas generated  
+   * Check if a model should have select schemas generated
    */
   static shouldGenerateSelectSchema(_model: PrismaDMMF.Model): boolean {
-  const config = this.getGeneratorConfig();
-  if (config?.mode === 'minimal') return false;
-  return Transformer.isGenerateSelect;
+    const config = this.getGeneratorConfig();
+    if (config?.mode === 'minimal') return false;
+    return Transformer.isGenerateSelect;
   }
 
   /**
@@ -690,16 +835,24 @@ export default class Transformer {
     if (!config) return;
 
     const enabledRelatedModels = this.getEnabledRelatedModels(model);
-    const totalRelationFields = model.fields.filter(f => f.kind === 'object' && f.relationName).length;
-    const enabledRelationFields = model.fields.filter(f => this.isEnabledRelationField(f)).length;
+    const totalRelationFields = model.fields.filter(
+      (f) => f.kind === 'object' && f.relationName,
+    ).length;
+    const enabledRelationFields = model.fields.filter((f) =>
+      this.isEnabledRelationField(f),
+    ).length;
 
     if (totalRelationFields > enabledRelationFields) {
       const disabledRelations = totalRelationFields - enabledRelationFields;
-      logger.debug(`   🔗 ${model.name}: ${disabledRelations} disabled relation(s) to filtered models`);
+      logger.debug(
+        `   🔗 ${model.name}: ${disabledRelations} disabled relation(s) to filtered models`,
+      );
     }
 
     if (enabledRelatedModels.length > 0) {
-      logger.debug(`   ✅ ${model.name}: active relations to [${enabledRelatedModels.join(', ')}]`);
+      logger.debug(
+        `   ✅ ${model.name}: active relations to [${enabledRelatedModels.join(', ')}]`,
+      );
     }
   }
   // Dual export setters
@@ -791,11 +944,11 @@ export default class Transformer {
   private isEnumSchemaEnabled(enumName: string): boolean {
     // Extract model name from enum names like "PostScalarFieldEnum" -> "Post"
     const modelName = this.extractModelNameFromEnum(enumName);
-    
+
     if (modelName) {
       return Transformer.isModelEnabled(modelName);
     }
-    
+
     // If we can't determine the model, generate the enum (default behavior)
     return true;
   }
@@ -808,14 +961,14 @@ export default class Transformer {
       /^(\w+)ScalarFieldEnum$/,
       /^(\w+)OrderByRelevanceFieldEnum$/,
     ];
-    
+
     for (const pattern of patterns) {
       const match = enumName.match(pattern);
       if (match) {
         return match[1];
       }
     }
-    
+
     return null;
   }
 
@@ -842,22 +995,33 @@ export default class Transformer {
   }
 
   generateObjectSchemaFields() {
-    // Determine context for field filtering  
+    // Determine context for field filtering
     const modelName = Transformer.extractModelNameFromContext(this.name);
     const variant = Transformer.determineSchemaVariant(this.name);
-    
+
     // Debug: Log the raw context name and extracted model name
-    logger.debug(`🔍 Schema context: "${this.name}" -> extracted model: "${modelName}"`);
-    
-    
+    logger.debug(
+      `🔍 Schema context: "${this.name}" -> extracted model: "${modelName}"`,
+    );
+
     // Apply field filtering
-  const originalFieldCount = this.fields.length;
-  const filteredFields = Transformer.filterFields(this.fields, modelName || undefined, variant, this.models, this.name);
-    
-    
+    const originalFieldCount = this.fields.length;
+    const filteredFields = Transformer.filterFields(
+      this.fields,
+      modelName || undefined,
+      variant,
+      this.models,
+      this.name,
+    );
+
     // Log field filtering if any fields were excluded
-    Transformer.logFieldFiltering(originalFieldCount, filteredFields.length, modelName || undefined, variant);
-    
+    Transformer.logFieldFiltering(
+      originalFieldCount,
+      filteredFields.length,
+      modelName || undefined,
+      variant,
+    );
+
     const zodObjectSchemaFields = filteredFields
       .map((field) => this.generateObjectSchemaField(field))
       .flatMap((item) => item)
@@ -884,7 +1048,6 @@ export default class Transformer {
     }
 
     let alternatives = lines.reduce<string[]>((result, inputType) => {
-      
       if (inputType.type === 'String') {
         result.push(this.wrapWithZodValidators('z.string()', field, inputType));
       } else if (inputType.type === 'Boolean') {
@@ -892,11 +1055,10 @@ export default class Transformer {
           this.wrapWithZodValidators('z.boolean()', field, inputType),
         );
       } else if (inputType.type === 'Int') {
-        result.push(this.wrapWithZodValidators('z.number().int()', field, inputType));
-      } else if (
-        inputType.type === 'Float' ||
-        inputType.type === 'Decimal'
-      ) {
+        result.push(
+          this.wrapWithZodValidators('z.number().int()', field, inputType),
+        );
+      } else if (inputType.type === 'Float' || inputType.type === 'Decimal') {
         result.push(this.wrapWithZodValidators('z.number()', field, inputType));
       } else if (inputType.type === 'BigInt') {
         result.push(this.wrapWithZodValidators('z.bigint()', field, inputType));
@@ -906,7 +1068,11 @@ export default class Transformer {
         );
       } else if (inputType.type === 'DateTime') {
         result.push(
-          this.wrapWithZodValidators('z.coerce.date()', field, inputType),
+          this.wrapWithZodValidators(
+            'z.union([z.date(), z.iso.datetime()])',
+            field,
+            inputType,
+          ),
         );
       } else if (inputType.type === 'Json') {
         this.hasJson = true;
@@ -918,11 +1084,7 @@ export default class Transformer {
         );
       } else if (inputType.type === 'Bytes') {
         result.push(
-          this.wrapWithZodValidators(
-            'z.instanceof(Buffer)',
-            field,
-            inputType,
-          ),
+          this.wrapWithZodValidators('z.instanceof(Buffer)', field, inputType),
         );
       } else {
         const isEnum = inputType.location === 'enumTypes';
@@ -1001,9 +1163,13 @@ export default class Transformer {
     // Re-enabled @zod comment validations
     try {
       // Add safety check to prevent infinite loops
-      if (field.name && typeof field.name === 'string' && field.name.length > 0) {
+      if (
+        field.name &&
+        typeof field.name === 'string' &&
+        field.name.length > 0
+      ) {
         const zodValidations = this.extractZodValidationsForField(field.name);
-        
+
         if (zodValidations && zodValidations !== mainValidator) {
           line = zodValidations;
           hasEnhancedZodSchema = true;
@@ -1011,11 +1177,19 @@ export default class Transformer {
       }
     } catch (error) {
       // If @zod processing fails, continue with the default validator
-      console.warn(`Failed to process @zod comments for field ${field.name}:`, error);
+      console.warn(
+        `Failed to process @zod comments for field ${field.name}:`,
+        error,
+      );
     }
 
     if (inputType.isList) {
       line += '.array()';
+      if (inputType.type === 'DateTime') {
+        line = 'z.union([z.date().array(), z.iso.datetime().array()])';
+      } else {
+        line += '.array()';
+      }
     }
 
     // Handle optionality correctly - add .optional() before any validations if field is optional
@@ -1026,7 +1200,7 @@ export default class Transformer {
           // Extract base type and validations, then reorder
           const baseTypeMatch = line.match(/^(z\.[^.]+(?:\(\))?)/);
           const validationsMatch = line.match(/(\.[^.]+(?:\([^)]*\))?)+$/);
-          
+
           if (baseTypeMatch && validationsMatch) {
             const baseType = baseTypeMatch[1];
             const validations = validationsMatch[0];
@@ -1058,7 +1232,11 @@ export default class Transformer {
     }
 
     // Basic validation
-    if (!fieldName || !this.enhancedModels || this.enhancedModels.length === 0) {
+    if (
+      !fieldName ||
+      !this.enhancedModels ||
+      this.enhancedModels.length === 0
+    ) {
       return null;
     }
 
@@ -1069,13 +1247,17 @@ export default class Transformer {
     }
 
     // Find the enhanced model information
-    const enhancedModel = this.enhancedModels.find(em => em.model.name === modelName);
+    const enhancedModel = this.enhancedModels.find(
+      (em) => em.model.name === modelName,
+    );
     if (!enhancedModel) {
       return null;
     }
 
     // Find the enhanced field information
-    const enhancedField = enhancedModel.enhancedFields.find(ef => ef.field.name === fieldName);
+    const enhancedField = enhancedModel.enhancedFields.find(
+      (ef) => ef.field.name === fieldName,
+    );
     if (!enhancedField) {
       return null;
     }
@@ -1277,9 +1459,9 @@ export default class Transformer {
   }
 
   generateObjectSchemaImportStatements() {
-  let generatedImports = this.generateImportZodStatement();
-  // Ensure Prisma types import exists for type safety checks in tests
-  generatedImports += "import type { Prisma } from '@prisma/client';\n";
+    let generatedImports = this.generateImportZodStatement();
+    // Ensure Prisma types import exists for type safety checks in tests
+    generatedImports += "import type { Prisma } from '@prisma/client';\n";
     generatedImports += this.generateSchemaImports();
     generatedImports += '\n\n';
     return generatedImports;
@@ -1291,17 +1473,20 @@ export default class Transformer {
    */
   private getImportFileExtension(): string {
     // Check if we're using the new prisma-client generator with ESM configuration
-    const isNewPrismaClientGenerator = Transformer.prismaClientProvider === 'prisma-client' ||
-                                       Transformer.prismaClientConfig.moduleFormat !== undefined ||
-                                       Transformer.prismaClientConfig.runtime !== undefined;
-    
+    const isNewPrismaClientGenerator =
+      Transformer.prismaClientProvider === 'prisma-client' ||
+      Transformer.prismaClientConfig.moduleFormat !== undefined ||
+      Transformer.prismaClientConfig.runtime !== undefined;
+
     // If using ESM with importFileExtension specified, use that extension
-    if (isNewPrismaClientGenerator && 
-        Transformer.prismaClientConfig.moduleFormat === 'esm' &&
-        Transformer.prismaClientConfig.importFileExtension) {
+    if (
+      isNewPrismaClientGenerator &&
+      Transformer.prismaClientConfig.moduleFormat === 'esm' &&
+      Transformer.prismaClientConfig.importFileExtension
+    ) {
       return `.${Transformer.prismaClientConfig.importFileExtension}`;
     }
-    
+
     // Default to no extension for backward compatibility
     return '';
   }
@@ -1309,7 +1494,10 @@ export default class Transformer {
   /**
    * Generate an import statement with the correct file extension for ESM support
    */
-  private generateImportStatement(importName: string, importPath: string): string {
+  private generateImportStatement(
+    importName: string,
+    importPath: string,
+  ): string {
     const extension = this.getImportFileExtension();
     return `import { ${importName} } from '${importPath}${extension}'`;
   }
@@ -1317,7 +1505,11 @@ export default class Transformer {
   /**
    * Generate import statement with validation - only if target will be generated
    */
-  static generateValidatedImportStatement(importName: string, importPath: string, modelName?: string): string {
+  static generateValidatedImportStatement(
+    importName: string,
+    importPath: string,
+    modelName?: string,
+  ): string {
     // Check if the target schema should be generated
     if (!Transformer.shouldGenerateImport(importName, modelName)) {
       return '';
@@ -1330,14 +1522,18 @@ export default class Transformer {
   /**
    * Check if an import should be generated based on filtering rules
    */
-  static shouldGenerateImport(importName: string, relatedModelName?: string): boolean {
+  static shouldGenerateImport(
+    importName: string,
+    relatedModelName?: string,
+  ): boolean {
     // If a related model is specified, check if it's enabled
     if (relatedModelName && !Transformer.isModelEnabled(relatedModelName)) {
       return false;
     }
 
     // Check if the import represents a schema that would be filtered out
-    const extractedModelName = Transformer.extractModelFromImportName(importName);
+    const extractedModelName =
+      Transformer.extractModelFromImportName(importName);
     if (extractedModelName && !Transformer.isModelEnabled(extractedModelName)) {
       return false;
     }
@@ -1386,7 +1582,7 @@ export default class Transformer {
   generateSchemaImports() {
     // Get the file extension to use for imports (for ESM support)
     const importExtension = this.getImportFileExtension();
-    
+
     return [...this.schemaImports]
       .map((name) => {
         const { isModelQueryType, modelName, queryName } =
@@ -1458,7 +1654,9 @@ export default class Transformer {
     // Perform comprehensive filter validation
     const isValid = Transformer.performFilterValidation(this.models);
     if (!isValid) {
-      throw new Error('Filter validation failed. Please fix the configuration errors above.');
+      throw new Error(
+        'Filter validation failed. Please fix the configuration errors above.',
+      );
     }
 
     // Log model filtering information
@@ -1492,11 +1690,20 @@ export default class Transformer {
 
       // Log operation filtering information for this model
       const allOperations = [
-        findUnique, findFirst, findMany, createOne, createMany,
-        deleteOne, deleteMany, updateOne, updateMany, upsertOne,
-        aggregate, groupBy
+        findUnique,
+        findFirst,
+        findMany,
+        createOne,
+        createMany,
+        deleteOne,
+        deleteMany,
+        updateOne,
+        updateMany,
+        upsertOne,
+        aggregate,
+        groupBy,
       ].filter(Boolean); // Remove undefined operations
-      
+
       Transformer.logOperationFiltering(modelName, allOperations);
 
       const model = findModelByName(this.models, modelName) as PrismaDMMF.Model;
@@ -1513,11 +1720,17 @@ export default class Transformer {
       const { orderByImport, orderByZodSchemaLine } =
         this.resolveOrderByWithRelationImportAndZodSchemaLine(model);
 
-      if (findUnique && Transformer.isOperationEnabled(modelName, 'findUnique')) {
+      if (
+        findUnique &&
+        Transformer.isOperationEnabled(modelName, 'findUnique')
+      ) {
         const imports = [
           selectImport,
           includeImport,
-          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
+          this.generateImportStatement(
+            `${modelName}WhereUniqueInputObjectSchema`,
+            `./objects/${modelName}WhereUniqueInput.schema`,
+          ),
         ];
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${findUnique}.schema.ts`),
@@ -1532,31 +1745,43 @@ export default class Transformer {
 
       if (findFirst && Transformer.isOperationEnabled(modelName, 'findFirst')) {
         const shouldInline = this.shouldInlineSelectSchema(model);
-        
+
         // Build imports based on aggressive inlining strategy
         const baseImports = [
           includeImport, // Include always external
           orderByImport,
-          this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
-          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
-          this.generateImportStatement(`${modelName}ScalarFieldEnumSchema`, `./enums/${modelName}ScalarFieldEnum.schema`),
+          this.generateImportStatement(
+            `${modelName}WhereInputObjectSchema`,
+            `./objects/${modelName}WhereInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}WhereUniqueInputObjectSchema`,
+            `./objects/${modelName}WhereUniqueInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}ScalarFieldEnumSchema`,
+            `./enums/${modelName}ScalarFieldEnum.schema`,
+          ),
         ];
-        
+
         // Add select import only if NOT inlining, add inline imports if inlining
-        const imports = shouldInline 
+        const imports = shouldInline
           ? [...baseImports, ...this.generateInlineSelectImports(model)]
           : [...baseImports, selectImport];
 
         // Determine select field reference based on dual export strategy
-        const selectFieldReference = shouldInline 
-          ? (Transformer.exportTypedSchemas 
-              ? `${modelName}FindFirstSelect${Transformer.typedSchemaSuffix}.optional()`
-              : `${modelName}FindFirstSelect${Transformer.zodSchemaSuffix}.optional()`)
+        const selectFieldReference = shouldInline
+          ? Transformer.exportTypedSchemas
+            ? `${modelName}FindFirstSelect${Transformer.typedSchemaSuffix}.optional()`
+            : `${modelName}FindFirstSelect${Transformer.zodSchemaSuffix}.optional()`
           : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
-        
+
         const selectField = `select: ${selectFieldReference},`;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
-        const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
+        const schemaFields =
+          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`
+            .trim()
+            .replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
         let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
@@ -1567,12 +1792,12 @@ export default class Transformer {
         }
 
         // Generate dual schema exports for FindFirst operation
-        const schemaObjectDefinition = `z.object({ ${schemaFields } }).strict()`;
+        const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
         const dualExports = this.generateDualSchemaExports(
-          modelName, 
-          'FindFirst', 
+          modelName,
+          'FindFirst',
           schemaObjectDefinition,
-          `Prisma.${modelName}FindFirstArgs`
+          `Prisma.${modelName}FindFirstArgs`,
         );
 
         await writeFileSafely(
@@ -1583,31 +1808,43 @@ export default class Transformer {
 
       if (findMany && Transformer.isOperationEnabled(modelName, 'findMany')) {
         const shouldInline = this.shouldInlineSelectSchema(model);
-        
+
         // Build imports based on aggressive inlining strategy
         const baseImports = [
           includeImport, // Include always external
           orderByImport,
-          this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
-          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
-          this.generateImportStatement(`${modelName}ScalarFieldEnumSchema`, `./enums/${modelName}ScalarFieldEnum.schema`),
+          this.generateImportStatement(
+            `${modelName}WhereInputObjectSchema`,
+            `./objects/${modelName}WhereInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}WhereUniqueInputObjectSchema`,
+            `./objects/${modelName}WhereUniqueInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}ScalarFieldEnumSchema`,
+            `./enums/${modelName}ScalarFieldEnum.schema`,
+          ),
         ];
-        
+
         // Add select import only if NOT inlining, add inline imports if inlining
-        const imports = shouldInline 
+        const imports = shouldInline
           ? [...baseImports, ...this.generateInlineSelectImports(model)]
           : [...baseImports, selectImport];
 
         // Determine select field reference based on dual export strategy
-        const selectFieldReference = shouldInline 
-          ? (Transformer.exportTypedSchemas 
-              ? `${modelName}FindManySelect${Transformer.typedSchemaSuffix}.optional()`
-              : `${modelName}FindManySelect${Transformer.zodSchemaSuffix}.optional()`)
+        const selectFieldReference = shouldInline
+          ? Transformer.exportTypedSchemas
+            ? `${modelName}FindManySelect${Transformer.typedSchemaSuffix}.optional()`
+            : `${modelName}FindManySelect${Transformer.zodSchemaSuffix}.optional()`
           : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
-        
+
         const selectField = `select: ${selectFieldReference},`;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
-        const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
+        const schemaFields =
+          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`
+            .trim()
+            .replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
         let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
@@ -1620,10 +1857,10 @@ export default class Transformer {
         // Generate dual schema exports for FindMany operation
         const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
         const dualExports = this.generateDualSchemaExports(
-          modelName, 
-          'FindMany', 
+          modelName,
+          'FindMany',
           schemaObjectDefinition,
-          `Prisma.${modelName}FindManyArgs`
+          `Prisma.${modelName}FindManyArgs`,
         );
 
         await writeFileSafely(
@@ -1636,8 +1873,14 @@ export default class Transformer {
         const imports = [
           selectImport,
           includeImport,
-          this.generateImportStatement(`${modelName}CreateInputObjectSchema`, `./objects/${modelName}CreateInput.schema`),
-          this.generateImportStatement(`${modelName}UncheckedCreateInputObjectSchema`, `./objects/${modelName}UncheckedCreateInput.schema`),
+          this.generateImportStatement(
+            `${modelName}CreateInputObjectSchema`,
+            `./objects/${modelName}CreateInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}UncheckedCreateInputObjectSchema`,
+            `./objects/${modelName}UncheckedCreateInput.schema`,
+          ),
         ];
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${createOne}.schema.ts`),
@@ -1650,155 +1893,212 @@ export default class Transformer {
         );
       }
 
-      if (createMany && Transformer.isOperationEnabled(modelName, 'createMany')) {
+      if (
+        createMany &&
+        Transformer.isOperationEnabled(modelName, 'createMany')
+      ) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
           logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createMany`);
         } else {
-        const imports = [
-          this.generateImportStatement(`${modelName}CreateManyInputObjectSchema`, `./objects/${modelName}CreateManyInput.schema`),
-        ];
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${createMany}.schema.ts`),
-          `${this.generateImportStatements(
-            imports,
-          )}${this.generateExportSchemaStatement(
-            `${modelName}CreateMany`,
-            `z.object({ data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]), ${
-              Transformer.provider === 'postgresql' ||
-              Transformer.provider === 'cockroachdb'
-                ? 'skipDuplicates: z.boolean().optional()'
-                : ''
-            } })`,
-          )}`,
-  );
-  }
+          const imports = [
+            this.generateImportStatement(
+              `${modelName}CreateManyInputObjectSchema`,
+              `./objects/${modelName}CreateManyInput.schema`,
+            ),
+          ];
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `${createMany}.schema.ts`),
+            `${this.generateImportStatements(
+              imports,
+            )}${this.generateExportSchemaStatement(
+              `${modelName}CreateMany`,
+              `z.object({ data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]), ${
+                Transformer.provider === 'postgresql' ||
+                Transformer.provider === 'cockroachdb'
+                  ? 'skipDuplicates: z.boolean().optional()'
+                  : ''
+              } })`,
+            )}`,
+          );
+        }
       }
 
       if (deleteOne && Transformer.isOperationEnabled(modelName, 'deleteOne')) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
           const ops = (cfg as any).minimalOperations as string[] | undefined;
-          if (Array.isArray(ops) && !ops.includes('delete') && !ops.includes('deleteOne')) {
-            logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.deleteOne`);
+          if (
+            Array.isArray(ops) &&
+            !ops.includes('delete') &&
+            !ops.includes('deleteOne')
+          ) {
+            logger.debug(
+              `⏭️  Minimal mode (custom ops): skipping ${modelName}.deleteOne`,
+            );
           } else {
-        const imports = [
-          selectImport,
-          includeImport,
-          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
-        ];
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
-          `${this.generateImportStatements(
-            imports,
-          )}${this.generateExportSchemaStatement(
-            `${modelName}DeleteOne`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${modelName}WhereUniqueInputObjectSchema  })`,
-          )}`,
-        );
+            const imports = [
+              selectImport,
+              includeImport,
+              this.generateImportStatement(
+                `${modelName}WhereUniqueInputObjectSchema`,
+                `./objects/${modelName}WhereUniqueInput.schema`,
+              ),
+            ];
+            await writeFileSafely(
+              path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
+              `${this.generateImportStatements(
+                imports,
+              )}${this.generateExportSchemaStatement(
+                `${modelName}DeleteOne`,
+                `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${modelName}WhereUniqueInputObjectSchema  })`,
+              )}`,
+            );
           }
         } else {
-        const imports = [
-          selectImport,
-          includeImport,
-          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
-        ];
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
-          `${this.generateImportStatements(
-            imports,
-          )}${this.generateExportSchemaStatement(
-            `${modelName}DeleteOne`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${modelName}WhereUniqueInputObjectSchema  })`,
-          )}`,
-        );
+          const imports = [
+            selectImport,
+            includeImport,
+            this.generateImportStatement(
+              `${modelName}WhereUniqueInputObjectSchema`,
+              `./objects/${modelName}WhereUniqueInput.schema`,
+            ),
+          ];
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
+            `${this.generateImportStatements(
+              imports,
+            )}${this.generateExportSchemaStatement(
+              `${modelName}DeleteOne`,
+              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${modelName}WhereUniqueInputObjectSchema  })`,
+            )}`,
+          );
         }
       }
 
-      if (deleteMany && Transformer.isOperationEnabled(modelName, 'deleteMany')) {
+      if (
+        deleteMany &&
+        Transformer.isOperationEnabled(modelName, 'deleteMany')
+      ) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
           logger.debug(`⏭️  Minimal mode: skipping ${modelName}.deleteMany`);
         } else {
-        const imports = [
-          this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
-        ];
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${deleteMany}.schema.ts`),
-          `${this.generateImportStatements(
-            imports,
-          )}${this.generateExportSchemaStatement(
-            `${modelName}DeleteMany`,
-            `z.object({ where: ${modelName}WhereInputObjectSchema.optional()  })`,
-          )}`,
-  );
-  }
+          const imports = [
+            this.generateImportStatement(
+              `${modelName}WhereInputObjectSchema`,
+              `./objects/${modelName}WhereInput.schema`,
+            ),
+          ];
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `${deleteMany}.schema.ts`),
+            `${this.generateImportStatements(
+              imports,
+            )}${this.generateExportSchemaStatement(
+              `${modelName}DeleteMany`,
+              `z.object({ where: ${modelName}WhereInputObjectSchema.optional()  })`,
+            )}`,
+          );
+        }
       }
 
       if (updateOne && Transformer.isOperationEnabled(modelName, 'updateOne')) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
           const ops = (cfg as any).minimalOperations as string[] | undefined;
-          if (Array.isArray(ops) && !ops.includes('update') && !ops.includes('updateOne')) {
-            logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.updateOne`);
+          if (
+            Array.isArray(ops) &&
+            !ops.includes('update') &&
+            !ops.includes('updateOne')
+          ) {
+            logger.debug(
+              `⏭️  Minimal mode (custom ops): skipping ${modelName}.updateOne`,
+            );
             // Do not generate
           } else {
-        const imports = [
-          selectImport,
-          includeImport,
-          this.generateImportStatement(`${modelName}UpdateInputObjectSchema`, `./objects/${modelName}UpdateInput.schema`),
-          this.generateImportStatement(`${modelName}UncheckedUpdateInputObjectSchema`, `./objects/${modelName}UncheckedUpdateInput.schema`),
-          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
-        ];
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
-          `${this.generateImportStatements(
-            imports,
-          )}${this.generateExportSchemaStatement(
-            `${modelName}UpdateOne`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${modelName}UpdateInputObjectSchema, ${modelName}UncheckedUpdateInputObjectSchema]), where: ${modelName}WhereUniqueInputObjectSchema  })`,
-          )}`,
-        );
+            const imports = [
+              selectImport,
+              includeImport,
+              this.generateImportStatement(
+                `${modelName}UpdateInputObjectSchema`,
+                `./objects/${modelName}UpdateInput.schema`,
+              ),
+              this.generateImportStatement(
+                `${modelName}UncheckedUpdateInputObjectSchema`,
+                `./objects/${modelName}UncheckedUpdateInput.schema`,
+              ),
+              this.generateImportStatement(
+                `${modelName}WhereUniqueInputObjectSchema`,
+                `./objects/${modelName}WhereUniqueInput.schema`,
+              ),
+            ];
+            await writeFileSafely(
+              path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
+              `${this.generateImportStatements(
+                imports,
+              )}${this.generateExportSchemaStatement(
+                `${modelName}UpdateOne`,
+                `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${modelName}UpdateInputObjectSchema, ${modelName}UncheckedUpdateInputObjectSchema]), where: ${modelName}WhereUniqueInputObjectSchema  })`,
+              )}`,
+            );
           }
         } else {
-        const imports = [
-          selectImport,
-          includeImport,
-          this.generateImportStatement(`${modelName}UpdateInputObjectSchema`, `./objects/${modelName}UpdateInput.schema`),
-          this.generateImportStatement(`${modelName}UncheckedUpdateInputObjectSchema`, `./objects/${modelName}UncheckedUpdateInput.schema`),
-          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
-        ];
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
-          `${this.generateImportStatements(
-            imports,
-          )}${this.generateExportSchemaStatement(
-            `${modelName}UpdateOne`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${modelName}UpdateInputObjectSchema, ${modelName}UncheckedUpdateInputObjectSchema]), where: ${modelName}WhereUniqueInputObjectSchema  })`,
-          )}`,
-        );
+          const imports = [
+            selectImport,
+            includeImport,
+            this.generateImportStatement(
+              `${modelName}UpdateInputObjectSchema`,
+              `./objects/${modelName}UpdateInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${modelName}UncheckedUpdateInputObjectSchema`,
+              `./objects/${modelName}UncheckedUpdateInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${modelName}WhereUniqueInputObjectSchema`,
+              `./objects/${modelName}WhereUniqueInput.schema`,
+            ),
+          ];
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
+            `${this.generateImportStatements(
+              imports,
+            )}${this.generateExportSchemaStatement(
+              `${modelName}UpdateOne`,
+              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${modelName}UpdateInputObjectSchema, ${modelName}UncheckedUpdateInputObjectSchema]), where: ${modelName}WhereUniqueInputObjectSchema  })`,
+            )}`,
+          );
         }
       }
 
-      if (updateMany && Transformer.isOperationEnabled(modelName, 'updateMany')) {
+      if (
+        updateMany &&
+        Transformer.isOperationEnabled(modelName, 'updateMany')
+      ) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
           logger.debug(`⏭️  Minimal mode: skipping ${modelName}.updateMany`);
         } else {
-        const imports = [
-          this.generateImportStatement(`${modelName}UpdateManyMutationInputObjectSchema`, `./objects/${modelName}UpdateManyMutationInput.schema`),
-          this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
-        ];
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${updateMany}.schema.ts`),
-          `${this.generateImportStatements(
-            imports,
-          )}${this.generateExportSchemaStatement(
-            `${modelName}UpdateMany`,
-            `z.object({ data: ${modelName}UpdateManyMutationInputObjectSchema, where: ${modelName}WhereInputObjectSchema.optional()  })`,
-          )}`,
-  );
-  }
+          const imports = [
+            this.generateImportStatement(
+              `${modelName}UpdateManyMutationInputObjectSchema`,
+              `./objects/${modelName}UpdateManyMutationInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${modelName}WhereInputObjectSchema`,
+              `./objects/${modelName}WhereInput.schema`,
+            ),
+          ];
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `${updateMany}.schema.ts`),
+            `${this.generateImportStatements(
+              imports,
+            )}${this.generateExportSchemaStatement(
+              `${modelName}UpdateMany`,
+              `z.object({ data: ${modelName}UpdateManyMutationInputObjectSchema, where: ${modelName}WhereInputObjectSchema.optional()  })`,
+            )}`,
+          );
+        }
       }
 
       if (upsertOne && Transformer.isOperationEnabled(modelName, 'upsertOne')) {
@@ -1806,37 +2106,61 @@ export default class Transformer {
         if (cfg?.mode === 'minimal') {
           logger.debug(`⏭️  Minimal mode: skipping ${modelName}.upsertOne`);
         } else {
-        const imports = [
-          selectImport,
-          includeImport,
-          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
-          this.generateImportStatement(`${modelName}CreateInputObjectSchema`, `./objects/${modelName}CreateInput.schema`),
-          this.generateImportStatement(`${modelName}UncheckedCreateInputObjectSchema`, `./objects/${modelName}UncheckedCreateInput.schema`),
-          this.generateImportStatement(`${modelName}UpdateInputObjectSchema`, `./objects/${modelName}UpdateInput.schema`),
-          this.generateImportStatement(`${modelName}UncheckedUpdateInputObjectSchema`, `./objects/${modelName}UncheckedUpdateInput.schema`),
-        ];
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${upsertOne}.schema.ts`),
-          `${this.generateImportStatements(
-            imports,
-          )}${this.generateExportSchemaStatement(
-            `${modelName}Upsert`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${modelName}WhereUniqueInputObjectSchema, create: z.union([ ${modelName}CreateInputObjectSchema, ${modelName}UncheckedCreateInputObjectSchema ]), update: z.union([ ${modelName}UpdateInputObjectSchema, ${modelName}UncheckedUpdateInputObjectSchema ])  })`,
-          )}`,
-        );
+          const imports = [
+            selectImport,
+            includeImport,
+            this.generateImportStatement(
+              `${modelName}WhereUniqueInputObjectSchema`,
+              `./objects/${modelName}WhereUniqueInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${modelName}CreateInputObjectSchema`,
+              `./objects/${modelName}CreateInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${modelName}UncheckedCreateInputObjectSchema`,
+              `./objects/${modelName}UncheckedCreateInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${modelName}UpdateInputObjectSchema`,
+              `./objects/${modelName}UpdateInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${modelName}UncheckedUpdateInputObjectSchema`,
+              `./objects/${modelName}UncheckedUpdateInput.schema`,
+            ),
+          ];
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `${upsertOne}.schema.ts`),
+            `${this.generateImportStatements(
+              imports,
+            )}${this.generateExportSchemaStatement(
+              `${modelName}Upsert`,
+              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${modelName}WhereUniqueInputObjectSchema, create: z.union([ ${modelName}CreateInputObjectSchema, ${modelName}UncheckedCreateInputObjectSchema ]), update: z.union([ ${modelName}UpdateInputObjectSchema, ${modelName}UncheckedUpdateInputObjectSchema ])  })`,
+            )}`,
+          );
         }
       }
 
       if (aggregate && Transformer.isOperationEnabled(modelName, 'aggregate')) {
         const imports = [
           orderByImport,
-          this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
-          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
+          this.generateImportStatement(
+            `${modelName}WhereInputObjectSchema`,
+            `./objects/${modelName}WhereInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}WhereUniqueInputObjectSchema`,
+            `./objects/${modelName}WhereUniqueInput.schema`,
+          ),
         ];
         const aggregateOperations = [];
         if (this.aggregateOperationSupport[modelName].count) {
           imports.push(
-            this.generateImportStatement(`${modelName}CountAggregateInputObjectSchema`, `./objects/${modelName}CountAggregateInput.schema`),
+            this.generateImportStatement(
+              `${modelName}CountAggregateInputObjectSchema`,
+              `./objects/${modelName}CountAggregateInput.schema`,
+            ),
           );
           aggregateOperations.push(
             `_count: z.union([ z.literal(true), ${modelName}CountAggregateInputObjectSchema ]).optional()`,
@@ -1844,7 +2168,10 @@ export default class Transformer {
         }
         if (this.aggregateOperationSupport[modelName].min) {
           imports.push(
-            this.generateImportStatement(`${modelName}MinAggregateInputObjectSchema`, `./objects/${modelName}MinAggregateInput.schema`),
+            this.generateImportStatement(
+              `${modelName}MinAggregateInputObjectSchema`,
+              `./objects/${modelName}MinAggregateInput.schema`,
+            ),
           );
           aggregateOperations.push(
             `_min: ${modelName}MinAggregateInputObjectSchema.optional()`,
@@ -1852,7 +2179,10 @@ export default class Transformer {
         }
         if (this.aggregateOperationSupport[modelName].max) {
           imports.push(
-            this.generateImportStatement(`${modelName}MaxAggregateInputObjectSchema`, `./objects/${modelName}MaxAggregateInput.schema`),
+            this.generateImportStatement(
+              `${modelName}MaxAggregateInputObjectSchema`,
+              `./objects/${modelName}MaxAggregateInput.schema`,
+            ),
           );
           aggregateOperations.push(
             `_max: ${modelName}MaxAggregateInputObjectSchema.optional()`,
@@ -1860,7 +2190,10 @@ export default class Transformer {
         }
         if (this.aggregateOperationSupport[modelName].avg) {
           imports.push(
-            this.generateImportStatement(`${modelName}AvgAggregateInputObjectSchema`, `./objects/${modelName}AvgAggregateInput.schema`),
+            this.generateImportStatement(
+              `${modelName}AvgAggregateInputObjectSchema`,
+              `./objects/${modelName}AvgAggregateInput.schema`,
+            ),
           );
           aggregateOperations.push(
             `_avg: ${modelName}AvgAggregateInputObjectSchema.optional()`,
@@ -1868,7 +2201,10 @@ export default class Transformer {
         }
         if (this.aggregateOperationSupport[modelName].sum) {
           imports.push(
-            this.generateImportStatement(`${modelName}SumAggregateInputObjectSchema`, `./objects/${modelName}SumAggregateInput.schema`),
+            this.generateImportStatement(
+              `${modelName}SumAggregateInputObjectSchema`,
+              `./objects/${modelName}SumAggregateInput.schema`,
+            ),
           );
           aggregateOperations.push(
             `_sum: ${modelName}SumAggregateInputObjectSchema.optional()`,
@@ -1890,10 +2226,22 @@ export default class Transformer {
 
       if (groupBy && Transformer.isOperationEnabled(modelName, 'groupBy')) {
         const imports = [
-          this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
-          this.generateImportStatement(`${modelName}OrderByWithAggregationInputObjectSchema`, `./objects/${modelName}OrderByWithAggregationInput.schema`),
-          this.generateImportStatement(`${modelName}ScalarWhereWithAggregatesInputObjectSchema`, `./objects/${modelName}ScalarWhereWithAggregatesInput.schema`),
-          this.generateImportStatement(`${modelName}ScalarFieldEnumSchema`, `./enums/${modelName}ScalarFieldEnum.schema`),
+          this.generateImportStatement(
+            `${modelName}WhereInputObjectSchema`,
+            `./objects/${modelName}WhereInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}OrderByWithAggregationInputObjectSchema`,
+            `./objects/${modelName}OrderByWithAggregationInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}ScalarWhereWithAggregatesInputObjectSchema`,
+            `./objects/${modelName}ScalarWhereWithAggregatesInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}ScalarFieldEnumSchema`,
+            `./enums/${modelName}ScalarFieldEnum.schema`,
+          ),
         ];
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`),
@@ -1913,7 +2261,7 @@ export default class Transformer {
    */
   async generateResultSchemas() {
     const config = Transformer.getGeneratorConfig();
-    
+
     // Check if result schemas are enabled globally
     if (config?.mode === 'minimal') {
       logger.debug('⏭️  Skipping result schema generation in minimal mode');
@@ -1928,20 +2276,34 @@ export default class Transformer {
 
     const opSuffix = (op: string): string => {
       switch (op) {
-        case 'findUnique': return 'FindUnique';
-        case 'findFirst': return 'FindFirst';
-        case 'findMany': return 'FindMany';
-        case 'create': return 'Create';
-        case 'createMany': return 'CreateMany';
-        case 'update': return 'Update';
-        case 'updateMany': return 'UpdateMany';
-        case 'upsert': return 'Upsert';
-        case 'delete': return 'Delete';
-        case 'deleteMany': return 'DeleteMany';
-        case 'aggregate': return 'Aggregate';
-        case 'groupBy': return 'GroupBy';
-        case 'count': return 'Count';
-        default: return op;
+        case 'findUnique':
+          return 'FindUnique';
+        case 'findFirst':
+          return 'FindFirst';
+        case 'findMany':
+          return 'FindMany';
+        case 'create':
+          return 'Create';
+        case 'createMany':
+          return 'CreateMany';
+        case 'update':
+          return 'Update';
+        case 'updateMany':
+          return 'UpdateMany';
+        case 'upsert':
+          return 'Upsert';
+        case 'delete':
+          return 'Delete';
+        case 'deleteMany':
+          return 'DeleteMany';
+        case 'aggregate':
+          return 'Aggregate';
+        case 'groupBy':
+          return 'GroupBy';
+        case 'count':
+          return 'Count';
+        default:
+          return op;
       }
     };
 
@@ -1954,7 +2316,9 @@ export default class Transformer {
       // Check if result schemas are enabled for this specific model
       const modelConfig = config?.models?.[model.name];
       if (modelConfig?.variants?.result?.enabled === false) {
-        logger.debug(`⏭️  Result schema generation is disabled for model: ${model.name}`);
+        logger.debug(
+          `⏭️  Result schema generation is disabled for model: ${model.name}`,
+        );
         continue;
       }
 
@@ -1973,14 +2337,19 @@ export default class Transformer {
 
         // Generate imports only for schemas that are actually used
         const imports: string[] = [];
-        
+
         // Add zod import
         imports.push(this.generateImportZodStatement());
-        
+
         // Only add other imports if they're actually referenced in the schema
         if (resultSchema.dependencies && resultSchema.dependencies.length > 0) {
           resultSchema.dependencies.forEach((dep: string) => {
-            imports.push(this.generateImportStatement(dep, `../objects/${dep.replace('Schema', '')}.schema`));
+            imports.push(
+              this.generateImportStatement(
+                dep,
+                `../objects/${dep.replace('Schema', '')}.schema`,
+              ),
+            );
           });
         }
 
@@ -1989,15 +2358,18 @@ export default class Transformer {
           `${imports.join('')}${resultSchema.zodSchema}`,
         );
       }
-
     }
 
     // Generate consolidated index file for all result schemas
-    const resultIndexPath = path.join(Transformer.getSchemasPath(), 'results', 'index.ts');
+    const resultIndexPath = path.join(
+      Transformer.getSchemasPath(),
+      'results',
+      'index.ts',
+    );
     const allExports: string[] = [];
 
     // Collect all result schema exports for all processed models
-  for (const model of this.models) {
+    for (const model of this.models) {
       if (!Transformer.isModelEnabled(model.name)) {
         continue;
       }
@@ -2010,17 +2382,14 @@ export default class Transformer {
       const resultSchemas = resultGenerator.generateAllResultSchemas(model);
       for (const resultSchema of resultSchemas) {
         allExports.push(
-          `export { ${resultSchema.schemaName} } from './${model.name}${opSuffix(resultSchema.operationType as unknown as string)}Result.schema';`
+          `export { ${resultSchema.schemaName} } from './${model.name}${opSuffix(resultSchema.operationType as unknown as string)}Result.schema';`,
         );
       }
     }
 
     if (allExports.length > 0) {
-      await writeFileSafely(
-        resultIndexPath,
-        allExports.join('\n') + '\n',
-      );
-      
+      await writeFileSafely(resultIndexPath, allExports.join('\n') + '\n');
+
       // Add results index to main index exports
       addIndexExport(resultIndexPath);
     }
@@ -2028,13 +2397,13 @@ export default class Transformer {
 
   generateImportStatements(imports: (string | undefined)[]) {
     let generatedImports = this.generateImportZodStatement();
-    
+
     // Filter out empty, undefined, and invalid imports
     const validImports = Transformer.cleanAndValidateImports(imports);
-    
+
     // Log import management if any filtering occurred
     Transformer.logImportManagement(imports, validImports, this.name);
-    
+
     generatedImports += validImports.join(';\r\n') ?? '';
     generatedImports += '\n\n';
     return generatedImports;
@@ -2058,7 +2427,10 @@ export default class Transformer {
         }
 
         // Check if the import should be generated based on filtering rules
-        return Transformer.shouldGenerateImport(importInfo.importName, importInfo.relatedModel);
+        return Transformer.shouldGenerateImport(
+          importInfo.importName,
+          importInfo.relatedModel,
+        );
       })
       .filter((importItem, index, array) => {
         // Remove duplicate imports
@@ -2069,9 +2441,13 @@ export default class Transformer {
   /**
    * Parse import statement to extract information
    */
-  static parseImportStatement(importStatement: string): { importName: string; importPath: string; relatedModel?: string } | null {
+  static parseImportStatement(
+    importStatement: string,
+  ): { importName: string; importPath: string; relatedModel?: string } | null {
     // Match import pattern: import { ImportName } from 'path'
-    const match = importStatement.match(/import\s*\{\s*(\w+)\s*\}\s*from\s*['"]([^'"]+)['"]/);
+    const match = importStatement.match(
+      /import\s*\{\s*(\w+)\s*\}\s*from\s*['"]([^'"]+)['"]/,
+    );
     if (!match) {
       return null;
     }
@@ -2083,41 +2459,59 @@ export default class Transformer {
     return {
       importName,
       importPath,
-      relatedModel: relatedModel || undefined
+      relatedModel: relatedModel || undefined,
     };
   }
 
   /**
    * Generate smart import statement that checks if target exists
    */
-  generateSmartImportStatement(importName: string, importPath: string, relatedModel?: string): string {
+  generateSmartImportStatement(
+    importName: string,
+    importPath: string,
+    relatedModel?: string,
+  ): string {
     // Use the static validated version
-    return Transformer.generateValidatedImportStatement(importName, importPath, relatedModel);
+    return Transformer.generateValidatedImportStatement(
+      importName,
+      importPath,
+      relatedModel,
+    );
   }
 
   /**
    * Log import management information
    */
-  static logImportManagement(originalImports: (string | undefined)[], cleanedImports: string[], context?: string): void {
-    const originalCount = originalImports.filter(imp => imp && imp.trim()).length;
+  static logImportManagement(
+    originalImports: (string | undefined)[],
+    cleanedImports: string[],
+    context?: string,
+  ): void {
+    const originalCount = originalImports.filter(
+      (imp) => imp && imp.trim(),
+    ).length;
     const cleanedCount = cleanedImports.length;
-    
+
     if (originalCount !== cleanedCount) {
       const contextStr = context ? ` for ${context}` : '';
-      logger.debug(`   📦 Import cleanup${contextStr}: ${originalCount - cleanedCount} filtered (${cleanedCount}/${originalCount} kept)`);
+      logger.debug(
+        `   📦 Import cleanup${contextStr}: ${originalCount - cleanedCount} filtered (${cleanedCount}/${originalCount} kept)`,
+      );
     }
   }
 
   /**
    * Validate filter combinations and detect conflicts
    */
-  static validateFilterCombinations(allModels: PrismaDMMF.Model[]): FilterValidationResult {
+  static validateFilterCombinations(
+    allModels: PrismaDMMF.Model[],
+  ): FilterValidationResult {
     const config = this.getGeneratorConfig();
     const result: FilterValidationResult = {
       isValid: true,
       warnings: [],
       errors: [],
-      suggestions: []
+      suggestions: [],
     };
 
     if (!config) {
@@ -2145,7 +2539,10 @@ export default class Transformer {
   /**
    * Validate model dependencies and relationships
    */
-  static validateModelDependencies(allModels: PrismaDMMF.Model[], result: FilterValidationResult): void {
+  static validateModelDependencies(
+    allModels: PrismaDMMF.Model[],
+    result: FilterValidationResult,
+  ): void {
     const config = this.getGeneratorConfig();
     if (!config) return;
 
@@ -2153,22 +2550,24 @@ export default class Transformer {
       if (!this.isModelEnabled(model.name)) continue;
 
       // Check if this model has relationships to disabled models
-      const disabledRelations = model.fields.filter(field => {
-        return field.kind === 'object' && 
-               field.relationName && 
-               !this.isModelEnabled(field.type);
+      const disabledRelations = model.fields.filter((field) => {
+        return (
+          field.kind === 'object' &&
+          field.relationName &&
+          !this.isModelEnabled(field.type)
+        );
       });
 
       if (disabledRelations.length > 0) {
-        const disabledModels = disabledRelations.map(f => f.type);
+        const disabledModels = disabledRelations.map((f) => f.type);
         result.warnings.push(
           `Model "${model.name}" has relations to disabled models: ${disabledModels.join(', ')}. ` +
-          `This may cause incomplete schema generation.`
+            `This may cause incomplete schema generation.`,
         );
 
         result.suggestions.push(
           `Consider enabling models [${disabledModels.join(', ')}] or removing relation fields ` +
-          `[${disabledRelations.map(f => f.name).join(', ')}] from ${model.name}`
+            `[${disabledRelations.map((f) => f.name).join(', ')}] from ${model.name}`,
         );
       }
     }
@@ -2177,12 +2576,15 @@ export default class Transformer {
   /**
    * Validate operation consistency across models
    */
-  static validateOperationConsistency(allModels: PrismaDMMF.Model[], result: FilterValidationResult): void {
+  static validateOperationConsistency(
+    allModels: PrismaDMMF.Model[],
+    result: FilterValidationResult,
+  ): void {
     const config = this.getGeneratorConfig();
     if (!config) return;
 
-    const enabledModels = allModels.filter(m => this.isModelEnabled(m.name));
-    
+    const enabledModels = allModels.filter((m) => this.isModelEnabled(m.name));
+
     for (const model of enabledModels) {
       const modelConfig = config.models?.[model.name];
       if (!modelConfig?.operations) continue;
@@ -2192,10 +2594,13 @@ export default class Transformer {
       const hasEnabledRelations = checkModelHasEnabledModelRelation(model);
 
       for (const operation of requiresRelations) {
-        if (modelConfig.operations.includes(operation) && !hasEnabledRelations) {
+        if (
+          modelConfig.operations.includes(operation) &&
+          !hasEnabledRelations
+        ) {
           result.warnings.push(
             `Model "${model.name}" has "${operation}" operation enabled but no active relationships. ` +
-            `This operation may not function as expected.`
+              `This operation may not function as expected.`,
           );
         }
       }
@@ -2203,7 +2608,7 @@ export default class Transformer {
       // Check for circular dependencies in custom operations
       if (modelConfig.operations.length === 0) {
         result.warnings.push(
-          `Model "${model.name}" has no operations enabled. Consider disabling the model entirely.`
+          `Model "${model.name}" has no operations enabled. Consider disabling the model entirely.`,
         );
       }
     }
@@ -2212,46 +2617,55 @@ export default class Transformer {
   /**
    * Validate field exclusion conflicts
    */
-  static validateFieldExclusions(allModels: PrismaDMMF.Model[], result: FilterValidationResult): void {
+  static validateFieldExclusions(
+    allModels: PrismaDMMF.Model[],
+    result: FilterValidationResult,
+  ): void {
     const config = this.getGeneratorConfig();
     if (!config) return;
 
-    const enabledModels = allModels.filter(m => this.isModelEnabled(m.name));
+    const enabledModels = allModels.filter((m) => this.isModelEnabled(m.name));
 
     for (const model of enabledModels) {
       const modelConfig = config.models?.[model.name];
       if (!modelConfig?.variants) continue;
 
       // Check each variant for field exclusion conflicts
-      Object.entries(modelConfig.variants).forEach(([variantName, variantConfig]) => {
-        if (!variantConfig?.excludeFields) return;
+      Object.entries(modelConfig.variants).forEach(
+        ([variantName, variantConfig]) => {
+          if (!variantConfig?.excludeFields) return;
 
-        const variant = variantName as 'pure' | 'input' | 'result';
-        
-        // Check if all fields would be excluded
-        const totalFields = model.fields.length;
-        const excludedFields = variantConfig.excludeFields.length;
-        
-        if (excludedFields >= totalFields) {
-          result.errors.push(
-            `Model "${model.name}" ${variant} variant excludes all fields. This will result in empty schemas.`
-          );
-          result.isValid = false;
-        }
+          const variant = variantName as 'pure' | 'input' | 'result';
 
-        // Check for required fields being excluded
-        const requiredFields = model.fields.filter(f => f.isRequired && f.kind === 'scalar');
-        const excludedRequiredFields = requiredFields.filter(f => 
-          variantConfig.excludeFields && variantConfig.excludeFields.includes(f.name)
-        );
-        
-        if (excludedRequiredFields.length > 0 && variant === 'input') {
-          result.warnings.push(
-            `Model "${model.name}" ${variant} variant excludes required fields: ` +
-            `${excludedRequiredFields.map(f => f.name).join(', ')}. This may cause validation issues.`
+          // Check if all fields would be excluded
+          const totalFields = model.fields.length;
+          const excludedFields = variantConfig.excludeFields.length;
+
+          if (excludedFields >= totalFields) {
+            result.errors.push(
+              `Model "${model.name}" ${variant} variant excludes all fields. This will result in empty schemas.`,
+            );
+            result.isValid = false;
+          }
+
+          // Check for required fields being excluded
+          const requiredFields = model.fields.filter(
+            (f) => f.isRequired && f.kind === 'scalar',
           );
-        }
-      });
+          const excludedRequiredFields = requiredFields.filter(
+            (f) =>
+              variantConfig.excludeFields &&
+              variantConfig.excludeFields.includes(f.name),
+          );
+
+          if (excludedRequiredFields.length > 0 && variant === 'input') {
+            result.warnings.push(
+              `Model "${model.name}" ${variant} variant excludes required fields: ` +
+                `${excludedRequiredFields.map((f) => f.name).join(', ')}. This may cause validation issues.`,
+            );
+          }
+        },
+      );
     }
   }
 
@@ -2264,13 +2678,15 @@ export default class Transformer {
 
     // Check if variants are configured but no models use them
     const configuredVariants = Object.keys(config.variants);
-    const enabledVariants = configuredVariants.filter(variant => 
-      config.variants && config.variants[variant as keyof typeof config.variants]?.enabled
+    const enabledVariants = configuredVariants.filter(
+      (variant) =>
+        config.variants &&
+        config.variants[variant as keyof typeof config.variants]?.enabled,
     );
 
     if (enabledVariants.length === 0) {
       result.warnings.push(
-        'Variants are configured but none are enabled. Consider enabling at least one variant or removing variant configuration.'
+        'Variants are configured but none are enabled. Consider enabling at least one variant or removing variant configuration.',
       );
     }
 
@@ -2278,7 +2694,7 @@ export default class Transformer {
     if (config.mode === 'minimal' && enabledVariants.includes('result')) {
       result.warnings.push(
         'Minimal mode with result variant enabled may generate more schemas than expected. ' +
-        'Consider using only pure and input variants in minimal mode.'
+          'Consider using only pure and input variants in minimal mode.',
       );
     }
   }
@@ -2291,21 +2707,27 @@ export default class Transformer {
     if (!config) return;
 
     // Check if minimal mode has models configured
-    if (config.mode === 'minimal' && (!config.models || Object.keys(config.models).length === 0)) {
+    if (
+      config.mode === 'minimal' &&
+      (!config.models || Object.keys(config.models).length === 0)
+    ) {
       result.errors.push(
-        'Minimal mode requires explicit model configuration. No models are configured for generation.'
+        'Minimal mode requires explicit model configuration. No models are configured for generation.',
       );
       result.isValid = false;
-      
+
       result.suggestions.push(
-        'Add model configurations to your config file or switch to "full" mode for automatic model inclusion.'
+        'Add model configurations to your config file or switch to "full" mode for automatic model inclusion.',
       );
     }
 
     // Check if custom mode has meaningful configuration
-    if (config.mode === 'custom' && (!config.models || Object.keys(config.models).length === 0)) {
+    if (
+      config.mode === 'custom' &&
+      (!config.models || Object.keys(config.models).length === 0)
+    ) {
       result.warnings.push(
-        'Custom mode without model configurations will behave like full mode. Consider adding specific model settings.'
+        'Custom mode without model configurations will behave like full mode. Consider adding specific model settings.',
       );
     }
   }
@@ -2318,17 +2740,17 @@ export default class Transformer {
 
     if (errors.length > 0) {
       logger.warn('❌ Filter Validation Errors:');
-      errors.forEach(error => logger.warn(`   • ${error}`));
+      errors.forEach((error) => logger.warn(`   • ${error}`));
     }
 
     if (warnings.length > 0) {
       logger.warn('⚠️  Filter Validation Warnings:');
-      warnings.forEach(warning => logger.warn(`   • ${warning}`));
+      warnings.forEach((warning) => logger.warn(`   • ${warning}`));
     }
 
     if (suggestions.length > 0) {
       logger.info('💡 Suggestions:');
-      suggestions.forEach(suggestion => logger.info(`   • ${suggestion}`));
+      suggestions.forEach((suggestion) => logger.info(`   • ${suggestion}`));
     }
 
     if (isValid && errors.length === 0 && warnings.length === 0) {
@@ -2342,7 +2764,7 @@ export default class Transformer {
   static performFilterValidation(allModels: PrismaDMMF.Model[]): boolean {
     const validationResult = this.validateFilterCombinations(allModels);
     this.logFilterValidation(validationResult);
-    
+
     return validationResult.isValid;
   }
 
@@ -2353,11 +2775,19 @@ export default class Transformer {
     Transformer.logRelationshipPreservation(model);
 
     const selectImport = Transformer.shouldGenerateSelectSchema(model)
-      ? this.generateSmartImportStatement(`${modelName}SelectObjectSchema`, `./objects/${modelName}Select.schema`, modelName)
+      ? this.generateSmartImportStatement(
+          `${modelName}SelectObjectSchema`,
+          `./objects/${modelName}Select.schema`,
+          modelName,
+        )
       : '';
 
     const includeImport = Transformer.shouldGenerateIncludeSchema(model)
-      ? this.generateSmartImportStatement(`${modelName}IncludeObjectSchema`, `./objects/${modelName}Include.schema`, modelName)
+      ? this.generateSmartImportStatement(
+          `${modelName}IncludeObjectSchema`,
+          `./objects/${modelName}Include.schema`,
+          modelName,
+        )
       : '';
 
     let selectZodSchemaLine = '';
@@ -2400,7 +2830,10 @@ export default class Transformer {
       modelOrderBy = `${modelName}OrderByWithRelationInput`;
     }
 
-    const orderByImport = this.generateImportStatement(`${modelOrderBy}ObjectSchema`, `./objects/${modelOrderBy}.schema`);
+    const orderByImport = this.generateImportStatement(
+      `${modelOrderBy}ObjectSchema`,
+      `./objects/${modelOrderBy}.schema`,
+    );
     const orderByZodSchemaLine = `orderBy: z.union([${modelOrderBy}ObjectSchema, ${modelOrderBy}ObjectSchema.array()]).optional(),`;
 
     return { orderByImport, orderByZodSchemaLine };
@@ -2424,14 +2857,14 @@ export default class Transformer {
    * Follows community generator pattern with aggressive inlining.
    */
   generateInlineSelectSchema(model: PrismaDMMF.Model): string {
-  const { name: modelName, fields } = model;
-    
+    const { name: modelName, fields } = model;
+
     // Generate field definitions for the select schema
     const selectFields: string[] = [];
-    
+
     for (const field of fields) {
       const { name: fieldName, relationName } = field;
-      
+
       if (relationName) {
         // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
         selectFields.push(`  ${fieldName}: z.boolean().optional()`);
@@ -2440,13 +2873,15 @@ export default class Transformer {
         selectFields.push(`  ${fieldName}: z.boolean().optional()`);
       }
     }
-    
+
     // Add _count field if model has array relations (for aggregation support)
-    const hasArrayRelations = fields.some(field => field.relationName && field.isList);
+    const hasArrayRelations = fields.some(
+      (field) => field.relationName && field.isList,
+    );
     if (hasArrayRelations) {
       selectFields.push(`  _count: z.boolean().optional()`);
     }
-    
+
     return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = z.object({
 ${selectFields.join(',\n')}
 }).strict()`;
@@ -2458,20 +2893,26 @@ ${selectFields.join(',\n')}
    */
   generateInlineSelectImports(model: PrismaDMMF.Model): string[] {
     const imports: string[] = [];
-    
+
     for (const field of model.fields) {
       if (field.relationName) {
         const argsSchema = `${field.type}ArgsObjectSchema`;
-        imports.push(`import { ${argsSchema} } from './objects/${field.type}Args.schema'`);
+        imports.push(
+          `import { ${argsSchema} } from './objects/${field.type}Args.schema'`,
+        );
       }
     }
-    
+
     // Add _count import if model has array relations (only these get count output types)
-    const hasArrayRelations = model.fields.some(field => field.relationName && field.isList);
+    const hasArrayRelations = model.fields.some(
+      (field) => field.relationName && field.isList,
+    );
     if (hasArrayRelations) {
-      imports.push(`import { ${model.name}CountOutputTypeArgsObjectSchema } from './objects/${model.name}CountOutputTypeArgs.schema'`);
+      imports.push(
+        `import { ${model.name}CountOutputTypeArgsObjectSchema } from './objects/${model.name}CountOutputTypeArgs.schema'`,
+      );
     }
-    
+
     // Remove duplicates
     return [...new Set(imports)];
   }
@@ -2480,20 +2921,22 @@ ${selectFields.join(',\n')}
    * Generates dual schema exports: typed version and Zod-method-friendly version
    */
   generateDualSchemaExports(
-    modelName: string, 
-    operationType: string, 
+    modelName: string,
+    operationType: string,
     schemaDefinition: string,
-    prismaType: string
+    prismaType: string,
   ): string {
     const exports: string[] = [];
 
     // Generate typed schema (perfect inference, no methods)
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
-      exports.push(`export const ${typedName}: z.ZodType<${prismaType}, ${prismaType}> = ${schemaDefinition};`);
+      exports.push(
+        `export const ${typedName}: z.ZodType<${prismaType}, ${prismaType}> = ${schemaDefinition};`,
+      );
     }
 
-    // Generate Zod schema (methods available, loose inference) 
+    // Generate Zod schema (methods available, loose inference)
     if (Transformer.exportZodSchemas) {
       const zodName = `${modelName}${operationType}${Transformer.zodSchemaSuffix}`;
       exports.push(`export const ${zodName} = ${schemaDefinition};`);
@@ -2505,7 +2948,10 @@ ${selectFields.join(',\n')}
   /**
    * Generates dual select schema exports for inlined schemas
    */
-  generateDualSelectSchemaExports(model: PrismaDMMF.Model, operation?: 'FindFirst' | 'FindMany' | 'FindUnique'): string {
+  generateDualSelectSchemaExports(
+    model: PrismaDMMF.Model,
+    operation?: 'FindFirst' | 'FindMany' | 'FindUnique',
+  ): string {
     const modelName = model.name;
     const schemaDefinition = this.generateInlineSelectSchemaDefinition(model);
     const exports: string[] = [];
@@ -2513,10 +2959,12 @@ ${selectFields.join(',\n')}
     // Generate typed select schema
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operation ? operation : ''}Select${Transformer.typedSchemaSuffix}`;
-      exports.push(`export const ${typedName}: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = ${schemaDefinition};`);
+      exports.push(
+        `export const ${typedName}: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = ${schemaDefinition};`,
+      );
     }
 
-    // Generate Zod select schema  
+    // Generate Zod select schema
     if (Transformer.exportZodSchemas) {
       const zodName = `${modelName}${operation ? operation : ''}Select${Transformer.zodSchemaSuffix}`;
       exports.push(`export const ${zodName} = ${schemaDefinition};`);
@@ -2529,14 +2977,14 @@ ${selectFields.join(',\n')}
    * Generates just the schema definition without export statement
    */
   generateInlineSelectSchemaDefinition(model: PrismaDMMF.Model): string {
-  const { fields } = model;
-    
+    const { fields } = model;
+
     // Generate field definitions for the select schema
     const selectFields: string[] = [];
-    
+
     for (const field of fields) {
       const { name: fieldName, relationName } = field;
-      
+
       if (relationName) {
         // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
         selectFields.push(`    ${fieldName}: z.boolean().optional()`);
@@ -2545,13 +2993,15 @@ ${selectFields.join(',\n')}
         selectFields.push(`    ${fieldName}: z.boolean().optional()`);
       }
     }
-    
+
     // Add _count field if model has array relations (for aggregation support)
-    const hasArrayRelations = fields.some(field => field.relationName && field.isList);
+    const hasArrayRelations = fields.some(
+      (field) => field.relationName && field.isList,
+    );
     if (hasArrayRelations) {
       selectFields.push(`    _count: z.boolean().optional()`);
     }
-    
+
     return `z.object({
 ${selectFields.join(',\n')}
   }).strict()`;
