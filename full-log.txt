@@ -1,0 +1,927 @@
+Prisma schema loaded from prisma/schema.prisma
+🔧 Configuration precedence applied:
+   ⚡ Generator options override: useMultipleFiles
+
+🔍 Object schema check: UserWhereInput -> model: User, enabled: true
+🔍 Operation check: User.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserWhereInput -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany,upsertOne, hasEnabled: true
+🔍 Field check: User.id (input) = false (model input variant exclusion)
+🔍 Schema context: "UserWhereInput" -> extracted model: "User"
+🔍 Object schema check: UserOrderByWithRelationInput -> model: User, enabled: true
+🔍 Operation check: User.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserOrderByWithRelationInput -> operations: findMany,findFirst, hasEnabled: true
+🔍 Schema context: "UserOrderByWithRelationInput" -> extracted model: "User"
+🔍 Object schema check: UserWhereUniqueInput -> model: User, enabled: true
+🔍 Operation check: User.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserWhereUniqueInput -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany,upsertOne, hasEnabled: true
+🔍 Field check: User.id (input) = false (model input variant exclusion)
+🔍 Schema context: "UserWhereUniqueInput" -> extracted model: "User"
+🔍 Object schema check: UserOrderByWithAggregationInput -> model: User, enabled: true
+🔍 Operation check: User.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserOrderByWithAggregationInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "UserOrderByWithAggregationInput" -> extracted model: "User"
+🔍 Object schema check: UserScalarWhereWithAggregatesInput -> model: User, enabled: true
+🔍 Operation check: User.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserScalarWhereWithAggregatesInput -> operations: groupBy, hasEnabled: true
+🔍 Field check: User.id (input) = false (model input variant exclusion)
+🔍 Schema context: "UserScalarWhereWithAggregatesInput" -> extracted model: "User"
+🔍 Object schema check: PostWhereInput -> model: Post, enabled: true
+🔍 Operation check: Post.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostWhereInput -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany,upsertOne, hasEnabled: true
+🔍 Field check: Post.id (input) = false (model input variant exclusion)
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostWhereInput" -> extracted model: "Post"
+🔍 Object schema check: PostOrderByWithRelationInput -> model: Post, enabled: true
+🔍 Operation check: Post.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostOrderByWithRelationInput -> operations: findMany,findFirst, hasEnabled: true
+🔍 Schema context: "PostOrderByWithRelationInput" -> extracted model: "Post"
+🔍 Object schema check: PostWhereUniqueInput -> model: Post, enabled: true
+🔍 Operation check: Post.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostWhereUniqueInput -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany,upsertOne, hasEnabled: true
+🔍 Field check: Post.id (input) = false (model input variant exclusion)
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostWhereUniqueInput" -> extracted model: "Post"
+🔍 Object schema check: PostOrderByWithAggregationInput -> model: Post, enabled: true
+🔍 Operation check: Post.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostOrderByWithAggregationInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "PostOrderByWithAggregationInput" -> extracted model: "Post"
+🔍 Object schema check: PostScalarWhereWithAggregatesInput -> model: Post, enabled: true
+🔍 Operation check: Post.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostScalarWhereWithAggregatesInput -> operations: groupBy, hasEnabled: true
+🔍 Field check: Post.id (input) = false (model input variant exclusion)
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostScalarWhereWithAggregatesInput" -> extracted model: "Post"
+🔍 Object schema check: BookWhereInput -> model: Book, enabled: true
+🔍 Operation check: Book.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookWhereInput -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany,upsertOne, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookWhereInput" -> extracted model: "Book"
+🔍 Object schema check: BookOrderByWithRelationInput -> model: Book, enabled: true
+🔍 Operation check: Book.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookOrderByWithRelationInput -> operations: findMany,findFirst, hasEnabled: true
+🔍 Schema context: "BookOrderByWithRelationInput" -> extracted model: "Book"
+🔍 Object schema check: BookWhereUniqueInput -> model: Book, enabled: true
+🔍 Operation check: Book.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookWhereUniqueInput -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany,upsertOne, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookWhereUniqueInput" -> extracted model: "Book"
+🔍 Object schema check: BookOrderByWithAggregationInput -> model: Book, enabled: true
+🔍 Operation check: Book.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookOrderByWithAggregationInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "BookOrderByWithAggregationInput" -> extracted model: "Book"
+🔍 Object schema check: BookScalarWhereWithAggregatesInput -> model: Book, enabled: true
+🔍 Operation check: Book.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookScalarWhereWithAggregatesInput -> operations: groupBy, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookScalarWhereWithAggregatesInput" -> extracted model: "Book"
+🔍 Object schema check: MapWhereInput -> model: Map, enabled: true
+🔍 Operation check: Map.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapWhereInput -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany,upsertOne, hasEnabled: true
+🔍 Schema context: "MapWhereInput" -> extracted model: "Map"
+🔍 Object schema check: MapOrderByWithRelationInput -> model: Map, enabled: true
+🔍 Operation check: Map.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapOrderByWithRelationInput -> operations: findMany,findFirst, hasEnabled: true
+🔍 Schema context: "MapOrderByWithRelationInput" -> extracted model: "Map"
+🔍 Object schema check: MapWhereUniqueInput -> model: Map, enabled: true
+🔍 Operation check: Map.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapWhereUniqueInput -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany,upsertOne, hasEnabled: true
+🔍 Schema context: "MapWhereUniqueInput" -> extracted model: "Map"
+🔍 Object schema check: MapOrderByWithAggregationInput -> model: Map, enabled: true
+🔍 Operation check: Map.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapOrderByWithAggregationInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "MapOrderByWithAggregationInput" -> extracted model: "Map"
+🔍 Object schema check: MapScalarWhereWithAggregatesInput -> model: Map, enabled: true
+🔍 Operation check: Map.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapScalarWhereWithAggregatesInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "MapScalarWhereWithAggregatesInput" -> extracted model: "Map"
+🔍 Object schema check: UserCreateInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserCreateInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Schema context: "UserCreateInput" -> extracted model: "User"
+🔍 Object schema check: UserUncheckedCreateInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUncheckedCreateInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Field check: User.id (input) = false (model input variant exclusion)
+🔍 Schema context: "UserUncheckedCreateInput" -> extracted model: "User"
+🔍 Object schema check: UserUpdateInput -> model: User, enabled: true
+🔍 Operation check: User.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUpdateInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Schema context: "UserUpdateInput" -> extracted model: "User"
+🔍 Object schema check: UserUncheckedUpdateInput -> model: User, enabled: true
+🔍 Operation check: User.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUncheckedUpdateInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Field check: User.id (input) = false (model input variant exclusion)
+🔍 Schema context: "UserUncheckedUpdateInput" -> extracted model: "User"
+🔍 Object schema check: UserCreateManyInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserCreateManyInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Field check: User.id (input) = false (model input variant exclusion)
+🔍 Schema context: "UserCreateManyInput" -> extracted model: "User"
+🔍 Object schema check: UserUpdateManyMutationInput -> model: User, enabled: true
+🔍 Operation check: User.updateMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUpdateManyMutationInput -> operations: updateMany, hasEnabled: true
+🔍 Schema context: "UserUpdateManyMutationInput" -> extracted model: "User"
+🔍 Object schema check: UserUncheckedUpdateManyInput -> model: User, enabled: true
+🔍 Operation check: User.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUncheckedUpdateManyInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Field check: User.id (input) = false (model input variant exclusion)
+🔍 Schema context: "UserUncheckedUpdateManyInput" -> extracted model: "User"
+🔍 Object schema check: PostCreateInput -> model: Post, enabled: true
+🔍 Operation check: Post.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostCreateInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostCreateInput" -> extracted model: "Post"
+🔍 Object schema check: PostUncheckedCreateInput -> model: Post, enabled: true
+🔍 Operation check: Post.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUncheckedCreateInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Field check: Post.id (input) = false (model input variant exclusion)
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostUncheckedCreateInput" -> extracted model: "Post"
+🔍 Object schema check: PostUpdateInput -> model: Post, enabled: true
+🔍 Operation check: Post.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUpdateInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostUpdateInput" -> extracted model: "Post"
+🔍 Object schema check: PostUncheckedUpdateInput -> model: Post, enabled: true
+🔍 Operation check: Post.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUncheckedUpdateInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Field check: Post.id (input) = false (model input variant exclusion)
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostUncheckedUpdateInput" -> extracted model: "Post"
+🔍 Object schema check: PostCreateManyInput -> model: Post, enabled: true
+🔍 Operation check: Post.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostCreateManyInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Field check: Post.id (input) = false (model input variant exclusion)
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostCreateManyInput" -> extracted model: "Post"
+🔍 Object schema check: PostUpdateManyMutationInput -> model: Post, enabled: true
+🔍 Operation check: Post.updateMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUpdateManyMutationInput -> operations: updateMany, hasEnabled: true
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostUpdateManyMutationInput" -> extracted model: "Post"
+🔍 Object schema check: PostUncheckedUpdateManyInput -> model: Post, enabled: true
+🔍 Operation check: Post.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUncheckedUpdateManyInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Field check: Post.id (input) = false (model input variant exclusion)
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostUncheckedUpdateManyInput" -> extracted model: "Post"
+🔍 Object schema check: BookCreateInput -> model: Book, enabled: true
+🔍 Operation check: Book.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookCreateInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookCreateInput" -> extracted model: "Book"
+🔍 Object schema check: BookUncheckedCreateInput -> model: Book, enabled: true
+🔍 Operation check: Book.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUncheckedCreateInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookUncheckedCreateInput" -> extracted model: "Book"
+🔍 Object schema check: BookUpdateInput -> model: Book, enabled: true
+🔍 Operation check: Book.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUpdateInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookUpdateInput" -> extracted model: "Book"
+🔍 Object schema check: BookUncheckedUpdateInput -> model: Book, enabled: true
+🔍 Operation check: Book.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUncheckedUpdateInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookUncheckedUpdateInput" -> extracted model: "Book"
+🔍 Object schema check: BookCreateManyInput -> model: Book, enabled: true
+🔍 Operation check: Book.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookCreateManyInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookCreateManyInput" -> extracted model: "Book"
+🔍 Object schema check: BookUpdateManyMutationInput -> model: Book, enabled: true
+🔍 Operation check: Book.updateMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUpdateManyMutationInput -> operations: updateMany, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookUpdateManyMutationInput" -> extracted model: "Book"
+🔍 Object schema check: BookUncheckedUpdateManyInput -> model: Book, enabled: true
+🔍 Operation check: Book.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUncheckedUpdateManyInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookUncheckedUpdateManyInput" -> extracted model: "Book"
+🔍 Object schema check: MapCreateInput -> model: Map, enabled: true
+🔍 Operation check: Map.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapCreateInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Schema context: "MapCreateInput" -> extracted model: "Map"
+🔍 Object schema check: MapUncheckedCreateInput -> model: Map, enabled: true
+🔍 Operation check: Map.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapUncheckedCreateInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Schema context: "MapUncheckedCreateInput" -> extracted model: "Map"
+🔍 Object schema check: MapUpdateInput -> model: Map, enabled: true
+🔍 Operation check: Map.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapUpdateInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Schema context: "MapUpdateInput" -> extracted model: "Map"
+🔍 Object schema check: MapUncheckedUpdateInput -> model: Map, enabled: true
+🔍 Operation check: Map.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapUncheckedUpdateInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Schema context: "MapUncheckedUpdateInput" -> extracted model: "Map"
+🔍 Object schema check: MapCreateManyInput -> model: Map, enabled: true
+🔍 Operation check: Map.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapCreateManyInput -> operations: createOne,createMany, hasEnabled: true
+🔍 Schema context: "MapCreateManyInput" -> extracted model: "Map"
+🔍 Object schema check: MapUpdateManyMutationInput -> model: Map, enabled: true
+🔍 Operation check: Map.updateMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapUpdateManyMutationInput -> operations: updateMany, hasEnabled: true
+🔍 Schema context: "MapUpdateManyMutationInput" -> extracted model: "Map"
+🔍 Object schema check: MapUncheckedUpdateManyInput -> model: Map, enabled: true
+🔍 Operation check: Map.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapUncheckedUpdateManyInput -> operations: updateOne,updateMany, hasEnabled: true
+🔍 Schema context: "MapUncheckedUpdateManyInput" -> extracted model: "Map"
+🔍 Default behavior: IntFilter -> generating (could not determine model)
+🔍 Schema context: "IntFilter" -> extracted model: "null"
+🔍 Default behavior: StringFilter -> generating (could not determine model)
+🔍 Schema context: "StringFilter" -> extracted model: "null"
+🔍 Default behavior: StringNullableFilter -> generating (could not determine model)
+🔍 Schema context: "StringNullableFilter" -> extracted model: "null"
+🔍 Default behavior: EnumRoleNullableFilter -> generating (could not determine model)
+🔍 Schema context: "EnumRoleNullableFilter" -> extracted model: "null"
+🔍 Object schema check: PostListRelationFilter -> model: Post, enabled: true
+🔍 Operation check: Post.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostListRelationFilter -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany, hasEnabled: true
+🔍 Schema context: "PostListRelationFilter" -> extracted model: "Post"
+🔍 Object schema check: BookListRelationFilter -> model: Book, enabled: true
+🔍 Operation check: Book.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookListRelationFilter -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany, hasEnabled: true
+🔍 Schema context: "BookListRelationFilter" -> extracted model: "Book"
+🔍 Default behavior: SortOrderInput -> generating (could not determine model)
+🔍 Schema context: "SortOrderInput" -> extracted model: "null"
+🔍 Object schema check: PostOrderByRelationAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostOrderByRelationAggregateInput -> operations: findMany,findFirst, hasEnabled: true
+🔍 Schema context: "PostOrderByRelationAggregateInput" -> extracted model: "Post"
+🔍 Object schema check: BookOrderByRelationAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookOrderByRelationAggregateInput -> operations: findMany,findFirst, hasEnabled: true
+🔍 Schema context: "BookOrderByRelationAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: UserCountOrderByAggregateInput -> model: User, enabled: true
+🔍 Operation check: User.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserCountOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "UserCountOrderByAggregateInput" -> extracted model: "User"
+🔍 Object schema check: UserAvgOrderByAggregateInput -> model: User, enabled: true
+🔍 Operation check: User.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserAvgOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "UserAvgOrderByAggregateInput" -> extracted model: "User"
+🔍 Object schema check: UserMaxOrderByAggregateInput -> model: User, enabled: true
+🔍 Operation check: User.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserMaxOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "UserMaxOrderByAggregateInput" -> extracted model: "User"
+🔍 Object schema check: UserMinOrderByAggregateInput -> model: User, enabled: true
+🔍 Operation check: User.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserMinOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "UserMinOrderByAggregateInput" -> extracted model: "User"
+🔍 Object schema check: UserSumOrderByAggregateInput -> model: User, enabled: true
+🔍 Operation check: User.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserSumOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "UserSumOrderByAggregateInput" -> extracted model: "User"
+🔍 Default behavior: IntWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "IntWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: StringWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "StringWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: StringNullableWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "StringNullableWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: EnumRoleNullableWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "EnumRoleNullableWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: DateTimeFilter -> generating (could not determine model)
+🔍 Schema context: "DateTimeFilter" -> extracted model: "null"
+🔍 Default behavior: BoolFilter -> generating (could not determine model)
+🔍 Schema context: "BoolFilter" -> extracted model: "null"
+🔍 Default behavior: IntNullableFilter -> generating (could not determine model)
+🔍 Schema context: "IntNullableFilter" -> extracted model: "null"
+🔍 Default behavior: BigIntFilter -> generating (could not determine model)
+🔍 Schema context: "BigIntFilter" -> extracted model: "null"
+🔍 Default behavior: BytesNullableFilter -> generating (could not determine model)
+🔍 Schema context: "BytesNullableFilter" -> extracted model: "null"
+🔍 Object schema check: UserNullableScalarRelationFilter -> model: UserNullableScalar, enabled: true
+🔍 Operation check: UserNullableScalar.findMany = true (default)
+🔍 Operation check: UserNullableScalarRelationFilter -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany, hasEnabled: true
+🔍 Schema context: "UserNullableScalarRelationFilter" -> extracted model: "UserNullableScalar"
+🔍 Object schema check: PostCountOrderByAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostCountOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "PostCountOrderByAggregateInput" -> extracted model: "Post"
+🔍 Object schema check: PostAvgOrderByAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostAvgOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "PostAvgOrderByAggregateInput" -> extracted model: "Post"
+🔍 Object schema check: PostMaxOrderByAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostMaxOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "PostMaxOrderByAggregateInput" -> extracted model: "Post"
+🔍 Object schema check: PostMinOrderByAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostMinOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "PostMinOrderByAggregateInput" -> extracted model: "Post"
+🔍 Object schema check: PostSumOrderByAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostSumOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "PostSumOrderByAggregateInput" -> extracted model: "Post"
+🔍 Default behavior: DateTimeWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "DateTimeWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: BoolWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "BoolWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: IntNullableWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "IntNullableWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: BigIntWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "BigIntWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: BytesNullableWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "BytesNullableWithAggregatesFilter" -> extracted model: "null"
+🔍 Object schema check: BookCountOrderByAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookCountOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "BookCountOrderByAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: BookAvgOrderByAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookAvgOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "BookAvgOrderByAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: BookMaxOrderByAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookMaxOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "BookMaxOrderByAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: BookMinOrderByAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookMinOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "BookMinOrderByAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: BookSumOrderByAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookSumOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "BookSumOrderByAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: MapCountOrderByAggregateInput -> model: Map, enabled: true
+🔍 Operation check: Map.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapCountOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "MapCountOrderByAggregateInput" -> extracted model: "Map"
+🔍 Object schema check: MapMaxOrderByAggregateInput -> model: Map, enabled: true
+🔍 Operation check: Map.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapMaxOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "MapMaxOrderByAggregateInput" -> extracted model: "Map"
+🔍 Object schema check: MapMinOrderByAggregateInput -> model: Map, enabled: true
+🔍 Operation check: Map.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapMinOrderByAggregateInput -> operations: groupBy, hasEnabled: true
+🔍 Schema context: "MapMinOrderByAggregateInput" -> extracted model: "Map"
+🔍 Object schema check: PostCreateNestedManyWithoutAuthorInput -> model: Post, enabled: true
+🔍 Operation check: Post.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostCreateNestedManyWithoutAuthorInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "PostCreateNestedManyWithoutAuthorInput" -> extracted model: "Post"
+🔍 Object schema check: BookCreateNestedManyWithoutAuthorInput -> model: Book, enabled: true
+🔍 Operation check: Book.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookCreateNestedManyWithoutAuthorInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "BookCreateNestedManyWithoutAuthorInput" -> extracted model: "Book"
+🔍 Object schema check: PostUncheckedCreateNestedManyWithoutAuthorInput -> model: Post, enabled: true
+🔍 Operation check: Post.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUncheckedCreateNestedManyWithoutAuthorInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "PostUncheckedCreateNestedManyWithoutAuthorInput" -> extracted model: "PostUnchecked"
+🔍 Object schema check: BookUncheckedCreateNestedManyWithoutAuthorInput -> model: Book, enabled: true
+🔍 Operation check: Book.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUncheckedCreateNestedManyWithoutAuthorInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "BookUncheckedCreateNestedManyWithoutAuthorInput" -> extracted model: "BookUnchecked"
+🔍 Default behavior: StringFieldUpdateOperationsInput -> generating (could not determine model)
+🔍 Schema context: "StringFieldUpdateOperationsInput" -> extracted model: "null"
+🔍 Default behavior: NullableStringFieldUpdateOperationsInput -> generating (could not determine model)
+🔍 Schema context: "NullableStringFieldUpdateOperationsInput" -> extracted model: "null"
+🔍 Default behavior: NullableEnumRoleFieldUpdateOperationsInput -> generating (could not determine model)
+🔍 Schema context: "NullableEnumRoleFieldUpdateOperationsInput" -> extracted model: "null"
+🔍 Object schema check: PostUpdateManyWithoutAuthorNestedInput -> model: Post, enabled: true
+🔍 Operation check: Post.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUpdateManyWithoutAuthorNestedInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "PostUpdateManyWithoutAuthorNestedInput" -> extracted model: "Post"
+🔍 Object schema check: BookUpdateManyWithoutAuthorNestedInput -> model: Book, enabled: true
+🔍 Operation check: Book.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUpdateManyWithoutAuthorNestedInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "BookUpdateManyWithoutAuthorNestedInput" -> extracted model: "Book"
+🔍 Default behavior: IntFieldUpdateOperationsInput -> generating (could not determine model)
+🔍 Schema context: "IntFieldUpdateOperationsInput" -> extracted model: "null"
+🔍 Object schema check: PostUncheckedUpdateManyWithoutAuthorNestedInput -> model: Post, enabled: true
+🔍 Operation check: Post.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUncheckedUpdateManyWithoutAuthorNestedInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "PostUncheckedUpdateManyWithoutAuthorNestedInput" -> extracted model: "Post"
+🔍 Object schema check: BookUncheckedUpdateManyWithoutAuthorNestedInput -> model: Book, enabled: true
+🔍 Operation check: Book.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUncheckedUpdateManyWithoutAuthorNestedInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "BookUncheckedUpdateManyWithoutAuthorNestedInput" -> extracted model: "Book"
+🔍 Object schema check: UserCreateNestedOneWithoutPostsInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserCreateNestedOneWithoutPostsInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "UserCreateNestedOneWithoutPostsInput" -> extracted model: "User"
+🔍 Default behavior: DateTimeFieldUpdateOperationsInput -> generating (could not determine model)
+🔍 Schema context: "DateTimeFieldUpdateOperationsInput" -> extracted model: "null"
+🔍 Default behavior: BoolFieldUpdateOperationsInput -> generating (could not determine model)
+🔍 Schema context: "BoolFieldUpdateOperationsInput" -> extracted model: "null"
+🔍 Default behavior: BigIntFieldUpdateOperationsInput -> generating (could not determine model)
+🔍 Schema context: "BigIntFieldUpdateOperationsInput" -> extracted model: "null"
+🔍 Default behavior: NullableBytesFieldUpdateOperationsInput -> generating (could not determine model)
+🔍 Schema context: "NullableBytesFieldUpdateOperationsInput" -> extracted model: "null"
+🔍 Default behavior: UserUpdateOneWithoutPostsNestedInput -> generating (could not determine model)
+🔍 Schema context: "UserUpdateOneWithoutPostsNestedInput" -> extracted model: "null"
+🔍 Default behavior: NullableIntFieldUpdateOperationsInput -> generating (could not determine model)
+🔍 Schema context: "NullableIntFieldUpdateOperationsInput" -> extracted model: "null"
+🔍 Object schema check: UserCreateNestedOneWithoutBooksInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserCreateNestedOneWithoutBooksInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "UserCreateNestedOneWithoutBooksInput" -> extracted model: "User"
+🔍 Default behavior: UserUpdateOneWithoutBooksNestedInput -> generating (could not determine model)
+🔍 Schema context: "UserUpdateOneWithoutBooksNestedInput" -> extracted model: "null"
+🔍 Default behavior: NestedIntFilter -> generating (could not determine model)
+🔍 Schema context: "NestedIntFilter" -> extracted model: "null"
+🔍 Default behavior: NestedStringFilter -> generating (could not determine model)
+🔍 Schema context: "NestedStringFilter" -> extracted model: "null"
+🔍 Default behavior: NestedStringNullableFilter -> generating (could not determine model)
+🔍 Schema context: "NestedStringNullableFilter" -> extracted model: "null"
+🔍 Default behavior: NestedEnumRoleNullableFilter -> generating (could not determine model)
+🔍 Schema context: "NestedEnumRoleNullableFilter" -> extracted model: "null"
+🔍 Default behavior: NestedIntWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "NestedIntWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: NestedFloatFilter -> generating (could not determine model)
+🔍 Schema context: "NestedFloatFilter" -> extracted model: "null"
+🔍 Default behavior: NestedStringWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "NestedStringWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: NestedStringNullableWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "NestedStringNullableWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: NestedIntNullableFilter -> generating (could not determine model)
+🔍 Schema context: "NestedIntNullableFilter" -> extracted model: "null"
+🔍 Default behavior: NestedEnumRoleNullableWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "NestedEnumRoleNullableWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: NestedDateTimeFilter -> generating (could not determine model)
+🔍 Schema context: "NestedDateTimeFilter" -> extracted model: "null"
+🔍 Default behavior: NestedBoolFilter -> generating (could not determine model)
+🔍 Schema context: "NestedBoolFilter" -> extracted model: "null"
+🔍 Default behavior: NestedBigIntFilter -> generating (could not determine model)
+🔍 Schema context: "NestedBigIntFilter" -> extracted model: "null"
+🔍 Default behavior: NestedBytesNullableFilter -> generating (could not determine model)
+🔍 Schema context: "NestedBytesNullableFilter" -> extracted model: "null"
+🔍 Default behavior: NestedDateTimeWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "NestedDateTimeWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: NestedBoolWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "NestedBoolWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: NestedIntNullableWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "NestedIntNullableWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: NestedFloatNullableFilter -> generating (could not determine model)
+🔍 Schema context: "NestedFloatNullableFilter" -> extracted model: "null"
+🔍 Default behavior: NestedBigIntWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "NestedBigIntWithAggregatesFilter" -> extracted model: "null"
+🔍 Default behavior: NestedBytesNullableWithAggregatesFilter -> generating (could not determine model)
+🔍 Schema context: "NestedBytesNullableWithAggregatesFilter" -> extracted model: "null"
+🔍 Object schema check: PostCreateWithoutAuthorInput -> model: Post, enabled: true
+🔍 Operation check: Post.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostCreateWithoutAuthorInput -> operations: createOne, hasEnabled: true
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostCreateWithoutAuthorInput" -> extracted model: "Post"
+🔍 Object schema check: PostUncheckedCreateWithoutAuthorInput -> model: Post, enabled: true
+🔍 Operation check: Post.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUncheckedCreateWithoutAuthorInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "PostUncheckedCreateWithoutAuthorInput" -> extracted model: "PostUnchecked"
+🔍 Object schema check: PostCreateOrConnectWithoutAuthorInput -> model: Post, enabled: true
+🔍 Operation check: Post.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostCreateOrConnectWithoutAuthorInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "PostCreateOrConnectWithoutAuthorInput" -> extracted model: "Post"
+🔍 Object schema check: PostCreateManyAuthorInputEnvelope -> model: Post, enabled: true
+🔍 Default behavior: PostCreateManyAuthorInputEnvelope -> generating (could not determine model)
+🔍 Schema context: "PostCreateManyAuthorInputEnvelope" -> extracted model: "Post"
+🔍 Object schema check: BookCreateWithoutAuthorInput -> model: Book, enabled: true
+🔍 Operation check: Book.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookCreateWithoutAuthorInput -> operations: createOne, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookCreateWithoutAuthorInput" -> extracted model: "Book"
+🔍 Object schema check: BookUncheckedCreateWithoutAuthorInput -> model: Book, enabled: true
+🔍 Operation check: Book.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUncheckedCreateWithoutAuthorInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "BookUncheckedCreateWithoutAuthorInput" -> extracted model: "BookUnchecked"
+🔍 Object schema check: BookCreateOrConnectWithoutAuthorInput -> model: Book, enabled: true
+🔍 Operation check: Book.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookCreateOrConnectWithoutAuthorInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "BookCreateOrConnectWithoutAuthorInput" -> extracted model: "Book"
+🔍 Object schema check: BookCreateManyAuthorInputEnvelope -> model: Book, enabled: true
+🔍 Default behavior: BookCreateManyAuthorInputEnvelope -> generating (could not determine model)
+🔍 Schema context: "BookCreateManyAuthorInputEnvelope" -> extracted model: "Book"
+🔍 Object schema check: PostUpsertWithWhereUniqueWithoutAuthorInput -> model: Post, enabled: true
+🔍 Operation check: Post.upsertOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUpsertWithWhereUniqueWithoutAuthorInput -> operations: upsertOne, hasEnabled: true
+🔍 Schema context: "PostUpsertWithWhereUniqueWithoutAuthorInput" -> extracted model: "Post"
+🔍 Object schema check: PostUpdateWithWhereUniqueWithoutAuthorInput -> model: Post, enabled: true
+🔍 Operation check: Post.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUpdateWithWhereUniqueWithoutAuthorInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "PostUpdateWithWhereUniqueWithoutAuthorInput" -> extracted model: "Post"
+🔍 Object schema check: PostUpdateManyWithWhereWithoutAuthorInput -> model: Post, enabled: true
+🔍 Operation check: Post.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUpdateManyWithWhereWithoutAuthorInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "PostUpdateManyWithWhereWithoutAuthorInput" -> extracted model: "Post"
+🔍 Object schema check: PostScalarWhereInput -> model: Post, enabled: true
+🔍 Operation check: Post.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostScalarWhereInput -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany,upsertOne, hasEnabled: true
+🔍 Schema context: "PostScalarWhereInput" -> extracted model: "PostScalar"
+🔍 Object schema check: BookUpsertWithWhereUniqueWithoutAuthorInput -> model: Book, enabled: true
+🔍 Operation check: Book.upsertOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUpsertWithWhereUniqueWithoutAuthorInput -> operations: upsertOne, hasEnabled: true
+🔍 Schema context: "BookUpsertWithWhereUniqueWithoutAuthorInput" -> extracted model: "Book"
+🔍 Object schema check: BookUpdateWithWhereUniqueWithoutAuthorInput -> model: Book, enabled: true
+🔍 Operation check: Book.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUpdateWithWhereUniqueWithoutAuthorInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "BookUpdateWithWhereUniqueWithoutAuthorInput" -> extracted model: "Book"
+🔍 Object schema check: BookUpdateManyWithWhereWithoutAuthorInput -> model: Book, enabled: true
+🔍 Operation check: Book.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUpdateManyWithWhereWithoutAuthorInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "BookUpdateManyWithWhereWithoutAuthorInput" -> extracted model: "Book"
+🔍 Object schema check: BookScalarWhereInput -> model: Book, enabled: true
+🔍 Operation check: Book.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookScalarWhereInput -> operations: findMany,findUnique,findFirst,updateOne,updateMany,deleteOne,deleteMany,upsertOne, hasEnabled: true
+🔍 Schema context: "BookScalarWhereInput" -> extracted model: "BookScalar"
+🔍 Object schema check: UserCreateWithoutPostsInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserCreateWithoutPostsInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "UserCreateWithoutPostsInput" -> extracted model: "User"
+🔍 Object schema check: UserUncheckedCreateWithoutPostsInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUncheckedCreateWithoutPostsInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "UserUncheckedCreateWithoutPostsInput" -> extracted model: "UserUnchecked"
+🔍 Object schema check: UserCreateOrConnectWithoutPostsInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserCreateOrConnectWithoutPostsInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "UserCreateOrConnectWithoutPostsInput" -> extracted model: "User"
+🔍 Object schema check: UserUpsertWithoutPostsInput -> model: User, enabled: true
+🔍 Operation check: User.upsertOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUpsertWithoutPostsInput -> operations: upsertOne, hasEnabled: true
+🔍 Schema context: "UserUpsertWithoutPostsInput" -> extracted model: "User"
+🔍 Object schema check: UserUpdateToOneWithWhereWithoutPostsInput -> model: User, enabled: true
+🔍 Operation check: User.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUpdateToOneWithWhereWithoutPostsInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "UserUpdateToOneWithWhereWithoutPostsInput" -> extracted model: "User"
+🔍 Object schema check: UserUpdateWithoutPostsInput -> model: User, enabled: true
+🔍 Operation check: User.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUpdateWithoutPostsInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "UserUpdateWithoutPostsInput" -> extracted model: "User"
+🔍 Object schema check: UserUncheckedUpdateWithoutPostsInput -> model: User, enabled: true
+🔍 Operation check: User.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUncheckedUpdateWithoutPostsInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "UserUncheckedUpdateWithoutPostsInput" -> extracted model: "UserUnchecked"
+🔍 Object schema check: UserCreateWithoutBooksInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserCreateWithoutBooksInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "UserCreateWithoutBooksInput" -> extracted model: "User"
+🔍 Object schema check: UserUncheckedCreateWithoutBooksInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUncheckedCreateWithoutBooksInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "UserUncheckedCreateWithoutBooksInput" -> extracted model: "UserUnchecked"
+🔍 Object schema check: UserCreateOrConnectWithoutBooksInput -> model: User, enabled: true
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserCreateOrConnectWithoutBooksInput -> operations: createOne, hasEnabled: true
+🔍 Schema context: "UserCreateOrConnectWithoutBooksInput" -> extracted model: "User"
+🔍 Object schema check: UserUpsertWithoutBooksInput -> model: User, enabled: true
+🔍 Operation check: User.upsertOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUpsertWithoutBooksInput -> operations: upsertOne, hasEnabled: true
+🔍 Schema context: "UserUpsertWithoutBooksInput" -> extracted model: "User"
+🔍 Object schema check: UserUpdateToOneWithWhereWithoutBooksInput -> model: User, enabled: true
+🔍 Operation check: User.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUpdateToOneWithWhereWithoutBooksInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "UserUpdateToOneWithWhereWithoutBooksInput" -> extracted model: "User"
+🔍 Object schema check: UserUpdateWithoutBooksInput -> model: User, enabled: true
+🔍 Operation check: User.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUpdateWithoutBooksInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "UserUpdateWithoutBooksInput" -> extracted model: "User"
+🔍 Object schema check: UserUncheckedUpdateWithoutBooksInput -> model: User, enabled: true
+🔍 Operation check: User.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserUncheckedUpdateWithoutBooksInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "UserUncheckedUpdateWithoutBooksInput" -> extracted model: "UserUnchecked"
+🔍 Object schema check: PostCreateManyAuthorInput -> model: Post, enabled: true
+🔍 Default behavior: PostCreateManyAuthorInput -> generating (could not determine model)
+🔍 Field check: Post.id (input) = false (model input variant exclusion)
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostCreateManyAuthorInput" -> extracted model: "Post"
+🔍 Object schema check: BookCreateManyAuthorInput -> model: Book, enabled: true
+🔍 Default behavior: BookCreateManyAuthorInput -> generating (could not determine model)
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookCreateManyAuthorInput" -> extracted model: "Book"
+🔍 Object schema check: PostUpdateWithoutAuthorInput -> model: Post, enabled: true
+🔍 Operation check: Post.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUpdateWithoutAuthorInput -> operations: updateOne, hasEnabled: true
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostUpdateWithoutAuthorInput" -> extracted model: "Post"
+🔍 Object schema check: PostUncheckedUpdateWithoutAuthorInput -> model: Post, enabled: true
+🔍 Operation check: Post.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostUncheckedUpdateWithoutAuthorInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "PostUncheckedUpdateWithoutAuthorInput" -> extracted model: "PostUnchecked"
+🔍 Object schema check: PostUncheckedUpdateManyWithoutAuthorInput -> model: Post, enabled: true
+🔍 Default behavior: PostUncheckedUpdateManyWithoutAuthorInput -> generating (could not determine model)
+🔍 Field check: Post.id (input) = false (model input variant exclusion)
+🔍 Field check: Post.createdAt (input) = false (model input variant exclusion)
+🔍 Field check: Post.updatedAt (input) = false (model input variant exclusion)
+🔍 Schema context: "PostUncheckedUpdateManyWithoutAuthorInput" -> extracted model: "Post"
+🔍 Object schema check: BookUpdateWithoutAuthorInput -> model: Book, enabled: true
+🔍 Operation check: Book.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUpdateWithoutAuthorInput -> operations: updateOne, hasEnabled: true
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookUpdateWithoutAuthorInput" -> extracted model: "Book"
+🔍 Object schema check: BookUncheckedUpdateWithoutAuthorInput -> model: Book, enabled: true
+🔍 Operation check: Book.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookUncheckedUpdateWithoutAuthorInput -> operations: updateOne, hasEnabled: true
+🔍 Schema context: "BookUncheckedUpdateWithoutAuthorInput" -> extracted model: "BookUnchecked"
+🔍 Object schema check: BookUncheckedUpdateManyWithoutAuthorInput -> model: Book, enabled: true
+🔍 Default behavior: BookUncheckedUpdateManyWithoutAuthorInput -> generating (could not determine model)
+🔍 Field check: Book.id (input) = false (model input variant exclusion)
+🔍 Schema context: "BookUncheckedUpdateManyWithoutAuthorInput" -> extracted model: "Book"
+🔍 Object schema check: UserCountAggregateInput -> model: User, enabled: true
+🔍 Operation check: User.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserCountAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "UserCountAggregateInput" -> extracted model: "User"
+🔍 Object schema check: UserAvgAggregateInput -> model: User, enabled: true
+🔍 Operation check: User.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserAvgAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "UserAvgAggregateInput" -> extracted model: "User"
+🔍 Object schema check: UserSumAggregateInput -> model: User, enabled: true
+🔍 Operation check: User.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserSumAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "UserSumAggregateInput" -> extracted model: "User"
+🔍 Object schema check: UserMinAggregateInput -> model: User, enabled: true
+🔍 Operation check: User.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserMinAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "UserMinAggregateInput" -> extracted model: "User"
+🔍 Object schema check: UserMaxAggregateInput -> model: User, enabled: true
+🔍 Operation check: User.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: UserMaxAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "UserMaxAggregateInput" -> extracted model: "User"
+🔍 Object schema check: PostCountAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostCountAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "PostCountAggregateInput" -> extracted model: "Post"
+🔍 Object schema check: PostAvgAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostAvgAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "PostAvgAggregateInput" -> extracted model: "Post"
+🔍 Object schema check: PostSumAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostSumAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "PostSumAggregateInput" -> extracted model: "Post"
+🔍 Object schema check: PostMinAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostMinAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "PostMinAggregateInput" -> extracted model: "Post"
+🔍 Object schema check: PostMaxAggregateInput -> model: Post, enabled: true
+🔍 Operation check: Post.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: PostMaxAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "PostMaxAggregateInput" -> extracted model: "Post"
+🔍 Object schema check: BookCountAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookCountAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "BookCountAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: BookAvgAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookAvgAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "BookAvgAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: BookSumAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookSumAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "BookSumAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: BookMinAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookMinAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "BookMinAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: BookMaxAggregateInput -> model: Book, enabled: true
+🔍 Operation check: Book.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: BookMaxAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "BookMaxAggregateInput" -> extracted model: "Book"
+🔍 Object schema check: MapCountAggregateInput -> model: Map, enabled: true
+🔍 Operation check: Map.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapCountAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "MapCountAggregateInput" -> extracted model: "Map"
+🔍 Object schema check: MapMinAggregateInput -> model: Map, enabled: true
+🔍 Operation check: Map.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapMinAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "MapMinAggregateInput" -> extracted model: "Map"
+🔍 Object schema check: MapMaxAggregateInput -> model: Map, enabled: true
+🔍 Operation check: Map.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: MapMaxAggregateInput -> operations: aggregate, hasEnabled: true
+🔍 Schema context: "MapMaxAggregateInput" -> extracted model: "Map"
+🔍 Default behavior: UserCountOutputTypeSelect -> generating (could not determine model)
+🔍 Schema context: "UserCountOutputTypeSelect" -> extracted model: "null"
+🔍 Object schema check: UserCountOutputTypeArgs -> model: UserCountOutputType, enabled: true
+🔍 Default behavior: UserCountOutputTypeArgs -> generating (could not determine model)
+🔍 Schema context: "UserCountOutputTypeArgs" -> extracted model: "UserCountOutputType"
+🔍 Default behavior: UserSelect -> generating (could not determine model)
+🔍 Schema context: "UserSelect" -> extracted model: "null"
+🔍 Default behavior: PostSelect -> generating (could not determine model)
+🔍 Schema context: "PostSelect" -> extracted model: "null"
+🔍 Default behavior: BookSelect -> generating (could not determine model)
+🔍 Schema context: "BookSelect" -> extracted model: "null"
+🔍 Default behavior: MapSelect -> generating (could not determine model)
+🔍 Schema context: "MapSelect" -> extracted model: "null"
+🔍 Object schema check: UserArgs -> model: User, enabled: true
+🔍 Default behavior: UserArgs -> generating (could not determine model)
+🔍 Schema context: "UserArgs" -> extracted model: "User"
+🔍 Object schema check: PostArgs -> model: Post, enabled: true
+🔍 Default behavior: PostArgs -> generating (could not determine model)
+🔍 Schema context: "PostArgs" -> extracted model: "Post"
+🔍 Object schema check: BookArgs -> model: Book, enabled: true
+🔍 Default behavior: BookArgs -> generating (could not determine model)
+🔍 Schema context: "BookArgs" -> extracted model: "Book"
+🔍 Object schema check: MapArgs -> model: Map, enabled: true
+🔍 Default behavior: MapArgs -> generating (could not determine model)
+🔍 Schema context: "MapArgs" -> extracted model: "Map"
+🔍 Default behavior: UserInclude -> generating (could not determine model)
+🔍 Schema context: "UserInclude" -> extracted model: "null"
+🔍 Default behavior: PostInclude -> generating (could not determine model)
+🔍 Schema context: "PostInclude" -> extracted model: "null"
+🔍 Default behavior: BookInclude -> generating (could not determine model)
+🔍 Schema context: "BookInclude" -> extracted model: "null"
+⚠️  Filter Validation Warnings:
+   • Model "Map" has "aggregate" operation enabled but no active relationships. This operation may not function as expected.
+   • Model "Map" has "groupBy" operation enabled but no active relationships. This operation may not function as expected.
+   • Model "User" input variant excludes required fields: id. This may cause validation issues.
+   • Model "Post" input variant excludes required fields: id, createdAt, updatedAt. This may cause validation issues.
+   • Model "Book" input variant excludes required fields: id. This may cause validation issues.
+🔍 Operation check: User.findUniqueUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.findFirstUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.findManyUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.createOneUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.createManyUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.deleteOneUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.deleteManyUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.updateOneUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.updateManyUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.upsertOneUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.aggregateUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.groupByUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.findUniqueUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.findFirstUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.findManyUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.createOneUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.createManyUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.deleteOneUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.deleteManyUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.updateOneUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.updateManyUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.upsertOneUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.aggregateUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.groupByUser = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+   🔧 User: excluded operations [findUniqueUser, findFirstUser, findManyUser, createOneUser, createManyUser, deleteOneUser, deleteManyUser, updateOneUser, updateManyUser, upsertOneUser, aggregateUser, groupByUser]
+   ✅ User: active relations to [Post, Book]
+🔍 Operation check: User.findUnique = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.findFirst = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.createMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.deleteOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.deleteMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.updateMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.upsertOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: User.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.findUniquePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.findFirstPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.findManyPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.createOnePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.createManyPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.deleteOnePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.deleteManyPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.updateOnePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.updateManyPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.upsertOnePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.aggregatePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.groupByPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.findUniquePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.findFirstPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.findManyPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.createOnePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.createManyPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.deleteOnePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.deleteManyPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.updateOnePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.updateManyPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.upsertOnePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.aggregatePost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.groupByPost = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+   🔧 Post: excluded operations [findUniquePost, findFirstPost, findManyPost, createOnePost, createManyPost, deleteOnePost, deleteManyPost, updateOnePost, updateManyPost, upsertOnePost, aggregatePost, groupByPost]
+   ✅ Post: active relations to [User]
+🔍 Operation check: Post.findUnique = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.findFirst = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.createMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.deleteOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.deleteMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.updateMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.upsertOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Post.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.findUniqueBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.findFirstBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.findManyBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.createOneBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.createManyBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.deleteOneBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.deleteManyBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.updateOneBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.updateManyBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.upsertOneBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.aggregateBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.groupByBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.findUniqueBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.findFirstBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.findManyBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.createOneBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.createManyBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.deleteOneBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.deleteManyBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.updateOneBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.updateManyBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.upsertOneBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.aggregateBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.groupByBook = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+   🔧 Book: excluded operations [findUniqueBook, findFirstBook, findManyBook, createOneBook, createManyBook, deleteOneBook, deleteManyBook, updateOneBook, updateManyBook, upsertOneBook, aggregateBook, groupByBook]
+   ✅ Book: active relations to [User]
+🔍 Operation check: Book.findUnique = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.findFirst = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.createMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.deleteOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.deleteMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.updateMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.upsertOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Book.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.findUniqueMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.findFirstMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.findManyMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.createOneMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.createManyMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.deleteOneMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.deleteManyMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.updateOneMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.updateManyMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.upsertOneMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.aggregateMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.groupByMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.findUniqueMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.findFirstMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.findManyMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.createOneMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.createManyMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.deleteOneMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.deleteManyMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.updateOneMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.updateManyMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.upsertOneMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.aggregateMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.groupByMap = false (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+   🔧 Map: excluded operations [findUniqueMap, findFirstMap, findManyMap, createOneMap, createManyMap, deleteOneMap, deleteManyMap, updateOneMap, updateManyMap, upsertOneMap, aggregateMap, groupByMap]
+🔍 Operation check: Map.findUnique = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.findFirst = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.findMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.createOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.createMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.deleteOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.deleteMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.updateOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.updateMany = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.upsertOne = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.aggregate = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🔍 Operation check: Map.groupBy = true (configured ops: [findMany, findUnique, findFirst, create, createMany, update, updateMany, upsert, delete, deleteMany, aggregate, groupBy, count])
+🎯 Generating result schemas for model: User
+🎯 Generating result schemas for model: Post
+🎯 Generating result schemas for model: Book
+🎯 Generating result schemas for model: Map
+📦 Generating variant schemas for: pure, input, result
+   📝 Creating pure variant: User.pure.ts (UserModelSchema)
+   📝 Creating pure variant: Post.pure.ts (PostModelSchema)
+   📝 Creating pure variant: Book.pure.ts (BookModelSchema)
+   📝 Creating pure variant: Map.pure.ts (MapModelSchema)
+   📝 Creating input variant: User.input.ts (UserInputSchema)
+   📝 Creating input variant: Post.input.ts (PostInputSchema)
+   📝 Creating input variant: Book.input.ts (BookInputSchema)
+   📝 Creating input variant: Map.input.ts (MapInputSchema)
+   📝 Creating result variant: User.result.ts (UserResultSchema)
+   📝 Creating result variant: Post.result.ts (PostResultSchema)
+   📝 Creating result variant: Book.result.ts (BookResultSchema)
+   📝 Creating result variant: Map.result.ts (MapResultSchema)
+📦 Generated 3 variant types for 4 models
+📦 Updated main index to include variants export
+
+📊 Generation Summary:
+   Models: 4/4 enabled
+   Mode: full
+   Custom configurations: 4 models
+✅ Zod schemas generated successfully with filtering applied
+
+
+✔ Generated Prisma Client (v6.12.0) to ./node_modules/@prisma/client in 165ms
+
+✔ Generated Prisma Zod Generator to ./prisma/generated in 363ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+

@@ -388,7 +388,7 @@ ${allFields.join(',\n')}
    * Generate count result schema
    */
   private generateCountResultSchema(context: ResultGenerationContext): GeneratedResultSchema {
-  const { model, options } = context;
+  const { options } = context;
     const schemaName = this.generateSchemaName(options);
 
   // Simple count should be a number schema

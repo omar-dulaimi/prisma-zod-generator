@@ -2394,13 +2394,13 @@ export default class Transformer {
    * Follows community generator pattern with aggressive inlining.
    */
   generateInlineSelectSchema(model: PrismaDMMF.Model): string {
-    const { name: modelName, fields } = model;
+  const { name: modelName, fields } = model;
     
     // Generate field definitions for the select schema
     const selectFields: string[] = [];
     
     for (const field of fields) {
-      const { name: fieldName, relationName, type } = field;
+      const { name: fieldName, relationName } = field;
       
       if (relationName) {
         // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
@@ -2499,13 +2499,13 @@ ${selectFields.join(',\n')}
    * Generates just the schema definition without export statement
    */
   generateInlineSelectSchemaDefinition(model: PrismaDMMF.Model): string {
-    const { name: modelName, fields } = model;
+  const { fields } = model;
     
     // Generate field definitions for the select schema
     const selectFields: string[] = [];
     
     for (const field of fields) {
-      const { name: fieldName, relationName, type } = field;
+      const { name: fieldName, relationName } = field;
       
       if (relationName) {
         // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)

@@ -623,7 +623,8 @@ model Admin {
         // Debug: List all generated files
         console.log('🔍 Generated files in:', schemasDir);
         if (existsSync(schemasDir)) {
-          const files = require('fs').readdirSync(schemasDir);
+          const { readdirSync } = await import('fs');
+          const files = readdirSync(schemasDir);
           console.log('🔍 Schema files:', files.filter(f => f.endsWith('.ts')));
         }
 

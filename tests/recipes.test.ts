@@ -45,10 +45,10 @@ describe('Recipes configuration validity', () => {
 
     // Log warnings to help maintainers tune recipes, but don't fail on warnings
     if (warningsCollected.length > 0) {
-      // eslint-disable-next-line no-console
+       
       console.warn('\nRecipe validation warnings:');
       for (const w of warningsCollected) {
-        // eslint-disable-next-line no-console
+         
         console.warn(`- ${w.file}:\n${w.warnings}`);
       }
     }

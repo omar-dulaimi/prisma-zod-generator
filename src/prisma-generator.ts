@@ -105,12 +105,12 @@ export async function generate(options: GeneratorOptions) {
                 configFileOptions = parseResult.config;
                 console.log(`📋 Found configuration at: ${path}`);
                 break;
-              } catch (e) {
+              } catch {
                 // Continue to next path
               }
             }
           }
-        } catch (discoveryError) {
+  } catch {
           console.log(`📋 No configuration file found, using defaults`);
         }
       }
@@ -137,7 +137,7 @@ export async function generate(options: GeneratorOptions) {
       logConfigurationPrecedence(extendedOptions, configFileOptions, generatorOptionOverrides);
       
     } catch (configError) {
-      console.warn(`⚠️  Configuration loading failed, using defaults: ${configError}`);
+      console.warn(`⚠️  Configuration loading failed, using defaults: ${String(configError)}`);
       // Fall back to defaults
       generatorConfig = processConfiguration({});
   }
@@ -1278,7 +1278,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
 
   // Also write a compatibility .schema.ts file using Schema naming
   const schemaCompatPath = `${modelsOutputPath}/${modelName}.schema.ts`;
-  let schemaCompatContent = originalContent
+  const schemaCompatContent = originalContent
     // Rename exported constant from Model -> Schema
     .replace(new RegExp(`export const ${modelName}Model`, 'g'), `export const ${modelName}Schema`)
     // Update typeof references

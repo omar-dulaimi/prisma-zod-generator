@@ -525,7 +525,7 @@ function parseMethodChain(chainString: string, context: FieldCommentContext): Pa
     if (methodEnd < chainString.length && chainString[methodEnd] === '(') {
       // Find matching closing parenthesis, handling nested parentheses
       let parenCount = 1;
-      let paramStart = methodEnd + 1;
+      const paramStart = methodEnd + 1;
       let paramEnd = paramStart;
       
       while (paramEnd < chainString.length && parenCount > 0) {
