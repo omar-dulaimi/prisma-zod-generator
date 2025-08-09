@@ -906,7 +906,11 @@ export default class Transformer {
         );
       } else if (inputType.type === 'DateTime') {
         result.push(
-          this.wrapWithZodValidators('z.coerce.date()', field, inputType),
+          this.wrapWithZodValidators(
+            'z.union([z.date(), z.iso.datetime()])',
+            field,
+            inputType,
+          ),
         );
       } else if (inputType.type === 'Json') {
         this.hasJson = true;
@@ -1016,6 +1020,11 @@ export default class Transformer {
 
     if (inputType.isList) {
       line += '.array()';
+      if (inputType.type === 'DateTime') {
+        line = 'z.union([z.date().array(), z.iso.datetime().array()])';
+      } else {
+        line += '.array()';
+      }
     }
 
     // Handle optionality correctly - add .optional() before any validations if field is optional
