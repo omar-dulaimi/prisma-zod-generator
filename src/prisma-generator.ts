@@ -1,26 +1,26 @@
 import {
-  DMMF,
-  EnvValue,
-  GeneratorConfig,
-  GeneratorOptions,
+    DMMF,
+    EnvValue,
+    GeneratorConfig,
+    GeneratorOptions,
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-  generatorOptionsToConfigOverrides,
-  getLegacyMigrationSuggestions,
-  isLegacyUsage,
-  parseGeneratorOptions,
-  validateGeneratorOptions
+    generatorOptionsToConfigOverrides,
+    getLegacyMigrationSuggestions,
+    isLegacyUsage,
+    parseGeneratorOptions,
+    validateGeneratorOptions
 } from './config/generator-options';
 import { GeneratorConfig as CustomGeneratorConfig, parseConfiguration } from './config/parser';
 import {
-  addMissingInputObjectTypes,
-  hideInputObjectTypesAndRelatedFields,
-  resolveAddMissingInputObjectTypeOptions,
-  resolveModelsComments,
+    addMissingInputObjectTypes,
+    hideInputObjectTypesAndRelatedFields,
+    resolveAddMissingInputObjectTypeOptions,
+    resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -397,7 +397,7 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models:
       if (modelName) {
         // Apply field filtering using the transformer's filtering logic
         // Cast to the expected type to handle ReadonlyDeep wrapper
-        filteredFields = Transformer.filterFields(originalFields as any, modelName, variant, models);
+  filteredFields = Transformer.filterFields(originalFields as any, modelName, variant, models, name);
       }
     }
     
