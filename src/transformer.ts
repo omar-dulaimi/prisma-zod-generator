@@ -1,13 +1,13 @@
 import type {
-    ConnectorType,
-    DMMF as PrismaDMMF,
+  ConnectorType,
+  DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-    findModelByName,
-    isMongodbRawOp,
+  findModelByName,
+  isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -906,7 +906,11 @@ export default class Transformer {
         );
       } else if (inputType.type === 'DateTime') {
         result.push(
-          this.wrapWithZodValidators('z.coerce.date()', field, inputType),
+          this.wrapWithZodValidators(
+            'z.union([z.date(), z.iso.datetime()])',
+            field,
+            inputType,
+          ),
         );
       } else if (inputType.type === 'Json') {
         this.hasJson = true;
@@ -1015,10 +1019,18 @@ export default class Transformer {
     }
 
     if (inputType.isList) {
-      line += '.array()';
+      if (inputType.type === 'DateTime') {
+        // For DateTime lists, support both Date and ISO datetime arrays
+        line = 'z.union([z.date().array(), z.iso.datetime().array()])';
+      } else {
+        // Append array() only once to avoid duplication
+        if (!line.includes('.array()')) {
+          line += '.array()';
+        }
+      }
     }
 
-    // Handle optionality correctly - add .optional() before any validations if field is optional
+  // Handle optionality correctly - add .optional() before any validations if field is optional
     if (!field.isRequired) {
       if (hasEnhancedZodSchema) {
         // For enhanced schemas, check if optionality is already handled
@@ -1039,6 +1051,9 @@ export default class Transformer {
         line += '.optional()';
       }
     }
+
+  // Final safety: collapse any accidental duplicate array() chaining (e.g., .array().array())
+  line = line.replace(/(\.array\(\))+$/, '.array()');
 
     return line;
   }
@@ -1213,7 +1228,7 @@ export default class Transformer {
         const prismaType = this.resolvePrismaTypeForObject(exportName);
         if (prismaType) {
           lines.push(
-            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}> = ${schema};`,
+            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}, ${prismaType}> = ${schema};`,
           );
         } else {
           // Fallback to untyped if we cannot resolve a safe Prisma type
@@ -2447,7 +2462,7 @@ export default class Transformer {
       selectFields.push(`  _count: z.boolean().optional()`);
     }
     
-    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select> = z.object({
+    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = z.object({
 ${selectFields.join(',\n')}
 }).strict()`;
   }
@@ -2490,7 +2505,7 @@ ${selectFields.join(',\n')}
     // Generate typed schema (perfect inference, no methods)
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
-      exports.push(`export const ${typedName}: z.ZodType<Prisma.${prismaType}> = ${schemaDefinition};`);
+      exports.push(`export const ${typedName}: z.ZodType<${prismaType}, ${prismaType}> = ${schemaDefinition};`);
     }
 
     // Generate Zod schema (methods available, loose inference) 
@@ -2513,7 +2528,7 @@ ${selectFields.join(',\n')}
     // Generate typed select schema
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operation ? operation : ''}Select${Transformer.typedSchemaSuffix}`;
-      exports.push(`export const ${typedName}: z.ZodType<Prisma.${modelName}Select> = ${schemaDefinition};`);
+      exports.push(`export const ${typedName}: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = ${schemaDefinition};`);
     }
 
     // Generate Zod select schema  
