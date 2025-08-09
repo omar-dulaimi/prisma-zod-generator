@@ -1233,7 +1233,7 @@ export default class Transformer {
         const prismaType = this.resolvePrismaTypeForObject(exportName);
         if (prismaType) {
           lines.push(
-            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}> = ${schema};`,
+            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}, ${prismaType}> = ${schema};`,
           );
         } else {
           // Fallback to untyped if we cannot resolve a safe Prisma type
@@ -2467,7 +2467,7 @@ export default class Transformer {
       selectFields.push(`  _count: z.boolean().optional()`);
     }
     
-    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select> = z.object({
+    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = z.object({
 ${selectFields.join(',\n')}
 }).strict()`;
   }
@@ -2510,7 +2510,7 @@ ${selectFields.join(',\n')}
     // Generate typed schema (perfect inference, no methods)
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
-      exports.push(`export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition};`);
+      exports.push(`export const ${typedName}: z.ZodType<${prismaType}, ${prismaType}> = ${schemaDefinition};`);
     }
 
     // Generate Zod schema (methods available, loose inference) 
@@ -2533,7 +2533,7 @@ ${selectFields.join(',\n')}
     // Generate typed select schema
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operation ? operation : ''}Select${Transformer.typedSchemaSuffix}`;
-      exports.push(`export const ${typedName}: z.ZodType<Prisma.${modelName}Select> = ${schemaDefinition};`);
+      exports.push(`export const ${typedName}: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = ${schemaDefinition};`);
     }
 
     // Generate Zod select schema  
