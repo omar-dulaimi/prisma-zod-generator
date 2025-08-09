@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.3.0...v1.3.1) (2025-08-09)
+
+### 🐛 Bug Fixes
+
+* **objects:** inline object schema exports and add dual exports (typed + pure Zod) ([4af455c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4af455cd9ae264072b3e4c7b37457de49c250942))
+* **whereUniqueInput:** require and restrict fields to unique identifiers only for WhereUniqueInput ([becd08b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/becd08b1185f867beeb464bed24101b57cedc023))
+
 ## [1.3.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.2.0...v1.3.0) (2025-08-09)
 
 ### 🚀 Features
