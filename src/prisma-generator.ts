@@ -123,6 +123,7 @@ export async function generate(options: GeneratorOptions) {
       hiddenFields,
     );
     await generateObjectSchemas(mutableInputObjectTypes);
+    await generateEntityModelSchemas(models);
     await generateModelSchemas(
       models,
       mutableModelOperations,
@@ -217,4 +218,9 @@ async function generateModelSchemas(
 
 async function generateIndex() {
   await Transformer.generateIndex();
+}
+
+async function generateEntityModelSchemas(models: DMMF.Model[]) {
+  const transformer = new Transformer({ models });
+  await transformer.generateEntityModelSchemas();
 }

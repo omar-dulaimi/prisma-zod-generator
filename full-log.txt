@@ -1,0 +1,10 @@
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.12.0) to ./node_modules/@prisma/client in 73ms
+
+✔ Generated Prisma Zod Generator to ./prisma/generated in 1.23s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+

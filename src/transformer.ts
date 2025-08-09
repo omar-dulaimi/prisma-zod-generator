@@ -126,6 +126,105 @@ export default class Transformer {
     await writeIndexFile(indexPath);
   }
 
+  /**
+   * Generate plain Zod schemas for Prisma models (entity schemas)
+   * Example:
+   * export const UserSchema = z.object({ id: z.number().int(), ... })
+   * export type User = z.infer<typeof UserSchema>
+   */
+  async generateEntityModelSchemas() {
+    if (!this.models || this.models.length === 0) return;
+
+    for (const model of this.models) {
+      const { name: modelName, fields } = model;
+
+      const fieldLines: string[] = [];
+      const enumImports = new Set<string>();
+      let hasJson = false;
+
+      for (const field of fields) {
+        // Skip relation/object fields; only scalar and enum fields are part of base entity
+        if (field.kind === 'object') continue;
+
+        let validator: string;
+
+        if (field.kind === 'enum') {
+          const enumName = String(field.type);
+          enumImports.add(enumName);
+          validator = `${enumName}Schema`;
+        } else {
+          // scalar kinds
+          switch (field.type) {
+            case 'String':
+              validator = 'z.string()';
+              break;
+            case 'Int':
+              validator = 'z.number().int()';
+              break;
+            case 'Float':
+            case 'Decimal':
+              validator = 'z.number()';
+              break;
+            case 'BigInt':
+              validator = 'z.bigint()';
+              break;
+            case 'Boolean':
+              validator = 'z.boolean()';
+              break;
+            case 'DateTime':
+              validator = 'z.coerce.date()';
+              break;
+            case 'Json':
+              hasJson = true;
+              validator = 'jsonSchema';
+              break;
+            case 'Bytes':
+              validator = 'z.instanceof(Buffer)';
+              break;
+            default:
+              // Fallback for unsupported or unknown scalar types
+              validator = 'z.any()';
+          }
+        }
+
+        if (field.isList) {
+          validator += '.array()';
+        }
+
+        // For entity objects coming from DB, optional model fields appear as null, not undefined
+        // So we add .nullable() for non-required scalar/enum fields (except lists)
+        if (!field.isRequired && !field.isList) {
+          validator += '.nullable()';
+        }
+
+        fieldLines.push(`  ${field.name}: ${validator}`);
+      }
+
+      let content = this.generateImportZodStatement();
+
+      for (const enumName of enumImports) {
+        content += `${this.generateImportStatement(`${enumName}Schema`, `../enums/${enumName}.schema`)}\n`;
+      }
+
+      if (hasJson) {
+        content += `\n`;
+        content += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
+        content += `const jsonSchema = z.lazy(() =>\n`;
+        content += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])\n`;
+        content += `);\n\n`;
+      }
+
+      const objectDefinition = `z.object({\n${fieldLines.join(',\n')}\n})`;
+      content += `${this.generateExportSchemaStatement(modelName, objectDefinition)}\n\n`;
+      content += `export type ${modelName} = z.infer<typeof ${modelName}Schema>`;
+
+      await writeFileSafely(
+        path.join(Transformer.getSchemasPath(), `models/${modelName}.schema.ts`),
+        content,
+      );
+    }
+  }
+
   async generateEnumSchemas() {
     for (const enumType of this.enumTypes) {
       const { name, values } = enumType;
