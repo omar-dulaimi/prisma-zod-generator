@@ -1,3 +1,9 @@
+## [1.4.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.4.0...v1.4.1) (2025-08-09)
+
+### 🐛 Bug Fixes
+
+* **transformer:** correct list handling to avoid duplicate array() and support DateTime[] union\n\n- Use z.union([z.date().array(), z.iso.datetime().array()]) for DateTime lists\n- Append .array() only once and collapse accidental duplicates\n- Preserve optionality behavior with enhanced schemas ([2e75b93](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2e75b9366365acc6a1593e6b0fe7b0e2eb73c54d))
+
 ## [1.4.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.3.1...v1.4.0) (2025-08-09)
 
 ### 🚀 Features
