@@ -7,9 +7,9 @@
     "prisma-zod-generator": "lib/generator.js"
   },
   "scripts": {
-  "build": "tsc",
-  "exec": "npm run gen-example && npm run test:features:filtering -- -t \"should handle combinations of model, operation, and field filtering\"",
-  "gen-example": "tsc && DEBUG=1 npx prisma generate > full-log.txt 2>&1",
+    "build": "tsc",
+    "exec": "npm run gen-example && npm run test:features:filtering -- -t \"should handle combinations of model, operation, and field filtering\"",
+    "gen-example": "tsc && DEBUG=1 npx prisma generate > full-log.txt 2>&1",
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish",
     "test": "vitest | tee generation-output.txt",
@@ -50,7 +50,7 @@
     "test:features:results": "vitest run tests/result-schemas.test.ts",
     "test:integration": "vitest run tests/integration.test.ts",
     "test:integration:coverage": "vitest run --coverage tests/integration.test.ts",
-  "validate:schemas:quick": "npx tsc --noEmit -p tsconfig.validate.json",
+    "validate:schemas:quick": "npx tsc --noEmit -p tsconfig.validate.json",
     "test:full": "npm run test:basic && npm run test:multi && npm run test:features",
     "test:full:coverage": "npm run test:coverage:fast && npm run test:multi:coverage && npm run test:features:coverage && npm run test:integration:coverage",
     "test:comprehensive": "VITEST_PARALLEL=true npm run test:full:coverage",

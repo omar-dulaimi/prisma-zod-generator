@@ -1,3 +1,54 @@
+## [1.3.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.2.0...v1.3.0) (2025-08-09)
+
+### 🚀 Features
+
+* Add comprehensive debug logging for filtering ([5309680](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5309680ddd99dd608f153228c2ceb17bfba197b3))
+* add core configuration and type system ([2923825](https://github.com/omar-dulaimi/prisma-zod-generator/commit/29238255ac2b3294ef60bd79c8bec00d2a31c4b6))
+* Add example configuration and update test schema ([aca8311](https://github.com/omar-dulaimi/prisma-zod-generator/commit/aca8311adac3a162b042bb2b5fa89548bf3f9a82))
+* Add legacy configuration transformation and auto-discovery ([f5612a5](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f5612a5009ddf25823cfb0b5af693ca2fe357891))
+* add schema variant system ([f133d1a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f133d1ad9e30503aecb1ad257243109b3f3ffc20))
+* add utility modules ([3446571](https://github.com/omar-dulaimi/prisma-zod-generator/commit/34465710d0e6dcb19c17eb0f3e7c3c93a5b3fe03))
+* Enhance configuration auto-discovery in generator ([2985a4b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2985a4b453bd513d12f73e171035d4fe9448d66d))
+* **generator:** add strict single-file output mode with in-process aggregator; skip variants in single-file; place bundle at output root by default via placeSingleFileAtRoot; include tests and validation tsconfig ([2296b30](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2296b30396293ff86ebef8854fd9519114f8ea05))
+* implement foreign key preservation for excluded relation fields ([52897f3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/52897f3347edec6373e5e9ee3cc1d29b9c743123))
+* integrate advanced filtering and configuration ([20a5313](https://github.com/omar-dulaimi/prisma-zod-generator/commit/20a53135810bcf0cff2a7edc3e3383a9a89b4d8c))
+* integrate zod-integration system with main generator pipeline ([fcc396e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/fcc396e38d8861d66bfb968039d2847857f33146))
+* **validation:** add comprehensive schema validation infrastructure ([6da9e61](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6da9e6170846118eccf80a139fdbc9d9d33d7c2e))
+* **variants:** generate array/object variants under schemas/variants by default and add variants barrel to main index; fix index exports\n\nAlso: pure models improvements (Bytes base64 mapping, JSON record handling, dedupe defaults), union formatting to single line, enum string arrays, and minimal-mode schema emission stability. All feature tests pass. ([9ea8a46](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9ea8a46cd62ed20d41513de2afec764e59a43b15))
+
+### 🐛 Bug Fixes
+
+* **ci:** generate per-file schemas in example to satisfy tests (useMultipleFiles=true) ([c32e6b8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c32e6b8bef9d5873e936d07a75a7f6849374f10a))
+* **config:** resolve tsconfig.json typeRoots and include paths ([976fb49](https://github.com/omar-dulaimi/prisma-zod-generator/commit/976fb49dfe6de37f2b9cbd4535a492fc0bd84e99))
+* correct config path handling in field exclusion tests ([67bcbf2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/67bcbf2ae072e1fd2c967c8ed116da775e2e8f5c))
+* correct test configurations and schema generation issues ([d1af961](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d1af961a63d1be8c8c986d923ea601ad205d8915))
+* enhance [@zod](https://github.com/zod) annotation parsing and validation ([f965e22](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f965e22ba334a8e849a7d425e24ed317c3157291))
+* enhance [@zod](https://github.com/zod) method parameter validation for custom error messages ([4d06ec4](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4d06ec44aeac96921da5c0714f31f86692fc2379))
+* Enhance model filtering to prevent disabled model schemas in nested folders ([c34e995](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c34e995b5d1a500972e2e4953b16326b9f864958))
+* **generator:** correct Zod method chaining order for optional and nullable fields ([0effdf2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0effdf277763ee6717f431e0bcf8de9ef1c7180c))
+* implement comprehensive Zod comment parsing engine ([154aaa1](https://github.com/omar-dulaimi/prisma-zod-generator/commit/154aaa1953e0d0dd3a62a263507c741ae97d0d1f))
+* Improve field exclusion system and foreign key preservation ([e857e6a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e857e6ac67b2b2814c6dad79b840ea382109bd8f))
+* improve regex validation and resolve optional redundancy in zod schema generation ([5ccce49](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5ccce495f1f4cd9eed972ee7dd5fd8435fa8862f))
+* prevent duplicate .optional() calls in enhanced zod schemas ([b7eb5e0](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b7eb5e008fcb0df9546c8c66745eac7d458a4642))
+* remove unused ObjectSchema imports from result schemas ([488e838](https://github.com/omar-dulaimi/prisma-zod-generator/commit/488e83807d05798213f25772ac3bcc4def0b76f9))
+* replace deprecated Zod API usage ([9e46bcc](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9e46bcc482d0dc5c0cf2007474b7cf4c58d13ecf))
+* replace deprecated Zod API usage ([92d2537](https://github.com/omar-dulaimi/prisma-zod-generator/commit/92d25376ecaac59a2fb7f589c29a9596f0cbd184))
+* resolve [@zod](https://github.com/zod) annotation method validation and parameter formatting ([918d15c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/918d15cb24bbadb480d0492a49ca4b3de26ce26b))
+* Resolve config path resolution issues in tests ([2cdb6fc](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2cdb6fcc7c5704a5c01bd5c2ad0f9627cd1b5708))
+* resolve ESLint errors to unblock release (unused vars, require->import) ([becfbdb](https://github.com/omar-dulaimi/prisma-zod-generator/commit/becfbdb28da17904ec0299b42c36baa04b13b0c2))
+* resolve field exclusion system configuration issues ([2f50c4a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2f50c4aaed7d79884ca17409c6fbac9fe6c144ae))
+* resolve test configuration and template variable issues ([fc10758](https://github.com/omar-dulaimi/prisma-zod-generator/commit/fc10758b6f992c862f3593f81c9c4da2c6b4b5bd))
+* update supporting modules and test infrastructure ([0bd5d56](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0bd5d56acc1c7862c6e1f54e2b2bca3a537a7a41))
+
+### ♻️ Code Refactoring
+
+* enhance helper modules with filtering support ([4938d6e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4938d6e4359726ab464b02c6b83cbf5c161fe11b))
+* **parser:** remove duplicate base type method configurations ([4f5f7f1](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4f5f7f1c216af8a36bff3b10aef862fc919246e4))
+
+### 📚 Documentation
+
+* add comprehensive documentation ([d96c872](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d96c8721d44558f4bbeb75d43346698b26db7d61))
+
 ## [1.2.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.1.1...v1.2.0) (2025-08-07)
 
 ### 🚀 Features
