@@ -1,3 +1,13 @@
+## [1.5.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.4.2...v1.5.0) (2025-08-10)
+
+### 🚀 Features
+
+* **config,transformer:** add strictCreateInputs/preserveRequiredScalarsOnCreate and apply to Create-like inputs; use Omit<> for typed exports when filtered\n\n- config: introduce strictCreateInputs (default true) and preserveRequiredScalarsOnCreate (default true)\n- transformer: respect flags for Create* inputs; re-add required scalars in filtered mode; track excluded fields and wrap typed exports with Omit<>\n- tests/recipes/docs: update helpers and recipes; document options in README ([cf48027](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cf480274d1a5e66c3d8744645711794d0bab6b4e))
+
+### 🐛 Bug Fixes
+
+* ensure enum value imports are present in variant schemas (post-merge release trigger) ([aed7e61](https://github.com/omar-dulaimi/prisma-zod-generator/commit/aed7e61a3e5e597573d527c51de82b7621d2a99b))
+
 ## [1.4.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.4.1...v1.4.2) (2025-08-10)
 
 ### 🐛 Bug Fixes

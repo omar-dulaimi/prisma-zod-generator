@@ -1,6 +1,6 @@
 {
   "name": "prisma-zod-generator",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
@@ -63,6 +63,8 @@
     "prerelease": "npm run gen-example && npm run test:type-check && npm run lint",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run",
+    "release:predict": "git fetch --tags --quiet && semantic-release --dry-run --no-ci --plugins @semantic-release/commit-analyzer",
+    "release:predict:notes": "git fetch --tags --quiet && semantic-release --dry-run --no-ci --plugins @semantic-release/commit-analyzer,@semantic-release/release-notes-generator",
     "ci:test": "npm run test:comprehensive",
     "ci:build": "npm run gen-example"
   },
