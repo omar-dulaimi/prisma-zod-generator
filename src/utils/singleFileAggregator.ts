@@ -91,14 +91,6 @@ function transformContentForSingleFile(filePath: string, source: string): string
     }
   }
 
-  // Loosen strict type annotations that bind schemas to Prisma types, to prevent
-  // cross-file inference mismatch in the monolithic bundle. The runtime validation
-  // remains identical.
-  text = text
-    // export const X: z.ZodType<...> = ...  -> export const X = ...
-    .replace(/export\s+const\s+(\w+)\s*:\s*z\.ZodType<[^>]+>\s*=\s*/g, 'export const $1 = ')
-    // const X: z.ZodType<...> = ... -> const X = ...
-    .replace(/(^|\n)\s*const\s+(\w+)\s*:\s*z\.ZodType<[^>]+>\s*=\s*/g, (_m, p1, name) => `${p1}const ${name} = `);
 
   // Heuristic: if native enums are referenced (e.g., z.enum(Role) or z.nativeEnum(Role)),
   // hoist those enum names as value imports from @prisma/client

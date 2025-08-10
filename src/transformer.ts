@@ -349,9 +349,22 @@ export default class Transformer {
     // Do NOT apply variant-based exclusions to this schema type
     const isWhereUniqueInput = !!schemaName && /WhereUniqueInput$/.test(schemaName);
 
+    // Do not apply variant-based field exclusions to base Prisma Create input object schemas
+    // These must strictly match Prisma types to satisfy typed Zod bindings
+    const isBasePrismaCreateInput = !!schemaName && [
+      /^(\w+)CreateInput$/,
+      /^(\w+)UncheckedCreateInput$/,
+      /^(\w+)CreateManyInput$/,
+      /^(\w+)CreateMany\w+Input$/,
+      /^(\w+)CreateWithout\w+Input$/,
+      /^(\w+)UncheckedCreateWithout\w+Input$/,
+      /^(\w+)CreateOrConnectWithout\w+Input$/,
+      /^(\w+)CreateNested(?:One|Many)Without\w+Input$/
+    ].some((re) => re.test(schemaName));
+
     const filteredFields = fields.filter(field => {
       // Check basic field inclusion rules
-      if (!isWhereUniqueInput && !this.isFieldEnabled(field.name, modelName, variant)) {
+      if (!isWhereUniqueInput && !isBasePrismaCreateInput && !this.isFieldEnabled(field.name, modelName, variant)) {
         return false;
       }
       
@@ -370,7 +383,7 @@ export default class Transformer {
     // Handle foreign key preservation when relation fields are excluded
     const result = [...filteredFields];
     
-    if (modelName && variant === 'input' && models) {
+    if (modelName && variant === 'input' && !isBasePrismaCreateInput && models) {
       const model = models.find((m: PrismaDMMF.Model) => m.name === modelName);
       if (model) {
         const excludedRelationFields = this.getExcludedRelationFields(fields, filteredFields, model);
