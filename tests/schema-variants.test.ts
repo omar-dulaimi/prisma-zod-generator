@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { 
-  TestEnvironment, 
-  ConfigGenerator, 
+import { describe, expect, it } from 'vitest';
+import {
+  ConfigGenerator,
+  FileSystemUtils,
+  GENERATION_TIMEOUT,
   PrismaSchemaGenerator,
   SchemaValidationUtils,
-  FileSystemUtils,
-  GENERATION_TIMEOUT 
+  TestEnvironment
 } from './helpers';
 
 describe('Schema Variant Management System Tests', () => {
@@ -749,6 +749,145 @@ model User {
           expect(content).toMatch(/export.*from.*\.\/variants/);
         }
 
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+  });
+
+  describe('Enum import handling in variant files', () => {
+    it('should import a single enum from @prisma/client in variant schemas', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('schema-variants-enum-single');
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id    Int   @id @default(autoincrement())
+  email String @unique
+  role  Role
+}
+`; 
+
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const userPurePath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'User.pure.ts');
+        expect(existsSync(userPurePath)).toBe(true);
+        const content = readFileSync(userPurePath, 'utf-8');
+
+        expect(content).toMatch(/import\s*\{\s*Role\s*\}\s*from\s*'@prisma\/client';/);
+        expect(content).toMatch(/role:\s*z\.enum\(Role\)/);
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('should import multiple enums exactly once in variant schemas', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('schema-variants-enum-multiple');
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id     Int    @id @default(autoincrement())
+  email  String @unique
+  role   Role
+  status Status?
+}
+`; 
+
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const userPurePath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'User.pure.ts');
+        expect(existsSync(userPurePath)).toBe(true);
+        const content = readFileSync(userPurePath, 'utf-8');
+
+        // Exactly one value import line from @prisma/client
+        const importLines = content.match(/import\s*\{[^}]*\}\s*from\s*'@prisma\/client';/g) || [];
+        expect(importLines.length).toBe(1);
+        expect(importLines[0]).toMatch(/\{[^}]*Role[^}]*\}/);
+        expect(importLines[0]).toMatch(/\{[^}]*Status[^}]*\}/);
+
+  // Ensure enum usages are present (allow optional/nullable variations)
+  expect(content).toMatch(/role:\s*z\.enum\(Role\)/);
+  expect(content).toMatch(/status:\s*z\.enum\(Status\)(?:\.(?:optional|nullable)\(\))?/);
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('should not add @prisma/client value import when no enums are used', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('schema-variants-no-enum');
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['User'],
+          generatorOptions: { config: './config.json' },
+          outputPath: `${testEnv.outputDir}/schemas`
+        });
+
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const userPurePath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'User.pure.ts');
+        expect(existsSync(userPurePath)).toBe(true);
+        const content = readFileSync(userPurePath, 'utf-8');
+
+        // No value import from @prisma/client should exist when no enums
+        expect(/import\s*\{[^}]*\}\s*from\s*'@prisma\/client';/.test(content)).toBe(false);
       } finally {
         await testEnv.cleanup();
       }
