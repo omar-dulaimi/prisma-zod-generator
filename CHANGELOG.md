@@ -1,3 +1,9 @@
+## [1.4.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.4.1...v1.4.2) (2025-08-10)
+
+### 🐛 Bug Fixes
+
+* ensure enum value imports are present in variant schemas (post-merge release trigger) ([b3dde64](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b3dde645435eeab49ff02e37be4b9eef2eddd772))
+
 ## [1.4.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.4.0...v1.4.1) (2025-08-09)
 
 ### 🐛 Bug Fixes
