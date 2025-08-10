@@ -56,6 +56,27 @@ export interface GeneratorConfig {
   addIncludeType?: boolean;
 
   /**
+   * When true (default), Create-like input schemas bypass exclusions and strictly
+   * match Prisma types. When false, exclusions may apply to Create-like inputs.
+   */
+  strictCreateInputs?: boolean;
+
+  /**
+   * When strictCreateInputs is false, preserve required non-auto scalar fields
+   * (e.g., required id without default) in Create-like inputs even if excluded.
+   * Default: true.
+   */
+  preserveRequiredScalarsOnCreate?: boolean;
+
+  /**
+   * When true, operation Args that accept Create-like inputs should be typed
+   * from the generated Zod schema (or its inferred type) instead of Prisma.*.
+   * Default: false. Note: current generator primarily types object schemas; this
+   * flag is reserved for Args typing alignment where applicable.
+   */
+  inferCreateArgsFromSchemas?: boolean;
+
+  /**
    * When using array-based variants, place generated variant files at schemas root.
    * If false, place them under a variants/ directory with an index.ts. Default: true (root).
    */

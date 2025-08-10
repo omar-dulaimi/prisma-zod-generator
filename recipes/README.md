@@ -35,6 +35,20 @@ Notes:
 3) Adjust `output`, operations, model names, and exclusions to match your needs.
 4) Run generation.
 
+## Create input strictness options
+
+Two config switches control how Create-like inputs handle exclusions:
+
+- strictCreateInputs (boolean, default: true)
+  - true: Create* inputs match Prisma exactly; exclusions do not apply to these inputs.
+  - false: Exclusions apply to Create* inputs as well.
+- preserveRequiredScalarsOnCreate (boolean, default: true)
+  - When strictCreateInputs is false, this keeps truly required scalar fields present in Create* inputs even if they are listed for exclusion.
+
+Tip: To fully hide fields (including required scalars) from Create* inputs, set:
+
+{ "strictCreateInputs": false, "preserveRequiredScalarsOnCreate": false }
+
 ## Acknowledgements
 
 These recipes are distilled from community requests and discussions in issues: #140, #139, #84, #80, #75, #72, #49, #43.

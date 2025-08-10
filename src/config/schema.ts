@@ -68,6 +68,22 @@ export const ConfigurationSchema: JSONSchema7 = {
       default: false,
       description: 'Legacy option: also generate Include type'
     },
+
+    strictCreateInputs: {
+      type: 'boolean',
+      default: true,
+      description: 'When true, Create-like inputs bypass exclusions and strictly match Prisma types'
+    },
+    preserveRequiredScalarsOnCreate: {
+      type: 'boolean',
+      default: true,
+      description: 'When strictCreateInputs is false, keep required non-auto scalars in Create-like inputs even if excluded'
+    },
+    inferCreateArgsFromSchemas: {
+      type: 'boolean',
+      default: false,
+      description: 'When true, Args for create operations infer types from generated schemas instead of Prisma.*'
+    },
     
     globalExclusions: {
       type: 'object',

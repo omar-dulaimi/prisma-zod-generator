@@ -1,6 +1,8 @@
 {
   "mode": "custom",
   "output": "./prisma/generated",
+  "strictCreateInputs": false,
+  "preserveRequiredScalarsOnCreate": false,
   "globalExclusions": {
     "pure": ["password", "hashedPassword"],
     "input": [],

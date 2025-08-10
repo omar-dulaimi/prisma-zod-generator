@@ -627,6 +627,32 @@ model User {
 </details>
 
 <details>
+<summary><strong>🧭 Create input strictness</strong></summary>
+
+Control how Create-like inputs respect field exclusions.
+
+- strictCreateInputs (boolean, default: true)
+  - true: Create-like inputs (CreateInput, UncheckedCreateInput, CreateMany*, CreateWithout*, CreateOrConnectWithout*, CreateNested*Without*) match Prisma exactly; exclusions do not apply.
+  - false: Apply exclusions to these Create-like inputs as well.
+- preserveRequiredScalarsOnCreate (boolean, default: true)
+  - When strictCreateInputs is false, keep truly required scalar fields even if excluded. Set to false to omit them too (advanced use only).
+
+Type parity with filtered Create inputs:
+- When exclusions apply to Create-like inputs, the typed export binds to Omit<Prisma.Type, 'excluded' | ...> so TypeScript matches the Zod shape.
+
+JSON config example:
+
+```json
+{
+  "globalExclusions": { "input": ["password", "internalId"] },
+  "strictCreateInputs": false,
+  "preserveRequiredScalarsOnCreate": true
+}
+```
+
+</details>
+
+<details>
 <summary><strong>📝 @zod Comment Annotations</strong></summary>
 
 ### Inline Validation Rules
