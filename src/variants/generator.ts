@@ -4,14 +4,13 @@
  */
 
 import { DMMF } from '@prisma/generator-helper';
-import { VariantType, VariantGenerationResult, ModelVariantCollection } from '../types/variants';
-import { VariantConfigurationManager } from './config';
-import { VariantConfig } from '../types/variants';
-import { VariantNamingSystem, NamingResult } from '../utils/naming';
-import { PrismaTypeMapper } from '../generators/model';
-import { writeFileSafely } from '../utils/writeFileSafely';
-import { formatFile } from '../utils/formatFile';
 import { promises as fs } from 'fs';
+import { PrismaTypeMapper } from '../generators/model';
+import { ModelVariantCollection, VariantConfig, VariantGenerationResult, VariantType } from '../types/variants';
+import { formatFile } from '../utils/formatFile';
+import { NamingResult, VariantNamingSystem } from '../utils/naming';
+import { writeFileSafely } from '../utils/writeFileSafely';
+import { VariantConfigurationManager } from './config';
 
 /**
  * File generation context
@@ -367,10 +366,18 @@ export class VariantFileGenerationCoordinator {
     }
     if (usedEnums.size > 0) {
       const enumImportLine = `import { ${Array.from(usedEnums).join(', ')} } from '@prisma/client';`;
-      const hasImport = new RegExp(
-        `import\\s*\\{[^}]*\\b${Array.from(usedEnums).join('\\b|\\b')}\\b[^}]*\\}\\s*from\\s*['"]@prisma/client['"];?`
-      ).test(customizedContent);
-      if (!hasImport) {
+      // Check if an existing import from @prisma/client already includes all used enums
+      const importRegex = /import\s*\{([^}]*)\}\s*from\s*['"]@prisma\/client['"];?/;
+      const importMatch = customizedContent.match(importRegex);
+      let hasAllEnumImports = false;
+      if (importMatch) {
+        const importedEnums = importMatch[1]
+          .split(',')
+          .map(e => e.trim())
+          .filter(e => e.length > 0);
+        hasAllEnumImports = Array.from(usedEnums).every(enumName => importedEnums.includes(enumName));
+      }
+      if (!hasAllEnumImports) {
         // Insert after zod import
         customizedContent = customizedContent.replace(
           /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?\s*)/,
