@@ -257,6 +257,9 @@ export class ConfigGenerator {
       addSelectType: false,
       validateWhereUniqueInput: true,
       prismaClientPath: '@prisma/client',
+  // Test helper defaults: exercise filtered Create* inputs
+  strictCreateInputs: false,
+  preserveRequiredScalarsOnCreate: false,
       globalExclusions: {},
       variants: {
         pure: { enabled: true },

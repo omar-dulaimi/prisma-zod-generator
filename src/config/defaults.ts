@@ -48,6 +48,9 @@ export class DefaultConfigurationManager {
       output: DEFAULT_CONFIG.output,
   useMultipleFiles: true,
   singleFileName: 'schemas.ts',
+  strictCreateInputs: true,
+  preserveRequiredScalarsOnCreate: true,
+  inferCreateArgsFromSchemas: false,
       pureModels: false, // Default to false, can be overridden by user config
       globalExclusions: {
         input: [],

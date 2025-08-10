@@ -54,6 +54,8 @@ export default class Transformer {
   private static exportZodSchemas: boolean = true;        // Export pure Zod versions (method-friendly)
   private static typedSchemaSuffix: string = 'Schema';    // Suffix for typed schemas (PostFindManySchema)
   private static zodSchemaSuffix: string = 'ZodSchema';   // Suffix for Zod schemas (PostFindManyZodSchema)
+  // Track excluded field names for current object generation to inform typed Omit
+  private lastExcludedFieldNames: string[] | null = null;
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
@@ -345,13 +347,16 @@ export default class Transformer {
     models?: PrismaDMMF.Model[],
     schemaName?: string,
   ): PrismaDMMF.SchemaArg[] {
+  const config = this.getGeneratorConfig() || {} as any;
+  const strictCreateInputs = config.strictCreateInputs !== false; // default true
+  const preserveRequiredScalarsOnCreate = config.preserveRequiredScalarsOnCreate !== false; // default true
     // Special case: WhereUniqueInput must retain unique identifier fields (e.g., id, unique columns)
     // Do NOT apply variant-based exclusions to this schema type
     const isWhereUniqueInput = !!schemaName && /WhereUniqueInput$/.test(schemaName);
 
-    // Do not apply variant-based field exclusions to base Prisma Create input object schemas
-    // These must strictly match Prisma types to satisfy typed Zod bindings
-    const isBasePrismaCreateInput = !!schemaName && [
+  // Do not apply variant-based field exclusions to base Prisma Create input object schemas when strictCreateInputs is true
+  // These must strictly match Prisma types to satisfy typed Zod bindings
+  const isBasePrismaCreateInputName = !!schemaName && [
       /^(\w+)CreateInput$/,
       /^(\w+)UncheckedCreateInput$/,
       /^(\w+)CreateManyInput$/,
@@ -361,8 +366,9 @@ export default class Transformer {
       /^(\w+)CreateOrConnectWithout\w+Input$/,
       /^(\w+)CreateNested(?:One|Many)Without\w+Input$/
     ].some((re) => re.test(schemaName));
+  const isBasePrismaCreateInput = isBasePrismaCreateInputName && strictCreateInputs;
 
-    const filteredFields = fields.filter(field => {
+  let filtered = fields.filter(field => {
       // Check basic field inclusion rules
       if (!isWhereUniqueInput && !isBasePrismaCreateInput && !this.isFieldEnabled(field.name, modelName, variant)) {
         return false;
@@ -381,12 +387,12 @@ export default class Transformer {
     });
 
     // Handle foreign key preservation when relation fields are excluded
-    const result = [...filteredFields];
+    let result = [...filtered];
     
     if (modelName && variant === 'input' && !isBasePrismaCreateInput && models) {
       const model = models.find((m: PrismaDMMF.Model) => m.name === modelName);
       if (model) {
-        const excludedRelationFields = this.getExcludedRelationFields(fields, filteredFields, model);
+        const excludedRelationFields = this.getExcludedRelationFields(fields, filtered, model);
         const foreignKeyFields = this.getForeignKeyFieldsForExcludedRelations(excludedRelationFields, model);
         
         
@@ -402,6 +408,26 @@ export default class Transformer {
             } else {
               logger.debug(`🚫 Skipping excluded foreign key field: ${modelName}.${fkField.name}`);
             }
+          }
+        }
+      }
+    }
+
+    // If strictCreateInputs is false and this is a Create-like input, optionally re-add required non-auto scalars
+    if (!strictCreateInputs && isBasePrismaCreateInputName && preserveRequiredScalarsOnCreate && modelName && models) {
+      const model = models.find((m: PrismaDMMF.Model) => m.name === modelName);
+      if (model) {
+        const requiredScalars = model.fields.filter(f =>
+          (f as any).kind === 'scalar' &&
+          (f as any).isRequired === true &&
+          (f as any).hasDefaultValue !== true &&
+          (f as any).isUpdatedAt !== true
+        );
+        for (const f of requiredScalars) {
+          if (!result.some(arg => arg.name === f.name)) {
+            // Try to find the corresponding SchemaArg in original fields by name
+            const original = fields.find(arg => arg.name === f.name);
+            if (original) result.push(original);
           }
         }
       }
@@ -866,6 +892,11 @@ export default class Transformer {
     // Apply field filtering
   const originalFieldCount = this.fields.length;
   const filteredFields = Transformer.filterFields(this.fields, modelName || undefined, variant, this.models, this.name);
+  // Compute excluded field names for this schema context
+  const excluded = this.fields
+    .filter(orig => !filteredFields.some(f => f.name === orig.name))
+    .map(f => f.name);
+  this.lastExcludedFieldNames = excluded.length > 0 ? excluded : [];
     
     
     // Log field filtering if any fields were excluded
@@ -1231,14 +1262,33 @@ export default class Transformer {
     }
     // Build dual exports: a typed Prisma-bound schema and a pure Zod schema
     // Always export the typed name as `${exportName}ObjectSchema` for compatibility
-    const lines: string[] = [];
+  const lines: string[] = [];
 
     const supportsPrismaType = !name.endsWith('Args');
 
     if (Transformer.exportTypedSchemas) {
       if (supportsPrismaType) {
         // Determine correct Prisma type binding (some inputs use a *Type suffix)
-        const prismaType = this.resolvePrismaTypeForObject(exportName);
+        let prismaType = this.resolvePrismaTypeForObject(exportName);
+        // Optionally wrap with Omit<> when strictCreateInputs=false and fields were excluded on Create-like inputs
+        const config = Transformer.getGeneratorConfig() || {} as any;
+        const strictCreateInputs = config.strictCreateInputs !== false; // default true
+        const isInputVariant = Transformer.determineSchemaVariant(name) === 'input';
+        const isCreateLike = [
+          /^(\w+)CreateInput$/,
+          /^(\w+)UncheckedCreateInput$/,
+          /^(\w+)CreateManyInput$/,
+          /^(\w+)CreateMany\w+Input$/,
+          /^(\w+)CreateWithout\w+Input$/,
+          /^(\w+)UncheckedCreateWithout\w+Input$/,
+          /^(\w+)CreateOrConnectWithout\w+Input$/,
+          /^(\w+)CreateNested(?:One|Many)Without\w+Input$/
+        ].some((re) => re.test(exportName));
+        const excludedNames = this.lastExcludedFieldNames || [];
+        if (!strictCreateInputs && isInputVariant && isCreateLike && excludedNames.length > 0 && prismaType) {
+          const union = excludedNames.map(n => `'${n}'`).join(' | ');
+          prismaType = `Omit<${prismaType}, ${union}>`;
+        }
         if (prismaType) {
           lines.push(
             `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}, ${prismaType}> = ${schema};`,
