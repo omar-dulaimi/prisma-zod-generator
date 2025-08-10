@@ -9,8 +9,8 @@
   "scripts": {
     "build": "tsc",
     "exec": "npm run gen-example && npm run test:features:filtering -- -t \"should handle combinations of model, operation, and field filtering\"",
-    "gen-example": "tsc && npx prisma generate > full-log.txt 2>&1",
-    "gen-example:debug": "tsc && DEBUG_PRISMA_ZOD=1 npx prisma generate > full-log.txt 2>&1",
+    "gen-example": "tsc && npx prisma generate",
+    "gen-example:debug": "tsc && DEBUG_PRISMA_ZOD=1 npx prisma generate",
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "npm update && npm run check-uncommitted && ./package.sh && cd package && npm publish",
     "test": "vitest | tee generation-output.txt",
