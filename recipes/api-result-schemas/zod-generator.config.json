@@ -1,6 +1,5 @@
 {
   "mode": "custom",
-  "output": "./src/schemas",
   "pureModels": false,
   "variants": {
     "pure": { "enabled": false, "suffix": ".model" },

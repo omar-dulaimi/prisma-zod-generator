@@ -1,6 +1,5 @@
 {
   "mode": "custom",
-  "output": "./src/zod",
   "pureModels": false,
   "globalExclusions": {
     "input": ["id", "createdAt", "updatedAt"],

@@ -1,0 +1,7 @@
+generator zodMinimalCrud {
+  provider         = "prisma-zod-generator"
+  output           = "./prisma/generated"
+  useMultipleFiles = true
+  // Alternatively, you can add minimal = true here, but JSON already sets mode
+  config           = "./zod-generator.config.json"
+}

@@ -244,45 +244,59 @@ export function parseJsonConfig(content: string, filePath?: string): GeneratorCo
 /**
  * Transform legacy configuration format to new format
  */
-function transformLegacyConfig(config: any): any {
-  const transformed = { ...config };
+type LegacyModelConfig = {
+  fields?: { exclude?: string[] };
+  variants?: { [K in 'pure' | 'input' | 'result']?: { excludeFields?: string[] } };
+  [key: string]: unknown;
+};
+
+function transformLegacyConfig(config: unknown): GeneratorConfig {
+  const base = (typeof config === 'object' && config !== null ? config : {}) as Record<string, unknown> & {
+    addSelectType?: unknown;
+    addIncludeType?: unknown;
+    models?: Record<string, LegacyModelConfig>;
+  };
+  const transformed: Record<string, unknown> & { models?: Record<string, LegacyModelConfig> } = { ...base };
   
   // Handle legacy Include/Select options
-  if (config.addSelectType !== undefined) {
-    logger.debug(`🔄 Preserving legacy addSelectType: ${config.addSelectType}`);
-    transformed.addSelectType = Boolean(config.addSelectType);
+  if (base.addSelectType !== undefined) {
+    logger.debug(`🔄 Preserving legacy addSelectType: ${String(base.addSelectType)}`);
+    (transformed as GeneratorConfig).addSelectType = Boolean(base.addSelectType);
   }
   
-  if (config.addIncludeType !== undefined) {
-    logger.debug(`🔄 Preserving legacy addIncludeType: ${config.addIncludeType}`);
-    transformed.addIncludeType = Boolean(config.addIncludeType);
+  if (base.addIncludeType !== undefined) {
+    logger.debug(`🔄 Preserving legacy addIncludeType: ${String(base.addIncludeType)}`);
+    (transformed as GeneratorConfig).addIncludeType = Boolean(base.addIncludeType);
   }
   
   // Transform model-specific legacy fields.exclude to variants format
   if (transformed.models) {
-    Object.keys(transformed.models).forEach(modelName => {
-      const modelConfig = transformed.models[modelName];
+    const models = transformed.models;
+    Object.keys(models).forEach(modelName => {
+      const modelConfig = models[modelName];
       
-      if (modelConfig.fields?.exclude) {
+  if (modelConfig.fields?.exclude && modelConfig.fields.exclude.length > 0) {
         logger.debug(`🔄 Transforming legacy fields.exclude for model ${modelName}:`, modelConfig.fields.exclude);
         
-        // Initialize variants if it doesn't exist
-        if (!modelConfig.variants) {
-          modelConfig.variants = {};
-        }
+        // Ensure variants object exists and work with a local, typed reference
+        const variants = (
+          modelConfig.variants ?? {}
+        ) as NonNullable<LegacyModelConfig['variants']>;
+        // ensure modelConfig keeps the same reference
+        modelConfig.variants = variants;
         
         // Apply fields.exclude to all variants
         ['pure', 'input', 'result'].forEach(variant => {
-          if (!modelConfig.variants[variant]) {
-            modelConfig.variants[variant] = {};
+          const vKey = variant as 'pure' | 'input' | 'result';
+          if (!variants[vKey]) {
+            variants[vKey] = {};
           }
           
           // Merge with existing excludeFields if any
-          const existingExcludes = modelConfig.variants[variant].excludeFields || [];
-          const legacyExcludes = modelConfig.fields.exclude;
-          
-          modelConfig.variants[variant].excludeFields = [
-            ...new Set([...existingExcludes, ...legacyExcludes])
+          const existingExcludes = variants[vKey]?.excludeFields || [];
+          const legacyExcludes = modelConfig.fields?.exclude ?? [];
+          variants[vKey].excludeFields = [
+            ...new Set<string>([...existingExcludes, ...legacyExcludes])
           ];
         });
         
@@ -293,7 +307,7 @@ function transformLegacyConfig(config: any): any {
     });
   }
   
-  return transformed;
+  return transformed as unknown as GeneratorConfig;
 }
 
 /**

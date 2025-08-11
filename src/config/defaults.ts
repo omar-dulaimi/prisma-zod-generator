@@ -295,7 +295,8 @@ export class DefaultConfigurationManager {
     const result = { ...config };
 
     // Support legacy/minimal boolean flag by mapping to mode
-    if ((result as any).minimal === true && result.mode !== 'minimal') {
+    const legacy = result as GeneratorConfig & { minimal?: boolean };
+    if (legacy.minimal === true && result.mode !== 'minimal') {
       result.mode = 'minimal';
     }
 
@@ -349,13 +350,13 @@ export class DefaultConfigurationManager {
       result.models = {};
     }
     
-      // Normalize file options
-      if (typeof (result as any).useMultipleFiles !== 'boolean') {
-        (result as any).useMultipleFiles = true;
-      }
-      if (!(result as any).singleFileName || typeof (result as any).singleFileName !== 'string') {
-        (result as any).singleFileName = 'schemas.ts';
-      }
+    // Normalize file options
+    if (typeof result.useMultipleFiles !== 'boolean') {
+      result.useMultipleFiles = true;
+    }
+    if (!result.singleFileName || typeof result.singleFileName !== 'string') {
+      result.singleFileName = 'schemas.ts';
+    }
 
     return result;
   }

@@ -5,6 +5,8 @@
  * generator options while maintaining backward compatibility.
  */
 
+import { logger } from '../utils/logger';
+
 /**
  * Extended generator configuration options
  */
@@ -15,6 +17,7 @@ export interface ExtendedGeneratorOptions {
   variants?: string[];       // List of enabled variants
   useMultipleFiles?: boolean; // Output multiple files (default true) or single bundle
   singleFileName?: string;    // Name of the single bundle file when useMultipleFiles=false
+  placeSingleFileAtRoot?: boolean; // When single file, place it at output root (default true)
   
   // Existing options (for backward compatibility)
   isGenerateSelect?: boolean;
@@ -55,6 +58,9 @@ export function parseGeneratorOptions(
   }
   if (generatorConfig.singleFileName !== undefined) {
     options.singleFileName = generatorConfig.singleFileName;
+  }
+  if (generatorConfig.placeSingleFileAtRoot !== undefined) {
+    options.placeSingleFileAtRoot = parseBoolean(generatorConfig.placeSingleFileAtRoot, 'placeSingleFileAtRoot');
   }
 
   // Parse existing options for backward compatibility
@@ -172,10 +178,8 @@ export function validateGeneratorOptions(options: ExtendedGeneratorOptions): voi
     const incompatibleVariants = options.variants.filter(v => !minimalCompatibleVariants.includes(v));
     
     if (incompatibleVariants.length > 0) {
-      console.warn(
-        `Warning: In minimal mode, variants ${incompatibleVariants.join(', ')} may not be useful. ` +
-        `Consider using only: ${minimalCompatibleVariants.join(', ')}`
-      );
+      const msg = `[prisma-zod-generator] ⚠️  In minimal mode, variants ${incompatibleVariants.join(', ')} may not be useful. Consider using only: ${minimalCompatibleVariants.join(', ')}`;
+      logger.debug(msg);
     }
   }
 
@@ -191,9 +195,8 @@ export function validateGeneratorOptions(options: ExtendedGeneratorOptions): voi
 function validateConfigPath(configPath: string): void {
   // Basic path validation
   if (configPath.includes('..') && !configPath.startsWith('./')) {
-    console.warn(
-      `Warning: Config path "${configPath}" contains ".." - ensure this is intentional and secure`
-    );
+  const msg = `[prisma-zod-generator] ⚠️  Config path "${configPath}" contains ".." - ensure this is intentional and secure`;
+  logger.debug(msg);
   }
 
   // Check for common config file extensions
@@ -201,10 +204,8 @@ function validateConfigPath(configPath: string): void {
   const hasValidExtension = validExtensions.some(ext => configPath.endsWith(ext));
   
   if (!hasValidExtension) {
-    console.warn(
-      `Warning: Config path "${configPath}" doesn't have a recognized extension. ` +
-      `Expected: ${validExtensions.join(', ')}`
-    );
+    const msg = `[prisma-zod-generator] ⚠️  Config path "${configPath}" doesn't have a recognized extension. Expected: ${validExtensions.join(', ')}`;
+    logger.debug(msg);
   }
 }
 
@@ -218,6 +219,7 @@ export function createDefaultGeneratorOptions(): ExtendedGeneratorOptions {
     isGenerateInclude: false,
   useMultipleFiles: true,
   singleFileName: 'schemas.ts',
+  placeSingleFileAtRoot: true,
     raw: {}
   };
 }
@@ -282,6 +284,9 @@ export function generatorOptionsToConfigOverrides(
   if (options.singleFileName) {
     overrides.singleFileName = options.singleFileName;
   }
+  if (options.placeSingleFileAtRoot !== undefined) {
+    overrides.placeSingleFileAtRoot = options.placeSingleFileAtRoot;
+  }
 
   return overrides;
 }
@@ -297,6 +302,7 @@ export interface GeneratorConfigOverrides {
   isGenerateInclude?: boolean;
   useMultipleFiles?: boolean;
   singleFileName?: string;
+  placeSingleFileAtRoot?: boolean;
   variants?: {
     pure?: { enabled?: boolean };
     input?: { enabled?: boolean };

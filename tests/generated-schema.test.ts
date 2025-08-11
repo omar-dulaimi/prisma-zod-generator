@@ -14,6 +14,8 @@ import { UserCreateInputObjectSchema } from '../prisma/generated/schemas/objects
 import { UserWhereInputObjectSchema } from '../prisma/generated/schemas/objects/UserWhereInput.schema';
 
 describe('Generated Schema Tests', () => {
+  // Local Role enum-like constant so tests don't depend on @prisma/client generation
+  const Role = { USER: 'USER', ADMIN: 'ADMIN' } as const;
   describe('Operation Schemas', () => {
     describe('UserFindManySchema', () => {
       it('should validate with minimal input', () => {
@@ -69,7 +71,8 @@ describe('Generated Schema Tests', () => {
           data: {
             email: 'test@example.com',
             name: 'Test User',
-            role: 'USER',
+            password: 'P@ssw0rd123',
+            role: Role.USER,
           },
         };
 
@@ -82,12 +85,14 @@ describe('Generated Schema Tests', () => {
             {
               email: 'test1@example.com',
               name: 'Test User 1',
-              role: 'USER',
+              password: 'P@ssw0rd123',
+              role: Role.USER,
             },
             {
               email: 'test2@example.com',
               name: 'Test User 2',
-              role: 'ADMIN',
+              password: 'P@ssw0rd456',
+              role: Role.ADMIN,
             }
           ],
         };
@@ -122,11 +127,7 @@ describe('Generated Schema Tests', () => {
         const validValues = ['id', 'email', 'name'];
         const invalidValues = ['invalid', 'createdAt', 'updatedAt'];
 
-        SchemaTestUtils.testEnumValues(
-          UserScalarFieldEnumSchema as any,
-          validValues,
-          invalidValues,
-        );
+  SchemaTestUtils.testEnumValues(UserScalarFieldEnumSchema, validValues, invalidValues);
       });
     });
 
@@ -135,11 +136,7 @@ describe('Generated Schema Tests', () => {
         const validValues = ['asc', 'desc'];
         const invalidValues = ['ascending', 'descending', 'ASC', 'DESC'];
 
-        SchemaTestUtils.testEnumValues(
-          SortOrderSchema as any,
-          validValues,
-          invalidValues,
-        );
+  SchemaTestUtils.testEnumValues(SortOrderSchema, validValues, invalidValues);
       });
     });
   });
@@ -150,7 +147,8 @@ describe('Generated Schema Tests', () => {
         const validData = {
           email: 'test@example.com',
           name: 'Test User',
-          role: 'USER',
+          password: 'P@ssw0rd123',
+          role: Role.USER,
         };
 
         SchemaTestUtils.testValidData(UserCreateInputObjectSchema, validData);
@@ -160,7 +158,8 @@ describe('Generated Schema Tests', () => {
         const validData = {
           email: 'test@example.com',
           name: 'Test User',
-          role: 'USER',
+          password: 'P@ssw0rd123',
+          role: Role.USER,
           posts: {
             create: {
               title: 'Test Post',
@@ -178,7 +177,8 @@ describe('Generated Schema Tests', () => {
         const baseData = {
           email: 'test@example.com',
           name: 'Test User',
-          role: 'USER',
+          password: 'P@ssw0rd123',
+          role: Role.USER,
         };
 
         SchemaTestUtils.testRequiredFields(

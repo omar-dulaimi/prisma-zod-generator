@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { 
-  TestEnvironment, 
-  ConfigGenerator, 
-  PrismaSchemaGenerator,
-  FileSystemUtils,
-  GENERATION_TIMEOUT
+import { describe, expect, it } from 'vitest';
+import {
+    ConfigGenerator,
+    FileSystemUtils,
+    GENERATION_TIMEOUT,
+    PrismaSchemaGenerator,
+    TestEnvironment
 } from './helpers';
 
 describe('Minimal Mode Tests', () => {
@@ -524,6 +524,40 @@ model Tag {
           expect(existsSync(filePath), `Non-minimal operation should NOT exist: ${operation}`).toBe(false);
         });
 
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('should warn when minimal mode overrides select/include flags', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('minimal-mode-warnings');
+
+      try {
+        // Enable minimal mode in config but also request select/include via both config and legacy flags
+        const config = {
+          ...ConfigGenerator.createMinimalConfig(),
+          addSelectType: true,
+          addIncludeType: true
+        } as Record<string, unknown>;
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          generatorOptions: {
+            config: './config.json',
+            isGenerateSelect: 'true',
+            isGenerateInclude: 'true'
+          }
+        });
+
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        const { stdout, stderr } = await testEnv.runGenerationWithOutput();
+        const output = `${stdout}\n${stderr}`;
+
+        // Should emit warnings that minimal mode disables select/include
+        expect(output).toMatch(/Minimal mode active: Select schemas will be disabled/);
+        expect(output).toMatch(/Minimal mode active: Include schemas will be disabled/);
       } finally {
         await testEnv.cleanup();
       }

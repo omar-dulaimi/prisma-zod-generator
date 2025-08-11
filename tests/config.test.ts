@@ -1,9 +1,11 @@
-import { describe, it, expect } from 'vitest';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import { 
-  TestEnvironment, 
-  GENERATION_TIMEOUT 
+import { describe, expect, it } from 'vitest';
+import {
+    ConfigGenerator,
+    GENERATION_TIMEOUT,
+    PrismaSchemaGenerator,
+    TestEnvironment
 } from './helpers';
 
 describe('Configuration System Tests', () => {
@@ -26,6 +28,35 @@ describe('Configuration System Tests', () => {
         expect(parseResult.config).toMatchObject(validConfig);
         expect(parseResult.isDefault).toBe(false);
 
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('should warn with tagged messages on file layout conflicts (useMultipleFiles mismatch)', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('file-layout-warnings');
+      try {
+        // Config says single-file, generator says multi-file
+        const config = {
+          ...ConfigGenerator.createBasicConfig(),
+          useMultipleFiles: false,
+          singleFileName: 'bundle.ts'
+        } as Record<string, unknown>;
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          generatorOptions: {
+            config: './config.json',
+            useMultipleFiles: 'true'
+          }
+        });
+
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        const { stdout, stderr } = await testEnv.runGenerationWithOutput();
+        const output = `${stdout}\n${stderr}`;
+    expect(output).toMatch(/\[prisma-zod-generator\] ⚠️  File layout conflicts detected\./);
       } finally {
         await testEnv.cleanup();
       }
@@ -193,8 +224,9 @@ describe('Configuration System Tests', () => {
       
       try {
         const { formatValidationErrors } = await import('../src/config/validator');
+        const { ValidationErrorType } = await import('../src/config/schema');
         const mockErrors = [{
-          type: 'INVALID_JSON_SCHEMA' as const,
+          type: ValidationErrorType.INVALID_JSON_SCHEMA,
           message: 'Invalid value',
           path: 'root.mode',
           value: 'invalid'

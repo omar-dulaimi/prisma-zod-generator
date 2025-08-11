@@ -1,6 +1,5 @@
 {
   "mode": "minimal",
-  "output": "./prisma/generated",
   "pureModels": true,
   "variants": {
     "pure": { "enabled": true, "suffix": ".model" },

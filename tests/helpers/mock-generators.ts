@@ -387,6 +387,7 @@ export class TestEnvironment {
     schemaPath: string;
     outputDir: string;
     runGeneration: () => Promise<void>;
+  runGenerationWithOutput: () => Promise<{ stdout: string; stderr: string }>;
     cleanup: () => Promise<void>;
   }> {
     const testDir = join(process.cwd(), `test-env-${testName}-${Date.now()}`);
@@ -408,6 +409,14 @@ export class TestEnvironment {
       });
     };
 
+    // Same as runGeneration, but returns stdout/stderr for assertions
+    const runGenerationWithOutput = async (): Promise<{ stdout: string; stderr: string }> => {
+      await execAsync('npx tsc', { cwd: process.cwd() });
+      return execAsync(`npx prisma generate --schema="${schemaPath}"`, {
+        cwd: process.cwd()
+      });
+    };
+
     // Cleanup function
     const cleanup = async () => {
       const { rmSync } = await import('fs');
@@ -421,6 +430,7 @@ export class TestEnvironment {
       schemaPath,
       outputDir,
       runGeneration,
+  runGenerationWithOutput,
       cleanup
     };
   }
@@ -438,6 +448,7 @@ export class TestEnvironment {
     outputDir: string;
     configPath?: string;
     runGeneration: () => Promise<void>;
+  runGenerationWithOutput: () => Promise<{ stdout: string; stderr: string }>;
     cleanup: () => Promise<void>;
   }> {
     const env = await this.createTestEnv(testName);
@@ -462,10 +473,18 @@ export class TestEnvironment {
       });
     };
 
+    const runGenerationWithOutput = async (): Promise<{ stdout: string; stderr: string }> => {
+      await execAsync('npx tsc', { cwd: process.cwd() });
+      return execAsync(`npx prisma generate --schema="${env.schemaPath}"`, {
+        cwd: process.cwd()
+      });
+    };
+
     return {
       ...env,
       configPath,
       runGeneration,
+      runGenerationWithOutput,
     };
   }
 }
@@ -485,20 +504,20 @@ export class MockDMMF {
       datamodel: {
         models: options.models || [this.createUserModel(), this.createPostModel()],
         enums: options.enums || [this.createStatusEnum()],
-        types: []
+        types: [],
+        indexes: []
       },
       schema: {
         inputObjectTypes: {
-          prisma: [],
-          model: undefined
+          prisma: []
         },
         outputObjectTypes: {
           prisma: [],
-          model: undefined
+          model: []
         },
         enumTypes: {
           prisma: [],
-          model: undefined
+          model: []
         },
         fieldRefTypes: {
           prisma: []
@@ -540,6 +559,7 @@ export class MockDMMF {
     return {
       name: 'User',
       dbName: null,
+  schema: null,
       fields: [
         {
           name: 'id',
@@ -614,6 +634,7 @@ export class MockDMMF {
     return {
       name: 'Post',
       dbName: null,
+  schema: null,
       fields: [
         {
           name: 'id',

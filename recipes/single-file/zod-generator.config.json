@@ -1,6 +1,5 @@
 {
   "mode": "full",
-  "output": "./prisma/generated",
   "useMultipleFiles": false,
   "singleFileName": "schemas.ts",
   "placeSingleFileAtRoot": true,

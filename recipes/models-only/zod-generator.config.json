@@ -1,6 +1,5 @@
 {
   "mode": "custom",
-  "output": "./prisma/generated",
   "useMultipleFiles": true,
   "pureModels": true,
   "variants": {

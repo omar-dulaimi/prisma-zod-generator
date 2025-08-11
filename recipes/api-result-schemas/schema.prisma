@@ -1,0 +1,6 @@
+generator zodApiResultSchemas {
+  provider         = "prisma-zod-generator"
+  output           = "./src/schemas"
+  useMultipleFiles = true
+  config           = "./zod-generator.config.json"
+}

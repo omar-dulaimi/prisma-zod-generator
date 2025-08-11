@@ -1,0 +1,9 @@
+// Example generator block for API result schemas recipe
+// Copy into your schema.prisma and adjust paths
+
+generator zodApiResultSchemas {
+  provider         = "prisma-zod-generator"
+  output           = "./src/schemas"
+  useMultipleFiles = true
+  config           = "./zod-generator.config.json"
+}
