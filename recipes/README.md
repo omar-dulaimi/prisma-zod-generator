@@ -66,7 +66,7 @@ Foldered quick-starts
 Prefer a copy-paste starter? Each recipe now has a folder with:
 
 - zod-generator.config.json (ready to use)
-- generator.prisma.example (matching generator block)
+- schema.prisma (contains a matching generator block you can copy)
 - README.md (short how-to)
 
 Folders:
@@ -88,8 +88,8 @@ Folders:
 - hide-fields/ — Hide properties globally/per-model (Issue #75)
 - granular-per-model/ — Select operations per model, disable models (Issue #49)
 - trpc-optimized/ — Input/output focused for tRPC (Issues #49, #139)
-- snippets/schema-comments.prisma — Rich @zod field validation (Issue #80)
-- snippets/derive-trpc-schemas.ts — Derive request schemas via omit/extend (Issue #49)
+- snippets/schema-comments/schema.prisma — Rich @zod field validation (Issue #80)
+- snippets/derive-trpc-schemas/derive-trpc-schemas.ts — Derive request schemas via omit/extend (Issue #49)
 
 ## How to use
 
