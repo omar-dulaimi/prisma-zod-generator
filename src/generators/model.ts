@@ -1786,21 +1786,9 @@ export class PrismaTypeMapper {
     };
 
     // Apply field exclusions if provided via generator config models[Model].variants.pure.excludeFields
-    let fieldsToProcess = model.fields;
-    try {
-      // Attempt to read exclusion list from global Transformer configuration
-      // We don't have direct access to the parsed generator config here,
-      // but pure model tests set legacy models[Model].fields.exclude which gets transformed
-      // into variants.pure.excludeFields in the parser. We'll respect that if present
-      // by checking environment variables injected by the generator or by duck-typing on the model as any.
-      const anyModel: any = model as any;
-      const variantExcludes: string[] | undefined = anyModel?.variants?.pure?.excludeFields;
-      if (Array.isArray(variantExcludes) && variantExcludes.length > 0) {
-        fieldsToProcess = fieldsToProcess.filter(f => !variantExcludes.includes(f.name));
-      }
-    } catch {
-      // Ignore if not available
-    }
+    const fieldsToProcess = model.fields;
+  // Pure model exclusions are handled earlier during config processing and object schema filtering.
+  // This generator operates on the Prisma DMMF model directly.
 
     // Process each field
     for (const field of fieldsToProcess) {

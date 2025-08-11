@@ -1,13 +1,13 @@
 import type {
-  ConnectorType,
-  DMMF as PrismaDMMF,
+    ConnectorType,
+    DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-  findModelByName,
-  isMongodbRawOp,
+    findModelByName,
+    isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -179,7 +179,7 @@ export default class Transformer {
       };
       
       const allowedOperationNames = operationMapping[operationName] || [operationName];
-      const isEnabled = allowedOperationNames.some(opName => modelConfig.operations!.includes(opName));
+  const isEnabled = allowedOperationNames.some(opName => modelConfig.operations?.includes(opName) ?? false);
       
       logger.debug(`🔍 Operation check: ${modelName}.${operationName} = ${isEnabled} (configured ops: [${modelConfig.operations.join(', ')}])`);
       return isEnabled;
@@ -188,7 +188,7 @@ export default class Transformer {
     // For minimal mode, only enable essential operations (no *Many, no upsert, no aggregate/groupBy)
     if (config.mode === 'minimal') {
       // Allow overrides via config.minimalOperations when present
-      const configured = (config as any).minimalOperations as string[] | undefined;
+  const configured = (config as unknown as { minimalOperations?: string[] }).minimalOperations;
       const baseAllowed = configured && Array.isArray(configured) && configured.length > 0
         ? configured
         : ['findMany', 'findUnique', 'findFirst', 'create', 'update', 'delete'];
@@ -273,8 +273,9 @@ export default class Transformer {
       const modelConfig = config.models?.[modelName];
       
       // Check model-specific includes FIRST - these OVERRIDE exclusions (highest precedence)
-      if ((modelConfig as any)?.fields?.include) {
-        if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.include)) {
+      const legacyFields = modelConfig as unknown as { fields?: { include?: string[]; exclude?: string[] } };
+      if (legacyFields?.fields?.include) {
+        if (this.isFieldMatchingPatterns(fieldName, legacyFields.fields.include)) {
           logger.debug(`🟢 Field enabled: ${modelName}.${fieldName} (${variant}) = true (model include override)`);
           return true; // Include overrides any previous or subsequent exclusion
         }
@@ -282,16 +283,17 @@ export default class Transformer {
       
       // Check variant-specific exclusions (new format)
       if (modelConfig?.variants?.[variant || 'pure']?.excludeFields) {
-        if (this.isFieldMatchingPatterns(fieldName, modelConfig.variants[variant || 'pure']!.excludeFields!)) {
+        const ex = modelConfig.variants?.[variant || 'pure']?.excludeFields || [];
+        if (this.isFieldMatchingPatterns(fieldName, ex)) {
           shouldExclude = true;
           debugReasons.push(`model ${variant} variant exclusion`);
         }
       }
       
       // Check legacy format: fields.exclude (for backward compatibility)
-      if ((modelConfig as any)?.fields?.exclude) {
-        logger.debug(`🔍 Checking legacy fields.exclude for ${modelName}.${fieldName}: patterns =`, (modelConfig as any).fields.exclude);
-        if (this.isFieldMatchingPatterns(fieldName, (modelConfig as any).fields.exclude)) {
+      if (legacyFields?.fields?.exclude) {
+        logger.debug(`🔍 Checking legacy fields.exclude for ${modelName}.${fieldName}: patterns =`, legacyFields.fields.exclude);
+        if (this.isFieldMatchingPatterns(fieldName, legacyFields.fields.exclude)) {
           shouldExclude = true;
           debugReasons.push(`model fields.exclude`);
           logger.debug(`🚫 Field excluded by legacy fields.exclude: ${modelName}.${fieldName}`);
@@ -347,7 +349,7 @@ export default class Transformer {
     models?: PrismaDMMF.Model[],
     schemaName?: string,
   ): PrismaDMMF.SchemaArg[] {
-  const config = this.getGeneratorConfig() || {} as any;
+  const config = (this.getGeneratorConfig() || {}) as GeneratorConfig & { minimalOperations?: string[] };
   const strictCreateInputs = config.strictCreateInputs !== false; // default true
   const preserveRequiredScalarsOnCreate = config.preserveRequiredScalarsOnCreate !== false; // default true
     // Special case: WhereUniqueInput must retain unique identifier fields (e.g., id, unique columns)
@@ -368,7 +370,7 @@ export default class Transformer {
     ].some((re) => re.test(schemaName));
   const isBasePrismaCreateInput = isBasePrismaCreateInputName && strictCreateInputs;
 
-  let filtered = fields.filter(field => {
+  const filtered = fields.filter(field => {
       // Check basic field inclusion rules
       if (!isWhereUniqueInput && !isBasePrismaCreateInput && !this.isFieldEnabled(field.name, modelName, variant)) {
         return false;
@@ -387,7 +389,7 @@ export default class Transformer {
     });
 
     // Handle foreign key preservation when relation fields are excluded
-    let result = [...filtered];
+    const result = [...filtered];
     
     if (modelName && variant === 'input' && !isBasePrismaCreateInput && models) {
       const model = models.find((m: PrismaDMMF.Model) => m.name === modelName);
@@ -417,11 +419,11 @@ export default class Transformer {
     if (!strictCreateInputs && isBasePrismaCreateInputName && preserveRequiredScalarsOnCreate && modelName && models) {
       const model = models.find((m: PrismaDMMF.Model) => m.name === modelName);
       if (model) {
-        const requiredScalars = model.fields.filter(f =>
-          (f as any).kind === 'scalar' &&
-          (f as any).isRequired === true &&
-          (f as any).hasDefaultValue !== true &&
-          (f as any).isUpdatedAt !== true
+        const requiredScalars = model.fields.filter((f: PrismaDMMF.Field) =>
+          f.kind === 'scalar' &&
+          f.isRequired === true &&
+          f.hasDefaultValue !== true &&
+          (f as unknown as { isUpdatedAt?: boolean }).isUpdatedAt !== true
         );
         for (const f of requiredScalars) {
           if (!result.some(arg => arg.name === f.name)) {
@@ -1271,7 +1273,7 @@ export default class Transformer {
         // Determine correct Prisma type binding (some inputs use a *Type suffix)
         let prismaType = this.resolvePrismaTypeForObject(exportName);
         // Optionally wrap with Omit<> when strictCreateInputs=false and fields were excluded on Create-like inputs
-        const config = Transformer.getGeneratorConfig() || {} as any;
+  const config = (Transformer.getGeneratorConfig() || {}) as GeneratorConfig;
         const strictCreateInputs = config.strictCreateInputs !== false; // default true
         const isInputVariant = Transformer.determineSchemaVariant(name) === 'input';
         const isCreateLike = [
@@ -1756,7 +1758,7 @@ export default class Transformer {
       if (deleteOne && Transformer.isOperationEnabled(modelName, 'deleteOne')) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
-          const ops = (cfg as any).minimalOperations as string[] | undefined;
+          const ops = (cfg as unknown as { minimalOperations?: string[] }).minimalOperations;
           if (Array.isArray(ops) && !ops.includes('delete') && !ops.includes('deleteOne')) {
             logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.deleteOne`);
           } else {
@@ -1816,7 +1818,7 @@ export default class Transformer {
       if (updateOne && Transformer.isOperationEnabled(modelName, 'updateOne')) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
-          const ops = (cfg as any).minimalOperations as string[] | undefined;
+          const ops = (cfg as unknown as { minimalOperations?: string[] }).minimalOperations;
           if (Array.isArray(ops) && !ops.includes('update') && !ops.includes('updateOne')) {
             logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.updateOne`);
             // Do not generate

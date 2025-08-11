@@ -1,26 +1,26 @@
 import {
-    DMMF,
-    EnvValue,
-    GeneratorConfig,
-    GeneratorOptions,
+  DMMF,
+  EnvValue,
+  GeneratorConfig,
+  GeneratorOptions,
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-    generatorOptionsToConfigOverrides,
-    getLegacyMigrationSuggestions,
-    isLegacyUsage,
-    parseGeneratorOptions,
-    validateGeneratorOptions
+  generatorOptionsToConfigOverrides,
+  getLegacyMigrationSuggestions,
+  isLegacyUsage,
+  parseGeneratorOptions,
+  validateGeneratorOptions
 } from './config/generator-options';
-import { GeneratorConfig as CustomGeneratorConfig, parseConfiguration } from './config/parser';
+import { GeneratorConfig as CustomGeneratorConfig, VariantConfig, parseConfiguration } from './config/parser';
 import {
-    addMissingInputObjectTypes,
-    hideInputObjectTypesAndRelatedFields,
-    resolveAddMissingInputObjectTypeOptions,
-    resolveModelsComments,
+  addMissingInputObjectTypes,
+  hideInputObjectTypesAndRelatedFields,
+  resolveAddMissingInputObjectTypeOptions,
+  resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -116,8 +116,11 @@ export async function generate(options: GeneratorOptions) {
         }
       }
       
-      // Step 2: Apply generator option overrides (highest priority)
-      const generatorOptionOverrides = generatorOptionsToConfigOverrides(extendedOptions);
+  // Step 2: Apply generator option overrides (highest priority)
+  const generatorOptionOverrides = generatorOptionsToConfigOverrides(extendedOptions);
+
+  // Warn about file layout conflicts to prevent surprises
+  warnOnFileLayoutConflicts(configFileOptions, generatorOptionOverrides);
       
       // Step 3: Merge with proper precedence (generator options override config file options)
       const mergedConfig = mergeConfigurationWithPrecedence(
@@ -138,7 +141,8 @@ export async function generate(options: GeneratorOptions) {
       logConfigurationPrecedence(extendedOptions, configFileOptions, generatorOptionOverrides);
       
     } catch (configError) {
-      console.warn(`⚠️  Configuration loading failed, using defaults: ${String(configError)}`);
+      const msg = `[prisma-zod-generator] ⚠️  Configuration loading failed, using defaults: ${String(configError)}`;
+      console.warn(msg);
       // Fall back to defaults
       generatorConfig = processConfiguration({});
   }
@@ -182,7 +186,7 @@ export async function generate(options: GeneratorOptions) {
     const singleFileMode = generatorConfig.useMultipleFiles === false;
     if (singleFileMode) {
       const bundleName = (generatorConfig.singleFileName || 'schemas.ts').trim();
-      const placeAtRoot = (generatorConfig as any).placeSingleFileAtRoot !== false; // default true
+  const placeAtRoot = generatorConfig.placeSingleFileAtRoot !== false; // default true
       const baseDir = placeAtRoot ? Transformer.getOutputPath() : Transformer.getSchemasPath();
       const bundlePath = path.join(baseDir, bundleName);
       initSingleFile(bundlePath);
@@ -201,8 +205,12 @@ export async function generate(options: GeneratorOptions) {
       throw new Error('Invalid filtering configuration. Please fix the errors above.');
     }
     if (validationResult.warnings.length > 0) {
-      console.warn('⚠️  Configuration warnings:');
-      validationResult.warnings.forEach(warning => console.warn(`  - ${warning}`));
+      const header = '[prisma-zod-generator] ⚠️  Configuration warnings (debug):';
+      logger.debug(header);
+      validationResult.warnings.forEach(warning => {
+        const line = `[prisma-zod-generator]   - ${warning}`;
+        logger.debug(line);
+      });
     }
     if (validationResult.suggestions.length > 0) {
       logger.debug('💡 Suggestions:');
@@ -246,8 +254,23 @@ export async function generate(options: GeneratorOptions) {
 
     // Set dual export configuration options on Transformer
     // In minimal mode, forcibly disable select/include types regardless of legacy flags
-    const minimalMode =
-      generatorConfig.mode === 'minimal' || (generatorConfig as any).minimal === true;
+  const minimalMode = generatorConfig.mode === 'minimal';
+
+    if (minimalMode) {
+      const legacySelect = extendedOptions.isGenerateSelect;
+      const legacyInclude = extendedOptions.isGenerateInclude;
+      const cfgSelect = generatorConfig.addSelectType;
+      const cfgInclude = generatorConfig.addIncludeType;
+
+      if (legacySelect === true || cfgSelect === true) {
+        // Use info-level to ensure visibility in Prisma CLI output
+        logger.info('[prisma-zod-generator] ⚠️  Minimal mode active: Select schemas will be disabled even if enabled by legacy flags or config.');
+      }
+      if (legacyInclude === true || cfgInclude === true) {
+        // Use info-level to ensure visibility in Prisma CLI output
+        logger.info('[prisma-zod-generator] ⚠️  Minimal mode active: Include schemas will be disabled even if enabled by legacy flags or config.');
+      }
+    }
     Transformer.setIsGenerateSelect(
       minimalMode ? false : addMissingInputObjectTypeOptions.isGenerateSelect,
     );
@@ -282,7 +305,7 @@ export async function generate(options: GeneratorOptions) {
     await generateIndex();
 
     // Generate pure model schemas if enabled
-    await generatePureModelSchemas(models, generatorConfig as any);
+  await generatePureModelSchemas(models, generatorConfig);
 
     // Generate variant schemas if enabled (skipped in single-file mode by function itself)
     await generateVariantSchemas(models, generatorConfig);
@@ -298,7 +321,7 @@ export async function generate(options: GeneratorOptions) {
     // If single-file mode is enabled, flush aggregator and clean directory around the bundle
     if (singleFileMode) {
       await flushSingleFile();
-      const placeAtRoot = (generatorConfig as any).placeSingleFileAtRoot !== false; // default true
+      const placeAtRoot = generatorConfig.placeSingleFileAtRoot !== false; // default true
       const baseDir = placeAtRoot ? Transformer.getOutputPath() : Transformer.getSchemasPath();
       const bundleName = (generatorConfig.singleFileName || 'schemas.ts').trim();
       const bundlePath = path.join(baseDir, bundleName);
@@ -398,7 +421,7 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models:
       if (modelName) {
         // Apply field filtering using the transformer's filtering logic
         // Cast to the expected type to handle ReadonlyDeep wrapper
-  filteredFields = Transformer.filterFields(originalFields as any, modelName, variant, models, name);
+  filteredFields = Transformer.filterFields([...originalFields], modelName, variant, models, name);
       }
     }
     
@@ -697,7 +720,7 @@ async function updateIndexWithVariants(config: CustomGeneratorConfig) {
   
   // If variants are array-based and explicitly placed at root, skip variants barrel export
   if (Array.isArray(variants)) {
-    const placeAtRoot = (config as any).placeArrayVariantsAtRoot === true; // default false
+  const placeAtRoot = config.placeArrayVariantsAtRoot === true; // default false
     if (placeAtRoot) return;
     // else proceed to add variants/index.ts below
   }
@@ -841,6 +864,54 @@ function logConfigurationPrecedence(
 }
 
 /**
+ * Warn if file layout options in generator block contradict those in the config file.
+ * The generator block wins by precedence, but surfacing this helps avoid confusion
+ * like getting more (or fewer) files than expected.
+ */
+function warnOnFileLayoutConflicts(
+  configFileOptions: Partial<CustomGeneratorConfig>,
+  generatorOverrides: Partial<CustomGeneratorConfig>
+) {
+  const cf = configFileOptions;
+  const go = generatorOverrides;
+
+  const conflicts: string[] = [];
+
+  if (cf.useMultipleFiles !== undefined && go.useMultipleFiles !== undefined && cf.useMultipleFiles !== go.useMultipleFiles) {
+    conflicts.push(
+      `useMultipleFiles mismatch: generator block = ${go.useMultipleFiles}, config file = ${cf.useMultipleFiles}. ` +
+      `Generator block takes precedence.`
+    );
+  }
+
+  if (cf.singleFileName && go.singleFileName && cf.singleFileName !== go.singleFileName) {
+    conflicts.push(
+      `singleFileName mismatch: generator block = "${go.singleFileName}", config file = "${cf.singleFileName}". ` +
+      `Generator block takes precedence.`
+    );
+  }
+
+  if (
+    cf.placeSingleFileAtRoot !== undefined &&
+    go.placeSingleFileAtRoot !== undefined &&
+    cf.placeSingleFileAtRoot !== go.placeSingleFileAtRoot
+  ) {
+    conflicts.push(
+      `placeSingleFileAtRoot mismatch: generator block = ${go.placeSingleFileAtRoot}, config file = ${cf.placeSingleFileAtRoot}. ` +
+      `Generator block takes precedence.`
+    );
+  }
+
+  if (conflicts.length > 0) {
+  // Use info-level to ensure visibility in Prisma CLI output
+  logger.info('[prisma-zod-generator] ⚠️  File layout conflicts detected. The Prisma generator block takes precedence over JSON config.');
+    logger.debug('[prisma-zod-generator] Conflict details:');
+    conflicts.forEach(msg => logger.debug(`  - ${msg}`));
+    logger.debug('[prisma-zod-generator] Tip: Align useMultipleFiles, singleFileName, and placeSingleFileAtRoot across sources.');
+  }
+}
+
+/**
  * Generate variant schemas if variants are enabled in configuration
  */
 async function generateVariantSchemas(models: DMMF.Model[], config: CustomGeneratorConfig) {
@@ -851,7 +922,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
     return;
   }
   // Check if variants are configured
-  const variants = config.variants as any;
+  const variants = config.variants;
   if (!variants) return;
 
   // Support two formats:
@@ -863,7 +934,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
     // Custom array-based variants: generate files directly under variants/ as Model{Suffix}.schema.ts
     try {
       // Default behavior: place array-based variants under schemas/variants unless explicitly configured to place at root
-      const placeAtRoot = (config as any).placeArrayVariantsAtRoot === true; // default false
+  const placeAtRoot = config.placeArrayVariantsAtRoot === true; // default false
       const variantsOutputPath = placeAtRoot
         ? Transformer.getSchemasPath()
         : path.join(Transformer.getSchemasPath(), 'variants');
@@ -879,7 +950,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
 
   const exportLines: string[] = [];
 
-      for (const variantDef of variants as Array<any>) {
+      for (const variantDef of variants as Array<{ name: string; suffix?: string; exclude?: string[]; additionalValidation?: Record<string, string>; makeOptional?: string[]; transformRequiredToOptional?: string[]; transformOptionalToRequired?: boolean; removeValidation?: boolean }>) {
         const suffix: string = variantDef.suffix || (variantDef.name ? (variantDef.name.charAt(0).toUpperCase() + variantDef.name.slice(1)) : 'Variant');
         const exclude: string[] = Array.isArray(variantDef.exclude) ? variantDef.exclude : [];
 
@@ -889,9 +960,9 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
           const filePath = `${variantsOutputPath}/${fileBase}.ts`;
 
           // Merge exclusion sources: global, variant, and model-specific
-          const modelConfig = (config.models?.[model.name] as any) || {};
-          const modelVariant = modelConfig?.variants?.[variantDef.name];
-          const ge: any = (config as any).globalExclusions;
+          const modelConfig = config.models?.[model.name] || {};
+          const modelVariant = (modelConfig?.variants as Record<string, VariantConfig & { exclude?: string[] }> | undefined)?.[variantDef.name];
+          const ge = config.globalExclusions as unknown as Record<string, string[]> | undefined;
           let globalExcludes: string[] = [];
           if (Array.isArray(ge)) {
             globalExcludes = ge as string[];
@@ -899,8 +970,13 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
             globalExcludes = ge[variantDef.name] as string[];
           }
           // Apply only legacy model-level excludes globally; variant-specific excludes are applied per-variant below
-          const baseModelExcludes: string[] = Array.isArray(modelConfig?.fields?.exclude) ? modelConfig.fields.exclude : [];
-          const modelExcludes: string[] = (modelVariant?.exclude as string[]) || (modelVariant?.excludeFields as string[]) || [];
+          const legacyModel = modelConfig as unknown as { fields?: { exclude?: string[] } };
+          const baseModelExcludes: string[] = Array.isArray(legacyModel?.fields?.exclude) ? legacyModel.fields.exclude : [];
+          const mv = modelVariant as unknown as { excludeFields?: string[]; exclude?: string[] } | undefined;
+          const modelExcludes: string[] = [
+            ...(mv?.excludeFields || []),
+            ...(mv?.exclude || []),
+          ];
           const excludeFields = Array.from(new Set([...(exclude || []), ...globalExcludes, ...baseModelExcludes, ...modelExcludes]));
 
           // Support simple variant-specific transformations
@@ -934,7 +1010,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
                 zod += v.replace('@zod', '');
               }
               // From Prisma field documentation comments (/// @zod...)
-              const doc: string | undefined = (field as any).documentation || (field as any).doc || undefined;
+              const doc: string | undefined = (field as unknown as { documentation?: string; doc?: string }).documentation || (field as unknown as { documentation?: string; doc?: string }).doc || undefined;
               if (doc && doc.includes('@zod')) {
                 const m = doc.match(/@zod(.*)$/m);
                 if (m && m[1]) {
@@ -978,7 +1054,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
   } else {
     // Existing object-based variants path
     const enabledVariants = Object.entries(variants)
-      .filter(([_, variantConfig]) => (variantConfig as any)?.enabled)
+  .filter(([_, variantConfig]) => Boolean(variantConfig?.enabled))
       .map(([variantName]) => variantName);
 
     if (enabledVariants.length === 0) {
@@ -1166,7 +1242,7 @@ async function generateVariantsIndex(variantNames: string[], outputPath: string)
  * Generate pure model schemas in models/ directory
  * These are standalone schemas without variant suffixes
  */
-async function generatePureModelSchemas(models: DMMF.Model[], config: any): Promise<void> {
+async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGeneratorConfig): Promise<void> {
   // Check if pure models are enabled and configured
   if (!config.pureModels) {
     return;
@@ -1190,11 +1266,9 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
     await fs.mkdir(modelsOutputPath, { recursive: true });
     
     // Import the model generator
-    const { PrismaTypeMapper } = await import('./generators/model');
-    const typeMapper = new PrismaTypeMapper({
-      // Propagate provider for type decisions if available
-      provider: (Transformer as any).config?.provider || 'postgresql'
-    } as any);
+  const { PrismaTypeMapper } = await import('./generators/model');
+  const provider = (Transformer as unknown as { config?: { provider?: 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'mongodb' } }).config?.provider || 'postgresql';
+  const typeMapper = new PrismaTypeMapper({ provider });
 
     // Compute per-model field exclusions for pure models
     const getPureExclusions = (modelName: string): Set<string> => {
@@ -1202,7 +1276,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: any): Prom
       // Global exclusions for pure variant
       (config.globalExclusions?.pure || []).forEach((f: string) => excludes.add(f));
       // Legacy fields.exclude preserved in parser
-      const legacy = config.models?.[modelName]?.fields?.exclude || [];
+  const legacy = (config.models?.[modelName] as unknown as { fields?: { exclude?: string[] } } | undefined)?.fields?.exclude || [];
       legacy.forEach((f: string) => excludes.add(f));
       // New variants.pure.excludeFields
       const variantPure = config.models?.[modelName]?.variants?.pure?.excludeFields || [];
