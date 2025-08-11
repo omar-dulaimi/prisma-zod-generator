@@ -118,6 +118,8 @@ generator zod {
 }
 ```
 
+Note on precedence: simple options declared in the Prisma generator block (like useMultipleFiles, singleFileName, placeSingleFileAtRoot, legacy isGenerateSelect/isGenerateInclude) override the same options from the JSON file. See the Precedence section for details.
+
 ### 3. Configure TypeScript (required)
 
 ```json
@@ -136,9 +138,23 @@ npx prisma generate
 
 ---
 
-## 🐞 Debug logging
+## 🐞 Logging and warnings
 
-Verbose logs are off by default.
+<details>
+<summary><strong>Click to expand logging & warning details</strong></summary>
+
+By default the generator prints minimal output. Critical warnings are surfaced as tagged info lines so you won’t miss important context, while detailed diagnostics stay hidden unless you opt in.
+
+What you’ll see by default:
+
+- [prisma-zod-generator] ⚠️  File layout conflicts detected. The Prisma generator block takes precedence over JSON config.
+  - When generator block and JSON disagree on useMultipleFiles/singleFileName/placeSingleFileAtRoot, this header appears so you know why you got a bundle vs many files (or vice versa). Details are available in debug logs.
+- [prisma-zod-generator] ⚠️  Minimal mode active: Select/Include schemas will be disabled even if enabled by legacy flags or config.
+  - Minimal mode forces these helpers off to keep output lean. If you explicitly requested them, we’ll tell you they’re being ignored.
+- [prisma-zod-generator] ⚠️  Configuration loading failed, using defaults: …
+  - If a config file can’t be loaded, we fall back to safe defaults and tell you why.
+
+Enable detailed debug output:
 
 - One-off run (Linux/macOS):
   - `DEBUG_PRISMA_ZOD=1 npx prisma generate`
@@ -146,6 +162,8 @@ Verbose logs are off by default.
 - Via npm script in this repo: `npm run gen-example:debug`
 
 Unset the env var to return to quiet mode.
+
+</details>
 
 ---
 
@@ -269,8 +287,6 @@ export const PostFindManySchema: z.ZodType<Prisma.PostFindManyArgs> = schema;
 export const PostFindManyZodSchema = schema;
 ```
 
-#### Usage Examples
-
 Type-safe version (perfect Prisma integration):
 
 ```ts
@@ -367,23 +383,15 @@ Pro tips:
 <summary><strong>🔄 Supported Versions & Migration Guide</strong></summary>
 
 ### Current Requirements
-
-| Component | Version | Status |
-|-----------|---------|---------|
-| **Node.js** | 18+ | ✅ Required |
 | **Prisma** | 6.12.0+ | ✅ Recommended |
 | **Zod** | 4.0.5+ | ✅ Required |
 | **TypeScript** | 5.8+ | ✅ Recommended |
-
 ### Prisma Client Generator Support
 
 Both legacy and new ESM-compatible generators are supported:
 
 #### Legacy Generator (Existing Projects)
 ```prisma
-generator client {
-  provider = "prisma-client-js"
-}
 ```
 
 #### New ESM Generator (Prisma 6.12.0+)
@@ -975,8 +983,13 @@ This generator accepts configuration from two sources. When the same option is p
 
 Notes and special cases:
 - Output path: The Prisma generator’s `output` always decides where files go. Any `output` set in the JSON config is ignored.
+- File layout: The Prisma generator’s `useMultipleFiles` and `singleFileName` override the JSON. Keep them aligned with any recipe you copy.
 - Minimal mode: If `mode = "minimal"` (or legacy `minimal = true`), select/include schemas are forcibly disabled and many complex nested inputs are suppressed to speed up generation and shrink output.
 - Legacy flags: `isGenerateSelect` / `isGenerateInclude` (Prisma block) override the newer `addSelectType` / `addIncludeType` (config JSON). Minimal mode will still force them off.
+
+Visibility of conflicts and overrides:
+- Critical cases (e.g., file layout conflicts; minimal mode overriding select/include) are surfaced as tagged info lines prefixed with `[prisma-zod-generator]`.
+- Detailed context and tips are printed only when debug logging is enabled.
 
 ### Option availability matrix
 
@@ -1012,6 +1025,8 @@ generator zod {
 ```
 
 When both sources specify the same simple option (e.g., `useMultipleFiles`), the Prisma block wins. Nested settings (like `models` and `variants`) should live in the JSON file.
+
+Tip when using recipes: If you want models-only (multi-file) but your generator block still has `useMultipleFiles = false` from a previous setup, you'll see extra files or a bundle you didn't expect. Copy the matching generator block snippet from `snippets/<recipe>/schema.prisma` alongside the recipe JSON.
 
 ### How @zod schema comments fit into precedence
 
