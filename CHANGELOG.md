@@ -1,3 +1,21 @@
+## [1.6.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.5.0...v1.6.0) (2025-08-11)
+
+### 🚀 Features
+
+* **docs:** add recipes and snippets with generator block examples and configs ([bb284c7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bb284c7b4a39fbb6824a02c6d2f4fecb985deffa))
+
+### 🐛 Bug Fixes
+
+* **prisma:** add User.password to align generated create inputs with tests ([8485187](https://github.com/omar-dulaimi/prisma-zod-generator/commit/84851874101deaea8e5dfd6aeb754dc6adb39f04))
+
+### ♻️ Code Refactoring
+
+* **config:** improve option parsing and precedence; add tagged warnings and info messages ([81b0d91](https://github.com/omar-dulaimi/prisma-zod-generator/commit/81b0d9125276e98f06df899586152347ddabe866))
+
+### 📚 Documentation
+
+* **readme:** clarify config precedence and logging with tagged messages ([96d705b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/96d705b59ee445727a855953317cfb81de0f7d9f))
+
 ## [1.5.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.4.2...v1.5.0) (2025-08-10)
 
 ### 🚀 Features
