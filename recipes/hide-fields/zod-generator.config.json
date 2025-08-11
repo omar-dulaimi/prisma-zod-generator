@@ -1,0 +1,19 @@
+{
+  "mode": "custom",
+  "strictCreateInputs": false,
+  "preserveRequiredScalarsOnCreate": false,
+  "globalExclusions": {
+    "pure": ["password", "hashedPassword"],
+    "input": [],
+    "result": []
+  },
+  "models": {
+    "User": {
+      "variants": {
+        "pure": { "excludeFields": ["emailVerifiedAt"] },
+        "input": { "excludeFields": ["role", "permissions"] },
+        "result": { "excludeFields": ["password"] }
+      }
+    }
+  }
+}

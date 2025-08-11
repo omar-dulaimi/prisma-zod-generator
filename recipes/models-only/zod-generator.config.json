@@ -1,0 +1,11 @@
+{
+  "mode": "custom",
+  "useMultipleFiles": true,
+  "pureModels": true,
+  "variants": {
+    "pure": { "enabled": true, "suffix": ".model" },
+    "input": { "enabled": false, "suffix": ".input" },
+    "result": { "enabled": false, "suffix": ".result" }
+  },
+  "models": {}
+}

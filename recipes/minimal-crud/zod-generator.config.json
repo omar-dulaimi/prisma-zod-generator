@@ -1,0 +1,9 @@
+{
+  "mode": "minimal",
+  "pureModels": true,
+  "variants": {
+    "pure": { "enabled": true, "suffix": ".model" },
+    "input": { "enabled": true, "suffix": ".input", "excludeFields": ["id", "createdAt", "updatedAt"] },
+    "result": { "enabled": false, "suffix": ".result" }
+  }
+}

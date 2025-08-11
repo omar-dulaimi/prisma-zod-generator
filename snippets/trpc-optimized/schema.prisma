@@ -1,0 +1,9 @@
+// Example generator block for tRPC optimized recipe
+// Copy into your schema.prisma and adjust paths
+
+generator zodTrpcOptimized {
+  provider         = "prisma-zod-generator"
+  output           = "./src/zod"
+  useMultipleFiles = true
+  config           = "./zod-generator.config.json"
+}

@@ -1,0 +1,10 @@
+{
+  "mode": "custom",
+  "pureModels": false,
+  "variants": {
+    "pure": { "enabled": false, "suffix": ".model" },
+    "input": { "enabled": false, "suffix": ".request" },
+    "result": { "enabled": true, "suffix": ".response" }
+  },
+  "models": {}
+}

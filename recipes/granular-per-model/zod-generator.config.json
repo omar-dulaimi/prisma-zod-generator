@@ -1,0 +1,17 @@
+{
+  "mode": "custom",
+  "models": {
+    "User": {
+      "enabled": true,
+      "operations": ["findMany", "findUnique", "create", "update"],
+      "variants": {
+        "input": { "excludeFields": ["role", "permissions"] },
+        "result": { "excludeFields": [] },
+        "pure": { "excludeFields": [] }
+      }
+    },
+    "Account": {
+      "enabled": false
+    }
+  }
+}
