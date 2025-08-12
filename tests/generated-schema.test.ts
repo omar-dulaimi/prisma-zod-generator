@@ -165,7 +165,7 @@ describe('Generated Schema Tests', () => {
               title: 'Test Post',
               content: 'Test content',
               likes: BigInt(0),
-              bytes: Buffer.from([1,2,3])
+              bytes: new Uint8Array([1, 2, 3])
             },
           },
         };

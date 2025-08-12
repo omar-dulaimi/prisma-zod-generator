@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { 
-  TestEnvironment, 
-  ConfigGenerator, 
-  PrismaSchemaGenerator,
-  SchemaValidationUtils,
-  GENERATION_TIMEOUT 
+import { describe, expect, it } from 'vitest';
+import {
+    ConfigGenerator,
+    GENERATION_TIMEOUT,
+    PrismaSchemaGenerator,
+    SchemaValidationUtils,
+    TestEnvironment
 } from './helpers';
 
 describe('Pure Model Schema Generation Tests', () => {
@@ -63,8 +63,8 @@ describe('Pure Model Schema Generation Tests', () => {
           // JSON fields should map to z.unknown() or z.record()
           expect(content).toMatch(/jsonField.*z\.unknown\(\)|z\.record\(\)/);
           
-          // Bytes fields should map to z.instanceof(Buffer) or z.string()
-          expect(content).toMatch(/bytesField.*z\.instanceof\(Buffer\)|z\.string\(\)/);
+          // Bytes fields should map to z.instanceof(Uint8Array) or z.string()
+          expect(content).toMatch(/bytesField.*z\.instanceof\(Uint8Array\)|z\.string\(\)/);
           
           // Decimal fields should map to z.number() or z.string()
           expect(content).toMatch(/decimalField.*z\.number\(\)|z\.string\(\)/);
@@ -578,9 +578,9 @@ model ComplexTypes {
           expect(content).toMatch(/settings.*z\.(unknown|record)\(\)/);
           expect(content).toMatch(/metadata.*z\.(unknown|record)\(\).*\.optional\(\)/);
           
-          // Bytes fields - should be z.instanceof(Buffer) or z.string()
-          expect(content).toMatch(/avatar.*z\.(instanceof\(Buffer\)|string)\(\).*\.optional\(\)/);
-          expect(content).toMatch(/document.*z\.(instanceof\(Buffer\)|string)\(\)/);
+          // Bytes fields - should be z.instanceof(Uint8Array) or z.string()
+          expect(content).toMatch(/avatar.*z\.(instanceof\(Uint8Array\)|string)\(\).*\.optional\(\)/);
+          expect(content).toMatch(/document.*z\.(instanceof\(Uint8Array\)|string)\(\)/);
           
           // DateTime fields - should be z.date() or z.coerce.date()
           expect(content).toMatch(/createdAt.*z\.(date|coerce\.date)\(\)/);

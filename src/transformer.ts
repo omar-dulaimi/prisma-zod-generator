@@ -969,7 +969,7 @@ export default class Transformer {
       } else if (inputType.type === 'Bytes') {
         result.push(
           this.wrapWithZodValidators(
-            'z.instanceof(Buffer)',
+            'z.instanceof(Uint8Array)',
             field,
             inputType,
           ),

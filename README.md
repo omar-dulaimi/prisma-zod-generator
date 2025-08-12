@@ -1026,7 +1026,7 @@ generator zod {
 
 When both sources specify the same simple option (e.g., `useMultipleFiles`), the Prisma block wins. Nested settings (like `models` and `variants`) should live in the JSON file.
 
-Tip when using recipes: If you want models-only (multi-file) but your generator block still has `useMultipleFiles = false` from a previous setup, you'll see extra files or a bundle you didn't expect. Copy the matching generator block snippet from `snippets/<recipe>/schema.prisma` alongside the recipe JSON.
+Tip when using recipes: If you want models-only (multi-file) but your generator block still has `useMultipleFiles = false` from a previous setup, you'll see extra files or a bundle you didn't expect. Open the matching recipe folder under `recipes/<name>/` and copy the generator block from its `schema.prisma`.
 
 ### How @zod schema comments fit into precedence
 

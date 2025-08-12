@@ -1,9 +1,0 @@
-// Example generator block for multi-file output (models-only or similar)
-// Copy into your schema.prisma and adjust paths
-
-generator zodModelsOnly {
-  provider         = "prisma-zod-generator"
-  output           = "./prisma/generated"
-  useMultipleFiles = true
-  config           = "./zod-generator.config.json"
-}

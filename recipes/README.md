@@ -1,6 +1,6 @@
 # Recipes: common configuration presets and patterns
 
-This folder collects community-requested “recipes” as drop-in JSON configs and small code/prisma snippets. Pick what matches your use-case, copy the JSON into your project as `zod-generator.config.json` (or any name you reference), and point your Prisma generator block at it.
+This folder collects community-requested “recipes” as drop-in JSON configs and small code/prisma examples. Pick what matches your use-case, copy the JSON into your project as `zod-generator.config.json` (or any name you reference), and point your Prisma generator block at it.
 
 Important: The Prisma generator block takes precedence over the JSON for simple options like file layout. If your schema.prisma sets `useMultipleFiles`, `singleFileName`, or `placeSingleFileAtRoot`, it will override the recipe JSON. Keep them in sync to avoid surprises.
 
@@ -51,15 +51,15 @@ Notes:
 
 Per-recipe generator block snippets
 
-See ready-to-copy blocks under the top-level snippets/<recipe>/schema.prisma:
+Ready-to-copy generator blocks now live inside each recipe folder under `recipes/<name>/schema.prisma`:
 
-- ../snippets/single-file/schema.prisma
-- ../snippets/models-only/schema.prisma
-- ../snippets/minimal-crud/schema.prisma
-- ../snippets/api-result-schemas/schema.prisma
-- ../snippets/trpc-optimized/schema.prisma
-- ../snippets/hide-fields/schema.prisma
-- ../snippets/granular-per-model/schema.prisma
+- single-file/schema.prisma
+- models-only/schema.prisma
+- minimal-crud/schema.prisma
+- api-result-schemas/schema.prisma
+- trpc-optimized/schema.prisma
+- hide-fields/schema.prisma
+- granular-per-model/schema.prisma
 
 Foldered quick-starts
 
@@ -88,8 +88,8 @@ Folders:
 - hide-fields/ — Hide properties globally/per-model (Issue #75)
 - granular-per-model/ — Select operations per model, disable models (Issue #49)
 - trpc-optimized/ — Input/output focused for tRPC (Issues #49, #139)
-- snippets/schema-comments/schema.prisma — Rich @zod field validation (Issue #80)
-- snippets/derive-trpc-schemas/derive-trpc-schemas.ts — Derive request schemas via omit/extend (Issue #49)
+- schema-comments/schema.prisma — Rich @zod field validation (Issue #80)
+- derive-trpc-schemas/derive-trpc-schemas.ts — Derive request schemas via omit/extend (Issue #49)
 
 ## How to use
 
