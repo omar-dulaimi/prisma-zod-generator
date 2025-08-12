@@ -35,6 +35,8 @@ export interface GeneratorConfig {
   pureModels?: boolean;
   /** When generating pure model schemas, emit a lean version without JSDoc/stats/comments. Default: true */
   pureModelsLean?: boolean;
+  /** When pureModels are enabled, include relation fields in generated model objects. Default: false (relations omitted). */
+  pureModelsIncludeRelations?: boolean;
 
   /** Strategy for DateTime scalar mapping in pure models and variants. Default: 'date' */
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';

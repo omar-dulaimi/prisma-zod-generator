@@ -1802,7 +1802,14 @@ export class PrismaTypeMapper {
     };
 
     // Apply field exclusions if provided via generator config models[Model].variants.pure.excludeFields
-    const fieldsToProcess = model.fields;
+    // Allow runtime config-driven filtering of relation fields when pureModels enabled
+    const cfg = (require('../transformer').default.getGeneratorConfig?.() || {}) as { pureModels?: boolean; pureModelsIncludeRelations?: boolean };
+    let fieldsToProcess = model.fields;
+    if (cfg.pureModels && cfg.pureModelsIncludeRelations !== true) {
+      // Omit relation (object kind) fields for slimmer pure model output
+      fieldsToProcess = fieldsToProcess.filter(f => f.kind !== 'object');
+      composition.statistics.totalFields = fieldsToProcess.length;
+    }
   // Pure model exclusions are handled earlier during config processing and object schema filtering.
   // This generator operates on the Prisma DMMF model directly.
 

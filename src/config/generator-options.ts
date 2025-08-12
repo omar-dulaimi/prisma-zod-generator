@@ -19,6 +19,7 @@ export interface ExtendedGeneratorOptions {
   singleFileName?: string;    // Name of the single bundle file when useMultipleFiles=false
   placeSingleFileAtRoot?: boolean; // When single file, place it at output root (default true)
   pureModelsLean?: boolean;        // Lean pure models (suppress docs)
+  pureModelsIncludeRelations?: boolean; // Include relation fields when generating pure models (default false)
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString'; // DateTime scalar strategy
   
   // Existing options (for backward compatibility)
@@ -66,6 +67,9 @@ export function parseGeneratorOptions(
   }
   if (generatorConfig.pureModelsLean !== undefined) {
     options.pureModelsLean = parseBoolean(generatorConfig.pureModelsLean, 'pureModelsLean');
+  }
+  if (generatorConfig.pureModelsIncludeRelations !== undefined) {
+    options.pureModelsIncludeRelations = parseBoolean(generatorConfig.pureModelsIncludeRelations, 'pureModelsIncludeRelations');
   }
   if (generatorConfig.dateTimeStrategy !== undefined) {
     const v = generatorConfig.dateTimeStrategy;
@@ -302,6 +306,9 @@ export function generatorOptionsToConfigOverrides(
   if (options.pureModelsLean !== undefined) {
     overrides.pureModelsLean = options.pureModelsLean;
   }
+  if (options.pureModelsIncludeRelations !== undefined) {
+    overrides.pureModelsIncludeRelations = options.pureModelsIncludeRelations;
+  }
   if (options.dateTimeStrategy) {
     overrides.dateTimeStrategy = options.dateTimeStrategy;
   }
@@ -322,6 +329,7 @@ export interface GeneratorConfigOverrides {
   singleFileName?: string;
   placeSingleFileAtRoot?: boolean;
   pureModelsLean?: boolean;
+  pureModelsIncludeRelations?: boolean;
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
   variants?: {
     pure?: { enabled?: boolean };

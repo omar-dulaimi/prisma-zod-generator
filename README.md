@@ -906,6 +906,7 @@ app.post('/users', async (req, res) => {
 | `placeSingleFileAtRoot` | When `useMultipleFiles=false`, place the single file at the generator output root instead of a `schemas/` subfolder | `boolean` | `true` |
 | `pureModels` | Emit plain model object schemas (no operation args wiring) | `boolean` | `false` (implicitly true in minimal mode) |
 | `pureModelsLean` | When pure models are enabled, omit JSDoc/statistics & field doc blocks for minimal output | `boolean` | `true` |
+| `pureModelsIncludeRelations` | When pureModels are enabled, include relation fields (lazy refs). Default excludes relations for slimmer objects | `boolean` | `false` |
 | `dateTimeStrategy` | Mapping for Prisma `DateTime` ("date" | "coerce" | "isoString") | `string` | `"date"` |
 
 ### Advanced Configuration
@@ -929,6 +930,7 @@ generator zod {
   // Pure model + DateTime handling examples
   pureModels        = true              // enable pure model schemas (can also go in JSON)
   pureModelsLean    = true              // default: lean (no doc banners)
+  pureModelsIncludeRelations = true     // opt-in to emit relation fields (default false)
   dateTimeStrategy  = "coerce"          // accept strings/numbers, coerce to Date
   config            = "./zod-config.json"
 }

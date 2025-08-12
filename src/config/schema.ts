@@ -63,6 +63,11 @@ export const ConfigurationSchema: JSONSchema7 = {
       default: true,
       description: 'Emit lean pure model schemas (no verbose JSDoc/statistics/comments)'
     },
+    pureModelsIncludeRelations: {
+      type: 'boolean',
+      default: false,
+      description: 'When pureModels is true, include relation fields. Default false (omit relation fields for slimmer models)'
+    },
     dateTimeStrategy: {
       type: 'string',
       enum: ['date', 'coerce', 'isoString'],

@@ -44,6 +44,7 @@ Quick navigation:
 | `preserveRequiredScalarsOnCreate` | `boolean` | `true` | `true` | Keep required scalar fields even when `strictCreateInputs=false`. |
 | `inferCreateArgsFromSchemas` | `boolean` | `false` | `false` | Build create args from generated schemas instead of Prisma types. |
 | `pureModelsLean` | `boolean` | `true` | `true` | When `pureModels` are enabled, emit a lean form (no JSDoc header blocks, statistics, or field doc comments). Set `false` to restore rich docs. |
+| `pureModelsIncludeRelations` | `boolean` | `false` | `false` | When `pureModels` are enabled, include relation fields (lazy refs). Default omits relations for slimmer pure models. |
 | `dateTimeStrategy` | `"date" | "coerce" | "isoString"` | `"date"` | `"date"` | Maps Prisma `DateTime` scalars in generated schemas. See DateTime Strategies section. |
 
 ## Global Filtering

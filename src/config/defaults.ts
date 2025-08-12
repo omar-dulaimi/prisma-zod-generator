@@ -1,9 +1,9 @@
 import { GeneratorConfig, ModelConfig, VariantConfig } from './parser';
 import {
-    DEFAULT_CONFIG,
-    GENERATION_MODES,
-    MINIMAL_OPERATIONS,
-    PRISMA_OPERATIONS
+  DEFAULT_CONFIG,
+  GENERATION_MODES,
+  MINIMAL_OPERATIONS,
+  PRISMA_OPERATIONS
 } from './schema';
 
 /**
@@ -53,6 +53,7 @@ export class DefaultConfigurationManager {
   inferCreateArgsFromSchemas: false,
       pureModels: false, // Default to false, can be overridden by user config
   pureModelsLean: true,
+  pureModelsIncludeRelations: false,
   dateTimeStrategy: 'date',
       globalExclusions: {
         input: [],
@@ -90,6 +91,7 @@ export class DefaultConfigurationManager {
       mode: 'minimal',
       pureModels: true, // Enable pure models by default in minimal mode
   pureModelsLean: true,
+  pureModelsIncludeRelations: false,
       variants: {
         pure: {
           enabled: true,

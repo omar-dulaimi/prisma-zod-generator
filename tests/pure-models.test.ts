@@ -2,11 +2,11 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
-    ConfigGenerator,
-    GENERATION_TIMEOUT,
-    PrismaSchemaGenerator,
-    SchemaValidationUtils,
-    TestEnvironment
+  ConfigGenerator,
+  GENERATION_TIMEOUT,
+  PrismaSchemaGenerator,
+  SchemaValidationUtils,
+  TestEnvironment
 } from './helpers';
 
 describe('Pure Model Schema Generation Tests', () => {
@@ -1049,6 +1049,112 @@ model User {
           });
         }
 
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+  });
+  
+  describe('pureModelsIncludeRelations flag', () => {
+    it('omits relation fields by default when pureModels enabled', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('pure-models-relations-default');
+      try {
+        const config = { ...ConfigGenerator.createBasicConfig(), pureModels: true };
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  posts Post[]
+}
+
+model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  author   User?  @relation(fields: [authorId], references: [id])
+  authorId Int?
+}
+`;
+        writeFileSync(join(testEnv.testDir, 'config.json'), JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+        await testEnv.runGeneration();
+        const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
+        const userModelPath = join(modelsDir, 'User.schema.ts');
+        if (existsSync(userModelPath)) {
+          const content = readFileSync(userModelPath, 'utf-8');
+          expect(content).not.toMatch(/posts:/);
+        }
+        const postModelPath = join(modelsDir, 'Post.schema.ts');
+        if (existsSync(postModelPath)) {
+          const content = readFileSync(postModelPath, 'utf-8');
+          expect(content).not.toMatch(/author:/);
+        }
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('includes relation fields when pureModelsIncludeRelations=true', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('pure-models-relations-enabled');
+      try {
+        const config = { ...ConfigGenerator.createBasicConfig(), pureModels: true, pureModelsIncludeRelations: true };
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  posts Post[]
+}
+
+model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  author   User?  @relation(fields: [authorId], references: [id])
+  authorId Int?
+}
+`;
+        writeFileSync(join(testEnv.testDir, 'config.json'), JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+        await testEnv.runGeneration();
+        const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
+        const userModelPath = join(modelsDir, 'User.schema.ts');
+        if (existsSync(userModelPath)) {
+          const content = readFileSync(userModelPath, 'utf-8');
+          expect(content).toMatch(/posts:/);
+        }
+        const postModelPath = join(modelsDir, 'Post.schema.ts');
+        if (existsSync(postModelPath)) {
+          const content = readFileSync(postModelPath, 'utf-8');
+          expect(content).toMatch(/author:/);
+        }
       } finally {
         await testEnv.cleanup();
       }
