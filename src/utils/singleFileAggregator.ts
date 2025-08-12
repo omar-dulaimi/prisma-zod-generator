@@ -10,6 +10,11 @@ let needsZodImport = false;
 let needsPrismaTypeImport = false; // import type { Prisma }
 const prismaValueImports = new Set<string>(); // enums etc.
 let sawPrismaAlias = false; // whether __PrismaAlias was referenced
+let prismaImportBase = '@prisma/client';
+
+export function setSingleFilePrismaImportPath(importPath: string) {
+  prismaImportBase = importPath || '@prisma/client';
+}
 
 export function initSingleFile(bundleFullPath: string) {
   enabled = true;
@@ -117,13 +122,13 @@ export async function flushSingleFile(): Promise<void> {
     '',
   ];
   if (needsZodImport) header.push(`import { z } from 'zod';`);
-  if (needsPrismaTypeImport) header.push(`import type { Prisma } from '@prisma/client';`);
-  if (prismaValueImports.size > 0) header.push(`import { ${Array.from(prismaValueImports).sort().join(', ')} } from '@prisma/client';`);
+  if (needsPrismaTypeImport) header.push(`import type { Prisma } from '${prismaImportBase}';`);
+  if (prismaValueImports.size > 0) header.push(`import { ${Array.from(prismaValueImports).sort().join(', ')} } from '${prismaImportBase}';`);
   if (sawPrismaAlias) {
     header.push(`type __PrismaAlias = Prisma.JsonValue | Prisma.InputJsonValue;`);
     // Ensure Prisma type import is present
     if (!needsPrismaTypeImport) {
-      header.unshift(`import type { Prisma } from '@prisma/client';`);
+  header.unshift(`import type { Prisma } from '${prismaImportBase}';`);
       needsPrismaTypeImport = true;
     }
   }

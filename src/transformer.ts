@@ -1,13 +1,13 @@
 import type {
-    ConnectorType,
-    DMMF as PrismaDMMF,
+  ConnectorType,
+  DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-    findModelByName,
-    isMongodbRawOp,
+  findModelByName,
+  isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -1459,8 +1459,15 @@ export default class Transformer {
    * Get import file extension (static version)
    */
   static getImportFileExtension(): string {
-    // This mirrors the instance method but as static
-    return '.js';
+    const isNewPrismaClientGenerator = this.prismaClientProvider === 'prisma-client' ||
+      this.prismaClientConfig.moduleFormat !== undefined ||
+      this.prismaClientConfig.runtime !== undefined;
+    if (isNewPrismaClientGenerator &&
+      this.prismaClientConfig.moduleFormat === 'esm' &&
+      this.prismaClientConfig.importFileExtension) {
+      return `.${this.prismaClientConfig.importFileExtension}`;
+    }
+    return '';
   }
 
   generateSchemaImports() {

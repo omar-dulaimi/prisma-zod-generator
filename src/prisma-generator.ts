@@ -27,7 +27,7 @@ import Transformer from './transformer';
 import { AggregateOperationSupport } from './types';
 import { logger } from './utils/logger';
 import removeDir from './utils/removeDir';
-import { flushSingleFile, initSingleFile, isSingleFileEnabled } from './utils/singleFileAggregator';
+import { flushSingleFile, initSingleFile, isSingleFileEnabled, setSingleFilePrismaImportPath } from './utils/singleFileAggregator';
 import { writeFileSafely } from './utils/writeFileSafely';
 
 export async function generate(options: GeneratorOptions) {
@@ -186,10 +186,22 @@ export async function generate(options: GeneratorOptions) {
     const singleFileMode = generatorConfig.useMultipleFiles === false;
     if (singleFileMode) {
       const bundleName = (generatorConfig.singleFileName || 'schemas.ts').trim();
-  const placeAtRoot = generatorConfig.placeSingleFileAtRoot !== false; // default true
+      const placeAtRoot = generatorConfig.placeSingleFileAtRoot !== false; // default true
       const baseDir = placeAtRoot ? Transformer.getOutputPath() : Transformer.getSchemasPath();
       const bundlePath = path.join(baseDir, bundleName);
       initSingleFile(bundlePath);
+      // Configure custom Prisma client import path if user specified custom output (don't rely solely on isCustomOutput flag)
+      const potentialClientOut = prismaClientGeneratorConfig?.output?.value as string | undefined;
+      if (potentialClientOut && potentialClientOut !== '@prisma/client') {
+        try {
+          const rel = path.relative(baseDir, potentialClientOut).replace(/\\/g, '/');
+          // Prefer './' prefix when relative path does not start with '.' or '/'
+          const importPath = rel.startsWith('.') ? rel : rel.startsWith('/') ? rel : `./${rel}`;
+          setSingleFilePrismaImportPath(importPath || '@prisma/client');
+        } catch {
+          // Fallback silently to default if relative computation fails
+        }
+      }
     }
 
     await generateEnumSchemas(

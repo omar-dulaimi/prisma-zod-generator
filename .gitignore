@@ -60,3 +60,5 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+prisma/client
+debug-test
