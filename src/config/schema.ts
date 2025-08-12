@@ -58,6 +58,17 @@ export const ConfigurationSchema: JSONSchema7 = {
       default: false,
       description: 'Whether to generate pure model schemas'
     },
+    pureModelsLean: {
+      type: 'boolean',
+      default: true,
+      description: 'Emit lean pure model schemas (no verbose JSDoc/statistics/comments)'
+    },
+    dateTimeStrategy: {
+      type: 'string',
+      enum: ['date', 'coerce', 'isoString'],
+      default: 'date',
+      description: 'How DateTime fields are represented: date (z.date()), coerce (z.coerce.date()), isoString (ISO string validated & transformed)'
+    },
     addSelectType: {
       type: 'boolean',
       default: false,

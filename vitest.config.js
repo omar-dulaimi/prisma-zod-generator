@@ -18,9 +18,9 @@ export default defineConfig({
         useAtomics: true
       }
     },
-    // Add worker timeout configuration
-    maxWorkers: 1,
-    minWorkers: 1,
+  // Concurrency: allow overriding via env; default to parallel unless explicitly forced sequential.
+  maxWorkers: process.env.VITEST_MAX_WORKERS ? Number(process.env.VITEST_MAX_WORKERS) : (process.env.FEATURE_TESTS_SEQUENTIAL === '1' ? 1 : undefined),
+  minWorkers: process.env.VITEST_MIN_WORKERS ? Number(process.env.VITEST_MIN_WORKERS) : undefined,
   coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

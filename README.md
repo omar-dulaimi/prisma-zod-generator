@@ -888,6 +888,8 @@ app.post('/users', async (req, res) => {
 <details>
 <summary><strong>🔧 Configuration Options</strong></summary>
 
+> Looking for a complete, exhaustively documented list of every flag? See **[Full Configuration Reference](./CONFIG_REFERENCE.md)**.
+
 ### Basic Configuration
 
 | Option | Description | Type | Default |
@@ -902,6 +904,9 @@ app.post('/users', async (req, res) => {
 | `useMultipleFiles` | Output multiple files (true) or single bundle (false) | `boolean` | `true` |
 | `singleFileName` | Name of the single-file bundle when `useMultipleFiles=false` | `string` | `"schemas.ts"` |
 | `placeSingleFileAtRoot` | When `useMultipleFiles=false`, place the single file at the generator output root instead of a `schemas/` subfolder | `boolean` | `true` |
+| `pureModels` | Emit plain model object schemas (no operation args wiring) | `boolean` | `false` (implicitly true in minimal mode) |
+| `pureModelsLean` | When pure models are enabled, omit JSDoc/statistics & field doc blocks for minimal output | `boolean` | `true` |
+| `dateTimeStrategy` | Mapping for Prisma `DateTime` ("date" | "coerce" | "isoString") | `string` | `"date"` |
 
 ### Advanced Configuration
 
@@ -921,6 +926,10 @@ generator zod {
   placeSingleFileAtRoot = true
   isGenerateSelect  = true
   isGenerateInclude = true
+  // Pure model + DateTime handling examples
+  pureModels        = true              // enable pure model schemas (can also go in JSON)
+  pureModelsLean    = true              // default: lean (no doc banners)
+  dateTimeStrategy  = "coerce"          // accept strings/numbers, coerce to Date
   config            = "./zod-config.json"
 }
 ```
@@ -954,6 +963,29 @@ model InternalLog {
   "prismaClientPath": "@prisma/client"
 }
 ```
+
+#### DateTime Strategy Examples
+
+Choose how Prisma `DateTime` fields are represented at validation boundaries:
+
+```jsonc
+{ "dateTimeStrategy": "date" }      // -> z.date() (default)
+{ "dateTimeStrategy": "coerce" }    // -> z.coerce.date() (flexible input)
+{ "dateTimeStrategy": "isoString" } // -> z.string().regex(ISO).transform(v => new Date(v))
+```
+
+#### pureModelsLean
+
+When `pureModels` are enabled, the default `pureModelsLean: true` suppresses large JSDoc header banners, schema statistics, and field documentation comments for ultra-small output. Set `pureModelsLean: false` to restore verbose docs:
+
+```jsonc
+{
+  "pureModels": true,
+  "pureModelsLean": false
+}
+```
+
+Provides parity with popular “lean” generators while still allowing an opt-in to rich docs for teams that want them.
 
 </details>
 

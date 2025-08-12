@@ -18,6 +18,8 @@ export interface ExtendedGeneratorOptions {
   useMultipleFiles?: boolean; // Output multiple files (default true) or single bundle
   singleFileName?: string;    // Name of the single bundle file when useMultipleFiles=false
   placeSingleFileAtRoot?: boolean; // When single file, place it at output root (default true)
+  pureModelsLean?: boolean;        // Lean pure models (suppress docs)
+  dateTimeStrategy?: 'date' | 'coerce' | 'isoString'; // DateTime scalar strategy
   
   // Existing options (for backward compatibility)
   isGenerateSelect?: boolean;
@@ -61,6 +63,16 @@ export function parseGeneratorOptions(
   }
   if (generatorConfig.placeSingleFileAtRoot !== undefined) {
     options.placeSingleFileAtRoot = parseBoolean(generatorConfig.placeSingleFileAtRoot, 'placeSingleFileAtRoot');
+  }
+  if (generatorConfig.pureModelsLean !== undefined) {
+    options.pureModelsLean = parseBoolean(generatorConfig.pureModelsLean, 'pureModelsLean');
+  }
+  if (generatorConfig.dateTimeStrategy !== undefined) {
+    const v = generatorConfig.dateTimeStrategy;
+    if (!['date', 'coerce', 'isoString'].includes(v)) {
+      throw new GeneratorOptionError('dateTimeStrategy', v, 'Must be one of "date", "coerce", "isoString"');
+    }
+    options.dateTimeStrategy = v as 'date' | 'coerce' | 'isoString';
   }
 
   // Parse existing options for backward compatibility
@@ -287,6 +299,12 @@ export function generatorOptionsToConfigOverrides(
   if (options.placeSingleFileAtRoot !== undefined) {
     overrides.placeSingleFileAtRoot = options.placeSingleFileAtRoot;
   }
+  if (options.pureModelsLean !== undefined) {
+    overrides.pureModelsLean = options.pureModelsLean;
+  }
+  if (options.dateTimeStrategy) {
+    overrides.dateTimeStrategy = options.dateTimeStrategy;
+  }
 
   return overrides;
 }
@@ -303,6 +321,8 @@ export interface GeneratorConfigOverrides {
   useMultipleFiles?: boolean;
   singleFileName?: string;
   placeSingleFileAtRoot?: boolean;
+  pureModelsLean?: boolean;
+  dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
   variants?: {
     pure?: { enabled?: boolean };
     input?: { enabled?: boolean };

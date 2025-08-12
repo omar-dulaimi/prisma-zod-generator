@@ -1,0 +1,13 @@
+{
+	"mode": "custom",
+	"output": "./myZod",
+	"useMultipleFiles": false,
+	"singleFileName": "index.ts",
+	"pureModels": false,
+	"variants": {
+		"pure": { "enabled": false, "suffix": ".model" },
+		"input": { "enabled": false, "suffix": ".input" },
+		"result": { "enabled": false, "suffix": ".result" }
+	},
+	"models": {}
+}

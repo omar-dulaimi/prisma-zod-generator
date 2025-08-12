@@ -52,6 +52,8 @@ export class DefaultConfigurationManager {
   preserveRequiredScalarsOnCreate: true,
   inferCreateArgsFromSchemas: false,
       pureModels: false, // Default to false, can be overridden by user config
+  pureModelsLean: true,
+  dateTimeStrategy: 'date',
       globalExclusions: {
         input: [],
         result: [],
@@ -87,6 +89,7 @@ export class DefaultConfigurationManager {
       ...baseConfig,
       mode: 'minimal',
       pureModels: true, // Enable pure models by default in minimal mode
+  pureModelsLean: true,
       variants: {
         pure: {
           enabled: true,

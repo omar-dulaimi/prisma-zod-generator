@@ -33,6 +33,11 @@ export interface GeneratorConfig {
   
   /** Whether to generate pure model schemas */
   pureModels?: boolean;
+  /** When generating pure model schemas, emit a lean version without JSDoc/stats/comments. Default: true */
+  pureModelsLean?: boolean;
+
+  /** Strategy for DateTime scalar mapping in pure models and variants. Default: 'date' */
+  dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
   
   /** Global field exclusions */
   globalExclusions?: {
