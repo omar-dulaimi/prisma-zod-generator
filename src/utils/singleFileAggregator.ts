@@ -11,6 +11,7 @@ let needsPrismaTypeImport = false; // import type { Prisma }
 const prismaValueImports = new Set<string>(); // enums etc.
 let sawPrismaAlias = false; // whether __PrismaAlias was referenced
 let prismaImportBase = '@prisma/client';
+let needsJsonHelpers = false; // whether to inject json helpers block
 
 export function setSingleFilePrismaImportPath(importPath: string) {
   prismaImportBase = importPath || '@prisma/client';
@@ -41,6 +42,7 @@ export function appendSingleFile(filePath: string, rawContent: string) {
 function transformContentForSingleFile(filePath: string, source: string): string {
   const lines = source.split(/\r?\n/);
   const kept: string[] = [];
+  let inJsonSkip = false;
   const relImportRe = /^\s*import\s+[^'";]+from\s+['"](\.\.?\/)[^'"]+['"];?\s*$/;
   const zodImportRe = /^\s*import\s+\{\s*z\s*\}\s+from\s+['"]zod['"];?\s*$/;
   const prismaTypeImportRe = /^\s*import\s+type\s+\{\s*Prisma\s*\}\s+from\s+['"]@prisma\/client['"];?\s*$/;
@@ -52,6 +54,21 @@ function transformContentForSingleFile(filePath: string, source: string): string
 
   // We'll collect lines then fix the common local "const Schema" alias to a unique name
   for (const line of lines) {
+    // Detect and strip inline JSON helper blocks (comment + IIFE) keeping only a single hoisted version
+    if (/JSON helper schemas/.test(line)) {
+      needsJsonHelpers = true;
+      // Skip this marker line and enter skip mode until block end
+      inJsonSkip = true;
+      continue;
+    }
+    if (typeof inJsonSkip !== 'undefined' && inJsonSkip) {
+      // Block ends when we hit the closing IIFE line '})();'
+      if (/^\s*\)\(\);\s*$/.test(line) || /^\s*\)\);\s*$/.test(line)) {
+        inJsonSkip = false; // finished skipping block
+      }
+      continue; // skip all lines within block
+    }
+    if (/import\s+\{\s*JsonValueSchema\s+as\s+jsonSchema\s*\}\s+from\s+['"]\.\/helpers\/json-helpers['"];?/.test(line)) { needsJsonHelpers = true; continue; }
     if (zodImportRe.test(line)) { needsZodImport = true; continue; }
     if (prismaTypeImportRe.test(line)) { needsPrismaTypeImport = true; continue; }
     const m = line.match(prismaValueImportRe);
@@ -124,6 +141,20 @@ export async function flushSingleFile(): Promise<void> {
   if (needsZodImport) header.push(`import { z } from 'zod';`);
   if (needsPrismaTypeImport) header.push(`import type { Prisma } from '${prismaImportBase}';`);
   if (prismaValueImports.size > 0) header.push(`import { ${Array.from(prismaValueImports).sort().join(', ')} } from '${prismaImportBase}';`);
+  if (needsJsonHelpers) {
+    header.push(`// JSON helper schemas (hoisted)`);
+    header.push(`const jsonSchema = (() => {`);
+    header.push(`  const JsonValueSchema: any = (() => {`);
+    header.push(`    const recur: any = z.lazy(() => z.union([`);
+    header.push(`      z.string(), z.number(), z.boolean(), z.literal(null),`);
+    header.push(`      z.record(z.string(), z.lazy(() => recur.optional())),`);
+    header.push(`      z.array(z.lazy(() => recur)),`);
+    header.push(`    ]));`);
+    header.push(`    return recur;`);
+    header.push(`  })();`);
+    header.push(`  return JsonValueSchema;`);
+    header.push(`})();`);
+  }
   if (sawPrismaAlias) {
     header.push(`type __PrismaAlias = Prisma.JsonValue | Prisma.InputJsonValue;`);
     // Ensure Prisma type import is present

@@ -1,13 +1,13 @@
 import type {
-  ConnectorType,
-  DMMF as PrismaDMMF,
+    ConnectorType,
+    DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-  findModelByName,
-  isMongodbRawOp,
+    findModelByName,
+    isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -56,6 +56,7 @@ export default class Transformer {
   private static zodSchemaSuffix: string = 'ZodSchema';   // Suffix for Zod schemas (PostFindManyZodSchema)
   // Track excluded field names for current object generation to inform typed Omit
   private lastExcludedFieldNames: string[] | null = null;
+  private static jsonHelpersWritten = false;
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
@@ -1247,10 +1248,20 @@ export default class Transformer {
     const objectSchema = `${this.generateExportObjectSchemaStatement(
       this.addFinalWrappers({ zodStringFields: zodObjectSchemaFields }),
     )}\n`;
-
-    const json = this.generateJsonSchemaImplementation();
-
-    return `${this.generateObjectSchemaImportStatements()}${json}${objectSchema}`;
+  const baseImports = this.generateObjectSchemaImportStatements();
+    let jsonImport = '';
+    if (this.hasJson) {
+      const cfg = Transformer.getGeneratorConfig();
+      const isMinimal = cfg?.mode === 'minimal';
+      if (isMinimal) {
+        // Inline lightweight json helpers per file (cheaper in minimal mode, files are separate)
+        jsonImport = `\nconst literalSchema = z.union([z.string(), z.number(), z.boolean()]);\nconst jsonSchema: any = z.lazy(() =>\n  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])\n);\n\n`;
+      } else {
+        Transformer.ensureJsonHelpersFile();
+        jsonImport = `import { JsonValueSchema as jsonSchema } from './helpers/json-helpers';\n\n`;
+      }
+    }
+  return `${baseImports}${jsonImport}${objectSchema}`;
   }
 
   generateExportObjectSchemaStatement(schema: string) {
@@ -1342,18 +1353,34 @@ export default class Transformer {
     return this.wrapWithZodObject(fields) + '.strict()';
   }
 
-  generateJsonSchemaImplementation() {
-    let jsonSchemaImplementation = '';
+  // Legacy method retained for backward compatibility; now returns empty string.
+  generateJsonSchemaImplementation() { return ''; }
 
-    if (this.hasJson) {
-      jsonSchemaImplementation += `\n`;
-      jsonSchemaImplementation += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
-      jsonSchemaImplementation += `const jsonSchema = z.lazy(() =>\n`;
-      jsonSchemaImplementation += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])\n`;
-      jsonSchemaImplementation += `);\n\n`;
+  private static async writeJsonHelpersFile(targetPath: string) {
+    const fs = await import('fs');
+    const pathMod = await import('path');
+    const helpersDir = pathMod.join(targetPath, 'helpers');
+    await fs.promises.mkdir(helpersDir, { recursive: true });
+    const filePath = pathMod.join(helpersDir, 'json-helpers.ts');
+    // Source content mirrors src/helpers/json-helpers.ts (keep in sync manually)
+    const content = `import { z } from 'zod';\nimport { Prisma } from '@prisma/client';\n\nexport type NullableJsonInput = Prisma.JsonValue | null | 'JsonNull' | 'DbNull' | Prisma.NullTypes.DbNull | Prisma.NullTypes.JsonNull;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return Prisma.DbNull;\n  if (v === 'JsonNull') return Prisma.JsonNull;\n  return v;\n};\nexport const JsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n);\nexport const InputJsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n);\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull')])\n  .nullable()\n  .transform((v) => transformJsonNull(v));\n`;
+    await fs.promises.writeFile(filePath, content, 'utf8');
+  }
+
+  private static ensureJsonHelpersFile() {
+    if (this.jsonHelpersWritten) return;
+    this.jsonHelpersWritten = true;
+    try {
+      const fs = require('fs');
+      const pathMod = require('path');
+      const helpersDir = pathMod.join(this.outputPath, 'helpers');
+      fs.mkdirSync(helpersDir, { recursive: true });
+      const filePath = pathMod.join(helpersDir, 'json-helpers.ts');
+      const content = `import { z } from 'zod';\nimport { Prisma } from '@prisma/client';\n\nexport type NullableJsonInput = Prisma.JsonValue | null | 'JsonNull' | 'DbNull' | Prisma.NullTypes.DbNull | Prisma.NullTypes.JsonNull;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return Prisma.DbNull;\n  if (v === 'JsonNull') return Prisma.JsonNull;\n  return v;\n};\nexport const JsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n);\nexport const InputJsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n);\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull')])\n  .nullable()\n  .transform((v) => transformJsonNull(v));\n`;
+      fs.writeFileSync(filePath, content, 'utf8');
+    } catch (e) {
+      logger.warn(`Failed to write json helpers: ${e}`);
     }
-
-    return jsonSchemaImplementation;
   }
 
   generateObjectSchemaImportStatements() {
