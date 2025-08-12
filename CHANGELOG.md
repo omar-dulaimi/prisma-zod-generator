@@ -1,3 +1,14 @@
+## [1.7.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.6.0...v1.7.0) (2025-08-12)
+
+### 🚀 Features
+
+* **bytes:** align Prisma Bytes mapping with v6 (Uint8Array) and update tests\n\n- I/O schemas: map Bytes to z.instanceof(Uint8Array)\n- Pure models: default to base64 string with size checks; opt-out to Uint8Array via config\n- Update tests and docs/comments accordingly\n\nBREAKING CHANGE: Prisma Bytes now validated as Uint8Array in generated I/O schemas. Pure model default remains base64 string, with config to use Uint8Array. ([15ca502](https://github.com/omar-dulaimi/prisma-zod-generator/commit/15ca502812e87c20ffc5148e744e8c56977ef4ae))
+
+### 📚 Documentation
+
+* **recipes:** fix wrong file names and snippet paths in recipe READMEs; clarify usage steps ([20ec581](https://github.com/omar-dulaimi/prisma-zod-generator/commit/20ec581e048569cc93f845c215d2d1ccbe94665a))
+* **recipes:** remove top-level snippets and update references to recipes/*\n\n- Delete snippets/ folder\n- Update README and recipes/README to point to recipes/<name>/schema.prisma\n- Keep historical mention in CHANGELOG as-is ([3aa4009](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3aa4009bafcc27ee35f12753766adbd1f5503e84))
+
 ## [1.6.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.5.0...v1.6.0) (2025-08-11)
 
 ### 🚀 Features
