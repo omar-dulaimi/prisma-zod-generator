@@ -1,9 +1,0 @@
-// Example generator block for hide-fields recipe
-// Copy into your schema.prisma and adjust paths
-
-generator zodHideFields {
-  provider         = "prisma-zod-generator"
-  output           = "./prisma/generated"
-  useMultipleFiles = true
-  config           = "./zod-generator.config.json"
-}

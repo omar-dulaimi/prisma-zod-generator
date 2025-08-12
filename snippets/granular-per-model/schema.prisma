@@ -1,9 +1,0 @@
-// Example generator block for granular-per-model recipe
-// Copy into your schema.prisma and adjust paths
-
-generator zodGranularPerModel {
-  provider         = "prisma-zod-generator"
-  output           = "./prisma/generated"
-  useMultipleFiles = true
-  config           = "./zod-generator.config.json"
-}
