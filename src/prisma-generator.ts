@@ -1,26 +1,26 @@
 import {
-  DMMF,
-  EnvValue,
-  GeneratorConfig,
-  GeneratorOptions,
+    DMMF,
+    EnvValue,
+    GeneratorConfig,
+    GeneratorOptions,
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-  generatorOptionsToConfigOverrides,
-  getLegacyMigrationSuggestions,
-  isLegacyUsage,
-  parseGeneratorOptions,
-  validateGeneratorOptions
+    generatorOptionsToConfigOverrides,
+    getLegacyMigrationSuggestions,
+    isLegacyUsage,
+    parseGeneratorOptions,
+    validateGeneratorOptions
 } from './config/generator-options';
 import { GeneratorConfig as CustomGeneratorConfig, VariantConfig, parseConfiguration } from './config/parser';
 import {
-  addMissingInputObjectTypes,
-  hideInputObjectTypesAndRelatedFields,
-  resolveAddMissingInputObjectTypeOptions,
-  resolveModelsComments,
+    addMissingInputObjectTypes,
+    hideInputObjectTypesAndRelatedFields,
+    resolveAddMissingInputObjectTypeOptions,
+    resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -245,6 +245,21 @@ export async function generate(options: GeneratorOptions) {
       mutableEnumTypes.model ?? [],
     );
 
+    // Determine if we should generate ONLY pure models (skip base/object/result schemas)
+    // Conditions:
+    //  - Single-file mode (user wants a compact bundle)
+    //  - pureModels enabled
+    //  - All schema variants explicitly disabled (input/result/pure variant system)
+    //  - Custom mode (avoid surprising full/minimal modes)
+    const variantsCfg = generatorConfig.variants as Record<string, { enabled?: boolean }> | undefined;
+    const allVariantsDisabled = variantsCfg
+      ? Object.values(variantsCfg).every(v => !v?.enabled)
+      : true; // if absent, treat as disabled for this heuristic
+    const pureModelsExclusiveMode = singleFileMode && !!generatorConfig.pureModels && allVariantsDisabled && generatorConfig.mode === 'custom';
+    if (pureModelsExclusiveMode) {
+      logger.debug('[prisma-zod-generator] 🎯 Pure-models-only optimization active (single-file, variants disabled)');
+    }
+
     // Validate filtering configuration and provide feedback
     const validationResult = Transformer.validateFilterCombinations(models);
     if (!validationResult.isValid) {
@@ -344,27 +359,24 @@ export async function generate(options: GeneratorOptions) {
       hiddenFields,
     );
 
-    await generateObjectSchemas(mutableInputObjectTypes, models);
-    await generateModelSchemas(
-      models,
-      mutableModelOperations,
-      aggregateOperationSupport,
-    );
-    await generateIndex();
-
-    // Generate pure model schemas if enabled
-  await generatePureModelSchemas(models, generatorConfig);
-
-    // Generate variant schemas if enabled (skipped in single-file mode by function itself)
-    await generateVariantSchemas(models, generatorConfig);
-
-    // Update main index to include variants (skip when single-file mode to avoid wasted work)
-    if (!singleFileMode) {
-      await updateIndexWithVariants(generatorConfig);
+    if (pureModelsExclusiveMode) {
+      // Only pure models (still need enums for enum references in pure models; already generated above)
+      await generatePureModelSchemas(models, generatorConfig);
+    } else {
+      await generateObjectSchemas(mutableInputObjectTypes, models);
+      await generateModelSchemas(
+        models,
+        mutableModelOperations,
+        aggregateOperationSupport,
+      );
+      await generateIndex();
+      await generatePureModelSchemas(models, generatorConfig);
+      await generateVariantSchemas(models, generatorConfig);
+      if (!singleFileMode) {
+        await updateIndexWithVariants(generatorConfig);
+      }
+      generateFilteringSummary(models, generatorConfig);
     }
-
-    // Generate filtering summary
-    generateFilteringSummary(models, generatorConfig);
 
     // If single-file mode is enabled, flush aggregator and clean directory around the bundle
     if (singleFileMode) {
@@ -1301,6 +1313,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
   try {
     const outputPath = Transformer.getOutputPath();
     const modelsOutputPath = `${outputPath}/models`;
+  const singleFileMode = isSingleFileEnabled();
     
     // Filter models based on configuration
     const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
@@ -1310,8 +1323,10 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
       return;
     }
     
-    // Create models directory
-    await fs.mkdir(modelsOutputPath, { recursive: true });
+    // Create models directory (skip if single-file mode since we aggregate)
+    if (!singleFileMode) {
+      await fs.mkdir(modelsOutputPath, { recursive: true });
+    }
     
     // Import the model generator
   const { PrismaTypeMapper } = await import('./generators/model');
@@ -1363,7 +1378,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
         // Transform content for pure models
     let content = originalContent;
         
-        // Fix import paths to use .model extension instead of lowercase names
+  // Fix import paths to use .model extension instead of lowercase names
         content = content.replace(
           /import\s+{\s*(\w+)Schema\s*}\s+from\s+['"]\.\/(\w+)['"];/g,
           (match, schemaName, importPath) => {
@@ -1398,26 +1413,39 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
           'Generated Zod model for $1'
         );
         
-        // Update type export
+  // Update type export
         content = content.replace(
           new RegExp(`z\\.infer<typeof ${modelName}Schema>`, 'g'),
           `z.infer<typeof ${modelName}Model>`
         );
-        
-        logger.debug(`   📝 Creating pure model: ${fileName} (${modelName}Model)`);
-        
-  // Use direct file writing to avoid formatting issues
-  await fs.writeFile(filePath, content);
 
-  // Also write a compatibility .schema.ts file using Schema naming
-  const schemaCompatPath = `${modelsOutputPath}/${modelName}.schema.ts`;
-  const schemaCompatContent = originalContent
-    // Rename exported constant from Model -> Schema
-    .replace(new RegExp(`export const ${modelName}Model`, 'g'), `export const ${modelName}Schema`)
-    // Update typeof references
-    .replace(new RegExp(`typeof ${modelName}Model`, 'g'), `typeof ${modelName}Schema`);
+        // Remove legacy alias export lines that reference the old *Schema name.
+        // After transformation the primary export is already *Model; keeping the alias
+        // would both redeclare the const and reference a non-existent *Schema symbol.
+        content = content.replace(
+          new RegExp(`export const ${modelName}Model = ${modelName}Schema;?\\n?`, 'g'),
+          ''
+        );
 
-  await fs.writeFile(schemaCompatPath, schemaCompatContent);
+        // Collapse multiple blank lines possibly introduced by removal
+        content = content.replace(/\n{3,}/g, '\n\n');
+
+  // (Removed large post-processing block for chained validators; generation now emits correct chains directly.)
+        
+            logger.debug(`   📝 Creating pure model: ${fileName} (${modelName}Model)`);
+
+            if (singleFileMode) {
+              // In single-file mode we append transformed model content only (no duplicate compatibility schema)
+              await writeFileSafely(filePath, content, false);
+            } else {
+              // Multi-file mode: write model + compatibility schema file
+              await fs.writeFile(filePath, content);
+              const schemaCompatPath = `${modelsOutputPath}/${modelName}.schema.ts`;
+              const schemaCompatContent = originalContent
+                .replace(new RegExp(`export const ${modelName}Model`, 'g'), `export const ${modelName}Schema`)
+                .replace(new RegExp(`typeof ${modelName}Model`, 'g'), `typeof ${modelName}Schema`);
+              await fs.writeFile(schemaCompatPath, schemaCompatContent);
+            }
         
       } catch (modelError) {
         console.error(`   ❌ Error processing model ${modelName}: ${modelError instanceof Error ? modelError.message : 'Unknown error'}`);
@@ -1425,30 +1453,25 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
       }
     }
     
-    // Generate models index file
-    const modelsIndexContent = [
-      '/**',
-      ' * Pure Model Schemas',
-      ' * Auto-generated - do not edit manually',
-      ' */',
-      '',
-      ...Array.from(schemaCollection.schemas.keys()).map(modelName => [
-        // Backward-compatible alias export as Schema for tests expecting *Schema
-        `export { ${modelName}Model as ${modelName}Schema } from './${modelName}.model';`,
-        // Primary export as Model
-        `export { ${modelName}Model } from './${modelName}.model';`
-      ].join('\n')),
-      ''
-    ].join('\n');
-    
-    const indexPath = `${modelsOutputPath}/index.ts`;
-    await fs.writeFile(indexPath, modelsIndexContent);
-    
-  // Compatibility files already written with full schema content per model above
-
-    // Add the models directory to the main index exports
-    const { addIndexExport } = await import('./utils/writeIndexFile');
-    addIndexExport(indexPath);
+    if (!singleFileMode) {
+      // Generate models index only for multi-file mode
+      const modelsIndexContent = [
+        '/**',
+        ' * Pure Model Schemas',
+        ' * Auto-generated - do not edit manually',
+        ' */',
+        '',
+        ...Array.from(schemaCollection.schemas.keys()).map(modelName => [
+          `export { ${modelName}Model as ${modelName}Schema } from './${modelName}.model';`,
+          `export { ${modelName}Model } from './${modelName}.model';`
+        ].join('\n')),
+        ''
+      ].join('\n');
+      const indexPath = `${modelsOutputPath}/index.ts`;
+      await fs.writeFile(indexPath, modelsIndexContent);
+      const { addIndexExport } = await import('./utils/writeIndexFile');
+      addIndexExport(indexPath);
+    }
     
     logger.debug(`📦 Generated pure model schemas for ${enabledModels.length} models`);
     

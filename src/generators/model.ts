@@ -631,14 +631,30 @@ export class PrismaTypeMapper {
    */
   private mapDateTimeType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const dateTimeConfig = this.config.complexTypes.dateTime;
+    // Respect global generator dateTimeStrategy if available
+    let strategy: 'date' | 'coerce' | 'isoString' = 'date';
+    try {
+      // Lazy load transformer to avoid circular import at module load
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const transformer = require('../transformer').default;
+      const cfg = transformer.getGeneratorConfig?.();
+      if (cfg?.dateTimeStrategy) strategy = cfg.dateTimeStrategy;
+    } catch {/* ignore */}
     
-    if (this.config.strictDateValidation) {
-      result.zodSchema = 'z.date()';
-      result.additionalValidations.push('// Strict date validation enabled');
+    if (strategy === 'isoString') {
+      result.zodSchema = 'z.string().regex(/\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z/, "Invalid ISO datetime").transform(v => new Date(v))';
+      result.additionalValidations.push('// DateTime mapped from ISO string');
+    } else if (strategy === 'coerce') {
+      result.zodSchema = 'z.coerce.date()';
+      result.additionalValidations.push('// DateTime coerced from input');
     } else {
-      // Enhanced flexible validation with datetime string support
-      result.zodSchema = 'z.union([z.date(), z.string().datetime()])';
-      result.additionalValidations.push('// Flexible date/string input with ISO 8601 validation');
+      if (this.config.strictDateValidation) {
+        result.zodSchema = 'z.date()';
+        result.additionalValidations.push('// Strict date validation enabled');
+      } else {
+        result.zodSchema = 'z.union([z.date(), z.string().datetime()])';
+        result.additionalValidations.push('// Flexible date/string input with ISO 8601 validation');
+      }
     }
     
     // Add date range validations
@@ -859,9 +875,10 @@ export class PrismaTypeMapper {
    */
   private mapEnumType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const enumName = field.type;
-    result.zodSchema = `z.enum(${enumName})`;
-    result.imports.add(enumName);
-    result.additionalValidations.push(`// Enum type: ${enumName}`);
+  // Reference generated enum schema (e.g., RoleSchema) instead of native Prisma enum
+  result.zodSchema = `${enumName}Schema`;
+  result.imports.add(`${enumName}Schema`);
+  result.additionalValidations.push(`// Enum type: ${enumName}`);
   }
 
   /**
@@ -873,17 +890,15 @@ export class PrismaTypeMapper {
     // For pure model schemas, we typically don't include full relation objects
     // Instead, we might include just the foreign key fields or omit relations entirely
     if (field.relationName) {
-      // This is a relation field
+      // Relation field -> always reference the primary Schema export
       if (field.relationFromFields && field.relationFromFields.length > 0) {
-        // This relation has foreign key fields - we'll handle the FK fields separately
-        result.zodSchema = `z.lazy(() => ${relatedModelName}Model)`;
-        result.imports.add(`${relatedModelName}Model`);
+        result.zodSchema = `z.lazy(() => ${relatedModelName}Schema)`;
+        result.imports.add(`${relatedModelName}Schema`);
         result.requiresSpecialHandling = true;
         result.additionalValidations.push(`// Relation to ${relatedModelName}`);
       } else {
-        // This is a back-relation without foreign keys in this model
-        result.zodSchema = `z.lazy(() => ${relatedModelName}Model)`;
-        result.imports.add(`${relatedModelName}Model`);
+        result.zodSchema = `z.lazy(() => ${relatedModelName}Schema)`;
+        result.imports.add(`${relatedModelName}Schema`);
         result.requiresSpecialHandling = true;
         result.additionalValidations.push(`// Back-relation to ${relatedModelName}`);
       }
@@ -1764,7 +1779,8 @@ export class PrismaTypeMapper {
   generateModelSchema(model: DMMF.Model): ModelSchemaComposition {
     const composition: ModelSchemaComposition = {
       modelName: model.name,
-      schemaName: `${model.name}Model`,
+  // Primary internal name uses Schema suffix; we'll add Model alias for legacy compatibility
+  schemaName: `${model.name}Schema`,
       fields: [],
       imports: new Set(['z']),
       exports: new Set(),
@@ -1848,7 +1864,9 @@ export class PrismaTypeMapper {
 
     // Generate exports
     composition.exports.add(composition.schemaName);
-    composition.exports.add(`${model.name}Type`);
+  composition.exports.add(`${model.name}Type`);
+  // Add legacy model alias name to exports for consumers referencing previous naming
+  composition.exports.add(`${model.name}Model`);
 
     return composition;
   }
@@ -1858,14 +1876,18 @@ export class PrismaTypeMapper {
    */
   generateSchemaFileContent(composition: ModelSchemaComposition): SchemaFileContent {
     const lines: string[] = [];
+    const lean = (global as any).PRISMA_ZOD_GENERATOR_CONFIG?.pureModelsLean === true ||
+      (require('../transformer').default.getGeneratorConfig?.() && require('../transformer').default.getGeneratorConfig().pureModelsLean);
 
-    // File header
-    lines.push('/**');
-    lines.push(` * Generated Zod schema for ${composition.modelName} model`);
-    lines.push(` * @generated ${composition.generationMetadata.timestamp}`);
-    lines.push(' * @generator prisma-zod-generator');
-    lines.push(' */');
-    lines.push('');
+    if (!lean) {
+      // File header
+      lines.push('/**');
+      lines.push(` * Generated Zod schema for ${composition.modelName} model`);
+      lines.push(` * @generated ${composition.generationMetadata.timestamp}`);
+      lines.push(' * @generator prisma-zod-generator');
+      lines.push(' */');
+      lines.push('');
+    }
 
     // Imports section
     const imports = this.generateImportsSection(composition);
@@ -1875,7 +1897,7 @@ export class PrismaTypeMapper {
     }
 
     // Model documentation
-    if (composition.documentation) {
+    if (!lean && composition.documentation) {
       lines.push(composition.documentation);
     }
 
@@ -1889,17 +1911,19 @@ export class PrismaTypeMapper {
     lines.push(...typeDefinition);
     lines.push('');
 
-    // Statistics comment
-    const stats = composition.statistics;
-    lines.push('/**');
-    lines.push(' * Schema Statistics:');
-    lines.push(` * - Total fields: ${stats.totalFields}`);
-    lines.push(` * - Processed fields: ${stats.processedFields}`);
-    lines.push(` * - Fields with validations: ${stats.validatedFields}`);
-    lines.push(` * - Enhanced fields: ${stats.enhancedFields}`);
-    lines.push(` * - Relation fields: ${stats.relationFields}`);
-    lines.push(` * - Complex type fields: ${stats.complexTypeFields}`);
-    lines.push(' */');
+    if (!lean) {
+      // Statistics comment
+      const stats = composition.statistics;
+      lines.push('/**');
+      lines.push(' * Schema Statistics:');
+      lines.push(` * - Total fields: ${stats.totalFields}`);
+      lines.push(` * - Processed fields: ${stats.processedFields}`);
+      lines.push(` * - Fields with validations: ${stats.validatedFields}`);
+      lines.push(` * - Enhanced fields: ${stats.enhancedFields}`);
+      lines.push(` * - Relation fields: ${stats.relationFields}`);
+      lines.push(` * - Complex type fields: ${stats.complexTypeFields}`);
+      lines.push(' */');
+    }
 
     return {
       content: lines.join('\n'),
@@ -1949,18 +1973,23 @@ export class PrismaTypeMapper {
       lines.push("import { z } from 'zod';");
     }
     
-    // Enum imports
-    const enumImports = imports.filter(imp => imp !== 'z' && !imp.includes('Model'));
-    if (enumImports.length > 0) {
-      lines.push(`import { ${enumImports.join(', ')} } from '@prisma/client';`);
+    // Enum schema imports (those that end with Schema)
+    const enumSchemaImports = imports.filter(imp => /Schema$/.test(imp));
+    if (enumSchemaImports.length > 0) {
+      enumSchemaImports.forEach(imp => {
+        const enumBase = imp.replace(/Schema$/, '');
+        lines.push(`import { ${imp} } from './enums/${enumBase}.schema';`);
+      });
     }
     
-    // Related schema imports
-    const schemaImports = imports.filter(imp => imp.includes('Model'));
-    if (schemaImports.length > 0) {
-      schemaImports.forEach(schemaImport => {
-        const modelName = schemaImport.replace('Model', '');
-        lines.push(`import { ${schemaImport} } from './${modelName}.model';`);
+    // Related schema imports (pure model relations). We now depend on the Schema primary export.
+    const relatedSchemaImports = imports
+      .filter(imp => /Schema$/.test(imp) && imp !== composition.schemaName);
+    if (relatedSchemaImports.length > 0) {
+      relatedSchemaImports.forEach(schemaImport => {
+        const base = schemaImport.replace(/Schema$/, '');
+        // legacy filename pattern still <Model>.model.ts
+        lines.push(`import { ${schemaImport} } from './${base}.model';`);
       });
     }
     
@@ -1971,34 +2000,38 @@ export class PrismaTypeMapper {
    * Generate schema definition
    */
   private generateSchemaDefinition(composition: ModelSchemaComposition): string[] {
-    const lines: string[] = [];
+  const lines: string[] = [];
+  const cfg = require('../transformer').default.getGeneratorConfig?.();
+  const lean = cfg?.pureModelsLean === true;
     
-    lines.push(`export const ${composition.schemaName} = z.object({`);
+  lines.push(`export const ${composition.schemaName} = z.object({`);
     
     for (const field of composition.fields) {
-      // Add field documentation if available
-      if (field.documentation) {
+      if (!lean && field.documentation) {
         const docLines = field.documentation.split('\n').map(line => `  ${line}`);
         lines.push(...docLines);
       }
-      
-      // Add field definition
-      lines.push(`  ${field.fieldName}: ${field.zodSchema},`);
-      
-      // Add validation comments
-      if (field.validations.length > 0) {
-        field.validations.forEach(validation => {
-          lines.push(`  ${validation}`);
-        });
+
+      const dotValidations = field.validations.filter(v => v.trim().startsWith('.'));
+      const commentValidations = field.validations.filter(v => v.trim().startsWith('//'));
+
+      let base = field.zodSchema;
+      if (dotValidations.length > 0 && base.includes('.optional()')) {
+        base = base.replace(/\.optional\(\)(?!.*\.optional\(\))/,'');
+        base = base.replace(/\s+$/,'');
       }
-      
-      lines.push(''); // Empty line between fields
+      const chain = dotValidations.join('');
+      const optionalSuffix = (dotValidations.length > 0 && field.zodSchema.includes('.optional()')) ? '.optional()' : '';
+      lines.push(`  ${field.fieldName}: ${base}${chain}${optionalSuffix},`);
+
+      if (!lean) {
+        commentValidations.forEach(cv => lines.push(`  ${cv}`));
+        lines.push('');
+      }
     }
     
     // Remove last empty line and add closing brace
-    if (lines[lines.length - 1] === '') {
-      lines.pop();
-    }
+  if (lines[lines.length - 1] === '') lines.pop();
     lines.push('});');
     
     return lines;
@@ -2009,12 +2042,21 @@ export class PrismaTypeMapper {
    */
   private generateTypeDefinition(composition: ModelSchemaComposition): string[] {
     const lines: string[] = [];
-    
-    lines.push('/**');
-    lines.push(` * Inferred TypeScript type for ${composition.modelName}`);
-    lines.push(' */');
+    const cfg = require('../transformer').default.getGeneratorConfig?.();
+    const lean = cfg?.pureModelsLean === true;
+    const emitLegacyAlias = cfg?.legacyModelAlias !== false; // default true
+    if (!lean) {
+      lines.push('/**');
+      lines.push(` * Inferred TypeScript type for ${composition.modelName}`);
+      lines.push(' */');
+    }
     lines.push(`export type ${composition.modelName}Type = z.infer<typeof ${composition.schemaName}>;`);
-    
+    // Only emit legacy alias when NOT in pureModels mode. In pureModels mode we transform
+    // the *Schema export into *Model directly and an alias would cause a duplicate export
+    // and reference to a non-existent *Schema symbol after transformation.
+    if (emitLegacyAlias && !(cfg?.pureModels)) {
+      lines.push(`export const ${composition.modelName}Model = ${composition.schemaName};`);
+    }
     return lines;
   }
 
@@ -2025,8 +2067,8 @@ export class PrismaTypeMapper {
     const dependencies: string[] = [];
     
     composition.fields.forEach(field => {
-      if (field.zodSchema.includes('Model')) {
-        const matches = field.zodSchema.match(/(\w+Model)/g);
+      if (field.zodSchema.includes('Schema')) {
+        const matches = field.zodSchema.match(/(\w+Schema)/g);
         if (matches) {
           matches.forEach(match => {
             if (match !== composition.schemaName && !dependencies.includes(match)) {
@@ -2174,7 +2216,7 @@ export class PrismaTypeMapper {
     // Check for missing dependencies
     for (const [modelName, dependencies] of collection.dependencies) {
       for (const dependency of dependencies) {
-        const dependencyModel = dependency.replace('Schema', '');
+  const dependencyModel = dependency.replace('Schema', '');
         if (!availableSchemas.has(dependencyModel)) {
           errors.push(`Model ${modelName} depends on missing schema: ${dependencyModel}`);
         }
@@ -2201,7 +2243,7 @@ export class PrismaTypeMapper {
       
       const dependencies = collection.dependencies.get(modelName) || [];
       for (const dependency of dependencies) {
-        const dependencyModel = dependency.replace('Schema', '');
+  const dependencyModel = dependency.replace('Schema', '');
         if (detectCycle(dependencyModel, [...path, modelName])) {
           return true;
         }

@@ -952,9 +952,18 @@ export default class Transformer {
           this.wrapWithZodValidators('z.boolean()', field, inputType),
         );
       } else if (inputType.type === 'DateTime') {
+        // Apply configurable DateTime strategy
+        const cfg = Transformer.getGeneratorConfig();
+        let dateExpr = 'z.date()';
+        if (cfg?.dateTimeStrategy === 'coerce') {
+          dateExpr = 'z.coerce.date()';
+        } else if (cfg?.dateTimeStrategy === 'isoString') {
+          // ISO string validated then transformed to Date
+          dateExpr = 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime").transform(v => new Date(v))';
+        }
         result.push(
           this.wrapWithZodValidators(
-            'z.union([z.date(), z.iso.datetime()])',
+            dateExpr,
             field,
             inputType,
           ),

@@ -167,7 +167,8 @@ export async function flushSingleFile(): Promise<void> {
 
   const dir = path.dirname(bundlePath);
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(bundlePath, header.concat(chunks.map(c => c.content)).join('\n'), 'utf8');
+  const body = chunks.map(c => c.content).join('\n');
+  await fs.writeFile(bundlePath, header.join('\n') + body, 'utf8');
 
   // Reset state after writing
   enabled = false;
