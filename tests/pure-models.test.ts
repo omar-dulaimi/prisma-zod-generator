@@ -338,6 +338,7 @@ model Product {
         const config = {
           ...ConfigGenerator.createBasicConfig(),
           pureModels: true,
+          pureModelsLean: false,
           generateJSDoc: true
         };
 
@@ -424,6 +425,7 @@ model User {
         const config = {
           ...ConfigGenerator.createBasicConfig(),
           pureModels: true,
+          pureModelsLean: false,
           generateJSDoc: true
         };
 
@@ -696,6 +698,44 @@ model User {
         await testEnv.cleanup();
       }
     }, GENERATION_TIMEOUT);
+
+  it('single-file-enums: should not import enum values from @prisma/client in single-file pure models (uses generated enum schemas)', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('pure-models-single-file-enums');
+      try {
+        const config = {
+          ...ConfigGenerator.createBasicConfig(),
+          pureModels: true,
+          variants: {
+            pure: { enabled: false },
+            input: { enabled: false },
+            result: { enabled: false }
+          }
+        };
+
+        const schema = `generator client {\n  provider = "prisma-client-js"\n}\n\ndatasource db {\n  provider = "sqlite"\n  url      = "file:./test.db"\n}\n\ngenerator zod {\n  provider              = "node ./lib/generator.js"\n  output                = "${testEnv.outputDir}/schemas"\n  useMultipleFiles      = false\n  singleFileName        = "schemas.ts"\n  placeSingleFileAtRoot = true\n  config                = "./config.json"\n}\n\nenum Role {\n  USER\n  ADMIN\n}\n\nenum Status {\n  ACTIVE\n  INACTIVE\n}\n\nmodel User {\n  id     Int    @id @default(autoincrement())\n  role   Role\n  status Status\n}`;
+
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+        await testEnv.runGeneration();
+
+        const singleFilePath = join(testEnv.outputDir, 'schemas.ts');
+        if (existsSync(singleFilePath)) {
+          const content = readFileSync(singleFilePath, 'utf-8');
+          // Should define enum schemas locally
+          expect(content).toMatch(/export const RoleSchema\s*=\s*z\.enum/);
+          expect(content).toMatch(/export const StatusSchema\s*=\s*z\.enum/);
+          // User schema should reference RoleSchema/StatusSchema
+          expect(content).toMatch(/role:\s*RoleSchema/);
+          expect(content).toMatch(/status:\s*StatusSchema/);
+          // No value import of Role or Status from @prisma/client
+          expect(content).not.toMatch(/import\s*\{[^}]*Role[^}]*\}\s*from\s*'@prisma\/client'/);
+          expect(content).not.toMatch(/import\s*\{[^}]*Status[^}]*\}\s*from\s*'@prisma\/client'/);
+        }
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
   });
 
   describe('Schema Composition Logic', () => {
@@ -706,6 +746,7 @@ model User {
         const config = {
           ...ConfigGenerator.createBasicConfig(),
           pureModels: true,
+          pureModelsLean: false,
           generateJSDoc: true
         };
 

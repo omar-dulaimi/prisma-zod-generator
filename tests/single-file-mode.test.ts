@@ -1,15 +1,124 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
-    ConfigGenerator,
-    FileSystemUtils,
-    GENERATION_TIMEOUT,
-    PrismaSchemaGenerator,
-    TestEnvironment
+  ConfigGenerator,
+  FileSystemUtils,
+  GENERATION_TIMEOUT,
+  PrismaSchemaGenerator,
+  TestEnvironment
 } from './helpers';
 
 describe('Single-file output mode', () => {
+  it('creates exactly one file and inlines pure model schemas when pureModels=true', async () => {
+    const env = await TestEnvironment.createTestEnv('single-file-with-pure-models');
+    try {
+      const config = {
+        ...ConfigGenerator.createBasicConfig(),
+        useMultipleFiles: false,
+        pureModels: true // ensure pure models requested
+      } as any;
+      const configPath = join(env.testDir, 'config.json');
+      writeFileSync(configPath, JSON.stringify(config, null, 2));
+      const schema = PrismaSchemaGenerator.createBasicSchema({
+        outputPath: `${env.outputDir}/schemas`,
+        generatorOptions: { config: './config.json' }
+      });
+      writeFileSync(env.schemaPath, schema);
+      await env.runGeneration();
+      const schemasDir = join(env.outputDir, 'schemas');
+      const bundlePath = join(schemasDir, 'schemas.ts');
+  expect(existsSync(bundlePath)).toBe(true);
+      // Ensure no directories (models/ etc.) remain
+      expect(existsSync(join(schemasDir, 'models'))).toBe(false);
+      // Bundle should contain model exports (UserModel) when pureModels inlined
+      const content = readFileSync(bundlePath, 'utf-8');
+      expect(content).toMatch(/export const UserModel/);
+      expect(content).toMatch(/export const PostModel/);
+  // Directory should contain only the bundle
+  const entries = readdirSync(schemasDir);
+  expect(entries).toEqual(['schemas.ts']);
+    } finally {
+      await env.cleanup();
+    }
+  }, GENERATION_TIMEOUT);
+
+  it('emits only pure model schemas when variants disabled and pureModels=true in single-file custom mode', async () => {
+    const env = await TestEnvironment.createTestEnv('single-file-pure-only');
+    try {
+      const config = {
+        ...ConfigGenerator.createBasicConfig(),
+        mode: 'custom',
+        useMultipleFiles: false,
+        pureModels: true,
+        variants: { // explicitly disable all variant generations
+          pure: { enabled: false },
+          input: { enabled: false },
+          result: { enabled: false }
+        }
+      } as any;
+      const configPath = join(env.testDir, 'zod-generator.config.json');
+      writeFileSync(configPath, JSON.stringify(config, null, 2));
+      const schema = PrismaSchemaGenerator.createBasicSchema({
+        outputPath: `${env.outputDir}/schemas`,
+        generatorOptions: { config: './zod-generator.config.json' }
+      });
+      writeFileSync(env.schemaPath, schema);
+      await env.runGeneration();
+      const schemasDir = join(env.outputDir, 'schemas');
+      const bundlePath = join(schemasDir, 'schemas.ts');
+      expect(existsSync(bundlePath)).toBe(true);
+      const content = readFileSync(bundlePath, 'utf-8');
+      // Pure models present
+      expect(content).toMatch(/export const UserModel/);
+      // Ensure object / operation schemas not present (e.g., UserCreateInputObjectSchema pattern)
+      expect(content).not.toMatch(/CreateInputObjectSchema/);
+      expect(content).not.toMatch(/FindMany/);
+      // Directory should contain only the bundle
+      const entries = readdirSync(schemasDir);
+      expect(entries).toEqual(['schemas.ts']);
+    } finally {
+      await env.cleanup();
+    }
+  }, GENERATION_TIMEOUT);
+
+  it('creates exactly one file with only object/operation schemas when pureModels=false and all variants disabled', async () => {
+    const env = await TestEnvironment.createTestEnv('single-file-no-pure-variants-disabled');
+    try {
+      const config = {
+        ...ConfigGenerator.createBasicConfig(),
+        mode: 'custom',
+        useMultipleFiles: false,
+        pureModels: false,
+        variants: {
+          pure: { enabled: false },
+          input: { enabled: false },
+          result: { enabled: false }
+        }
+      } as any;
+      const configPath = join(env.testDir, 'config.json');
+      writeFileSync(configPath, JSON.stringify(config, null, 2));
+      const schema = PrismaSchemaGenerator.createBasicSchema({
+        outputPath: `${env.outputDir}/schemas`,
+        generatorOptions: { config: './config.json' }
+      });
+      writeFileSync(env.schemaPath, schema);
+      await env.runGeneration();
+      const schemasDir = join(env.outputDir, 'schemas');
+      const bundlePath = join(schemasDir, 'schemas.ts');
+      expect(existsSync(bundlePath)).toBe(true);
+      const content = readFileSync(bundlePath, 'utf-8');
+      // Should NOT include pure model exports
+      expect(content).not.toMatch(/export const UserModel/);
+      // Should include some operation/input schema identifiers
+      expect(content).toMatch(/UserCreateInput/i);
+      // Directory should contain only the bundle
+      const entries = readdirSync(schemasDir);
+      expect(entries).toEqual(['schemas.ts']);
+    } finally {
+      await env.cleanup();
+    }
+  }, GENERATION_TIMEOUT);
   it('creates exactly one file (default name) with all content inlined', async () => {
     const env = await TestEnvironment.createTestEnv('single-file-default');
     try {
@@ -42,6 +151,9 @@ describe('Single-file output mode', () => {
   expect(existsSync(join(schemasDir, 'enums'))).toBe(false);
   expect(existsSync(join(schemasDir, 'models'))).toBe(false);
   expect(existsSync(join(schemasDir, 'variants'))).toBe(false);
+  // Directory should contain only the bundle
+  const entries = readdirSync(schemasDir);
+  expect(entries).toEqual(['schemas.ts']);
     } finally {
       await env.cleanup();
     }
@@ -77,6 +189,9 @@ describe('Single-file output mode', () => {
   expect(existsSync(join(schemasDir, 'enums'))).toBe(false);
   expect(existsSync(join(schemasDir, 'models'))).toBe(false);
   expect(existsSync(join(schemasDir, 'variants'))).toBe(false);
+  // Directory should contain only custom bundle
+  const entries = readdirSync(schemasDir);
+  expect(entries).toEqual(['bundle.ts']);
     } finally {
       await env.cleanup();
     }
