@@ -1275,7 +1275,7 @@ export function getBaseZodType(fieldType: string, isOptional: boolean, isList: b
       baseType = 'z.unknown()'; // or z.record(z.unknown())
       break;
     case 'Bytes':
-      baseType = 'z.instanceof(Buffer)'; // or custom bytes schema
+      baseType = 'z.instanceof(Uint8Array)'; // or custom bytes schema
       break;
     default:
       // Enum or model type
@@ -1312,7 +1312,7 @@ export function getRequiredImports(fieldType: string, customImports: Set<string>
   // Special imports for certain types
   switch (fieldType) {
     case 'Bytes':
-      // Buffer is built-in, no import needed
+      // Uint8Array is built-in, no import needed
       break;
     case 'DateTime':
       // Date is built-in, no import needed

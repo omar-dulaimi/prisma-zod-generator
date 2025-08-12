@@ -1205,7 +1205,7 @@ function getZodTypeForField(field: DMMF.Field): string {
     case 'Boolean': return 'boolean()';
     case 'DateTime': return 'date()';
     case 'Json': return 'unknown()';
-    case 'Bytes': return 'instanceof(Buffer)';
+    case 'Bytes': return 'instanceof(Uint8Array)';
     case 'BigInt': return 'bigint()';
     case 'Decimal': return 'number()'; // Simplified
     default:

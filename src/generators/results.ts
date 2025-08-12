@@ -556,7 +556,7 @@ ${allFields.join(',\n')}
       'Boolean': 'z.boolean()',
       'DateTime': 'z.date()',
       'Json': 'z.unknown()',
-      'Bytes': 'z.instanceof(Buffer)',
+  'Bytes': 'z.instanceof(Uint8Array)',
       'Decimal': 'z.number()', // or z.string() depending on configuration
       'BigInt': 'z.bigint()'
     };

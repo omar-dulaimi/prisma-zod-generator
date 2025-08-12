@@ -82,7 +82,7 @@ export interface TypeMappingConfig {
       minSize?: number;
       /** Allowed MIME types */
       allowedMimeTypes?: string[];
-      /** Validate as base64 string instead of Buffer */
+      /** Validate as base64 string instead of Uint8Array */
       useBase64: boolean;
     };
   };
@@ -796,14 +796,14 @@ export class PrismaTypeMapper {
       
       result.additionalValidations.push('// Bytes field mapped to base64 string');
   } else {
-      // Use Buffer representation
+      // Use Uint8Array (compatible with Prisma Bytes type)
       if (this.config.provider === 'mongodb') {
-        result.zodSchema = 'z.instanceof(Buffer)';
+        result.zodSchema = 'z.instanceof(Uint8Array)';
       } else {
-        result.zodSchema = 'z.instanceof(Buffer)';
+        result.zodSchema = 'z.instanceof(Uint8Array)';
       }
       
-      // Add size validations for Buffer
+  // Add size validations for binary data (Uint8Array)
       const validations: string[] = [];
       
       if (bytesConfig.minSize !== undefined && bytesConfig.minSize > 0) {
@@ -821,7 +821,7 @@ export class PrismaTypeMapper {
         result.additionalValidations.push(...validations);
       }
       
-      result.additionalValidations.push('// Bytes field mapped to Buffer');
+  result.additionalValidations.push('// Bytes field mapped to Uint8Array');
     }
     
     // Add MIME type validation if specified
@@ -829,13 +829,13 @@ export class PrismaTypeMapper {
       result.additionalValidations.push(`// Allowed MIME types: ${bytesConfig.allowedMimeTypes.join(', ')}`);
       
       if (!bytesConfig.useBase64) {
-        // For Buffer, we can add file type validation (this would require file-type detection)
+  // For binary types, we can add file type validation (this would require file-type detection)
         result.additionalValidations.push('// Note: MIME type validation requires additional file-type detection library');
       }
     }
     
     result.requiresSpecialHandling = true;
-    result.additionalValidations.push(`// Bytes field with enhanced validation (${bytesConfig.useBase64 ? 'base64' : 'Buffer'})`);
+  result.additionalValidations.push(`// Bytes field with enhanced validation (${bytesConfig.useBase64 ? 'base64' : 'Uint8Array'})`);
   }
 
   /**
