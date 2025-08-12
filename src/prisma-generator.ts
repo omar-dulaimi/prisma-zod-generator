@@ -47,7 +47,8 @@ export async function generate(options: GeneratorOptions) {
       }
     }
 
-    await handleGeneratorOutputValue(options.generator.output as EnvValue);
+  // NOTE: Output path is now initialized AFTER config precedence is resolved
+  // to allow JSON config 'output' to be respected when the generator block omits it.
 
     const prismaClientGeneratorConfig =
       getGeneratorConfigByProvider(
@@ -76,10 +77,12 @@ export async function generate(options: GeneratorOptions) {
       previewFeatures: prismaClientGeneratorConfig?.previewFeatures,
     });
 
-    // Load and process configuration with proper precedence hierarchy:
-    // 1. Generator options (highest priority - from Prisma schema)
-    // 2. Config file options (medium priority)
-    // 3. Default options (lowest priority - applied by processConfiguration)
+  // Load and process configuration with proper precedence hierarchy:
+  // 1. Generator options (highest priority - from Prisma schema)
+  // 2. Config file options (medium priority)
+  // 3. Default options (lowest priority - applied by processConfiguration)
+  // (Output path deferred until after this merge so JSON 'output' can be honored if the
+  // generator block omits an output attribute.)
     let generatorConfig: CustomGeneratorConfig;
     try {
       const schemaBaseDir = path.dirname(options.schemaPath);
@@ -139,6 +142,39 @@ export async function generate(options: GeneratorOptions) {
       
       // Log configuration precedence information
       logConfigurationPrecedence(extendedOptions, configFileOptions, generatorOptionOverrides);
+
+      // --- Output Path Resolution (replaces earlier immediate initialization) ---
+      // Precedence for output now:
+      // 1. Prisma generator block 'output' attribute (if provided)
+      // 2. JSON config 'output' (if provided)
+      // 3. Built-in default from processed configuration
+      try {
+        const schemaBaseDir = path.dirname(options.schemaPath);
+        const prismaBlockOutput = options.generator.output as EnvValue | undefined;
+        if (prismaBlockOutput) {
+          // Original behavior: generator block authoritative when present
+          await handleGeneratorOutputValue(prismaBlockOutput);
+        } else if (generatorConfig.output) {
+          // New behavior: allow JSON config to supply output when block omits it
+          const resolved = path.isAbsolute(generatorConfig.output)
+            ? generatorConfig.output
+            : path.join(schemaBaseDir, generatorConfig.output);
+          await fs.mkdir(resolved, { recursive: true });
+          await removeDir(resolved, true);
+          Transformer.setOutputPath(resolved);
+          logger.debug(`[prisma-zod-generator] ℹ️ Using JSON config output path: ${resolved}`);
+        } else {
+          // Fallback (should rarely happen because processConfiguration sets default)
+            const fallback = path.join(path.dirname(options.schemaPath), 'generated');
+            await fs.mkdir(fallback, { recursive: true });
+            await removeDir(fallback, true);
+            Transformer.setOutputPath(fallback);
+            logger.debug(`[prisma-zod-generator] ℹ️ Using fallback output path: ${fallback}`);
+        }
+      } catch (outputInitError) {
+        logger.debug(`[prisma-zod-generator] ⚠️ Failed to initialize output path: ${String(outputInitError)}`);
+        throw outputInitError;
+      }
       
     } catch (configError) {
       const msg = `[prisma-zod-generator] ⚠️  Configuration loading failed, using defaults: ${String(configError)}`;
@@ -146,7 +182,7 @@ export async function generate(options: GeneratorOptions) {
       // Fall back to defaults
       generatorConfig = processConfiguration({});
   }
-    checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
+  checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
     setPrismaClientProvider(prismaClientGeneratorConfig);
     setPrismaClientConfig(prismaClientGeneratorConfig);
 
