@@ -933,7 +933,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
   if (isArrayVariants) {
     // Custom array-based variants: generate files directly under variants/ as Model{Suffix}.schema.ts
     try {
-      // Default behavior: place array-based variants under schemas/variants unless explicitly configured to place at root
+    // Default behavior: place array-based variants under schemas/variants unless explicitly configured to place at root
   const placeAtRoot = config.placeArrayVariantsAtRoot === true; // default false
       const variantsOutputPath = placeAtRoot
         ? Transformer.getSchemasPath()
