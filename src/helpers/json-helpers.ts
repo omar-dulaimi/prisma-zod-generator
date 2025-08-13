@@ -1,6 +1,5 @@
 import { z } from 'zod';
 // Need value import for Prisma DbNull/JsonNull sentinels
-import type { Prisma } from '@prisma/client';
 
 // Central JSON helper schemas inspired by rival implementation, adapted for Prisma 6.
 // Exported once and imported where JSON fields are present.
