@@ -31,10 +31,10 @@ describe('Single-file output mode', () => {
   expect(existsSync(bundlePath)).toBe(true);
       // Ensure no directories (models/ etc.) remain
       expect(existsSync(join(schemasDir, 'models'))).toBe(false);
-      // Bundle should contain model exports (UserModel) when pureModels inlined
-      const content = readFileSync(bundlePath, 'utf-8');
-      expect(content).toMatch(/export const UserModel/);
-      expect(content).toMatch(/export const PostModel/);
+  // Bundle should contain pure model schema exports (UserSchema) when pureModels inlined
+  const content = readFileSync(bundlePath, 'utf-8');
+  expect(content).toMatch(/export const UserSchema/);
+  expect(content).toMatch(/export const PostSchema/);
   // Directory should contain only the bundle
   const entries = readdirSync(schemasDir);
   expect(entries).toEqual(['schemas.ts']);
@@ -69,8 +69,8 @@ describe('Single-file output mode', () => {
       const bundlePath = join(schemasDir, 'schemas.ts');
       expect(existsSync(bundlePath)).toBe(true);
       const content = readFileSync(bundlePath, 'utf-8');
-      // Pure models present
-      expect(content).toMatch(/export const UserModel/);
+  // Pure models present (schema naming)
+  expect(content).toMatch(/export const UserSchema/);
       // Ensure object / operation schemas not present (e.g., UserCreateInputObjectSchema pattern)
       expect(content).not.toMatch(/CreateInputObjectSchema/);
       expect(content).not.toMatch(/FindMany/);
@@ -109,7 +109,7 @@ describe('Single-file output mode', () => {
       expect(existsSync(bundlePath)).toBe(true);
       const content = readFileSync(bundlePath, 'utf-8');
       // Should NOT include pure model exports
-      expect(content).not.toMatch(/export const UserModel/);
+  expect(content).not.toMatch(/export const UserSchema/);
       // Should include some operation/input schema identifiers
       expect(content).toMatch(/UserCreateInput/i);
       // Directory should contain only the bundle

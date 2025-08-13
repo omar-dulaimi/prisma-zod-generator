@@ -1995,8 +1995,8 @@ export class PrismaTypeMapper {
     if (relatedSchemaImports.length > 0) {
       relatedSchemaImports.forEach(schemaImport => {
         const base = schemaImport.replace(/Schema$/, '');
-        // legacy filename pattern still <Model>.model.ts
-        lines.push(`import { ${schemaImport} } from './${base}.model';`);
+  // use unified .schema.ts naming for related pure models
+  lines.push(`import { ${schemaImport} } from './${base}.schema';`);
       });
     }
     

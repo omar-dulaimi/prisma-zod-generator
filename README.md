@@ -555,7 +555,7 @@ Generate different schema variants for various use cases:
 
 ```typescript
 // Pure model schemas - exact Prisma model structure
-import { UserModelSchema } from './schemas/User.model';
+import { UserSchema } from './schemas/models/User.schema';
 
 // Input schemas - for API endpoints and forms
 import { UserInputSchema } from './schemas/User.input';
@@ -566,7 +566,7 @@ import { UserResultSchema } from './schemas/User.result';
 // Usage examples
 const createUser = UserInputSchema.parse(formData);
 const userResponse = UserResultSchema.parse(dbResult);
-const pureUser = UserModelSchema.parse(prismaModel);
+const pureUser = UserSchema.parse(prismaModel);
 ```
 
 ### Variant Configuration

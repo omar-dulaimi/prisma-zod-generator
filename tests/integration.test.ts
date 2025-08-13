@@ -230,9 +230,9 @@ model Post {
         expect(existsSync(userResultPath)).toBe(true);
 
         // Check pure models generation
-        const modelsDir = join(schemasDir, 'models');
-        const userModelPath = join(modelsDir, 'User.model.ts');
-        const postModelPath = join(modelsDir, 'Post.model.ts');
+  const modelsDir = join(schemasDir, 'models');
+  const userModelPath = join(modelsDir, 'User.schema.ts');
+  const postModelPath = join(modelsDir, 'Post.schema.ts');
         
         expect(existsSync(userModelPath)).toBe(true);
         expect(existsSync(postModelPath)).toBe(true);

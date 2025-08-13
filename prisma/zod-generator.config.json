@@ -1,7 +1,7 @@
 {
 	"mode": "custom",
 	"output": "./myZod",
-	"useMultipleFiles": false,
+	"useMultipleFiles": true,
 	"singleFileName": "index.ts",
 	"pureModels": true,
 	"variants": {
