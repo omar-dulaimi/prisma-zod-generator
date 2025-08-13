@@ -4,8 +4,8 @@ title: Contributing
 ---
 
 > ❤️ **Sustainability Matters** – Sponsorship directly funds maintenance, regression fixes, and new feature velocity.
-<div style="margin: .75rem 0 1.25rem;">
-	<a href="https://github.com/sponsors/omar-dulaimi" class="button button--primary">Sponsor on GitHub</a>
+<div style={{ margin: '.75rem 0 1.25rem' }}>
+	<a href="https://github.com/sponsors/omar-dulaimi" className="button button--primary">Sponsor on GitHub</a>
 </div>
 
 Tests use Vitest; comprehensive generation tests cover multi-provider & feature flags.
@@ -35,4 +35,4 @@ Sponsorship accelerates:
 - Advanced JSON / Bytes features & recipes
 - Documentation polish & DX tooling
 
-<a href="https://github.com/sponsors/omar-dulaimi" class="button button--secondary button--sm">Become a Sponsor</a>
+<a href="https://github.com/sponsors/omar-dulaimi" className="button button--secondary button--sm">Become a Sponsor</a>

@@ -52,11 +52,11 @@ const Home: React.FC = () => {
               Generate type-safe validation & inference schemas directly from your Prisma schema. Dual exports, pure models, modes, smart emission & filtering — tuned for DX and performance.
             </p>
             <div className="pz-hero-buttons" style={{marginTop: '1.6rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap'}}>
-              <Link className="pz-btn pz-btn-primary" to="/prisma-zod-generator/docs/intro/quick-start">
+              <Link className="pz-btn pz-btn-primary" to="/docs/next/intro/quick-start">
                 <span className="pz-btn-icon" aria-hidden="true">🚀</span>
                 <span>Get Started</span>
               </Link>
-              <Link className="pz-btn pz-btn-secondary" to="/prisma-zod-generator/docs/config/precedence">
+              <Link className="pz-btn pz-btn-secondary" to="/docs/next/config/precedence">
                 <span className="pz-btn-icon" aria-hidden="true">⚙️</span>
                 <span>Config Deep Dive</span>
               </Link>
@@ -132,7 +132,7 @@ const Home: React.FC = () => {
             <div style={{border:'1px solid var(--ifm-color-emphasis-300)', borderRadius:16, padding:'1.25rem 1.2rem', background:'linear-gradient(135deg,rgba(34,197,94,.10),rgba(56,189,248,.08))'}}>
               <h3 style={{marginTop:0, fontSize:'1rem'}}>DX Highlights</h3>
               <p style={{fontSize:'.78rem', margin:'0 0 .6rem'}}>Dual exports, lean pure models, heuristic emission, single-file bundling, depth-aware JSON.</p>
-              <Link className="button button--sm button--secondary" to="/prisma-zod-generator/docs/usage-patterns">See Patterns</Link>
+              <Link className="button button--sm button--secondary" to="/docs/next/usage-patterns">See Patterns</Link>
             </div>
           </div>
         </section>
@@ -155,9 +155,9 @@ const Home: React.FC = () => {
           <h2 style={{fontSize: '1.95rem'}}>Why It Stays Maintainable</h2>
           <p style={{maxWidth: 860}}>Focused logs, strict types, test matrix across providers, and opt-in advanced features keep complexity under control. Tailor output granularity without forked pipelines.</p>
           <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1.5rem'}}>
-            <Link className="button button--primary" to="/prisma-zod-generator/docs/usage-patterns">Usage Patterns</Link>
-            <Link className="button button--secondary" to="/prisma-zod-generator/docs/reference/faq">FAQ</Link>
-            <Link className="button button--outline" to="/prisma-zod-generator/docs/reference/logging-debug">Debug Logging</Link>
+            <Link className="button button--primary" to="/docs/next/usage-patterns">Usage Patterns</Link>
+            <Link className="button button--secondary" to="/docs/next/reference/faq">FAQ</Link>
+            <Link className="button button--outline" to="/docs/next/reference/logging-debug">Debug Logging</Link>
           </div>
         </section>
         <section style={{marginTop: '5rem'}}>
