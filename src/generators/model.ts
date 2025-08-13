@@ -1914,7 +1914,10 @@ export class PrismaTypeMapper {
    */
   generateSchemaFileContent(composition: ModelSchemaComposition): SchemaFileContent {
   const lines: string[] = [];
-  const lean = (global as any).PRISMA_ZOD_GENERATOR_CONFIG?.pureModelsLean === true ||
+  // Access global configuration (set by prisma-generator) cautiously; fall back to transformer if absent.
+  interface GlobalWithGeneratorConfig { PRISMA_ZOD_GENERATOR_CONFIG?: { pureModelsLean?: boolean } }
+  const g = globalThis as GlobalWithGeneratorConfig;
+  const lean = (g.PRISMA_ZOD_GENERATOR_CONFIG?.pureModelsLean === true) ||
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular dependency
       (require('../transformer').default.getGeneratorConfig?.() && require('../transformer').default.getGeneratorConfig().pureModelsLean);
 

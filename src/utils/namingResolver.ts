@@ -36,8 +36,16 @@ const PRESET_MAP: Record<string, PureModelNamingResolved> = {
   }
 };
 
+type NamingSection = NonNullable<GeneratorConfig['naming']>;
+type PureModelNamingOverrides = NonNullable<NamingSection['pureModel']>;
+
+function safeGetNaming(config: GeneratorConfig | null | undefined): NamingSection | undefined {
+  return config && typeof config === 'object' ? (config as GeneratorConfig).naming : undefined;
+}
+
 export function resolvePureModelNaming(config: GeneratorConfig | null | undefined): PureModelNamingResolved {
-  const presetName = (config as any)?.naming?.preset as string | undefined;
+  const naming = safeGetNaming(config);
+  const presetName = naming?.preset;
   const lookupKey = presetName ? presetName.trim() : presetName;
   let base: PureModelNamingResolved = lookupKey && PRESET_MAP[lookupKey]
     ? { ...PRESET_MAP[lookupKey] }
@@ -53,7 +61,7 @@ export function resolvePureModelNaming(config: GeneratorConfig | null | undefine
   if (presetName === 'legacy-model-suffix' && (!base || base.preset !== 'legacy-model-suffix')) {
     base = { ...PRESET_MAP['legacy-model-suffix'] };
   }
-  const overrides = (config as any)?.naming?.pureModel || {};
+  const overrides: Partial<PureModelNamingOverrides> = naming?.pureModel || {};
   const resolved = {
     ...base,
     ...overrides,

@@ -1174,7 +1174,7 @@ model Post {
             input: { enabled: false, suffix: '.input' },
             result: { enabled: false, suffix: '.result' }
           }
-        } as any;
+        } as Partial<import('../src/config/parser').GeneratorConfig>;
 
         const schema = `
 generator client {

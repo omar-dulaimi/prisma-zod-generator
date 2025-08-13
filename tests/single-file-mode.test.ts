@@ -2,11 +2,11 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
-    ConfigGenerator,
-    FileSystemUtils,
-    GENERATION_TIMEOUT,
-    PrismaSchemaGenerator,
-    TestEnvironment
+  ConfigGenerator,
+  FileSystemUtils,
+  GENERATION_TIMEOUT,
+  PrismaSchemaGenerator,
+  TestEnvironment
 } from './helpers';
 
 describe('Single-file output mode', () => {
@@ -17,7 +17,7 @@ describe('Single-file output mode', () => {
         ...ConfigGenerator.createBasicConfig(),
         useMultipleFiles: false,
         pureModels: true // ensure pure models requested
-      } as any;
+      } as Partial<import('../src/config/parser').GeneratorConfig>;
       const configPath = join(env.testDir, 'config.json');
       writeFileSync(configPath, JSON.stringify(config, null, 2));
       const schema = PrismaSchemaGenerator.createBasicSchema({
@@ -48,15 +48,15 @@ describe('Single-file output mode', () => {
     try {
       const config = {
         ...ConfigGenerator.createBasicConfig(),
-        mode: 'custom',
+        mode: 'custom' as const,
         useMultipleFiles: false,
         pureModels: true,
-        variants: { // explicitly disable all variant generations
+        variants: {
           pure: { enabled: false },
           input: { enabled: false },
           result: { enabled: false }
         }
-      } as any;
+      } as Partial<import('../src/config/parser').GeneratorConfig>;
       const configPath = join(env.testDir, 'zod-generator.config.json');
       writeFileSync(configPath, JSON.stringify(config, null, 2));
       const schema = PrismaSchemaGenerator.createBasicSchema({
@@ -87,7 +87,7 @@ describe('Single-file output mode', () => {
     try {
       const config = {
         ...ConfigGenerator.createBasicConfig(),
-        mode: 'custom',
+        mode: 'custom' as const,
         useMultipleFiles: false,
         pureModels: false,
         variants: {
@@ -95,7 +95,7 @@ describe('Single-file output mode', () => {
           input: { enabled: false },
           result: { enabled: false }
         }
-      } as any;
+      } as Partial<import('../src/config/parser').GeneratorConfig>;
       const configPath = join(env.testDir, 'config.json');
       writeFileSync(configPath, JSON.stringify(config, null, 2));
       const schema = PrismaSchemaGenerator.createBasicSchema({

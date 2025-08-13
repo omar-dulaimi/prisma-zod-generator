@@ -15,8 +15,9 @@ const GENERATED_FILE_EXTS = ['ts','mts','cts'] as const; // prisma docs: ts/mts/
 const IMPORT_FILE_EXTS = ['js','mjs','cjs','ts','mts','cts', undefined] as const; // undefined => bare (no extension)
 
 // Filter list for FAST mode
-function enumerateCombos(full: boolean) {
-  const combos: Array<any> = [];
+interface Combo { runtime: typeof RUNTIMES[number]; moduleFormat: typeof MODULE_FORMATS[number]; genExt: typeof GENERATED_FILE_EXTS[number]; importExt?: typeof IMPORT_FILE_EXTS[number]; }
+function enumerateCombos(full: boolean): Combo[] {
+  const combos: Combo[] = [];
   for (const runtime of RUNTIMES) {
     for (const moduleFormat of MODULE_FORMATS) {
       for (const genExt of GENERATED_FILE_EXTS) {
@@ -28,7 +29,7 @@ function enumerateCombos(full: boolean) {
   }
   if (full) return combos;
   // Sampling strategy: pick first runtime for all, plus vary runtime for esm/js only
-  const sample: Array<any> = [];
+  const sample: Combo[] = [];
   const keySet = new Set<string>();
   for (const c of combos) {
     if (c.runtime === 'nodejs') {
@@ -50,7 +51,7 @@ function schemaFor(combo: { runtime: string; moduleFormat: string; genExt: strin
 
 describe('Full prisma-client config variation matrix', () => {
   const full = process.env.FULL_PRISMA_CLIENT_MATRIX === '1';
-  const scenarios = enumerateCombos(full);
+  const scenarios: Combo[] = enumerateCombos(full);
     const projectRoot = process.cwd();
     const root = join(projectRoot, 'test-full-matrix');
   const schemaPath = join(root, 'schema.prisma');

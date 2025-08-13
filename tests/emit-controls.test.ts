@@ -25,7 +25,7 @@ describe('Explicit emission controls (emit.*)', () => {
           input: { enabled: false, suffix: '.input' },
           result: { enabled: false, suffix: '.result' }
         }
-      } as any;
+  } as Partial<import('../src/config/parser').GeneratorConfig>;
 
   const schema = `datasource db {
   provider = "sqlite"
@@ -72,7 +72,7 @@ model User {
         pureModels: true,
         emit: { enums: false, pureModels: true, objects: false, crud: false, results: false },
         variants: { pure: { enabled: true, suffix: '.model' }, input: { enabled: false }, result: { enabled: false } }
-      } as any;
+  } as Partial<import('../src/config/parser').GeneratorConfig>;
       const schema = `datasource db {
   provider = "sqlite"
   url      = "file:./test.db"
@@ -114,7 +114,7 @@ model User {
         pureModels: false,
         emit: { crud: true, objects: true, results: false, pureModels: false },
         variants: { pure: { enabled: false }, input: { enabled: false }, result: { enabled: false } }
-      } as any;
+  } as Partial<import('../src/config/parser').GeneratorConfig>;
       const schema = `datasource db {
   provider = "sqlite"
   url      = "file:./test.db"

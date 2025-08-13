@@ -131,11 +131,11 @@ export async function generate(options: GeneratorOptions) {
         generatorOptionOverrides
       );
       // Preserve config file output if still unset after overrides
-      if (!(mergedConfig as any).output && (configFileOptions as any).output) {
-        (mergedConfig as any).output = (configFileOptions as any).output;
+  if (!('output' in mergedConfig) && 'output' in configFileOptions && configFileOptions.output) {
+    (mergedConfig as Record<string, unknown>).output = configFileOptions.output;
         logger.debug('[debug] applied configFileOptions.output fallback');
       }
-  logger.debug(`[debug] mergedConfig.naming preset=${(mergedConfig as any).naming?.preset}`);
+  logger.debug(`[debug] mergedConfig.naming preset=${(mergedConfig as { naming?: { preset?: string } }).naming?.preset}`);
       
       
       // Step 4: Process final configuration with defaults (lowest priority)
@@ -145,13 +145,13 @@ export async function generate(options: GeneratorOptions) {
         modelFieldInfo[model.name] = model.fields.map(field => field.name);
       });
       generatorConfig = processConfiguration(mergedConfig, availableModels, modelFieldInfo);
-  logger.debug(`[debug] post-process generatorConfig.naming preset=${(generatorConfig as any).naming?.preset}`);
-  logger.debug(`[debug] generatorConfig.output=${(generatorConfig as any).output}`);
+  logger.debug(`[debug] post-process generatorConfig.naming preset=${generatorConfig.naming?.preset}`);
+  logger.debug(`[debug] generatorConfig.output=${generatorConfig.output}`);
       
       // Log configuration precedence information
       logConfigurationPrecedence(extendedOptions, configFileOptions, generatorOptionOverrides);
 
-  logger.debug(`[debug] generatorConfig.output (post-merge/process) = ${ (generatorConfig as any).output }`);
+  logger.debug(`[debug] generatorConfig.output (post-merge/process) = ${ generatorConfig.output }`);
 
       // --- Output Path Resolution (replaces earlier immediate initialization) ---
       // Precedence for output now:
@@ -296,10 +296,13 @@ export async function generate(options: GeneratorOptions) {
     }
 
     // New: treat configuration with only pure variant enabled (input/result disabled) as intent to suppress CRUD/input/result schemas
-    const pureVariantOnlyMode = !!generatorConfig.pureModels && !pureModelsOnlyMode && !!variantsCfg && !Array.isArray(variantsCfg)
-      && (variantsCfg as any).pure?.enabled === true
-      && (variantsCfg as any).input?.enabled === false
-      && (variantsCfg as any).result?.enabled === false;
+    interface SimpleVariantCfg { enabled?: boolean }
+    type VariantsShape = Record<string, SimpleVariantCfg | undefined> & { pure?: SimpleVariantCfg; input?: SimpleVariantCfg; result?: SimpleVariantCfg };
+    const asVariants: VariantsShape | undefined = variantsCfg as VariantsShape | undefined;
+    const pureVariantOnlyMode = !!generatorConfig.pureModels && !pureModelsOnlyMode && !!asVariants && !Array.isArray(asVariants)
+      && asVariants.pure?.enabled === true
+      && asVariants.input?.enabled === false
+      && asVariants.result?.enabled === false;
     if (pureVariantOnlyMode) {
       logger.debug('[prisma-zod-generator] 🎯 Pure-variant-only mode active (skipping CRUD/input/result schemas)');
     }
@@ -439,7 +442,7 @@ export async function generate(options: GeneratorOptions) {
     }
 
     if (emitPureModels) {
-      logger.debug(`[debug] Before pure model generation: pureModels=${String(generatorConfig.pureModels || emitPureModels)} namingPreset=${(generatorConfig as any).naming?.preset || 'none'}`);
+  logger.debug(`[debug] Before pure model generation: pureModels=${String(generatorConfig.pureModels || emitPureModels)} namingPreset=${generatorConfig.naming?.preset || 'none'}`);
       await generatePureModelSchemas(models, generatorConfig);
     } else {
       logger.debug('[prisma-zod-generator] ⏭️  emit.pureModels=false (skipping pure model schemas)');
@@ -457,8 +460,8 @@ export async function generate(options: GeneratorOptions) {
     // Result schemas are generated inside Transformer.generateResultSchemas; we guard via emit.results if specified
     if (emitResultsExplicit === false) {
       // Monkey patch config variants.result.enabled to false to unify gating pathway safely
-      const variantsRef: any = (generatorConfig as any).variants || ((generatorConfig as any).variants = {});
-      const resultVariantRef: any = variantsRef.result || (variantsRef.result = {});
+  const variantsRef: Record<string, { enabled?: boolean }> = (generatorConfig.variants as Record<string, { enabled?: boolean }> ) || ( (generatorConfig as { variants?: Record<string, { enabled?: boolean }> }).variants = {} as Record<string, { enabled?: boolean }>);
+  const resultVariantRef: { enabled?: boolean } = variantsRef.result || (variantsRef.result = {} as { enabled?: boolean });
       resultVariantRef.enabled = false;
       logger.debug('[prisma-zod-generator] ⏭️  emit.results=false (forcing skip of result schemas)');
     }
@@ -1460,7 +1463,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
     const schemaCollection = typeMapper.generateSchemaCollection(filteredModels);
 
     const { resolvePureModelNaming, applyPattern } = await import('./utils/namingResolver');
-    const namingResolved = resolvePureModelNaming(config as any);
+  const namingResolved = resolvePureModelNaming(config);
     const { filePattern, schemaSuffix, typeSuffix, exportNamePattern: exportPattern, legacyAliases } = namingResolved;
 
     const buildNames = (modelName: string) => {

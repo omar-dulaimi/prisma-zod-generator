@@ -13,6 +13,9 @@ prisma/schemas/*/generated/
 test-*-*
 manual-*-*
 legacy-output
+.docusaurus
+website/.docusaurus
+website/build
 
 # Test reports and logs
 test-report.json
