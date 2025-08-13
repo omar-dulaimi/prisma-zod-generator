@@ -1326,7 +1326,8 @@ function generateVariantSchemaContent(
   let enumSchemaImportLines = '';
   if (enumTypes.length > 0) {
     try {
-      const { generateEnumSchemaImportLines } = require('./utils/enumImport');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic require avoids ESM circular issues in build output
+  const { generateEnumSchemaImportLines } = require('./utils/enumImport');
       enumSchemaImportLines = generateEnumSchemaImportLines(enumTypes, 2) + '\n';
     } catch {
       enumSchemaImportLines = enumTypes.map(e => `import { ${e}Schema } from '../../enums/${e}.schema';`).join('\n') + '\n';
@@ -1336,7 +1337,7 @@ function generateVariantSchemaContent(
   const fieldDefinitions = enabledFields.map(field => {
     const isEnum = field.kind === 'enum';
     // Base type: enum fields reference generated schema directly (no z.)
-    let base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
+    const base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
     const optional = (!field.isRequired && variantName === 'input') ? '.optional()' : '';
     const nullable = (!field.isRequired && field.type === 'String') ? '.nullable()' : '';
     return `    ${field.name}: ${base}${optional}${nullable}`;

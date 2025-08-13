@@ -17,7 +17,6 @@ function buildSchema({ generatorBlock }: { generatorBlock: string }) {
 describe('prisma-client preview generator option matrix', () => {
   const root = join(process.cwd(), 'test-preview-options');
   const schemaPath = join(root, 'schema.prisma');
-  const clientOut = join(root, 'client');
   const zodOut = join(root, 'zod');
 
   beforeAll(() => {
@@ -43,7 +42,7 @@ describe('prisma-client preview generator option matrix', () => {
       writeFileSync(schemaPath, schema);
       try {
         execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
-      } catch (e) {
+  } catch {
         // If the preview generator isn't available, skip the scenario gracefully
         continue;
       }

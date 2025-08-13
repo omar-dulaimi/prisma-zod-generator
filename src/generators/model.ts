@@ -635,8 +635,9 @@ export class PrismaTypeMapper {
     let strategy: 'date' | 'coerce' | 'isoString' = 'date';
     try {
       // Lazy load transformer to avoid circular import at module load
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const transformer = require('../transformer').default;
+       
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular import at module top level
+  const transformer = require('../transformer').default;
       const cfg = transformer.getGeneratorConfig?.();
       if (cfg?.dateTimeStrategy) strategy = cfg.dateTimeStrategy;
     } catch {/* ignore */}
@@ -1832,7 +1833,8 @@ export class PrismaTypeMapper {
 
     // Apply field exclusions if provided via generator config models[Model].variants.pure.excludeFields
     // Allow runtime config-driven filtering of relation fields when pureModels enabled
-    const cfg = (require('../transformer').default.getGeneratorConfig?.() || {}) as { pureModels?: boolean; pureModelsIncludeRelations?: boolean };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy access to config avoiding circular import
+  const cfg = (require('../transformer').default.getGeneratorConfig?.() || {}) as { pureModels?: boolean; pureModelsIncludeRelations?: boolean };
     let fieldsToProcess = model.fields;
     if (cfg.pureModels && cfg.pureModelsIncludeRelations !== true) {
       // Omit relation (object kind) fields for slimmer pure model output
@@ -1911,8 +1913,9 @@ export class PrismaTypeMapper {
    * Generate TypeScript schema file content from model composition
    */
   generateSchemaFileContent(composition: ModelSchemaComposition): SchemaFileContent {
-    const lines: string[] = [];
-    const lean = (global as any).PRISMA_ZOD_GENERATOR_CONFIG?.pureModelsLean === true ||
+  const lines: string[] = [];
+  const lean = (global as any).PRISMA_ZOD_GENERATOR_CONFIG?.pureModelsLean === true ||
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular dependency
       (require('../transformer').default.getGeneratorConfig?.() && require('../transformer').default.getGeneratorConfig().pureModelsLean);
 
     if (!lean) {
@@ -2039,6 +2042,7 @@ export class PrismaTypeMapper {
    */
   private generateSchemaDefinition(composition: ModelSchemaComposition): string[] {
   const lines: string[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require for runtime config
   const cfg = require('../transformer').default.getGeneratorConfig?.();
   const lean = cfg?.pureModelsLean === true;
     
@@ -2080,7 +2084,8 @@ export class PrismaTypeMapper {
    */
   private generateTypeDefinition(composition: ModelSchemaComposition): string[] {
     const lines: string[] = [];
-    const cfg = require('../transformer').default.getGeneratorConfig?.();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require for runtime config
+  const cfg = require('../transformer').default.getGeneratorConfig?.();
     const lean = cfg?.pureModelsLean === true;
     const emitLegacyAlias = cfg?.legacyModelAlias !== false; // default true
     if (!lean) {

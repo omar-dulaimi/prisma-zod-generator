@@ -1399,8 +1399,10 @@ export default class Transformer {
     if (this.jsonHelpersWritten) return;
     this.jsonHelpersWritten = true;
     try {
-      const fs = require('fs');
-      const pathMod = require('path');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- fallback sync write path for environments without top-level await
+  const fs = require('fs');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pathMod = require('path');
       const helpersDir = pathMod.join(this.outputPath, 'helpers');
       fs.mkdirSync(helpersDir, { recursive: true });
       const filePath = pathMod.join(helpersDir, 'json-helpers.ts');

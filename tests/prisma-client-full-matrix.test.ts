@@ -68,10 +68,10 @@ describe('Full prisma-client config variation matrix', () => {
     const title = `${combo.runtime} | ${combo.moduleFormat} | gen=${combo.genExt} | import=${combo.importExt ?? 'bare'}`;
     it(title, () => {
       writeFileSync(schemaPath, schemaFor(combo));
-      let success = false;
+      // Removed unused variable 'success'
       try {
     execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: projectRoot, stdio: 'pipe' });
-        success = true;
+  // success flag removed; test passes if no exception thrown
   successCount++; // count scenario as succeeded if generation worked
       } catch {
   // Unsupported in local environment -> skip silently

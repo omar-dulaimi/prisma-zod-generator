@@ -64,6 +64,7 @@ export function resolvePureModelNaming(config: GeneratorConfig | null | undefine
     legacyAliases: overrides.legacyAliases !== undefined ? !!overrides.legacyAliases : base.legacyAliases,
   };
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- logger loaded lazily to avoid circular deps in tests
     const { logger } = require('./logger');
     logger.debug(`[namingResolver] preset=${presetName || 'none'} filePattern=${resolved.filePattern}`);
   } catch {}
