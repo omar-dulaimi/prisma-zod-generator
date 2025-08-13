@@ -4,3 +4,73 @@
 
 /* Code block improvements */
 .theme-code-block { font-size: 0.85rem; }
+
+/* Hero sizing */
+.pz-hero { padding:5rem 1.5rem 4.2rem; }
+.pz-hero-grid { grid-template-columns: minmax(0,1fr) minmax(0,520px); }
+/* Guard against accidental horizontal overflow on very narrow devices */
+.pz-hero, .pz-hero-grid { max-width:100%; overflow:hidden; }
+.pz-hero-grid, .pz-hero-grid * { box-sizing:border-box; }
+.pz-hero-buttons a.button { display:block; }
+.pz-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; gap:.45rem; font-weight:600; font-size:.92rem; padding:.78rem 1.15rem; border-radius:10px; line-height:1.1; text-decoration:none !important; transition:background .18s, box-shadow .18s, transform .15s; border:1px solid transparent; text-align:center; }
+.pz-btn:focus-visible { outline:2px solid var(--ifm-color-primary); outline-offset:2px; }
+.pz-btn-primary { background:linear-gradient(90deg,#2563eb,#4f46e5); color:#fff; box-shadow:0 4px 14px -4px rgba(37,99,235,.55); }
+.pz-btn-primary:hover { background:linear-gradient(90deg,#1d4ed8,#4338ca); }
+.pz-btn-secondary { background:var(--ifm-background-surface-color); border-color:rgba(255,255,255,.15); color:var(--ifm-font-color-base); }
+[data-theme='light'] .pz-btn-secondary { background:#f4f6fa; border-color:#d0d7e2; }
+.pz-btn-secondary:hover { background:rgba(255,255,255,.08); }
+[data-theme='light'] .pz-btn-secondary:hover { background:#eef1f5; }
+.pz-btn-ghost { background:transparent; color:#e2e8f0; border-color:rgba(255,255,255,.28); box-shadow:0 1px 3px -1px rgba(0,0,0,.45); }
+.pz-btn-ghost:hover { background:rgba(255,255,255,.09); }
+.pz-btn-icon { font-size:1.05rem; line-height:1; }
+/* Removed mobile full-width rule to keep natural button width */
+@media (max-width: 1100px) {
+	.pz-hero-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 880px) { .pz-hero { padding:4.2rem 1.25rem 3.6rem; } }
+@media (max-width: 640px) {
+	.pz-hero { padding:3.3rem 1.05rem 3.2rem; }
+	.pz-hero-grid h1 { font-size: 2.45rem !important; letter-spacing:-0.25px; }
+	.pz-hero-grid p { font-size: 1.05rem !important; }
+}
+@media (max-width: 500px) { .pz-hero-grid h1 { font-size:2.25rem !important; letter-spacing:0; } }
+@media (max-width: 430px) { .pz-hero-grid h1 { font-size:2.15rem !important; } }
+@media (max-width: 480px) {
+	.pz-feature-grid { grid-template-columns: 1fr; }
+}
+
+/* Prevent per-letter column wrapping on narrow screens */
+.pz-hero-title { white-space: normal; overflow-wrap: break-word; }
+/* Force normal horizontal text flow in case parent flex/grid interactions shrink width excessively */
+.pz-hero-title { writing-mode: horizontal-tb; display:block; overflow-wrap:anywhere; word-break:break-word; hyphens:auto; }
+
+/* Hero buttons & metrics responsive helpers (class hooks added in index.tsx) */
+.pz-hero-buttons, .pz-hero-metrics { width:100%; }
+.pz-hero-buttons { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; }
+.pz-hero-metrics { display:flex; flex-wrap:wrap; }
+.pz-hero-metrics img { display:none; }
+.pz-badge { --pz-b-bg:rgba(255,255,255,.08); --pz-b-fg:#fff; display:inline-flex; align-items:center; padding:2px 8px 3px; font-size:.62rem; font-weight:600; line-height:1; letter-spacing:.35px; border-radius:6px; background:var(--pz-b-bg); color:var(--pz-b-fg); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.15); box-shadow:0 2px 4px -1px rgba(0,0,0,.35); }
+[data-theme='light'] .pz-badge { --pz-b-bg:#eef2f7; --pz-b-fg:#1e293b; border-color:#d4dae2; }
+@media (max-width:520px){ .pz-badge { font-size:.58rem; padding:2px 6px 3px; } }
+.pz-hero-sponsor { display:inline-block; }
+
+/* Simplified: keep flex wrap for all widths */
+@media (max-width: 860px) {
+	.pz-hero-grid { grid-template-columns: 1fr !important; }
+	.pz-hero-side { order: 2; }
+}
+@supports (text-wrap: balance) {
+	.pz-hero-title { text-wrap: balance; }
+}
+
+/* No grid at 640px – natural wrapping */
+
+@media (max-width: 500px) { .pz-hero-buttons { gap:.55rem; } }
+
+/* No forced full-width at 430px */
+
+/* Extra-narrow refinement: ensure metrics wrap cleanly without horizontal overflow */
+@media (max-width: 420px) {
+	.pz-hero-metrics { display:grid; grid-template-columns: repeat(auto-fit,minmax(118px,1fr)); gap:.55rem; }
+	.pz-hero-metrics img { width:100%; height:auto; }
+}

@@ -13,3 +13,13 @@ title: Bytes & JSON Details
 - Serializability refine (JSON.stringify guard)
 - Max depth & length checks
 - Null allowance toggles (record vs strict modes)
+
+### Helper: jsonMaxDepthRefinement
+Utility to append a depth guard to complex JSON array/object schemas.
+
+```ts
+import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
+const DeepJson = z.array(z.any())${'${jsonMaxDepthRefinement(8)}'};
+```
+
+Pass desired max depth; nodes beyond trigger validation error. Prefer modest limits (5–12) to avoid costly traversals.

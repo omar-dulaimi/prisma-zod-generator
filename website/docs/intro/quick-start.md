@@ -8,6 +8,14 @@ import TabItem from '@theme/TabItem';
 
 ## 1. Install
 
+### Requirements
+| Component | Minimum |
+|----------|---------|
+| Node.js  | 18.x |
+| Prisma   | 6.12.0 |
+| Zod      | 4.0.5 |
+| TypeScript (recommended) | 5.2+ |
+
 <Tabs>
 <TabItem value="npm" label="npm">
 
