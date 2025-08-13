@@ -1979,26 +1979,28 @@ export class PrismaTypeMapper {
     if (imports.includes('z')) {
       lines.push("import { z } from 'zod';");
     }
-    
-    // Enum schema imports (those that end with Schema)
-    const enumSchemaImports = imports.filter(imp => /Schema$/.test(imp));
-    if (enumSchemaImports.length > 0) {
-      enumSchemaImports.forEach(imp => {
-        const enumBase = imp.replace(/Schema$/, '');
-        lines.push(`import { ${imp} } from './enums/${enumBase}.schema';`);
-      });
-    }
-    
-    // Related schema imports (pure model relations). We now depend on the Schema primary export.
-    const relatedSchemaImports = imports
-      .filter(imp => /Schema$/.test(imp) && imp !== composition.schemaName);
-    if (relatedSchemaImports.length > 0) {
-      relatedSchemaImports.forEach(schemaImport => {
-        const base = schemaImport.replace(/Schema$/, '');
-  // use unified .schema.ts naming for related pure models
-  lines.push(`import { ${schemaImport} } from './${base}.schema';`);
-      });
-    }
+    // Identify enum fields by validation marker added in mapEnumType ("// Enum type:")
+    const enumNames = new Set(
+      composition.fields
+        .filter(f => f.validations.some(v => v.includes('Enum type: ')))
+        .map(f => f.prismaType)
+    );
+
+    // Enum schema imports – ensure correct relative path from models/ -> ../schemas/enums/
+    const enumSchemaImports = imports.filter(imp => /Schema$/.test(imp) && enumNames.has(imp.replace(/Schema$/, '')));
+    enumSchemaImports.forEach(imp => {
+      const enumBase = imp.replace(/Schema$/, '');
+      lines.push(`import { ${imp} } from '../schemas/enums/${enumBase}.schema';`);
+    });
+
+    // Related model schema imports (exclude current schema + enums)
+    const relatedSchemaImports = imports.filter(imp => /Schema$/.test(imp)
+      && imp !== composition.schemaName
+      && !enumNames.has(imp.replace(/Schema$/, '')));
+    relatedSchemaImports.forEach(schemaImport => {
+      const base = schemaImport.replace(/Schema$/, '');
+      lines.push(`import { ${schemaImport} } from './${base}.schema';`);
+    });
     
     return lines;
   }

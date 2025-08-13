@@ -130,6 +130,11 @@ export async function generate(options: GeneratorOptions) {
         configFileOptions,
         generatorOptionOverrides
       );
+      // Preserve config file output if still unset after overrides
+      if (!(mergedConfig as any).output && (configFileOptions as any).output) {
+        (mergedConfig as any).output = (configFileOptions as any).output;
+        logger.debug('[debug] applied configFileOptions.output fallback');
+      }
   logger.debug(`[debug] mergedConfig.naming preset=${(mergedConfig as any).naming?.preset}`);
       
       
@@ -141,9 +146,12 @@ export async function generate(options: GeneratorOptions) {
       });
       generatorConfig = processConfiguration(mergedConfig, availableModels, modelFieldInfo);
   logger.debug(`[debug] post-process generatorConfig.naming preset=${(generatorConfig as any).naming?.preset}`);
+  logger.debug(`[debug] generatorConfig.output=${(generatorConfig as any).output}`);
       
       // Log configuration precedence information
       logConfigurationPrecedence(extendedOptions, configFileOptions, generatorOptionOverrides);
+
+  logger.debug(`[debug] generatorConfig.output (post-merge/process) = ${ (generatorConfig as any).output }`);
 
       // --- Output Path Resolution (replaces earlier immediate initialization) ---
       // Precedence for output now:
@@ -153,7 +161,18 @@ export async function generate(options: GeneratorOptions) {
       try {
         const schemaBaseDir = path.dirname(options.schemaPath);
         const prismaBlockOutput = options.generator.output as EnvValue | undefined;
-        if (prismaBlockOutput) {
+        // Heuristic: parse schema.prisma to see if generator zod block explicitly contains an output = line
+        let zodBlockHasExplicitOutput = false;
+        try {
+          const dm = options.datamodel;
+          const blockMatch = dm.match(/generator\s+zod\s+{([\s\S]*?)}/m);
+          if (blockMatch) {
+            const blockBody = blockMatch[1];
+            zodBlockHasExplicitOutput = /\boutput\b\s*=/.test(blockBody);
+          }
+        } catch {}
+        const userSpecifiedOutput = zodBlockHasExplicitOutput;
+        if (prismaBlockOutput && userSpecifiedOutput) {
           // Original behavior: generator block authoritative when present
           await handleGeneratorOutputValue(prismaBlockOutput);
         } else if (generatorConfig.output) {
@@ -1392,8 +1411,8 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
         } else {
           content = content.replace(/from '\.\/(\w+)\.model';/g, "from './$1.schema';");
         }
-        // Adjust enum import to correct relative path from models/ -> ../enums when present
-        content = content.replace(/from '\.\/enums\//g, "from '../enums/");
+  // Adjust enum import to correct relative path from models/ -> ../schemas/enums when present
+  content = content.replace(/from '\.\/enums\//g, "from '../schemas/enums/");
   // Remove accidental duplicate enum imports (defensive clean-up)
   content = content.replace(/^(import { (\w+)Schema } from '..\/enums\/\2\.schema';)\n\1/mg, '$1');
         // Rename exported const & type if suffix customization used
