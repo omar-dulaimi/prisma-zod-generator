@@ -1160,4 +1160,62 @@ model Post {
       }
     }, GENERATION_TIMEOUT);
   });
+
+  describe('Pure Variant Only Mode', () => {
+    it('should generate only pure variant (no CRUD/object schemas) when input/result disabled', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('pure-variant-only-mode');
+      try {
+        const config = {
+          ...ConfigGenerator.createBasicConfig(),
+          mode: 'custom',
+          pureModels: true,
+          variants: {
+            pure: { enabled: true, suffix: '.model' },
+            input: { enabled: false, suffix: '.input' },
+            result: { enabled: false, suffix: '.result' }
+          }
+        } as any;
+
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+}
+`;
+
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const schemasDir = join(testEnv.outputDir, 'schemas');
+        const variantsPureDir = join(schemasDir, 'variants', 'pure');
+        const objectsDir = join(schemasDir, 'objects');
+        const crudFindMany = join(schemasDir, 'UserFindMany.schema.ts');
+
+        expect(existsSync(variantsPureDir)).toBe(true);
+        // Should NOT have objects directory or CRUD operation files
+        expect(existsSync(objectsDir)).toBe(false);
+        expect(existsSync(crudFindMany)).toBe(false);
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+  });
 });

@@ -283,6 +283,15 @@ export async function generate(options: GeneratorOptions) {
       logger.debug('[prisma-zod-generator] 🎯 Pure-models-only mode active (variants disabled)');
     }
 
+    // New: treat configuration with only pure variant enabled (input/result disabled) as intent to suppress CRUD/input/result schemas
+    const pureVariantOnlyMode = !!generatorConfig.pureModels && !pureModelsOnlyMode && !!variantsCfg && !Array.isArray(variantsCfg)
+      && (variantsCfg as any).pure?.enabled === true
+      && (variantsCfg as any).input?.enabled === false
+      && (variantsCfg as any).result?.enabled === false;
+    if (pureVariantOnlyMode) {
+      logger.debug('[prisma-zod-generator] 🎯 Pure-variant-only mode active (skipping CRUD/input/result schemas)');
+    }
+
     // Validate filtering configuration and provide feedback
     const validationResult = Transformer.validateFilterCombinations(models);
     if (!validationResult.isValid) {
@@ -382,9 +391,11 @@ export async function generate(options: GeneratorOptions) {
       hiddenFields,
     );
 
-    if (pureModelsOnlyMode) {
+    if (pureModelsOnlyMode || pureVariantOnlyMode) {
       // Only pure models (still need enums for enum references; enums already generated above)
       await generatePureModelSchemas(models, generatorConfig);
+      // Generate variant schemas (pure) so import paths remain stable
+      await generateVariantSchemas(models, generatorConfig);
     } else {
       await generateObjectSchemas(mutableInputObjectTypes, models);
       await generateModelSchemas(
