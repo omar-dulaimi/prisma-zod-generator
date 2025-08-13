@@ -1,3 +1,39 @@
+## [1.8.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.7.0...v1.8.0) (2025-08-13)
+
+### ⚠ BREAKING CHANGES
+
+* **pure-models:** pure model exports are now *Schema and only <Model>.schema.ts files are generated (no <Model>.model.ts). Updated README. Adjust your imports accordingly.
+* **pureModels:** pureModels no longer emits relation (object) fields unless pureModelsIncludeRelations=true. Set that flag to retain prior behavior. Added config parsing, defaults, docs, and tests.
+
+### 🚀 Features
+
+* **config:** add pureModelsLean and dateTimeStrategy options with docs and schema updates ([dc3784c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/dc3784cea2eff15fcc0b0722c488a35604b3a506))
+* **custom-use:** add [@zod](https://github.com/zod).custom.use override, helper exports, and tests ([72f7b4d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/72f7b4d8bc42476ff28d35eaa343ebe32bcdffd4))
+* **models:** overhaul pure model generation (Model naming, lean mode, enum schema refs, DateTime strategies, single-file optimization) ([8462d32](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8462d32687d452660876da34188dab434e863d86))
+* **naming:** add stable naming customization presets and docs ([8d611d8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8d611d8fe53c037af65859a4d5dd9e260daa7f2a))
+* **pure-models:** unify pure model naming to *Schema and single .schema.ts output ([5234631](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5234631c5c974b905ea064816ef37f19670e8063))
+* **pureModels:** omit relation fields by default; add pureModelsIncludeRelations flag ([cf9eef4](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cf9eef4b8d6b04a63a5ffa39b7b9b7a0761d344b))
+* **pure:** support pure-only variant mode (skip CRUD/object schemas when only pure enabled) ([9d4527b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9d4527b8c8fd1fb903e3e65351e6a984fe3cf556))
+* **variants,imports:** unify enum schema usage across variant generators and dynamic Prisma client import paths ([a2e126a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a2e126ac994c74d74983ab60ba8748b9f713a115))
+* **variants): refined enum handling for pure variant & chore(test:** migrate from deprecated basic reporter ([375fcb8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/375fcb8591b50c13f75016ebc6222ec944b97aaa))
+
+### 🐛 Bug Fixes
+
+* **config:** honor JSON config output when generator block omits output\n\nDefers output path initialization so JSON 'output' is used if schema block lacks output (block > JSON > default). ([5bc90b9](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5bc90b9a13f9f871ce108a82fcdb42f5ae5799ed))
+* **generator:** honor config output path and correct enum import paths in pure model schemas ([5393d98](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5393d9864a6682e3a18cbda323bc9b9510d79014))
+* **json:** align helper file after template update ([77ecfe5](https://github.com/omar-dulaimi/prisma-zod-generator/commit/77ecfe59b96b3cbc5178fce81adcbf44995c0612))
+* **json:** drop Prisma.JsonValue references for v6 compatibility and use structural JSON types ([8fef5f7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8fef5f7e991dc952391124ba6e30edec5db6b69a))
+* **prisma-client-preview:** correct import path handling for preview prisma-client generator and file extensions ([65925e2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/65925e2aae08c4510e8add1e653ce1b9e1381eeb))
+
+### ♻️ Code Refactoring
+
+* **json:** centralize JSON helper schema generation and adjust single-file bundling ([2102256](https://github.com/omar-dulaimi/prisma-zod-generator/commit/21022561f469655fa196772e0779acfa654e1281))
+
+### 📚 Documentation
+
+* **recipes:** add CRUD-only, input-only, result-only recipe examples ([36d6702](https://github.com/omar-dulaimi/prisma-zod-generator/commit/36d67029fb142d984b4d91e8cb7d50d6d62479ff))
+* **recipes:** add pure-models-lean recipe with DateTime strategy examples ([dcd773a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/dcd773acb9679d102e4535108faf31f5a3794645))
+
 ## [Unreleased]
 
 ### 🚀 Features
