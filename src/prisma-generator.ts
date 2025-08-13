@@ -1,26 +1,26 @@
 import {
-  DMMF,
-  EnvValue,
-  GeneratorConfig,
-  GeneratorOptions,
+    DMMF,
+    EnvValue,
+    GeneratorConfig,
+    GeneratorOptions,
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-  generatorOptionsToConfigOverrides,
-  getLegacyMigrationSuggestions,
-  isLegacyUsage,
-  parseGeneratorOptions,
-  validateGeneratorOptions
+    generatorOptionsToConfigOverrides,
+    getLegacyMigrationSuggestions,
+    isLegacyUsage,
+    parseGeneratorOptions,
+    validateGeneratorOptions
 } from './config/generator-options';
 import { GeneratorConfig as CustomGeneratorConfig, VariantConfig, parseConfiguration } from './config/parser';
 import {
-  addMissingInputObjectTypes,
-  hideInputObjectTypesAndRelatedFields,
-  resolveAddMissingInputObjectTypeOptions,
-  resolveModelsComments,
+    addMissingInputObjectTypes,
+    hideInputObjectTypesAndRelatedFields,
+    resolveAddMissingInputObjectTypeOptions,
+    resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -1255,21 +1255,29 @@ function generateVariantSchemaContent(
       .map(field => String(field.type))
   ));
   
+  // Build enum schema import lines (relative from variants/<variant>/ to enums directory)
+  // Directory layout: schemas/enums vs schemas/variants/<variant>
+  // Relative path: ../../enums/<Enum>.schema
+  let enumSchemaImportLines = '';
+  if (enumTypes.length > 0) {
+    try {
+      const { generateEnumSchemaImportLines } = require('./utils/enumImport');
+      enumSchemaImportLines = generateEnumSchemaImportLines(enumTypes, 2) + '\n';
+    } catch {
+      enumSchemaImportLines = enumTypes.map(e => `import { ${e}Schema } from '../../enums/${e}.schema';`).join('\n') + '\n';
+    }
+  }
+
   const fieldDefinitions = enabledFields.map(field => {
-    const zodType = getZodTypeForField(field);
+    const isEnum = field.kind === 'enum';
+    // Base type: enum fields reference generated schema directly (no z.)
+    let base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
     const optional = (!field.isRequired && variantName === 'input') ? '.optional()' : '';
     const nullable = (!field.isRequired && field.type === 'String') ? '.nullable()' : '';
-    
-    return `    ${field.name}: z.${zodType}${optional}${nullable}`;
+    return `    ${field.name}: ${base}${optional}${nullable}`;
   }).join(',\n');
-  
-  const enumImportLine = enumTypes.length > 0
-    ? `import { ${enumTypes.join(', ')} } from '@prisma/client';\n`
-    : '';
 
-  return `import { z } from 'zod';\n${enumImportLine}
-
-// prettier-ignore
+  return `import { z } from 'zod';\n${enumSchemaImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
 }).strict();

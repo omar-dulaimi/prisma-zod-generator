@@ -1,13 +1,13 @@
 import type {
-    ConnectorType,
-    DMMF as PrismaDMMF,
+  ConnectorType,
+  DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-    findModelByName,
-    isMongodbRawOp,
+  findModelByName,
+  isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -771,6 +771,24 @@ export default class Transformer {
       prismaClientCustomPath !== '@prisma/client';
   }
 
+  /**
+   * Resolve the import specifier for Prisma Client relative to a target directory.
+   * Falls back to '@prisma/client' when user did not configure a custom output.
+   */
+  private static resolvePrismaImportPath(targetDir: string): string {
+    if (!this.isCustomPrismaClientOutputPath) return '@prisma/client';
+    try {
+      // Compute relative path from the file's directory to the custom client output path
+      const rel = path.relative(targetDir, this.prismaClientOutputPath).replace(/\\/g, '/');
+      if (!rel || rel === '') return '@prisma/client';
+      // Ensure it is a valid relative module specifier (prefix with ./ when needed)
+      if (rel.startsWith('.') || rel.startsWith('/')) return rel;
+      return `./${rel}`;
+    } catch {
+      return '@prisma/client';
+    }
+  }
+
   static setPrismaClientProvider(provider: string) {
     this.prismaClientProvider = provider;
   }
@@ -1372,7 +1390,8 @@ export default class Transformer {
     await fs.promises.mkdir(helpersDir, { recursive: true });
     const filePath = pathMod.join(helpersDir, 'json-helpers.ts');
     // Source content mirrors src/helpers/json-helpers.ts (keep in sync manually)
-    const content = `import { z } from 'zod';\nimport { Prisma } from '@prisma/client';\n\nexport type NullableJsonInput = Prisma.JsonValue | null | 'JsonNull' | 'DbNull' | Prisma.NullTypes.DbNull | Prisma.NullTypes.JsonNull;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return Prisma.DbNull;\n  if (v === 'JsonNull') return Prisma.JsonNull;\n  return v;\n};\nexport const JsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n);\nexport const InputJsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n);\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull')])\n  .nullable()\n  .transform((v) => transformJsonNull(v));\n`;
+  const prismaImportPath = this.resolvePrismaImportPath(helpersDir);
+  const content = `import { z } from 'zod';\nimport { Prisma } from '${prismaImportPath}';\n\nexport type NullableJsonInput = Prisma.JsonValue | null | 'JsonNull' | 'DbNull' | Prisma.NullTypes.DbNull | Prisma.NullTypes.JsonNull;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return Prisma.DbNull;\n  if (v === 'JsonNull') return Prisma.JsonNull;\n  return v;\n};\nexport const JsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n);\nexport const InputJsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n);\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull')])\n  .nullable()\n  .transform((v) => transformJsonNull(v));\n`;
     await fs.promises.writeFile(filePath, content, 'utf8');
   }
 
@@ -1385,7 +1404,8 @@ export default class Transformer {
       const helpersDir = pathMod.join(this.outputPath, 'helpers');
       fs.mkdirSync(helpersDir, { recursive: true });
       const filePath = pathMod.join(helpersDir, 'json-helpers.ts');
-      const content = `import { z } from 'zod';\nimport { Prisma } from '@prisma/client';\n\nexport type NullableJsonInput = Prisma.JsonValue | null | 'JsonNull' | 'DbNull' | Prisma.NullTypes.DbNull | Prisma.NullTypes.JsonNull;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return Prisma.DbNull;\n  if (v === 'JsonNull') return Prisma.JsonNull;\n  return v;\n};\nexport const JsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n);\nexport const InputJsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n);\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull')])\n  .nullable()\n  .transform((v) => transformJsonNull(v));\n`;
+  const prismaImportPath = this.resolvePrismaImportPath(helpersDir);
+  const content = `import { z } from 'zod';\nimport { Prisma } from '${prismaImportPath}';\n\nexport type NullableJsonInput = Prisma.JsonValue | null | 'JsonNull' | 'DbNull' | Prisma.NullTypes.DbNull | Prisma.NullTypes.JsonNull;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return Prisma.DbNull;\n  if (v === 'JsonNull') return Prisma.JsonNull;\n  return v;\n};\nexport const JsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n);\nexport const InputJsonValueSchema = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n);\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull')])\n  .nullable()\n  .transform((v) => transformJsonNull(v));\n`;
       fs.writeFileSync(filePath, content, 'utf8');
     } catch (e) {
       logger.warn(`Failed to write json helpers: ${e}`);
@@ -1395,7 +1415,10 @@ export default class Transformer {
   generateObjectSchemaImportStatements() {
   let generatedImports = this.generateImportZodStatement();
   // Ensure Prisma types import exists for type safety checks in tests
-  generatedImports += "import type { Prisma } from '@prisma/client';\n";
+  // Object schemas live under .../schemas/objects so compute path from that directory.
+  const objectsDir = path.join(Transformer.getSchemasPath(), 'objects');
+  const prismaImportPath = Transformer.resolvePrismaImportPath(objectsDir);
+  generatedImports += `import type { Prisma } from '${prismaImportPath}';\n`;
     generatedImports += this.generateSchemaImports();
     generatedImports += '\n\n';
     return generatedImports;
@@ -1682,7 +1705,9 @@ export default class Transformer {
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
-        let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
+  const crudDir = Transformer.getSchemasPath();
+  const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+  let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
         // Add inline select schema definitions (dual export pattern)
         if (shouldInline) {
@@ -1733,7 +1758,9 @@ export default class Transformer {
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
-        let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
+  const crudDir2 = Transformer.getSchemasPath();
+  const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir2);
+  let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
         // Add inline select schema definitions (dual export pattern)
         if (shouldInline) {
