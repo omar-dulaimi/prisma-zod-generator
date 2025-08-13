@@ -1,6 +1,6 @@
 ## Pure Models Lean Recipe
 
-Generate only pure model schemas with lean documentation (default) or opt back into verbose docs, and configure DateTime handling.
+Generate only pure model schemas with lean documentation (default) or opt back into verbose docs, and configure DateTime handling. Combine with `emit.*` flags for precise control.
 
 ### Features
 
@@ -9,7 +9,7 @@ Generate only pure model schemas with lean documentation (default) or opt back i
 - Switch `pureModelsLean` off to restore rich docs
 - Choose DateTime validation style via `dateTimeStrategy`
 
-### Config
+### Config (Pure Models Only)
 
 `zod-generator.config.json`:
 
@@ -18,7 +18,9 @@ Generate only pure model schemas with lean documentation (default) or opt back i
   "mode": "custom",
   "pureModels": true,
   "pureModelsLean": true,        // omit verbose docs (default)
-  "dateTimeStrategy": "date"     // or "coerce" | "isoString"
+  "dateTimeStrategy": "date",
+  "variants": { "pure": { "enabled": true, "suffix": ".model" }, "input": { "enabled": false }, "result": { "enabled": false } },
+  "emit": { "crud": false, "objects": false, "results": false, "enums": true, "variants": true }
 }
 ```
 
@@ -76,6 +78,7 @@ Layer variants later by enabling them in the JSON config:
 ```jsonc
 {
   "pureModels": true,
-  "variants": { "input": { "enabled": true }, "result": { "enabled": true } }
+  "variants": { "input": { "enabled": true }, "result": { "enabled": true } },
+  "emit": { "crud": true, "objects": true, "results": true }
 }
 ```

@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output = "./client"
 }
 
 datasource db {
@@ -9,10 +8,9 @@ datasource db {
 }
 
 generator zod {
-  provider          = "node ./lib/generator.js"
-  config = "./zod-generator.config.json"
+  provider = "node ./lib/generator.js"
+  config   = "./zod-generator.config.json"
 }
-
 
 model Planet {
   id        String   @id @default(uuid())
@@ -24,13 +22,13 @@ model Planet {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  name     String?
   password String
-  role  Role?
-  posts Post[]
-  books Book[]
+  role     Role?
+  posts    Post[]
+  books    Book[]
 }
 
 model Post {

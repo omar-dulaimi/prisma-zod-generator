@@ -261,10 +261,22 @@ export async function generate(options: GeneratorOptions) {
       }
     }
 
-    await generateEnumSchemas(
-      mutableEnumTypes.prisma,
-      mutableEnumTypes.model ?? [],
-    );
+    // Respect explicit emission controls for enums (default true)
+    const emitEnums = generatorConfig.emit?.enums !== false;
+    if (emitEnums) {
+      // Determine explicit enum emission (default true)
+      const emitEnums = generatorConfig.emit?.enums !== false;
+      if (emitEnums) {
+        await generateEnumSchemas(
+          mutableEnumTypes.prisma,
+          mutableEnumTypes.model ?? [],
+        );
+      } else {
+        logger.debug('[prisma-zod-generator] \u23ED\uFE0F  emit.enums=false (skipping enum schemas)');
+      }
+    } else {
+      logger.debug('[prisma-zod-generator] ⏭️  emit.enums=false (skipping enum schemas)');
+    }
 
     // Determine if we should generate ONLY pure models (skip base/object/result schemas)
     // Conditions:
@@ -391,25 +403,67 @@ export async function generate(options: GeneratorOptions) {
       hiddenFields,
     );
 
-    if (pureModelsOnlyMode || pureVariantOnlyMode) {
-      // Only pure models (still need enums for enum references; enums already generated above)
-      await generatePureModelSchemas(models, generatorConfig);
-      // Generate variant schemas (pure) so import paths remain stable
-      await generateVariantSchemas(models, generatorConfig);
-    } else {
+    // Determine explicit emission flags with fallbacks
+    const emitObjects = generatorConfig.emit?.objects !== false;
+    const emitCrud = generatorConfig.emit?.crud !== false;
+    const emitResultsExplicit = generatorConfig.emit?.results;
+    const emitPureModels = generatorConfig.emit?.pureModels ?? !!generatorConfig.pureModels;
+    const emitVariants = generatorConfig.emit?.variants !== false; // variants wrapper/index
+
+    // If enums skipped but objects/crud requested, log warning
+    if (!emitEnums && (emitObjects || emitCrud)) {
+      logger.warn('[prisma-zod-generator] ⚠️  emit.enums=false may break object/CRUD schemas referencing enums.');
+    }
+
+    const shouldSkipCrudAndObjectsDueToHeuristics = (pureModelsOnlyMode || pureVariantOnlyMode);
+
+    if (emitObjects && !shouldSkipCrudAndObjectsDueToHeuristics) {
       await generateObjectSchemas(mutableInputObjectTypes, models);
+    } else if (!emitObjects) {
+      logger.debug('[prisma-zod-generator] ⏭️  emit.objects=false (skipping object/input schemas)');
+    }
+
+    if (emitCrud && !shouldSkipCrudAndObjectsDueToHeuristics) {
       await generateModelSchemas(
         models,
         mutableModelOperations,
         aggregateOperationSupport,
       );
+    } else if (!emitCrud) {
+      logger.debug('[prisma-zod-generator] ⏭️  emit.crud=false (skipping CRUD operation schemas)');
+    }
+
+    // Only create objects index if objects or crud emitted (legacy expectation)
+    if ((emitObjects || emitCrud) && !shouldSkipCrudAndObjectsDueToHeuristics) {
       await generateIndex();
-  logger.debug(`[debug] Before pure model generation: pureModels=${String(generatorConfig.pureModels)} namingPreset=${(generatorConfig as any).naming?.preset || 'none'}`);
+    }
+
+    if (emitPureModels) {
+      logger.debug(`[debug] Before pure model generation: pureModels=${String(generatorConfig.pureModels || emitPureModels)} namingPreset=${(generatorConfig as any).naming?.preset || 'none'}`);
       await generatePureModelSchemas(models, generatorConfig);
+    } else {
+      logger.debug('[prisma-zod-generator] ⏭️  emit.pureModels=false (skipping pure model schemas)');
+    }
+
+    if (emitVariants) {
       await generateVariantSchemas(models, generatorConfig);
       if (!singleFileMode) {
         await updateIndexWithVariants(generatorConfig);
       }
+    } else {
+      logger.debug('[prisma-zod-generator] ⏭️  emit.variants=false (skipping variant wrapper schemas)');
+    }
+
+    // Result schemas are generated inside Transformer.generateResultSchemas; we guard via emit.results if specified
+    if (emitResultsExplicit === false) {
+      // Monkey patch config variants.result.enabled to false to unify gating pathway safely
+      const variantsRef: any = (generatorConfig as any).variants || ((generatorConfig as any).variants = {});
+      const resultVariantRef: any = variantsRef.result || (variantsRef.result = {});
+      resultVariantRef.enabled = false;
+      logger.debug('[prisma-zod-generator] ⏭️  emit.results=false (forcing skip of result schemas)');
+    }
+
+    if (!(pureModelsOnlyMode || pureVariantOnlyMode)) {
       generateFilteringSummary(models, generatorConfig);
     }
 

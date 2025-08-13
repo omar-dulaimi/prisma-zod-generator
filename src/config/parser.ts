@@ -113,6 +113,26 @@ export interface GeneratorConfig {
       legacyAliases?: boolean;
     };
   };
+
+  /**
+   * Explicit emission controls. When provided, these booleans override heuristic
+   * behaviors (minimal mode, pure-variant-only, etc.) for the respective groups.
+   * Omitting a key preserves legacy behavior for that group.
+   */
+  emit?: {
+    /** Generate enum schemas (referenced by inputs / crud). Default true */
+    enums?: boolean;
+    /** Generate object/input schemas (objects/ directory). Default true unless heuristics suppress. */
+    objects?: boolean;
+    /** Generate CRUD operation argument schemas (findUnique, createOne, ...). Default true unless heuristics suppress. */
+    crud?: boolean;
+    /** Generate result schemas (results/ directory). Default legacy gating (disabled by minimal mode or variants.result.enabled === false). */
+    results?: boolean;
+    /** Generate pure model schemas (mirrors pureModels flag if unspecified). */
+    pureModels?: boolean;
+    /** Generate variant wrapper schemas (variants/ directory & index). Default true if any variant enabled. */
+    variants?: boolean;
+  };
 }
 
 /**

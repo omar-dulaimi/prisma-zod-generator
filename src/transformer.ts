@@ -1,13 +1,13 @@
 import type {
-  ConnectorType,
-  DMMF as PrismaDMMF,
+    ConnectorType,
+    DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-  findModelByName,
-  isMongodbRawOp,
+    findModelByName,
+    isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -1601,6 +1601,11 @@ export default class Transformer {
   }
 
   async generateModelSchemas() {
+    const cfg = Transformer.getGeneratorConfig();
+    if (cfg?.emit && cfg.emit.crud === false) {
+      logger.debug('⏭️  emit.crud=false (skipping all CRUD operation schema generation)');
+      return;
+    }
     // Perform comprehensive filter validation
     const isValid = Transformer.performFilterValidation(this.models);
     if (!isValid) {
@@ -2063,6 +2068,10 @@ export default class Transformer {
    */
   async generateResultSchemas() {
     const config = Transformer.getGeneratorConfig();
+    if (config?.emit && config.emit.results === false) {
+      logger.debug('⏭️  emit.results=false (skipping result schema generation)');
+      return;
+    }
     
     // Check if result schemas are enabled globally
     if (config?.mode === 'minimal') {
