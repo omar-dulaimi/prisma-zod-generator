@@ -2,11 +2,11 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
-  ConfigGenerator,
-  FileSystemUtils,
-  GENERATION_TIMEOUT,
-  PrismaSchemaGenerator,
-  TestEnvironment
+    ConfigGenerator,
+    FileSystemUtils,
+    GENERATION_TIMEOUT,
+    PrismaSchemaGenerator,
+    TestEnvironment
 } from './helpers';
 
 describe('Single-file output mode', () => {
