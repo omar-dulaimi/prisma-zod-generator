@@ -12,6 +12,7 @@ Quick navigation:
 - [Modes](#modes)
 - [Core output & layout](#core-output--layout)
 - [Schema content controls](#schema-content-controls)
+- [Explicit emission controls](#explicit-emission-controls)
 - [Variants](#variants)
 - [Per‑model overrides](#models)
 - [Single-file mode specifics](#single-file-mode)
@@ -46,6 +47,42 @@ Quick navigation:
 | `pureModelsLean` | `boolean` | `true` | `true` | When `pureModels` are enabled, emit a lean form (no JSDoc header blocks, statistics, or field doc comments). Set `false` to restore rich docs. |
 | `pureModelsIncludeRelations` | `boolean` | `false` | `false` | When `pureModels` are enabled, include relation fields (lazy refs). Default omits relations for slimmer pure models. |
 | `dateTimeStrategy` | `"date" | "coerce" | "isoString"` | `"date"` | `"date"` | Maps Prisma `DateTime` scalars in generated schemas. See DateTime Strategies section. |
+
+## Explicit Emission Controls
+
+Fine‑grained on/off switches. Omit a key to retain legacy/heuristic behavior. Set to `false` to hard disable regardless of mode heuristics.
+
+| Key | Type | Default (implicit) | Effect |
+|-----|------|--------------------|--------|
+| `emit.enums` | boolean | `true` | Generate enum schemas (required by many inputs/CRUD). Disabling while keeping objects/crud may break imports (warning logged). |
+| `emit.objects` | boolean | `true` unless suppressed by minimal / pure‐only heuristics | Generate input/object schemas under `objects/`. |
+| `emit.crud` | boolean | `true` unless suppressed by pure variant only heuristics | Generate operation arg schemas (findMany, createOne, etc.). |
+| `emit.results` | boolean | Follows legacy gating (`mode!=='minimal'` and `variants.result.enabled!==false`) | Generate result schemas under `results/`. Set `false` to force skip. |
+| `emit.pureModels` | boolean | Mirrors `pureModels` flag | Emit pure model schemas even if variants heuristics would suppress. |
+| `emit.variants` | boolean | `true` if any variant enabled | Emit variant wrapper/index directory. Set `false` to skip variant layer entirely. |
+
+Example – only pure model variant plus enums:
+```jsonc
+{
+  "mode": "custom",
+  "pureModels": true,
+  "variants": { "pure": { "enabled": true, "suffix": ".model" }, "input": { "enabled": false }, "result": { "enabled": false } },
+  "emit": { "crud": false, "objects": false, "results": false, "variants": true, "enums": true }
+}
+```
+
+Example – CRUD only (no pure models / results / variants):
+```jsonc
+{
+  "mode": "custom",
+  "emit": { "crud": true, "objects": true, "results": false, "pureModels": false, "variants": false }
+}
+```
+
+Notes:
+- `emit.results=false` internally flips `variants.result.enabled=false` to unify gating logic.
+- If you disable enums while still emitting objects or CRUD, a warning is logged because generated inputs may reference missing enum schemas.
+- Explicit flags always override heuristic shortcuts (e.g. pure‑variant only) for the targeted group.
 
 ## Global Filtering
 
@@ -223,6 +260,56 @@ Set `pureModelsLean: false` to re-enable rich documentation (headers + field doc
 Notes:
 - Lean mode affects only pure model schema emitters; operation/variant schemas are unaffected.
 - Tests depending on JSDoc should explicitly set `pureModelsLean: false` to avoid brittleness.
+
+### Inline @zod.custom.use Override
+
+Replace a field's generated schema entirely:
+
+```prisma
+model Chat {
+  id       String @id @default(cuid())
+  /// @zod.custom.use(z.array(z.object({ msg: z.string() })))
+  payload  Json   @default("[]")
+}
+```
+
+Rules:
+1. The expression inside `@zod.custom.use(...)` becomes the field schema verbatim.
+2. Other inline @zod annotations on that field are ignored once a custom override is detected.
+3. Default / optional wrapping still applies based on model metadata.
+
+Helper export:
+```ts
+import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
+const Schema = z.unknown()${'${jsonMaxDepthRefinement(10)}'}; // reuse internal depth validator
+```
+
+Use helpers if you want consistent depth / structure guards while hand‑crafting the base shape.
+
+### Inline @zod.custom.use Override
+
+Replace a field's generated schema entirely:
+
+```prisma
+model Chat {
+  id       String @id @default(cuid())
+  /// @zod.custom.use(z.array(z.object({ msg: z.string() })))
+  payload  Json   @default("[]")
+}
+```
+
+Rules:
+1. The expression inside `@zod.custom.use(...)` becomes the field schema verbatim.
+2. Other inline @zod annotations on that field are ignored once a custom override is detected.
+3. Default / optional wrapping still applies based on model metadata.
+
+Helper export:
+```ts
+import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
+const Schema = z.unknown()${'${jsonMaxDepthRefinement(10)}'}; // reuse internal depth validator
+```
+
+Use helpers if you want consistent depth / structure guards while hand‑crafting the base shape.
 
 ## Troubleshooting
 - Missing output directory: generator creates it; ensure process has write permissions.

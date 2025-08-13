@@ -753,7 +753,7 @@ export class PrismaTypeMapper {
     
     if (jsonConfig.maxDepth !== undefined && jsonConfig.maxDepth > 0) {
       // Add depth validation function
-      const depthValidation = `.refine((val) => { const getDepth = (obj, depth = 0) => { if (depth > ${jsonConfig.maxDepth}) return depth; if (obj === null || typeof obj !== 'object') return depth; return Math.max(...Object.values(obj).map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= ${jsonConfig.maxDepth}; }, "JSON nesting depth exceeds maximum of ${jsonConfig.maxDepth}")`;
+  const depthValidation = `.refine((val) => { const getDepth = (obj: unknown, depth: number = 0): number => { if (depth > ${jsonConfig.maxDepth}) return depth; if (obj === null || typeof obj !== 'object') return depth; const values = Object.values(obj as Record<string, unknown>); if (values.length === 0) return depth; return Math.max(...values.map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= ${jsonConfig.maxDepth}; }, "JSON nesting depth exceeds maximum of ${jsonConfig.maxDepth}")`;
       
       validations.push(depthValidation);
       result.additionalValidations.push(`// Maximum nesting depth: ${jsonConfig.maxDepth}`);
@@ -1260,6 +1260,35 @@ export class PrismaTypeMapper {
     }
 
     try {
+      // Fast-path: support custom full schema replacement via @zod.custom.use(<expr>)
+      // Pattern allows balanced parentheses for the first level only; if nested parentheses exist inside <expr>,
+      // we manually scan to capture until the matching closing paren of the opening directly after 'use'.
+      const customUseIndex = field.documentation.indexOf('@zod.custom.use(');
+      if (customUseIndex !== -1) {
+        const start = field.documentation.indexOf('(', customUseIndex);
+        if (start !== -1) {
+          let depth = 0;
+          let end = -1;
+            for (let i = start; i < field.documentation.length; i++) {
+              const ch = field.documentation[i];
+              if (ch === '(') depth++;
+              else if (ch === ')') {
+                depth--;
+                if (depth === 0) { end = i; break; }
+              }
+            }
+          if (end !== -1) {
+            const expression = field.documentation.slice(start + 1, end).trim();
+            if (expression) {
+              result.zodSchema = expression;
+              result.additionalValidations.push('// Replaced base schema via @zod.custom.use');
+              result.requiresSpecialHandling = true;
+              return; // Skip standard parsing; full override applied
+            }
+          }
+        }
+      }
+
       // Create field comment context
       const context: FieldCommentContext = {
         modelName: modelName,

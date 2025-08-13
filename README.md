@@ -136,6 +136,56 @@ Note on precedence: simple options declared in the Prisma generator block (like 
 npx prisma generate
 ```
 
+### 💡 Inline Custom Schema Override (@zod.custom.use)
+
+Replace a field's generated schema directly via a doc comment:
+
+```prisma
+model AiChat {
+  id        String @id @default(cuid())
+  /// @zod.custom.use(z.array(z.object({ role: z.enum(['user','assistant','system']), parts: z.array(z.object({ type: z.enum(['text','image']), text: z.string() })) })))
+  messages  Json   @default("[]")
+}
+```
+
+Output excerpt:
+```ts
+messages: z.array(z.object({ role: z.enum(['user','assistant','system']), parts: z.array(z.object({ type: z.enum(['text','image']), text: z.string() })) })).default("[]")
+```
+
+Add the internal depth refinement if desired:
+```ts
+import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
+const ChatMessagesSchema = z.array(MessageSchema)${'${jsonMaxDepthRefinement(10)}'};
+```
+
+The override short‑circuits further inline annotations for that field.
+
+### 💡 Inline Custom Schema Override (@zod.custom.use)
+
+You can replace a field's generated schema directly via a doc comment:
+
+```prisma
+model AiChat {
+  id        String @id @default(cuid())
+  /// @zod.custom.use(z.array(z.object({ role: z.enum(['user','assistant','system']), parts: z.array(z.object({ type: z.enum(['text','image']), text: z.string() })) })))
+  messages  Json   @default("[]")
+}
+```
+
+Output excerpt:
+```ts
+messages: z.array(z.object({ role: z.enum(['user','assistant','system']), parts: z.array(z.object({ type: z.enum(['text','image']), text: z.string() })) })).default("[]")
+```
+
+Add the internal depth refinement if desired:
+```ts
+import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
+const ChatMessagesSchema = z.array(MessageSchema)${'${jsonMaxDepthRefinement(10)}'};
+```
+
+The override short‑circuits further inline annotations for that field.
+
 ---
 
 ## 🐞 Logging and warnings
@@ -908,6 +958,12 @@ app.post('/users', async (req, res) => {
 | `pureModelsLean` | When pure models are enabled, omit JSDoc/statistics & field doc blocks for minimal output | `boolean` | `true` |
 | `pureModelsIncludeRelations` | When pureModels are enabled, include relation fields (lazy refs). Default excludes relations for slimmer objects | `boolean` | `false` |
 | `dateTimeStrategy` | Mapping for Prisma `DateTime` ("date" | "coerce" | "isoString") | `string` | `"date"` |
+| `emit.enums` | Explicitly emit enum schemas | `boolean` | `true` |
+| `emit.objects` | Emit input/object schemas (`objects/`) | `boolean` | `true` |
+| `emit.crud` | Emit CRUD operation arg schemas | `boolean` | `true` |
+| `emit.results` | Emit result schemas (`results/`) | `boolean` | heuristic (off in minimal) |
+| `emit.pureModels` | Emit pure model schemas (overrides heuristics) | `boolean` | mirrors `pureModels` |
+| `emit.variants` | Emit variant wrapper/index | `boolean` | `true` if any variant enabled |
 | `naming.pureModel.filePattern` | Pure model file name pattern (tokens) | `string` | `{Model}.schema.ts` |
 | `naming.pureModel.schemaSuffix` | Suffix for schema const | `string` | `Schema` |
 | `naming.pureModel.typeSuffix` | Suffix for inferred type export | `string` | `Type` |
@@ -937,6 +993,19 @@ generator zod {
   pureModelsLean    = true              // default: lean (no doc banners)
   pureModelsIncludeRelations = true     // opt-in to emit relation fields (default false)
   dateTimeStrategy  = "coerce"          // accept strings/numbers, coerce to Date
+  // Explicit emission overrides:
+  // Example zod-generator.config.json:
+  // {
+  //   "emit": {
+  //     "enums": true,
+  //     "objects": false,
+  //     "crud": false,
+  //     "results": false,
+  //     "pureModels": true,
+  //     "variants": true
+  //   }
+  // }
+  // Omit any key to fall back to legacy heuristics (e.g. minimal mode pruning).
   config            = "./zod-config.json"
 }
 ```
@@ -968,6 +1037,8 @@ model InternalLog {
   "addSelectType": true,
   "validateWhereUniqueInput": true,
   "prismaClientPath": "@prisma/client"
+  // Explicit emission
+  // "emit": { "crud": false, "objects": false, "results": false, "variants": true, "enums": true }
 }
 ```
 
