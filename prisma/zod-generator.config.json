@@ -1,13 +1,11 @@
 {
-	"mode": "custom",
-	"output": "./zod",
-	"useMultipleFiles": false,
-	"singleFileName": "index.ts",
+	"mode": "full",
+	"output": "./generated/schemas",
+	"useMultipleFiles": true,
 	"pureModels": true,
-	"variants": {
-		"pure": { "enabled": false, "suffix": ".model" },
-		"input": { "enabled": false, "suffix": ".input" },
-		"result": { "enabled": false, "suffix": ".result" }
-	},
-	"models": {}
+	"generateResultSchemas": true,
+	"models": {
+		"User": { "enabled": true },
+		"Post": { "enabled": true }
+	}
 }
