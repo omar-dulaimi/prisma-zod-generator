@@ -356,29 +356,58 @@ export class VariantFileGenerationCoordinator {
       customizedContent = customizedContent.replace(/\/\*\*[\s\S]*?\*\//g, '');
     }
 
-    // Replace enum usages (z.enum(Role) / z.nativeEnum(Role)) with generated enum schemas (RoleSchema)
+    // Enum handling strategy:
+    //  - For pure variant files the tests expect native enum value import from @prisma/client (e.g. import { Role } ... and z.enum(Role)).
+    //  - For other variants (input/result) we continue to rewrite to generated enum schemas (RoleSchema) to stay consistent with model generator.
     const enumUsageRe = /z\.(?:enum|nativeEnum)\(([_A-Za-z][_A-Za-z0-9]*)\)/g;
     const usedEnumNames: string[] = [];
-    customizedContent = customizedContent.replace(enumUsageRe, (_m, enumName: string) => {
-      if (!usedEnumNames.includes(enumName)) usedEnumNames.push(enumName);
-      return `${enumName}Schema`;
-    });
 
-    if (usedEnumNames.length > 0) {
-      // Remove any previous @prisma/client enum imports completely
-      customizedContent = customizedContent.replace(/import\s*\{[^}]*\}\s*from\s*['"]@prisma\/client['"];?\n?/g, '');
-      // Insert enum schema imports after zod import
-      customizedContent = customizedContent.replace(
-        /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,
-        (match) => {
-          // Coordinator places variant files under schemas/variants/<variant>/; enums are at schemas/enums
-          // Relative path depth two levels: ../../enums
-          const importLines = usedEnumNames
-            .map(name => `import { ${name}Schema } from '../../enums/${name}.schema';`)
-            .join('\n');
-          return `${match}\n${importLines}`;
-        }
-      );
+    if (context.variant === 'pure') {
+      // Variant base content currently uses generated enum schemas (RoleSchema). Convert them back to native enum usage.
+      // 1. Detect imports of generated enum schemas and extract enum names.
+      const enumSchemaImportRe = /import\s*\{\s*([A-Za-z0-9_]+)Schema\s*\}\s*from\s*['"].*?\/enums\/\1\.schema['"];?\n?/g;
+      customizedContent = customizedContent.replace(enumSchemaImportRe, (_full, enumBase: string) => {
+        if (!usedEnumNames.includes(enumBase)) usedEnumNames.push(enumBase);
+        return '';// remove the schema import
+      });
+      // 2. Replace occurrences of EnumNameSchema with z.enum(EnumName)
+      usedEnumNames.forEach(enumName => {
+        const schemaRefRe = new RegExp(`${enumName}Schema`, 'g');
+        customizedContent = customizedContent.replace(schemaRefRe, `z.enum(${enumName})`);
+      });
+      // 3. Collect any remaining direct z.enum/nativeEnum(Enum) patterns (in case mapper changed) to include in import list
+      let match: RegExpExecArray | null;
+      while ((match = enumUsageRe.exec(customizedContent)) !== null) {
+        const enumName = match[1];
+        if (!usedEnumNames.includes(enumName)) usedEnumNames.push(enumName);
+      }
+      if (usedEnumNames.length > 0) {
+        // Remove existing @prisma/client enum imports to avoid duplication
+        customizedContent = customizedContent.replace(/import\s*\{[^}]*\}\s*from\s*['"]@prisma\/client['"];?\n?/g, '');
+        // Insert consolidated import after zod import
+        customizedContent = customizedContent.replace(
+          /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,
+          (m) => `${m}\nimport { ${usedEnumNames.join(', ')} } from '@prisma/client';`
+        );
+      }
+    } else {
+      // Non-pure variants: replace with generated enum schemas
+      customizedContent = customizedContent.replace(enumUsageRe, (_m, enumName: string) => {
+        if (!usedEnumNames.includes(enumName)) usedEnumNames.push(enumName);
+        return `${enumName}Schema`;
+      });
+      if (usedEnumNames.length > 0) {
+        customizedContent = customizedContent.replace(/import\s*\{[^}]*\}\s*from\s*['"]@prisma\/client['"];?\n?/g, '');
+        customizedContent = customizedContent.replace(
+          /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,
+          (match) => {
+            const importLines = usedEnumNames
+              .map(name => `import { ${name}Schema } from '../../enums/${name}.schema';`)
+              .join('\n');
+            return `${match}\n${importLines}`;
+          }
+        );
+      }
     }
 
     return customizedContent;

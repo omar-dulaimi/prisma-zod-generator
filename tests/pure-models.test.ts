@@ -2,11 +2,11 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
-  ConfigGenerator,
-  GENERATION_TIMEOUT,
-  PrismaSchemaGenerator,
-  SchemaValidationUtils,
-  TestEnvironment
+    ConfigGenerator,
+    GENERATION_TIMEOUT,
+    PrismaSchemaGenerator,
+    SchemaValidationUtils,
+    TestEnvironment
 } from './helpers';
 
 describe('Pure Model Schema Generation Tests', () => {

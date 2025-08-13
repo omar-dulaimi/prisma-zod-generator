@@ -10,6 +10,16 @@ export default defineConfig({
     testTimeout: 300000,
     hookTimeout: 60000,
     teardownTimeout: 60000,
+    // Explicit reporters configuration (Vitest v3 deprecates implicit 'basic' reporter)
+    // Matches former 'basic' output minus the final summary per deprecation guidance.
+    reporters: [
+      [
+        'default',
+        {
+          summary: false
+        }
+      ]
+    ],
     // Increase worker timeout to handle long-running tests
     pool: 'threads',
     poolOptions: {
