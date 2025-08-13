@@ -8,6 +8,7 @@
 		<a href="https://github.com/omar-dulaimi/prisma-zod-generator/blob/master/LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0a0a0a.svg"></a>
 		<img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript-informational.svg">
 		<img alt="Module formats" src="https://img.shields.io/badge/modules-esm%20%2B%20cjs-444.svg">
+		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/"><img alt="Docs" src="https://img.shields.io/badge/docs-website-blue.svg"></a>
 	</p>
 	<sub><code>input</code> · <code>result</code> · <code>pure</code> variants • comment rules • minimal mode • targeted filtering</sub>
 </div>
