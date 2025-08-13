@@ -1,0 +1,31 @@
+// CRUD Only Recipe Schema
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated" // adjust as needed
+  config   = "./zod-generator.config.json"
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  name  String?
+  posts Post[]
+}
+
+model Post {
+  id        Int     @id @default(autoincrement())
+  title     String
+  content   String?
+  author    User?   @relation(fields: [authorId], references: [id])
+  authorId  Int?
+}

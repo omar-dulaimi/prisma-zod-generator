@@ -1,0 +1,11 @@
+{
+  "mode": "custom",
+  "emit": {
+    "crud": true,
+    "objects": true,
+    "results": false,
+    "pureModels": false,
+    "variants": false,
+    "enums": true
+  }
+}

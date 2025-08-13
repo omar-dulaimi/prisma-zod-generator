@@ -1,0 +1,16 @@
+{
+  "mode": "custom",
+  "variants": {
+    "pure":   { "enabled": false },
+    "input":  { "enabled": true,  "suffix": ".input" },
+    "result": { "enabled": false }
+  },
+  "emit": {
+    "crud": false,
+    "objects": false,
+    "results": false,
+    "pureModels": false,
+    "variants": true,
+    "enums": true
+  }
+}

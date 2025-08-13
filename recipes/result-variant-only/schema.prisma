@@ -1,0 +1,29 @@
+// Result Variant Only Recipe Schema
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated"
+  config   = "./zod-generator.config.json"
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+  posts Post[]
+}
+
+model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  author   User?  @relation(fields: [authorId], references: [id])
+  authorId Int?
+}

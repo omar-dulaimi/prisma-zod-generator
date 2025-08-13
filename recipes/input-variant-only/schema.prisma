@@ -1,0 +1,30 @@
+// Input Variant Only Recipe Schema
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated"
+  config   = "./zod-generator.config.json"
+}
+
+model User {
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  password  String
+  profile   Profile?
+}
+
+model Profile {
+  id     Int    @id @default(autoincrement())
+  bio    String?
+  user   User?  @relation(fields: [userId], references: [id])
+  userId Int?   @unique
+}
