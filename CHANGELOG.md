@@ -1,3 +1,14 @@
+## [1.9.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.9.0...v1.9.1) (2025-08-13)
+
+### 🐛 Bug Fixes
+
+* **docs:** resolve Docusaurus SSG error by fixing MDX style/class props and update internal links ([#contributing](https://github.com/omar-dulaimi/prisma-zod-generator/issues/contributing), homepage) ([0f04448](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0f04448b146c130dd65450c54ea94775b9dcc5b8))
+
+### 📚 Documentation
+
+* **readme:** restore prominent docs website badge/link ([9105ef3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9105ef36a43ca58a7a5cd5af0d098595edc3475e))
+* **readme:** streamline quick start, sponsor & contribute guidance, add badges ([596a8f3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/596a8f32b13cd7caf3c6d2b9c32ec8dc075607f7))
+
 ## [1.9.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.8.0...v1.9.0) (2025-08-13)
 
 ### 🚀 Features
