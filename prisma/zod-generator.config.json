@@ -3,7 +3,7 @@
 	"output": "./generated",
 	"useMultipleFiles": true,
 	"singleFileName": "index.ts",
-	"pureModels": true,
+	"pureModels": false,
 	"variants": {
 		"pure": { "enabled": true, "suffix": ".model" },
 		"input": { "enabled": false, "suffix": ".input" },
