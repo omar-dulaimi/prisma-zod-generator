@@ -1,0 +1,28 @@
+{
+  "id": "pipeline/special-types",
+  "title": "Special Type Mapping",
+  "description": "| Prisma | Zod (I/O) | Pure Models Default | Notes |",
+  "source": "@site/docs/pipeline/special-types.md",
+  "sourceDirName": "pipeline",
+  "slug": "/pipeline/special-types",
+  "permalink": "/prisma-zod-generator/docs/pipeline/special-types",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/pipeline/special-types.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "special-types",
+    "title": "Special Type Mapping"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Single File Mode",
+    "permalink": "/prisma-zod-generator/docs/pipeline/single-file"
+  },
+  "next": {
+    "title": "@zod Comment Annotations",
+    "permalink": "/prisma-zod-generator/docs/pipeline/zod-comments"
+  }
+}

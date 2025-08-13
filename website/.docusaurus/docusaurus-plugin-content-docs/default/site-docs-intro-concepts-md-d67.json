@@ -1,0 +1,28 @@
+{
+  "id": "intro/concepts",
+  "title": "Core Concepts",
+  "description": "Variants: Parallel schema sets expressing different contexts.",
+  "source": "@site/docs/intro/concepts.md",
+  "sourceDirName": "intro",
+  "slug": "/intro/concepts",
+  "permalink": "/prisma-zod-generator/docs/intro/concepts",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/intro/concepts.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "concepts",
+    "title": "Core Concepts"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Quick Start",
+    "permalink": "/prisma-zod-generator/docs/intro/quick-start"
+  },
+  "next": {
+    "title": "Configuration Precedence",
+    "permalink": "/prisma-zod-generator/docs/config/precedence"
+  }
+}

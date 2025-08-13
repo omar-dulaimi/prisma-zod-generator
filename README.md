@@ -17,6 +17,9 @@
     <a href="https://github.com/omar-dulaimi/prisma-zod-generator/actions">
       <img src="https://img.shields.io/github/actions/workflow/status/omar-dulaimi/prisma-zod-generator/ci.yml?style=for-the-badge&logo=github" alt="CI Status">
     </a>
+    <a href="https://omar-dulaimi.github.io/prisma-zod-generator/">
+      <img src="https://img.shields.io/badge/docs-website-blue?style=for-the-badge&logo=readthedocs" alt="Docs">
+    </a>
     <a href="LICENSE">
       <img src="https://img.shields.io/npm/l/prisma-zod-generator.svg?style=for-the-badge&color=purple" alt="License">
     </a>

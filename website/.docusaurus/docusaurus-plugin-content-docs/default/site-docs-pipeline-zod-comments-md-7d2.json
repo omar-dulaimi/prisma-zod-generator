@@ -1,0 +1,28 @@
+{
+  "id": "pipeline/zod-comments",
+  "title": "@zod Comment Annotations",
+  "description": "Use triple-slash Prisma doc comments with @zod to append validations.",
+  "source": "@site/docs/pipeline/zod-comments.md",
+  "sourceDirName": "pipeline",
+  "slug": "/pipeline/zod-comments",
+  "permalink": "/prisma-zod-generator/docs/pipeline/zod-comments",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/pipeline/zod-comments.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "zod-comments",
+    "title": "@zod Comment Annotations"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Special Type Mapping",
+    "permalink": "/prisma-zod-generator/docs/pipeline/special-types"
+  },
+  "next": {
+    "title": "Minimal CRUD",
+    "permalink": "/prisma-zod-generator/docs/recipes/minimal-crud"
+  }
+}

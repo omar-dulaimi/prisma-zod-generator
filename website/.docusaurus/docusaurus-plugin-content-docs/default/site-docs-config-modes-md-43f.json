@@ -1,0 +1,28 @@
+{
+  "id": "config/modes",
+  "title": "Generation Modes",
+  "description": "| Mode | Models default | Variants default | Operations | Notes |",
+  "source": "@site/docs/config/modes.md",
+  "sourceDirName": "config",
+  "slug": "/config/modes",
+  "permalink": "/prisma-zod-generator/docs/config/modes",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/config/modes.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "modes",
+    "title": "Generation Modes"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Configuration Precedence",
+    "permalink": "/prisma-zod-generator/docs/config/precedence"
+  },
+  "next": {
+    "title": "Variants System",
+    "permalink": "/prisma-zod-generator/docs/config/variants"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "config/naming",
+  "title": "Naming & Presets",
+  "description": "Pure model naming resolved by resolvePureModelNaming:",
+  "source": "@site/docs/config/naming.md",
+  "sourceDirName": "config",
+  "slug": "/config/naming",
+  "permalink": "/prisma-zod-generator/docs/config/naming",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/config/naming.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "naming",
+    "title": "Naming & Presets"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Variants System",
+    "permalink": "/prisma-zod-generator/docs/config/variants"
+  },
+  "next": {
+    "title": "Model / Operation / Field Filtering",
+    "permalink": "/prisma-zod-generator/docs/config/filtering"
+  }
+}

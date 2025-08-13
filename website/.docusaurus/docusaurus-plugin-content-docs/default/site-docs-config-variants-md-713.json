@@ -1,0 +1,28 @@
+{
+  "id": "config/variants",
+  "title": "Variants System",
+  "description": "Two forms:",
+  "source": "@site/docs/config/variants.md",
+  "sourceDirName": "config",
+  "slug": "/config/variants",
+  "permalink": "/prisma-zod-generator/docs/config/variants",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/config/variants.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "variants",
+    "title": "Variants System"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Generation Modes",
+    "permalink": "/prisma-zod-generator/docs/config/modes"
+  },
+  "next": {
+    "title": "Naming & Presets",
+    "permalink": "/prisma-zod-generator/docs/config/naming"
+  }
+}

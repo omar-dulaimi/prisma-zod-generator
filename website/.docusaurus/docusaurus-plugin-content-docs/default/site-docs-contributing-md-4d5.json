@@ -1,0 +1,28 @@
+{
+  "id": "contributing",
+  "title": "Contributing",
+  "description": "Tests use Vitest; comprehensive generation tests cover multi-provider & feature flags.",
+  "source": "@site/docs/contributing.md",
+  "sourceDirName": ".",
+  "slug": "/contributing",
+  "permalink": "/prisma-zod-generator/docs/contributing",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/contributing.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "contributing",
+    "title": "Contributing"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Troubleshooting",
+    "permalink": "/prisma-zod-generator/docs/reference/troubleshooting"
+  },
+  "next": {
+    "title": "Release & Versioning",
+    "permalink": "/prisma-zod-generator/docs/release-and-versioning"
+  }
+}

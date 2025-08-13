@@ -1,0 +1,28 @@
+{
+  "id": "recipes/models-only",
+  "title": "Models Only",
+  "description": "Emit only pure model schemas (no CRUD/object scaffolding):",
+  "source": "@site/docs/recipes/models-only.md",
+  "sourceDirName": "recipes",
+  "slug": "/recipes/models-only",
+  "permalink": "/prisma-zod-generator/docs/recipes/models-only",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/recipes/models-only.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "models-only",
+    "title": "Models Only"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Minimal CRUD",
+    "permalink": "/prisma-zod-generator/docs/recipes/minimal-crud"
+  },
+  "next": {
+    "title": "Pure Models Lean",
+    "permalink": "/prisma-zod-generator/docs/recipes/pure-models-lean"
+  }
+}

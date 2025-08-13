@@ -1,6 +1,6 @@
 {
   "name": "prisma-zod-generator",
-  "version": "1.0.5",
+  "version": "1.8.0",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
@@ -70,7 +70,12 @@
     "release:predict": "git fetch --tags --quiet && semantic-release --dry-run --no-ci --plugins @semantic-release/commit-analyzer",
     "release:predict:notes": "git fetch --tags --quiet && semantic-release --dry-run --no-ci --plugins @semantic-release/commit-analyzer,@semantic-release/release-notes-generator",
     "ci:test": "npm run test:comprehensive",
-    "ci:build": "npm run gen-example"
+    "ci:build": "npm run gen-example",
+  "docs:dev": "cd website && docusaurus start",
+  "docs:build": "cd website && docusaurus build",
+  "docs:serve": "cd website && docusaurus serve",
+  "docs:version": "cd website && docusaurus docs:version",
+  "postrelease": "node scripts/auto-docs-version.mjs"
   },
   "author": {
     "name": "Omar Dulaimi",
@@ -96,6 +101,11 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
+    "@docusaurus/core": "^3.8.1",
+    "@docusaurus/plugin-content-docs": "^3.8.1",
+    "@docusaurus/preset-classic": "^3.8.1",
+    "@docusaurus/theme-common": "^3.8.1",
+  "docusaurus-plugin-search-local": "^2.1.2",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/git": "^10.0.1",
@@ -116,6 +126,9 @@
     "tsx": "^4.20.3",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
+  },
+  "resolutions": {
+    "postcss": "^8.4.38"
   },
   "bugs": {
     "url": "https://github.com/omar-dulaimi/prisma-zod-generator/issues"

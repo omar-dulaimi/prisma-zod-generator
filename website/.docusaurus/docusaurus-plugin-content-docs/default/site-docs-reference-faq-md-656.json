@@ -1,0 +1,28 @@
+{
+  "id": "reference/faq",
+  "title": "FAQ",
+  "description": "Why are select/include schemas missing?  Minimal mode disables them unconditionally to keep surface lean.",
+  "source": "@site/docs/reference/faq.md",
+  "sourceDirName": "reference",
+  "slug": "/reference/faq",
+  "permalink": "/prisma-zod-generator/docs/reference/faq",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/reference/faq.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "faq",
+    "title": "FAQ"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "Naming Preset Map",
+    "permalink": "/prisma-zod-generator/docs/reference/naming-preset-map"
+  },
+  "next": {
+    "title": "Troubleshooting",
+    "permalink": "/prisma-zod-generator/docs/reference/troubleshooting"
+  }
+}

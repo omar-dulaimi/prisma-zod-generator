@@ -1,0 +1,25 @@
+{
+  "id": "intro/what-is",
+  "title": "Prisma Zod Generator",
+  "description": "Generate strongly-typed, configurable Zod schemas directly from your Prisma schema (DMMF). Supports:",
+  "source": "@site/docs/intro/what-is.md",
+  "sourceDirName": "intro",
+  "slug": "/intro/what-is",
+  "permalink": "/prisma-zod-generator/docs/intro/what-is",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/intro/what-is.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "what-is",
+    "title": "Prisma Zod Generator",
+    "sidebar_label": "What is it?"
+  },
+  "sidebar": "docs",
+  "next": {
+    "title": "Quick Start",
+    "permalink": "/prisma-zod-generator/docs/intro/quick-start"
+  }
+}

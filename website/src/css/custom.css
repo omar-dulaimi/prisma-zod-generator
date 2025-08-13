@@ -1,0 +1,6 @@
+/* Light/dark tweaks */
+:root { --ifm-color-primary: #276ef1; }
+[data-theme='dark'] { --ifm-color-primary: #5b8dff; }
+
+/* Code block improvements */
+.theme-code-block { font-size: 0.85rem; }

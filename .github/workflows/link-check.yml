@@ -1,0 +1,24 @@
+name: Link Check
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps (docs only)
+        run: npm ci --omit=dev || npm ci
+      - name: Build docs
+        run: npm run docs:build
+      - name: Check internal links
+        run: |
+          grep -Rho "/prisma-zod-generator[^"]*" website/build | sed 's/#.*//' | sort -u > links.txt
+          missing=0
+          while read -r p; do
+            target="website/build${p#/prisma-zod-generator}"
+            if [ ! -e "$target" ] && [ ! -e "$target/index.html" ]; then
+              echo "Missing: $p"; missing=1; fi
+          done < links.txt
+          if [ "$missing" = "1" ]; then echo "Broken links detected"; exit 1; fi

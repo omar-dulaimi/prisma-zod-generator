@@ -1,0 +1,28 @@
+{
+  "id": "reference/troubleshooting",
+  "title": "Troubleshooting",
+  "description": "| Symptom | Likely Cause | Fix |",
+  "source": "@site/docs/reference/troubleshooting.md",
+  "sourceDirName": "reference",
+  "slug": "/reference/troubleshooting",
+  "permalink": "/prisma-zod-generator/docs/reference/troubleshooting",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/docs/reference/troubleshooting.md",
+  "tags": [],
+  "version": "current",
+  "lastUpdatedAt": 1539502055000,
+  "frontMatter": {
+    "id": "troubleshooting",
+    "title": "Troubleshooting"
+  },
+  "sidebar": "docs",
+  "previous": {
+    "title": "FAQ",
+    "permalink": "/prisma-zod-generator/docs/reference/faq"
+  },
+  "next": {
+    "title": "Contributing",
+    "permalink": "/prisma-zod-generator/docs/contributing"
+  }
+}
