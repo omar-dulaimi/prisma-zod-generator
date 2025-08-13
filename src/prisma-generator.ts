@@ -130,6 +130,7 @@ export async function generate(options: GeneratorOptions) {
         configFileOptions,
         generatorOptionOverrides
       );
+  logger.debug(`[debug] mergedConfig.naming preset=${(mergedConfig as any).naming?.preset}`);
       
       
       // Step 4: Process final configuration with defaults (lowest priority)
@@ -139,6 +140,7 @@ export async function generate(options: GeneratorOptions) {
         modelFieldInfo[model.name] = model.fields.map(field => field.name);
       });
       generatorConfig = processConfiguration(mergedConfig, availableModels, modelFieldInfo);
+  logger.debug(`[debug] post-process generatorConfig.naming preset=${(generatorConfig as any).naming?.preset}`);
       
       // Log configuration precedence information
       logConfigurationPrecedence(extendedOptions, configFileOptions, generatorOptionOverrides);
@@ -372,6 +374,7 @@ export async function generate(options: GeneratorOptions) {
         aggregateOperationSupport,
       );
       await generateIndex();
+  logger.debug(`[debug] Before pure model generation: pureModels=${String(generatorConfig.pureModels)} namingPreset=${(generatorConfig as any).naming?.preset || 'none'}`);
       await generatePureModelSchemas(models, generatorConfig);
       await generateVariantSchemas(models, generatorConfig);
       if (!singleFileMode) {
@@ -1310,7 +1313,7 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
     return;
   }
   
-  logger.debug('📦 Generating pure model schemas');
+  logger.debug('📦 Generating pure model schemas (naming experimental)');
   
   try {
     const outputPath = Transformer.getOutputPath();
@@ -1363,25 +1366,61 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
     // Generate pure model schemas
     const schemaCollection = typeMapper.generateSchemaCollection(filteredModels);
 
+    const { resolvePureModelNaming, applyPattern } = await import('./utils/namingResolver');
+    const namingResolved = resolvePureModelNaming(config as any);
+    const { filePattern, schemaSuffix, typeSuffix, exportNamePattern: exportPattern, legacyAliases } = namingResolved;
+
+    const buildNames = (modelName: string) => {
+      const fileName = applyPattern(filePattern, modelName, schemaSuffix, typeSuffix);
+      const schemaExport = applyPattern(exportPattern, modelName, schemaSuffix, typeSuffix);
+      return { fileName, schemaExport };
+    };
+
     for (const [modelName, schemaData] of schemaCollection.schemas) {
       try {
         if (!schemaData.fileContent?.content) {
           console.error(`   ❌ No content available for ${modelName}`);
           continue;
         }
-        const fileName = `${modelName}.schema.ts`;
+        const { fileName, schemaExport } = buildNames(modelName);
         const filePath = `${modelsOutputPath}/${fileName}`;
         let content = schemaData.fileContent.content;
-  // Ensure relation imports point to .schema files (remove any stale .model artifacts)
-  content = content.replace(/from '\.\/(\w+)\.model';/g, "from './$1.schema';");
-  // Adjust enum import to correct relative path from models/ -> ../enums when present
-  content = content.replace(/from '\.\/enums\//g, "from '../enums/");
+  logger.debug(`[pure-models] Preparing ${modelName} -> file ${fileName}`);
+        // Adjust relation imports when legacy .model pattern encountered
+        if (filePattern.includes('.model.ts')) {
+          content = content.replace(/from '\.\/(\w+)\.schema';/g, "from './$1.model';");
+        } else {
+          content = content.replace(/from '\.\/(\w+)\.model';/g, "from './$1.schema';");
+        }
+        // Adjust enum import to correct relative path from models/ -> ../enums when present
+        content = content.replace(/from '\.\/enums\//g, "from '../enums/");
   // Remove accidental duplicate enum imports (defensive clean-up)
   content = content.replace(/^(import { (\w+)Schema } from '..\/enums\/\2\.schema';)\n\1/mg, '$1');
+        // Rename exported const & type if suffix customization used
+        if (schemaSuffix !== 'Schema' || typeSuffix !== 'Type' || filePattern !== '{Model}.schema.ts') {
+          // Replace default export const ModelSchema with new name
+          const defaultConstRegex = new RegExp(`export const ${modelName}Schema`,'g');
+          content = content.replace(defaultConstRegex, `export const ${schemaExport}`);
+          // Replace inferred type export line
+          const defaultTypeRegex = new RegExp(`export type ${modelName}Type = z.infer<typeof ${modelName}Schema>;`,'g');
+          content = content.replace(defaultTypeRegex, `export type ${modelName}${typeSuffix || 'Type'} = z.infer<typeof ${schemaExport}>;`);
+          // If legacy alias requested, add it after primary export
+          if (legacyAliases) {
+            content += `\n// Legacy aliases\nexport const ${modelName}Schema = ${schemaExport};\nexport type ${modelName}Type = z.infer<typeof ${schemaExport}>;`;
+          }
+        } else if (legacyAliases) {
+          content += `\n// Legacy aliases\nexport const ${modelName}Model = ${modelName}Schema;`;
+        }
         if (singleFileMode) {
           await writeFileSafely(filePath, content, false);
         } else {
           await fs.writeFile(filePath, content);
+        }
+  logger.debug(`[pure-models] Wrote ${filePath}`);
+        if (legacyAliases && !/Legacy aliases/.test(content)) {
+          // Fallback ensure alias block exists
+          const aliasBase = schemaSuffix === '' ? `${modelName}` : `${modelName}Schema`;
+          await fs.appendFile(filePath, `\n// Legacy aliases\nexport const ${modelName}Model = ${aliasBase};`);
         }
         logger.debug(`   📝 Created pure model schema: ${fileName}`);
       } catch (modelError) {
@@ -1396,7 +1435,11 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
         ' * Auto-generated - do not edit manually',
         ' */',
         '',
-        ...Array.from(schemaCollection.schemas.keys()).map(modelName => `export { ${modelName}Schema } from './${modelName}.schema';`),
+        ...Array.from(schemaCollection.schemas.keys()).map(modelName => {
+          const { fileName, schemaExport } = buildNames(modelName);
+          const base = fileName.replace(/\.ts$/, '');
+          return `export { ${schemaExport} } from './${base}';`;
+        }),
         ''
       ].join('\n');
       const indexPath = `${modelsOutputPath}/index.ts`;

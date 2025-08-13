@@ -55,6 +55,13 @@ export class DefaultConfigurationManager {
   pureModelsLean: true,
   pureModelsIncludeRelations: false,
   dateTimeStrategy: 'date',
+      naming: {
+        preset: 'default',
+  // Intentionally leave pureModel overrides empty so presets can supply their own
+  // values without being clobbered by merged defaults. Resolver will apply
+  // fallback defaults when no preset/overrides are provided.
+  pureModel: {}
+      },
       globalExclusions: {
         input: [],
         result: [],
@@ -92,6 +99,10 @@ export class DefaultConfigurationManager {
       pureModels: true, // Enable pure models by default in minimal mode
   pureModelsLean: true,
   pureModelsIncludeRelations: false,
+      naming: {
+        preset: 'default',
+  pureModel: {}
+      },
       variants: {
         pure: {
           enabled: true,

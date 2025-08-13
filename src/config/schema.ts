@@ -68,6 +68,57 @@ export const ConfigurationSchema: JSONSchema7 = {
       default: false,
       description: 'When pureModels is true, include relation fields. Default false (omit relation fields for slimmer models)'
     },
+    naming: {
+      type: 'object',
+      additionalProperties: false,
+      description: 'Optional naming customization settings (experimental)',
+      properties: {
+        preset: {
+          type: 'string',
+          enum: ['default', 'zod-prisma', 'zod-prisma-types', 'legacy-model-suffix'],
+          description: 'Predefined naming preset to apply'
+        },
+        pureModel: {
+          type: 'object',
+          additionalProperties: false,
+          description: 'Overrides for pure model file and symbol naming',
+          properties: {
+            filePattern: {
+              type: 'string',
+              minLength: 3,
+              maxLength: 80,
+              description: 'Pattern for pure model file names. Tokens: {Model}, {model}, {camel}, {kebab}. Must end with .ts',
+              pattern: '.*\\.ts$'
+            },
+            schemaSuffix: {
+              type: 'string',
+              minLength: 0,
+              maxLength: 30,
+              pattern: '^[A-Z][A-Za-z0-9_]*$|^$',
+              description: 'Suffix appended to schema variable (e.g. Schema). Empty string allowed.'
+            },
+            typeSuffix: {
+              type: 'string',
+              minLength: 0,
+              maxLength: 30,
+              pattern: '^[A-Z][A-Za-z0-9_]*$|^$',
+              description: 'Suffix appended to inferred type export (e.g. Type). Empty string allowed.'
+            },
+            exportNamePattern: {
+              type: 'string',
+              minLength: 0,
+              maxLength: 80,
+              description: 'Pattern for schema export variable. Tokens: {Model} {model} plus optional suffix tokens {SchemaSuffix}. Defaults derived from schemaSuffix.'
+            },
+            legacyAliases: {
+              type: 'boolean',
+              default: false,
+              description: 'Emit deprecated alias exports (e.g. UserModel) for compatibility when preset supplies them.'
+            }
+          }
+        }
+      }
+    },
     dateTimeStrategy: {
       type: 'string',
       enum: ['date', 'coerce', 'isoString'],

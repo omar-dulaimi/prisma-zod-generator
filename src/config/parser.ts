@@ -94,6 +94,25 @@ export interface GeneratorConfig {
    * Default: false (do not format schemas).
    */
   formatGeneratedSchemas?: boolean;
+
+  /** Naming customization (experimental) */
+  naming?: {
+    /** Apply a preset for quick migration */
+    preset?: 'default' | 'zod-prisma' | 'zod-prisma-types' | 'legacy-model-suffix';
+    /** Pure model naming overrides */
+    pureModel?: {
+      /** File name pattern, tokens: {Model} {model} {camel} {kebab}; must end with .ts */
+      filePattern?: string;
+      /** Suffix appended to schema const (default Schema) */
+      schemaSuffix?: string; // allow empty string
+      /** Suffix appended to inferred type export (default Type) */
+      typeSuffix?: string; // allow empty string
+      /** Pattern for export variable name. Tokens: {Model} {SchemaSuffix} */
+      exportNamePattern?: string;
+      /** Emit legacy alias exports (e.g. UserModel) */
+      legacyAliases?: boolean;
+    };
+  };
 }
 
 /**

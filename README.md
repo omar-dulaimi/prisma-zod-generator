@@ -908,6 +908,11 @@ app.post('/users', async (req, res) => {
 | `pureModelsLean` | When pure models are enabled, omit JSDoc/statistics & field doc blocks for minimal output | `boolean` | `true` |
 | `pureModelsIncludeRelations` | When pureModels are enabled, include relation fields (lazy refs). Default excludes relations for slimmer objects | `boolean` | `false` |
 | `dateTimeStrategy` | Mapping for Prisma `DateTime` ("date" | "coerce" | "isoString") | `string` | `"date"` |
+| `naming.pureModel.filePattern` | Pure model file name pattern (tokens) | `string` | `{Model}.schema.ts` |
+| `naming.pureModel.schemaSuffix` | Suffix for schema const | `string` | `Schema` |
+| `naming.pureModel.typeSuffix` | Suffix for inferred type export | `string` | `Type` |
+| `naming.pureModel.exportNamePattern` | Pattern for schema export variable | `string` | `{Model}{SchemaSuffix}` |
+| `naming.preset` | Apply preset naming (see below) | `string` | `default` |
 
 ### Advanced Configuration
 
@@ -965,6 +970,93 @@ model InternalLog {
   "prismaClientPath": "@prisma/client"
 }
 ```
+
+### Naming Customization
+
+Configure pure model naming:
+
+```json
+{
+  "pureModels": true,
+  "naming": {
+    "pureModel": {
+      "filePattern": "{model}.zod.ts",
+      "schemaSuffix": "Zod",
+      "typeSuffix": "Shape",
+      "exportNamePattern": "{Model}{SchemaSuffix}",
+      "legacyAliases": false
+    }
+  }
+}
+```
+
+Tokens:
+- `{Model}` PascalCase model name
+- `{model}` / `{camel}` camelCase
+- `{kebab}` kebab-case
+- `{SchemaSuffix}` / `{TypeSuffix}` resolved suffix values
+
+Presets:
+- `zod-prisma` → keeps `ModelSchema`, adds legacy alias
+- `zod-prisma-types` → primary export without suffix + legacy alias
+- `legacy-model-suffix` → reintroduces `.model.ts` + `Model` suffix
+
+Override any field after applying a preset.
+
+Detailed preset behavior:
+
+| Preset | File Pattern | Primary Const Export | Inferred Type Export | Legacy Aliases Emitted | Intended Use Case |
+|--------|--------------|----------------------|----------------------|------------------------|-------------------|
+| default | `{Model}.schema.ts` | `UserSchema` | `UserType` | No | Current built‑in style (no config needed) |
+| zod-prisma | `{Model}.schema.ts` | `UserSchema` | `UserType` | Yes (`UserModel`, `UserType`) | Migrate from prior community libs that used `ModelSchema` but also relied on `UserModel` name |
+| zod-prisma-types | `{Model}.schema.ts` | `User` | `User` (no suffix) | Yes (`UserSchema`, `UserType`) | Emulate style where primary export is unsuffixed but compatibility aliases are needed |
+| legacy-model-suffix | `{Model}.model.ts` | `UserModel` | `UserModelType` | No | Restore historical `.model.ts` file naming with `Model` suffix |
+
+Examples:
+
+```jsonc
+// zod-prisma
+{
+  "pureModels": true,
+  "naming": { "preset": "zod-prisma" }
+}
+
+// zod-prisma-types (empty suffix primary export + aliases)
+{
+  "pureModels": true,
+  "naming": { "preset": "zod-prisma-types" }
+}
+
+// legacy-model-suffix (.model.ts files + Model suffix, no aliases)
+{
+  "pureModels": true,
+  "naming": { "preset": "legacy-model-suffix" }
+}
+
+// Start from a preset then override just the file pattern
+{
+  "pureModels": true,
+  "naming": {
+    "preset": "zod-prisma",
+    "pureModel": { "filePattern": "{Model}.validation.ts" }
+  }
+}
+```
+
+Override precedence notes:
+1. A `preset` seeds base values.
+2. Keys under `naming.pureModel` override only the ones you specify (others inherit from the preset).
+3. Leaving `pureModel` empty ( `{}` ) ensures the preset is applied untouched (this is what the generator defaults to internally).
+
+Migration tips:
+- Coming from `.model.ts` style: set `preset` to `legacy-model-suffix` (no further changes needed).
+- Want to gradually adopt suffixless exports but keep old names available: use `zod-prisma-types` first; remove aliases later by disabling `legacyAliases`.
+- Need a custom pattern: supply `filePattern` (must end with `.ts`) and adjust `exportNamePattern` plus suffixes.
+
+Validation rules:
+- `filePattern` must contain `{Model}` (or another token that yields a unique name) and end with `.ts`.
+- Empty `schemaSuffix` or `typeSuffix` is allowed; set explicit empty string `""` to clear the default.
+- Avoid producing duplicate file names after token replacement; the generator will overwrite silently if collisions occur.
 
 #### DateTime Strategy Examples
 
