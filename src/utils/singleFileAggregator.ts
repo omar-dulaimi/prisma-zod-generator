@@ -14,7 +14,7 @@ let prismaImportBase = '@prisma/client';
 let needsJsonHelpers = false; // whether to inject json helpers block
 
 export function setSingleFilePrismaImportPath(importPath: string) {
-  prismaImportBase = importPath || '@prisma/client';
+  prismaImportBase = (importPath || '@prisma/client').replace(/\\/g, '/');
 }
 
 export function initSingleFile(bundleFullPath: string) {

@@ -1,26 +1,26 @@
 import {
-    DMMF,
-    EnvValue,
-    GeneratorConfig,
-    GeneratorOptions,
+  DMMF,
+  EnvValue,
+  GeneratorConfig,
+  GeneratorOptions,
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-    generatorOptionsToConfigOverrides,
-    getLegacyMigrationSuggestions,
-    isLegacyUsage,
-    parseGeneratorOptions,
-    validateGeneratorOptions
+  generatorOptionsToConfigOverrides,
+  getLegacyMigrationSuggestions,
+  isLegacyUsage,
+  parseGeneratorOptions,
+  validateGeneratorOptions
 } from './config/generator-options';
 import { GeneratorConfig as CustomGeneratorConfig, VariantConfig, parseConfiguration } from './config/parser';
 import {
-    addMissingInputObjectTypes,
-    hideInputObjectTypesAndRelatedFields,
-    resolveAddMissingInputObjectTypeOptions,
-    resolveModelsComments,
+  addMissingInputObjectTypes,
+  hideInputObjectTypesAndRelatedFields,
+  resolveAddMissingInputObjectTypeOptions,
+  resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -251,10 +251,18 @@ export async function generate(options: GeneratorOptions) {
       const potentialClientOut = prismaClientGeneratorConfig?.output?.value as string | undefined;
       if (potentialClientOut && potentialClientOut !== '@prisma/client') {
         try {
-          const rel = path.relative(baseDir, potentialClientOut).replace(/\\/g, '/');
-          // Prefer './' prefix when relative path does not start with '.' or '/'
-          const importPath = rel.startsWith('.') ? rel : rel.startsWith('/') ? rel : `./${rel}`;
-          setSingleFilePrismaImportPath(importPath || '@prisma/client');
+          let rel = path.relative(baseDir, potentialClientOut).replace(/\\/g, '/');
+          if (!rel || rel === '') {
+            setSingleFilePrismaImportPath('@prisma/client');
+          } else {
+            // For the new prisma client generator, the public entry is the 'client' module
+            const provider = Transformer.getPrismaClientProvider?.() || prismaClientGeneratorConfig?.provider?.value;
+            if (provider === 'prisma-client' && !/\/client\/?$/.test(rel)) {
+              rel = `${rel.replace(/\/$/, '')}/client`;
+            }
+            const importPath = rel.startsWith('.') || rel.startsWith('/') ? rel : `./${rel}`;
+            setSingleFilePrismaImportPath(importPath || '@prisma/client');
+          }
         } catch {
           // Fallback silently to default if relative computation fails
         }

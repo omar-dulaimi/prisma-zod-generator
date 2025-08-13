@@ -1,13 +1,13 @@
 import type {
-    ConnectorType,
-    DMMF as PrismaDMMF,
+  ConnectorType,
+  DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-    findModelByName,
-    isMongodbRawOp,
+  findModelByName,
+  isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -462,29 +462,28 @@ export default class Transformer {
     const foreignKeyFields: PrismaDMMF.SchemaArg[] = [];
 
     for (const relationField of excludedRelationFields) {
-      if (relationField.relationFromFields) {
-        for (const fkFieldName of relationField.relationFromFields) {
-          const fkField = model.fields.find(f => f.name === fkFieldName);
-          if (fkField && fkField.kind === 'scalar') {
-            // Create a schema arg for the foreign key field
-            const schemaArg: PrismaDMMF.SchemaArg = {
-              name: fkField.name,
-              isRequired: fkField.isRequired,
-              isNullable: !fkField.isRequired,
-              inputTypes: [
-                {
-                  type: fkField.type,
-                  location: 'scalar',
-                  isList: fkField.isList
-                }
-              ]
-            };
-            foreignKeyFields.push(schemaArg);
-          }
+      if (!relationField.relationFromFields) continue;
+      for (const fkFieldName of relationField.relationFromFields) {
+        const fkField = model.fields.find((f) => f.name === fkFieldName);
+        if (fkField && fkField.kind === 'scalar') {
+          const inputTypes: PrismaDMMF.SchemaArg['inputTypes'] = [
+            {
+              type: fkField.type as unknown as string,
+              location: 'scalar',
+              isList: fkField.isList,
+            },
+          ];
+
+          const schemaArg: PrismaDMMF.SchemaArg = {
+            name: fkField.name,
+            isRequired: fkField.isRequired,
+            isNullable: !fkField.isRequired,
+            inputTypes,
+          } as PrismaDMMF.SchemaArg;
+          foreignKeyFields.push(schemaArg);
         }
       }
     }
-
     return foreignKeyFields;
   }
 
@@ -779,8 +778,19 @@ export default class Transformer {
     if (!this.isCustomPrismaClientOutputPath) return '@prisma/client';
     try {
       // Compute relative path from the file's directory to the custom client output path
-      const rel = path.relative(targetDir, this.prismaClientOutputPath).replace(/\\/g, '/');
+      let rel = path.relative(targetDir, this.prismaClientOutputPath).replace(/\\/g, '/');
       if (!rel || rel === '') return '@prisma/client';
+
+      // For the new Prisma generator (provider = 'prisma-client'), the public entrypoint
+      // that re-exports the Prisma namespace is the generated 'client' module.
+      // Importing the directory itself won't resolve (no index), so ensure '/client' suffix.
+      if (this.prismaClientProvider === 'prisma-client') {
+        // Avoid double-appending if already targeting 'client'
+        if (!/\/?client\/?$/.test(rel)) {
+          rel = `${rel.replace(/\/$/, '')}/client`;
+        }
+      }
+
       // Ensure it is a valid relative module specifier (prefix with ./ when needed)
       if (rel.startsWith('.') || rel.startsWith('/')) return rel;
       return `./${rel}`;
