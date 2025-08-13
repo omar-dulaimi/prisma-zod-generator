@@ -1,3 +1,15 @@
+## [Unreleased]
+
+### 🚀 Features
+
+* **naming:** introduce stable naming customization (presets: zod-prisma, zod-prisma-types, legacy-model-suffix) with tokenized file/export patterns and legacy alias support.
+
+### 📚 Documentation
+
+* **readme:** add comprehensive naming customization guide (presets, migration tips, precedence) and mark feature stable.
+
+---
+
 ## [1.7.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.6.0...v1.7.0) (2025-08-12)
 
 ### 🚀 Features

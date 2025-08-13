@@ -1,9 +1,9 @@
 import { GeneratorConfig, ModelConfig, VariantConfig } from './parser';
 import {
-    DEFAULT_CONFIG,
-    GENERATION_MODES,
-    MINIMAL_OPERATIONS,
-    PRISMA_OPERATIONS
+  DEFAULT_CONFIG,
+  GENERATION_MODES,
+  MINIMAL_OPERATIONS,
+  PRISMA_OPERATIONS
 } from './schema';
 
 /**
@@ -52,6 +52,16 @@ export class DefaultConfigurationManager {
   preserveRequiredScalarsOnCreate: true,
   inferCreateArgsFromSchemas: false,
       pureModels: false, // Default to false, can be overridden by user config
+  pureModelsLean: true,
+  pureModelsIncludeRelations: false,
+  dateTimeStrategy: 'date',
+      naming: {
+        preset: 'default',
+  // Intentionally leave pureModel overrides empty so presets can supply their own
+  // values without being clobbered by merged defaults. Resolver will apply
+  // fallback defaults when no preset/overrides are provided.
+  pureModel: {}
+      },
       globalExclusions: {
         input: [],
         result: [],
@@ -87,6 +97,12 @@ export class DefaultConfigurationManager {
       ...baseConfig,
       mode: 'minimal',
       pureModels: true, // Enable pure models by default in minimal mode
+  pureModelsLean: true,
+  pureModelsIncludeRelations: false,
+      naming: {
+        preset: 'default',
+  pureModel: {}
+      },
       variants: {
         pure: {
           enabled: true,

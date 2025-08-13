@@ -1,0 +1,6 @@
+{
+  "mode": "custom",
+  "pureModels": true,
+  "pureModelsLean": true,
+  "dateTimeStrategy": "date"
+}

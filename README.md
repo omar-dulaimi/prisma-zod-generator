@@ -136,6 +136,56 @@ Note on precedence: simple options declared in the Prisma generator block (like 
 npx prisma generate
 ```
 
+### 💡 Inline Custom Schema Override (@zod.custom.use)
+
+Replace a field's generated schema directly via a doc comment:
+
+```prisma
+model AiChat {
+  id        String @id @default(cuid())
+  /// @zod.custom.use(z.array(z.object({ role: z.enum(['user','assistant','system']), parts: z.array(z.object({ type: z.enum(['text','image']), text: z.string() })) })))
+  messages  Json   @default("[]")
+}
+```
+
+Output excerpt:
+```ts
+messages: z.array(z.object({ role: z.enum(['user','assistant','system']), parts: z.array(z.object({ type: z.enum(['text','image']), text: z.string() })) })).default("[]")
+```
+
+Add the internal depth refinement if desired:
+```ts
+import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
+const ChatMessagesSchema = z.array(MessageSchema)${'${jsonMaxDepthRefinement(10)}'};
+```
+
+The override short‑circuits further inline annotations for that field.
+
+### 💡 Inline Custom Schema Override (@zod.custom.use)
+
+You can replace a field's generated schema directly via a doc comment:
+
+```prisma
+model AiChat {
+  id        String @id @default(cuid())
+  /// @zod.custom.use(z.array(z.object({ role: z.enum(['user','assistant','system']), parts: z.array(z.object({ type: z.enum(['text','image']), text: z.string() })) })))
+  messages  Json   @default("[]")
+}
+```
+
+Output excerpt:
+```ts
+messages: z.array(z.object({ role: z.enum(['user','assistant','system']), parts: z.array(z.object({ type: z.enum(['text','image']), text: z.string() })) })).default("[]")
+```
+
+Add the internal depth refinement if desired:
+```ts
+import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
+const ChatMessagesSchema = z.array(MessageSchema)${'${jsonMaxDepthRefinement(10)}'};
+```
+
+The override short‑circuits further inline annotations for that field.
+
 ---
 
 ## 🐞 Logging and warnings
@@ -555,7 +605,7 @@ Generate different schema variants for various use cases:
 
 ```typescript
 // Pure model schemas - exact Prisma model structure
-import { UserModelSchema } from './schemas/User.model';
+import { UserSchema } from './schemas/models/User.schema';
 
 // Input schemas - for API endpoints and forms
 import { UserInputSchema } from './schemas/User.input';
@@ -566,7 +616,7 @@ import { UserResultSchema } from './schemas/User.result';
 // Usage examples
 const createUser = UserInputSchema.parse(formData);
 const userResponse = UserResultSchema.parse(dbResult);
-const pureUser = UserModelSchema.parse(prismaModel);
+const pureUser = UserSchema.parse(prismaModel);
 ```
 
 ### Variant Configuration
@@ -888,6 +938,8 @@ app.post('/users', async (req, res) => {
 <details>
 <summary><strong>🔧 Configuration Options</strong></summary>
 
+> Looking for a complete, exhaustively documented list of every flag? See **[Full Configuration Reference](./CONFIG_REFERENCE.md)**.
+
 ### Basic Configuration
 
 | Option | Description | Type | Default |
@@ -902,6 +954,21 @@ app.post('/users', async (req, res) => {
 | `useMultipleFiles` | Output multiple files (true) or single bundle (false) | `boolean` | `true` |
 | `singleFileName` | Name of the single-file bundle when `useMultipleFiles=false` | `string` | `"schemas.ts"` |
 | `placeSingleFileAtRoot` | When `useMultipleFiles=false`, place the single file at the generator output root instead of a `schemas/` subfolder | `boolean` | `true` |
+| `pureModels` | Emit plain model object schemas (no operation args wiring) | `boolean` | `false` (implicitly true in minimal mode) |
+| `pureModelsLean` | When pure models are enabled, omit JSDoc/statistics & field doc blocks for minimal output | `boolean` | `true` |
+| `pureModelsIncludeRelations` | When pureModels are enabled, include relation fields (lazy refs). Default excludes relations for slimmer objects | `boolean` | `false` |
+| `dateTimeStrategy` | Mapping for Prisma `DateTime` ("date" | "coerce" | "isoString") | `string` | `"date"` |
+| `emit.enums` | Explicitly emit enum schemas | `boolean` | `true` |
+| `emit.objects` | Emit input/object schemas (`objects/`) | `boolean` | `true` |
+| `emit.crud` | Emit CRUD operation arg schemas | `boolean` | `true` |
+| `emit.results` | Emit result schemas (`results/`) | `boolean` | heuristic (off in minimal) |
+| `emit.pureModels` | Emit pure model schemas (overrides heuristics) | `boolean` | mirrors `pureModels` |
+| `emit.variants` | Emit variant wrapper/index | `boolean` | `true` if any variant enabled |
+| `naming.pureModel.filePattern` | Pure model file name pattern (tokens) | `string` | `{Model}.schema.ts` |
+| `naming.pureModel.schemaSuffix` | Suffix for schema const | `string` | `Schema` |
+| `naming.pureModel.typeSuffix` | Suffix for inferred type export | `string` | `Type` |
+| `naming.pureModel.exportNamePattern` | Pattern for schema export variable | `string` | `{Model}{SchemaSuffix}` |
+| `naming.preset` | Apply preset naming (see below) | `string` | `default` |
 
 ### Advanced Configuration
 
@@ -921,6 +988,24 @@ generator zod {
   placeSingleFileAtRoot = true
   isGenerateSelect  = true
   isGenerateInclude = true
+  // Pure model + DateTime handling examples
+  pureModels        = true              // enable pure model schemas (can also go in JSON)
+  pureModelsLean    = true              // default: lean (no doc banners)
+  pureModelsIncludeRelations = true     // opt-in to emit relation fields (default false)
+  dateTimeStrategy  = "coerce"          // accept strings/numbers, coerce to Date
+  // Explicit emission overrides:
+  // Example zod-generator.config.json:
+  // {
+  //   "emit": {
+  //     "enums": true,
+  //     "objects": false,
+  //     "crud": false,
+  //     "results": false,
+  //     "pureModels": true,
+  //     "variants": true
+  //   }
+  // }
+  // Omit any key to fall back to legacy heuristics (e.g. minimal mode pruning).
   config            = "./zod-config.json"
 }
 ```
@@ -952,8 +1037,120 @@ model InternalLog {
   "addSelectType": true,
   "validateWhereUniqueInput": true,
   "prismaClientPath": "@prisma/client"
+  // Explicit emission
+  // "emit": { "crud": false, "objects": false, "results": false, "variants": true, "enums": true }
 }
 ```
+
+### Naming Customization
+
+Configure pure model naming:
+
+```json
+{
+  "pureModels": true,
+  "naming": {
+    "pureModel": {
+      "filePattern": "{model}.zod.ts",
+      "schemaSuffix": "Zod",
+      "typeSuffix": "Shape",
+      "exportNamePattern": "{Model}{SchemaSuffix}",
+      "legacyAliases": false
+    }
+  }
+}
+```
+
+Tokens:
+- `{Model}` PascalCase model name
+- `{model}` / `{camel}` camelCase
+- `{kebab}` kebab-case
+- `{SchemaSuffix}` / `{TypeSuffix}` resolved suffix values
+
+Presets:
+- `zod-prisma` → keeps `ModelSchema`, adds legacy alias
+- `zod-prisma-types` → primary export without suffix + legacy alias
+- `legacy-model-suffix` → reintroduces `.model.ts` + `Model` suffix
+
+Override any field after applying a preset.
+
+Detailed preset behavior:
+
+| Preset | File Pattern | Primary Const Export | Inferred Type Export | Legacy Aliases Emitted | Intended Use Case |
+|--------|--------------|----------------------|----------------------|------------------------|-------------------|
+| default | `{Model}.schema.ts` | `UserSchema` | `UserType` | No | Current built‑in style (no config needed) |
+| zod-prisma | `{Model}.schema.ts` | `UserSchema` | `UserType` | Yes (`UserModel`, `UserType`) | Migrate from prior community libs that used `ModelSchema` but also relied on `UserModel` name |
+| zod-prisma-types | `{Model}.schema.ts` | `User` | `User` (no suffix) | Yes (`UserSchema`, `UserType`) | Emulate style where primary export is unsuffixed but compatibility aliases are needed |
+| legacy-model-suffix | `{Model}.model.ts` | `UserModel` | `UserModelType` | No | Restore historical `.model.ts` file naming with `Model` suffix |
+
+Examples:
+
+```jsonc
+// zod-prisma
+{
+  "pureModels": true,
+  "naming": { "preset": "zod-prisma" }
+}
+
+// zod-prisma-types (empty suffix primary export + aliases)
+{
+  "pureModels": true,
+  "naming": { "preset": "zod-prisma-types" }
+}
+
+// legacy-model-suffix (.model.ts files + Model suffix, no aliases)
+{
+  "pureModels": true,
+  "naming": { "preset": "legacy-model-suffix" }
+}
+
+// Start from a preset then override just the file pattern
+{
+  "pureModels": true,
+  "naming": {
+    "preset": "zod-prisma",
+    "pureModel": { "filePattern": "{Model}.validation.ts" }
+  }
+}
+```
+
+Override precedence notes:
+1. A `preset` seeds base values.
+2. Keys under `naming.pureModel` override only the ones you specify (others inherit from the preset).
+3. Leaving `pureModel` empty ( `{}` ) ensures the preset is applied untouched (this is what the generator defaults to internally).
+
+Migration tips:
+- Coming from `.model.ts` style: set `preset` to `legacy-model-suffix` (no further changes needed).
+- Want to gradually adopt suffixless exports but keep old names available: use `zod-prisma-types` first; remove aliases later by disabling `legacyAliases`.
+- Need a custom pattern: supply `filePattern` (must end with `.ts`) and adjust `exportNamePattern` plus suffixes.
+
+Validation rules:
+- `filePattern` must contain `{Model}` (or another token that yields a unique name) and end with `.ts`.
+- Empty `schemaSuffix` or `typeSuffix` is allowed; set explicit empty string `""` to clear the default.
+- Avoid producing duplicate file names after token replacement; the generator will overwrite silently if collisions occur.
+
+#### DateTime Strategy Examples
+
+Choose how Prisma `DateTime` fields are represented at validation boundaries:
+
+```jsonc
+{ "dateTimeStrategy": "date" }      // -> z.date() (default)
+{ "dateTimeStrategy": "coerce" }    // -> z.coerce.date() (flexible input)
+{ "dateTimeStrategy": "isoString" } // -> z.string().regex(ISO).transform(v => new Date(v))
+```
+
+#### pureModelsLean
+
+When `pureModels` are enabled, the default `pureModelsLean: true` suppresses large JSDoc header banners, schema statistics, and field documentation comments for ultra-small output. Set `pureModelsLean: false` to restore verbose docs:
+
+```jsonc
+{
+  "pureModels": true,
+  "pureModelsLean": false
+}
+```
+
+Provides parity with popular “lean” generators while still allowing an opt-in to rich docs for teams that want them.
 
 </details>
 

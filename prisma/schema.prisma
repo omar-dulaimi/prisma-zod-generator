@@ -3,25 +3,32 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator zod {
-  provider          = "node ./lib/generator.js"
-  output            = "./generated"
-  // Generate per-file schemas to align with tests that import individual files
-  useMultipleFiles  = true
+  provider = "node ./lib/generator.js"
+  config   = "./zod-generator.config.json"
+}
+
+model Planet {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("planets")
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  password String?
-  role  Role?
-  posts Post[]
-  books Book[]
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  name     String?
+  password String
+  role     Role?
+  posts    Post[]
+  books    Book[]
 }
 
 model Post {

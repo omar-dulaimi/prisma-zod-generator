@@ -56,6 +56,7 @@ export default class Transformer {
   private static zodSchemaSuffix: string = 'ZodSchema';   // Suffix for Zod schemas (PostFindManyZodSchema)
   // Track excluded field names for current object generation to inform typed Omit
   private lastExcludedFieldNames: string[] | null = null;
+  private static jsonHelpersWritten = false;
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
@@ -770,6 +771,24 @@ export default class Transformer {
       prismaClientCustomPath !== '@prisma/client';
   }
 
+  /**
+   * Resolve the import specifier for Prisma Client relative to a target directory.
+   * Falls back to '@prisma/client' when user did not configure a custom output.
+   */
+  private static resolvePrismaImportPath(targetDir: string): string {
+    if (!this.isCustomPrismaClientOutputPath) return '@prisma/client';
+    try {
+      // Compute relative path from the file's directory to the custom client output path
+      const rel = path.relative(targetDir, this.prismaClientOutputPath).replace(/\\/g, '/');
+      if (!rel || rel === '') return '@prisma/client';
+      // Ensure it is a valid relative module specifier (prefix with ./ when needed)
+      if (rel.startsWith('.') || rel.startsWith('/')) return rel;
+      return `./${rel}`;
+    } catch {
+      return '@prisma/client';
+    }
+  }
+
   static setPrismaClientProvider(provider: string) {
     this.prismaClientProvider = provider;
   }
@@ -951,9 +970,18 @@ export default class Transformer {
           this.wrapWithZodValidators('z.boolean()', field, inputType),
         );
       } else if (inputType.type === 'DateTime') {
+        // Apply configurable DateTime strategy
+        const cfg = Transformer.getGeneratorConfig();
+        let dateExpr = 'z.date()';
+        if (cfg?.dateTimeStrategy === 'coerce') {
+          dateExpr = 'z.coerce.date()';
+        } else if (cfg?.dateTimeStrategy === 'isoString') {
+          // ISO string validated then transformed to Date
+          dateExpr = 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime").transform(v => new Date(v))';
+        }
         result.push(
           this.wrapWithZodValidators(
-            'z.union([z.date(), z.iso.datetime()])',
+            dateExpr,
             field,
             inputType,
           ),
@@ -1247,10 +1275,20 @@ export default class Transformer {
     const objectSchema = `${this.generateExportObjectSchemaStatement(
       this.addFinalWrappers({ zodStringFields: zodObjectSchemaFields }),
     )}\n`;
-
-    const json = this.generateJsonSchemaImplementation();
-
-    return `${this.generateObjectSchemaImportStatements()}${json}${objectSchema}`;
+  const baseImports = this.generateObjectSchemaImportStatements();
+    let jsonImport = '';
+    if (this.hasJson) {
+      const cfg = Transformer.getGeneratorConfig();
+      const isMinimal = cfg?.mode === 'minimal';
+      if (isMinimal) {
+        // Inline lightweight json helpers per file (cheaper in minimal mode, files are separate)
+        jsonImport = `\nconst literalSchema = z.union([z.string(), z.number(), z.boolean()]);\nconst jsonSchema: any = z.lazy(() =>\n  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])\n);\n\n`;
+      } else {
+        Transformer.ensureJsonHelpersFile();
+        jsonImport = `import { JsonValueSchema as jsonSchema } from './helpers/json-helpers';\n\n`;
+      }
+    }
+  return `${baseImports}${jsonImport}${objectSchema}`;
   }
 
   generateExportObjectSchemaStatement(schema: string) {
@@ -1342,24 +1380,47 @@ export default class Transformer {
     return this.wrapWithZodObject(fields) + '.strict()';
   }
 
-  generateJsonSchemaImplementation() {
-    let jsonSchemaImplementation = '';
+  // Legacy method retained for backward compatibility; now returns empty string.
+  generateJsonSchemaImplementation() { return ''; }
 
-    if (this.hasJson) {
-      jsonSchemaImplementation += `\n`;
-      jsonSchemaImplementation += `const literalSchema = z.union([z.string(), z.number(), z.boolean()]);\n`;
-      jsonSchemaImplementation += `const jsonSchema = z.lazy(() =>\n`;
-      jsonSchemaImplementation += `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])\n`;
-      jsonSchemaImplementation += `);\n\n`;
+  private static async writeJsonHelpersFile(targetPath: string) {
+    const fs = await import('fs');
+    const pathMod = await import('path');
+    const helpersDir = pathMod.join(targetPath, 'helpers');
+    await fs.promises.mkdir(helpersDir, { recursive: true });
+    const filePath = pathMod.join(helpersDir, 'json-helpers.ts');
+    // Source content mirrors src/helpers/json-helpers.ts (keep in sync manually)
+  const prismaImportPath = this.resolvePrismaImportPath(helpersDir);
+  const content = `import { z } from 'zod';\n\nexport type JsonPrimitive = string | number | boolean | null;\nexport type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };\nexport type InputJsonValue = JsonPrimitive | InputJsonValue[] | { [k: string]: InputJsonValue | null };\nexport type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return null;\n  if (v === 'JsonNull') return null;\n  return v as JsonValue;\n};\nexport const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n) as z.ZodType<JsonValue>;\nexport const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n) as z.ZodType<InputJsonValue>;\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull'), z.literal(null)])\n  .transform((v) => transformJsonNull(v as NullableJsonInput));\n`;
+    await fs.promises.writeFile(filePath, content, 'utf8');
+  }
+
+  private static ensureJsonHelpersFile() {
+    if (this.jsonHelpersWritten) return;
+    this.jsonHelpersWritten = true;
+    try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- fallback sync write path for environments without top-level await
+  const fs = require('fs');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pathMod = require('path');
+      const helpersDir = pathMod.join(this.outputPath, 'helpers');
+      fs.mkdirSync(helpersDir, { recursive: true });
+      const filePath = pathMod.join(helpersDir, 'json-helpers.ts');
+  const prismaImportPath = this.resolvePrismaImportPath(helpersDir);
+  const content = `import { z } from 'zod';\n\nexport type JsonPrimitive = string | number | boolean | null;\nexport type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };\nexport type InputJsonValue = JsonPrimitive | InputJsonValue[] | { [k: string]: InputJsonValue | null };\nexport type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return null;\n  if (v === 'JsonNull') return null;\n  return v as JsonValue;\n};\nexport const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n) as z.ZodType<JsonValue>;\nexport const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n) as z.ZodType<InputJsonValue>;\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull'), z.literal(null)])\n  .transform((v) => transformJsonNull(v as NullableJsonInput));\n`;
+      fs.writeFileSync(filePath, content, 'utf8');
+    } catch (e) {
+      logger.warn(`Failed to write json helpers: ${e}`);
     }
-
-    return jsonSchemaImplementation;
   }
 
   generateObjectSchemaImportStatements() {
   let generatedImports = this.generateImportZodStatement();
   // Ensure Prisma types import exists for type safety checks in tests
-  generatedImports += "import type { Prisma } from '@prisma/client';\n";
+  // Object schemas live under .../schemas/objects so compute path from that directory.
+  const objectsDir = path.join(Transformer.getSchemasPath(), 'objects');
+  const prismaImportPath = Transformer.resolvePrismaImportPath(objectsDir);
+  generatedImports += `import type { Prisma } from '${prismaImportPath}';\n`;
     generatedImports += this.generateSchemaImports();
     generatedImports += '\n\n';
     return generatedImports;
@@ -1459,8 +1520,15 @@ export default class Transformer {
    * Get import file extension (static version)
    */
   static getImportFileExtension(): string {
-    // This mirrors the instance method but as static
-    return '.js';
+    const isNewPrismaClientGenerator = this.prismaClientProvider === 'prisma-client' ||
+      this.prismaClientConfig.moduleFormat !== undefined ||
+      this.prismaClientConfig.runtime !== undefined;
+    if (isNewPrismaClientGenerator &&
+      this.prismaClientConfig.moduleFormat === 'esm' &&
+      this.prismaClientConfig.importFileExtension) {
+      return `.${this.prismaClientConfig.importFileExtension}`;
+    }
+    return '';
   }
 
   generateSchemaImports() {
@@ -1535,6 +1603,11 @@ export default class Transformer {
   }
 
   async generateModelSchemas() {
+    const cfg = Transformer.getGeneratorConfig();
+    if (cfg?.emit && cfg.emit.crud === false) {
+      logger.debug('⏭️  emit.crud=false (skipping all CRUD operation schema generation)');
+      return;
+    }
     // Perform comprehensive filter validation
     const isValid = Transformer.performFilterValidation(this.models);
     if (!isValid) {
@@ -1639,7 +1712,9 @@ export default class Transformer {
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
-        let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
+  const crudDir = Transformer.getSchemasPath();
+  const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+  let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
         // Add inline select schema definitions (dual export pattern)
         if (shouldInline) {
@@ -1690,7 +1765,9 @@ export default class Transformer {
         const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
 
         // Add Prisma type import for explicit type binding
-        let schemaContent = `import type { Prisma } from '@prisma/client';\n${this.generateImportStatements(imports)}`;
+  const crudDir2 = Transformer.getSchemasPath();
+  const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir2);
+  let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
         // Add inline select schema definitions (dual export pattern)
         if (shouldInline) {
@@ -1993,6 +2070,10 @@ export default class Transformer {
    */
   async generateResultSchemas() {
     const config = Transformer.getGeneratorConfig();
+    if (config?.emit && config.emit.results === false) {
+      logger.debug('⏭️  emit.results=false (skipping result schema generation)');
+      return;
+    }
     
     // Check if result schemas are enabled globally
     if (config?.mode === 'minimal') {

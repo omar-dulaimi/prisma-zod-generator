@@ -10,6 +10,9 @@ prisma/schemas/*/generated/
 *.db
 *.sqlite
 *.sqlite3
+test-*-*
+manual-*-*
+legacy-output
 
 # Test reports and logs
 test-report.json
@@ -60,3 +63,5 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+prisma/client
+debug-test

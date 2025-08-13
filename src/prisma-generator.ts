@@ -1,33 +1,33 @@
 import {
-  DMMF,
-  EnvValue,
-  GeneratorConfig,
-  GeneratorOptions,
+    DMMF,
+    EnvValue,
+    GeneratorConfig,
+    GeneratorOptions,
 } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-  generatorOptionsToConfigOverrides,
-  getLegacyMigrationSuggestions,
-  isLegacyUsage,
-  parseGeneratorOptions,
-  validateGeneratorOptions
+    generatorOptionsToConfigOverrides,
+    getLegacyMigrationSuggestions,
+    isLegacyUsage,
+    parseGeneratorOptions,
+    validateGeneratorOptions
 } from './config/generator-options';
 import { GeneratorConfig as CustomGeneratorConfig, VariantConfig, parseConfiguration } from './config/parser';
 import {
-  addMissingInputObjectTypes,
-  hideInputObjectTypesAndRelatedFields,
-  resolveAddMissingInputObjectTypeOptions,
-  resolveModelsComments,
+    addMissingInputObjectTypes,
+    hideInputObjectTypesAndRelatedFields,
+    resolveAddMissingInputObjectTypeOptions,
+    resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
 import { AggregateOperationSupport } from './types';
 import { logger } from './utils/logger';
 import removeDir from './utils/removeDir';
-import { flushSingleFile, initSingleFile, isSingleFileEnabled } from './utils/singleFileAggregator';
+import { flushSingleFile, initSingleFile, isSingleFileEnabled, setSingleFilePrismaImportPath } from './utils/singleFileAggregator';
 import { writeFileSafely } from './utils/writeFileSafely';
 
 export async function generate(options: GeneratorOptions) {
@@ -47,7 +47,8 @@ export async function generate(options: GeneratorOptions) {
       }
     }
 
-    await handleGeneratorOutputValue(options.generator.output as EnvValue);
+  // NOTE: Output path is now initialized AFTER config precedence is resolved
+  // to allow JSON config 'output' to be respected when the generator block omits it.
 
     const prismaClientGeneratorConfig =
       getGeneratorConfigByProvider(
@@ -76,10 +77,12 @@ export async function generate(options: GeneratorOptions) {
       previewFeatures: prismaClientGeneratorConfig?.previewFeatures,
     });
 
-    // Load and process configuration with proper precedence hierarchy:
-    // 1. Generator options (highest priority - from Prisma schema)
-    // 2. Config file options (medium priority)
-    // 3. Default options (lowest priority - applied by processConfiguration)
+  // Load and process configuration with proper precedence hierarchy:
+  // 1. Generator options (highest priority - from Prisma schema)
+  // 2. Config file options (medium priority)
+  // 3. Default options (lowest priority - applied by processConfiguration)
+  // (Output path deferred until after this merge so JSON 'output' can be honored if the
+  // generator block omits an output attribute.)
     let generatorConfig: CustomGeneratorConfig;
     try {
       const schemaBaseDir = path.dirname(options.schemaPath);
@@ -127,6 +130,12 @@ export async function generate(options: GeneratorOptions) {
         configFileOptions,
         generatorOptionOverrides
       );
+      // Preserve config file output if still unset after overrides
+      if (!(mergedConfig as any).output && (configFileOptions as any).output) {
+        (mergedConfig as any).output = (configFileOptions as any).output;
+        logger.debug('[debug] applied configFileOptions.output fallback');
+      }
+  logger.debug(`[debug] mergedConfig.naming preset=${(mergedConfig as any).naming?.preset}`);
       
       
       // Step 4: Process final configuration with defaults (lowest priority)
@@ -136,9 +145,57 @@ export async function generate(options: GeneratorOptions) {
         modelFieldInfo[model.name] = model.fields.map(field => field.name);
       });
       generatorConfig = processConfiguration(mergedConfig, availableModels, modelFieldInfo);
+  logger.debug(`[debug] post-process generatorConfig.naming preset=${(generatorConfig as any).naming?.preset}`);
+  logger.debug(`[debug] generatorConfig.output=${(generatorConfig as any).output}`);
       
       // Log configuration precedence information
       logConfigurationPrecedence(extendedOptions, configFileOptions, generatorOptionOverrides);
+
+  logger.debug(`[debug] generatorConfig.output (post-merge/process) = ${ (generatorConfig as any).output }`);
+
+      // --- Output Path Resolution (replaces earlier immediate initialization) ---
+      // Precedence for output now:
+      // 1. Prisma generator block 'output' attribute (if provided)
+      // 2. JSON config 'output' (if provided)
+      // 3. Built-in default from processed configuration
+      try {
+        const schemaBaseDir = path.dirname(options.schemaPath);
+        const prismaBlockOutput = options.generator.output as EnvValue | undefined;
+        // Heuristic: parse schema.prisma to see if generator zod block explicitly contains an output = line
+        let zodBlockHasExplicitOutput = false;
+        try {
+          const dm = options.datamodel;
+          const blockMatch = dm.match(/generator\s+zod\s+{([\s\S]*?)}/m);
+          if (blockMatch) {
+            const blockBody = blockMatch[1];
+            zodBlockHasExplicitOutput = /\boutput\b\s*=/.test(blockBody);
+          }
+        } catch {}
+        const userSpecifiedOutput = zodBlockHasExplicitOutput;
+        if (prismaBlockOutput && userSpecifiedOutput) {
+          // Original behavior: generator block authoritative when present
+          await handleGeneratorOutputValue(prismaBlockOutput);
+        } else if (generatorConfig.output) {
+          // New behavior: allow JSON config to supply output when block omits it
+          const resolved = path.isAbsolute(generatorConfig.output)
+            ? generatorConfig.output
+            : path.join(schemaBaseDir, generatorConfig.output);
+          await fs.mkdir(resolved, { recursive: true });
+          await removeDir(resolved, true);
+          Transformer.setOutputPath(resolved);
+          logger.debug(`[prisma-zod-generator] ℹ️ Using JSON config output path: ${resolved}`);
+        } else {
+          // Fallback (should rarely happen because processConfiguration sets default)
+            const fallback = path.join(path.dirname(options.schemaPath), 'generated');
+            await fs.mkdir(fallback, { recursive: true });
+            await removeDir(fallback, true);
+            Transformer.setOutputPath(fallback);
+            logger.debug(`[prisma-zod-generator] ℹ️ Using fallback output path: ${fallback}`);
+        }
+      } catch (outputInitError) {
+        logger.debug(`[prisma-zod-generator] ⚠️ Failed to initialize output path: ${String(outputInitError)}`);
+        throw outputInitError;
+      }
       
     } catch (configError) {
       const msg = `[prisma-zod-generator] ⚠️  Configuration loading failed, using defaults: ${String(configError)}`;
@@ -146,7 +203,7 @@ export async function generate(options: GeneratorOptions) {
       // Fall back to defaults
       generatorConfig = processConfiguration({});
   }
-    checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
+  checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
     setPrismaClientProvider(prismaClientGeneratorConfig);
     setPrismaClientConfig(prismaClientGeneratorConfig);
 
@@ -186,16 +243,66 @@ export async function generate(options: GeneratorOptions) {
     const singleFileMode = generatorConfig.useMultipleFiles === false;
     if (singleFileMode) {
       const bundleName = (generatorConfig.singleFileName || 'schemas.ts').trim();
-  const placeAtRoot = generatorConfig.placeSingleFileAtRoot !== false; // default true
+      const placeAtRoot = generatorConfig.placeSingleFileAtRoot !== false; // default true
       const baseDir = placeAtRoot ? Transformer.getOutputPath() : Transformer.getSchemasPath();
       const bundlePath = path.join(baseDir, bundleName);
       initSingleFile(bundlePath);
+      // Configure custom Prisma client import path if user specified custom output (don't rely solely on isCustomOutput flag)
+      const potentialClientOut = prismaClientGeneratorConfig?.output?.value as string | undefined;
+      if (potentialClientOut && potentialClientOut !== '@prisma/client') {
+        try {
+          const rel = path.relative(baseDir, potentialClientOut).replace(/\\/g, '/');
+          // Prefer './' prefix when relative path does not start with '.' or '/'
+          const importPath = rel.startsWith('.') ? rel : rel.startsWith('/') ? rel : `./${rel}`;
+          setSingleFilePrismaImportPath(importPath || '@prisma/client');
+        } catch {
+          // Fallback silently to default if relative computation fails
+        }
+      }
     }
 
-    await generateEnumSchemas(
-      mutableEnumTypes.prisma,
-      mutableEnumTypes.model ?? [],
-    );
+    // Respect explicit emission controls for enums (default true)
+    const emitEnums = generatorConfig.emit?.enums !== false;
+    if (emitEnums) {
+      // Determine explicit enum emission (default true)
+      const emitEnums = generatorConfig.emit?.enums !== false;
+      if (emitEnums) {
+        await generateEnumSchemas(
+          mutableEnumTypes.prisma,
+          mutableEnumTypes.model ?? [],
+        );
+      } else {
+        logger.debug('[prisma-zod-generator] \u23ED\uFE0F  emit.enums=false (skipping enum schemas)');
+      }
+    } else {
+      logger.debug('[prisma-zod-generator] ⏭️  emit.enums=false (skipping enum schemas)');
+    }
+
+    // Determine if we should generate ONLY pure models (skip base/object/result schemas)
+    // Conditions:
+    //  - Single-file mode (user wants a compact bundle)
+    //  - pureModels enabled
+    //  - All schema variants explicitly disabled (input/result/pure variant system)
+    //  - Custom mode (avoid surprising full/minimal modes)
+    const variantsCfg = generatorConfig.variants as Record<string, { enabled?: boolean }> | undefined;
+    const allVariantsDisabled = variantsCfg
+      ? Object.values(variantsCfg).every(v => !v?.enabled)
+      : true; // if absent, treat as disabled for this heuristic
+    // New heuristic: when pureModels enabled AND all schema variants disabled in custom mode, emit ONLY pure model schemas
+    // independent of single vs multi-file mode. This avoids generating enums/objects/CRUD scaffolding the user does not want.
+    const pureModelsOnlyMode = !!generatorConfig.pureModels && allVariantsDisabled && generatorConfig.mode === 'custom';
+    if (pureModelsOnlyMode) {
+      logger.debug('[prisma-zod-generator] 🎯 Pure-models-only mode active (variants disabled)');
+    }
+
+    // New: treat configuration with only pure variant enabled (input/result disabled) as intent to suppress CRUD/input/result schemas
+    const pureVariantOnlyMode = !!generatorConfig.pureModels && !pureModelsOnlyMode && !!variantsCfg && !Array.isArray(variantsCfg)
+      && (variantsCfg as any).pure?.enabled === true
+      && (variantsCfg as any).input?.enabled === false
+      && (variantsCfg as any).result?.enabled === false;
+    if (pureVariantOnlyMode) {
+      logger.debug('[prisma-zod-generator] 🎯 Pure-variant-only mode active (skipping CRUD/input/result schemas)');
+    }
 
     // Validate filtering configuration and provide feedback
     const validationResult = Transformer.validateFilterCombinations(models);
@@ -296,30 +403,72 @@ export async function generate(options: GeneratorOptions) {
       hiddenFields,
     );
 
-    await generateObjectSchemas(mutableInputObjectTypes, models);
-    await generateModelSchemas(
-      models,
-      mutableModelOperations,
-      aggregateOperationSupport,
-    );
-    await generateIndex();
+    // Determine explicit emission flags with fallbacks
+    const emitObjects = generatorConfig.emit?.objects !== false;
+    const emitCrud = generatorConfig.emit?.crud !== false;
+    const emitResultsExplicit = generatorConfig.emit?.results;
+    const emitPureModels = generatorConfig.emit?.pureModels ?? !!generatorConfig.pureModels;
+    const emitVariants = generatorConfig.emit?.variants !== false; // variants wrapper/index
 
-    // Generate pure model schemas if enabled
-  await generatePureModelSchemas(models, generatorConfig);
-
-    // Generate variant schemas if enabled (skipped in single-file mode by function itself)
-    await generateVariantSchemas(models, generatorConfig);
-
-    // Update main index to include variants (skip when single-file mode to avoid wasted work)
-    if (!singleFileMode) {
-      await updateIndexWithVariants(generatorConfig);
+    // If enums skipped but objects/crud requested, log warning
+    if (!emitEnums && (emitObjects || emitCrud)) {
+      logger.warn('[prisma-zod-generator] ⚠️  emit.enums=false may break object/CRUD schemas referencing enums.');
     }
 
-    // Generate filtering summary
-    generateFilteringSummary(models, generatorConfig);
+    const shouldSkipCrudAndObjectsDueToHeuristics = (pureModelsOnlyMode || pureVariantOnlyMode);
+
+    if (emitObjects && !shouldSkipCrudAndObjectsDueToHeuristics) {
+      await generateObjectSchemas(mutableInputObjectTypes, models);
+    } else if (!emitObjects) {
+      logger.debug('[prisma-zod-generator] ⏭️  emit.objects=false (skipping object/input schemas)');
+    }
+
+    if (emitCrud && !shouldSkipCrudAndObjectsDueToHeuristics) {
+      await generateModelSchemas(
+        models,
+        mutableModelOperations,
+        aggregateOperationSupport,
+      );
+    } else if (!emitCrud) {
+      logger.debug('[prisma-zod-generator] ⏭️  emit.crud=false (skipping CRUD operation schemas)');
+    }
+
+    // Only create objects index if objects or crud emitted (legacy expectation)
+    if ((emitObjects || emitCrud) && !shouldSkipCrudAndObjectsDueToHeuristics) {
+      await generateIndex();
+    }
+
+    if (emitPureModels) {
+      logger.debug(`[debug] Before pure model generation: pureModels=${String(generatorConfig.pureModels || emitPureModels)} namingPreset=${(generatorConfig as any).naming?.preset || 'none'}`);
+      await generatePureModelSchemas(models, generatorConfig);
+    } else {
+      logger.debug('[prisma-zod-generator] ⏭️  emit.pureModels=false (skipping pure model schemas)');
+    }
+
+    if (emitVariants) {
+      await generateVariantSchemas(models, generatorConfig);
+      if (!singleFileMode) {
+        await updateIndexWithVariants(generatorConfig);
+      }
+    } else {
+      logger.debug('[prisma-zod-generator] ⏭️  emit.variants=false (skipping variant wrapper schemas)');
+    }
+
+    // Result schemas are generated inside Transformer.generateResultSchemas; we guard via emit.results if specified
+    if (emitResultsExplicit === false) {
+      // Monkey patch config variants.result.enabled to false to unify gating pathway safely
+      const variantsRef: any = (generatorConfig as any).variants || ((generatorConfig as any).variants = {});
+      const resultVariantRef: any = variantsRef.result || (variantsRef.result = {});
+      resultVariantRef.enabled = false;
+      logger.debug('[prisma-zod-generator] ⏭️  emit.results=false (forcing skip of result schemas)');
+    }
+
+    if (!(pureModelsOnlyMode || pureVariantOnlyMode)) {
+      generateFilteringSummary(models, generatorConfig);
+    }
 
     // If single-file mode is enabled, flush aggregator and clean directory around the bundle
-    if (singleFileMode) {
+  if (singleFileMode) {
       await flushSingleFile();
       const placeAtRoot = generatorConfig.placeSingleFileAtRoot !== false; // default true
       const baseDir = placeAtRoot ? Transformer.getOutputPath() : Transformer.getSchemasPath();
@@ -1171,21 +1320,30 @@ function generateVariantSchemaContent(
       .map(field => String(field.type))
   ));
   
+  // Build enum schema import lines (relative from variants/<variant>/ to enums directory)
+  // Directory layout: schemas/enums vs schemas/variants/<variant>
+  // Relative path: ../../enums/<Enum>.schema
+  let enumSchemaImportLines = '';
+  if (enumTypes.length > 0) {
+    try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic require avoids ESM circular issues in build output
+  const { generateEnumSchemaImportLines } = require('./utils/enumImport');
+      enumSchemaImportLines = generateEnumSchemaImportLines(enumTypes, 2) + '\n';
+    } catch {
+      enumSchemaImportLines = enumTypes.map(e => `import { ${e}Schema } from '../../enums/${e}.schema';`).join('\n') + '\n';
+    }
+  }
+
   const fieldDefinitions = enabledFields.map(field => {
-    const zodType = getZodTypeForField(field);
+    const isEnum = field.kind === 'enum';
+    // Base type: enum fields reference generated schema directly (no z.)
+    const base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
     const optional = (!field.isRequired && variantName === 'input') ? '.optional()' : '';
     const nullable = (!field.isRequired && field.type === 'String') ? '.nullable()' : '';
-    
-    return `    ${field.name}: z.${zodType}${optional}${nullable}`;
+    return `    ${field.name}: ${base}${optional}${nullable}`;
   }).join(',\n');
-  
-  const enumImportLine = enumTypes.length > 0
-    ? `import { ${enumTypes.join(', ')} } from '@prisma/client';\n`
-    : '';
 
-  return `import { z } from 'zod';\n${enumImportLine}
-
-// prettier-ignore
+  return `import { z } from 'zod';\n${enumSchemaImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
 }).strict();
@@ -1248,11 +1406,12 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
     return;
   }
   
-  logger.debug('📦 Generating pure model schemas');
+  logger.debug('📦 Generating pure model schemas (naming experimental)');
   
   try {
     const outputPath = Transformer.getOutputPath();
     const modelsOutputPath = `${outputPath}/models`;
+  const singleFileMode = isSingleFileEnabled();
     
     // Filter models based on configuration
     const enabledModels = models.filter(model => Transformer.isModelEnabled(model.name));
@@ -1262,8 +1421,10 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
       return;
     }
     
-    // Create models directory
-    await fs.mkdir(modelsOutputPath, { recursive: true });
+    // Create models directory (skip if single-file mode since we aggregate)
+    if (!singleFileMode) {
+      await fs.mkdir(modelsOutputPath, { recursive: true });
+    }
     
     // Import the model generator
   const { PrismaTypeMapper } = await import('./generators/model');
@@ -1297,112 +1458,90 @@ async function generatePureModelSchemas(models: DMMF.Model[], config: CustomGene
 
     // Generate pure model schemas
     const schemaCollection = typeMapper.generateSchemaCollection(filteredModels);
-    
-  // Write individual model schema files
+
+    const { resolvePureModelNaming, applyPattern } = await import('./utils/namingResolver');
+    const namingResolved = resolvePureModelNaming(config as any);
+    const { filePattern, schemaSuffix, typeSuffix, exportNamePattern: exportPattern, legacyAliases } = namingResolved;
+
+    const buildNames = (modelName: string) => {
+      const fileName = applyPattern(filePattern, modelName, schemaSuffix, typeSuffix);
+      const schemaExport = applyPattern(exportPattern, modelName, schemaSuffix, typeSuffix);
+      return { fileName, schemaExport };
+    };
+
     for (const [modelName, schemaData] of schemaCollection.schemas) {
       try {
-        const fileName = `${modelName}.model.ts`;
-        const filePath = `${modelsOutputPath}/${fileName}`;
-        
         if (!schemaData.fileContent?.content) {
           console.error(`   ❌ No content available for ${modelName}`);
           continue;
         }
-        
-    // Preserve original schema content (uses *Schema naming)
-    const originalContent = schemaData.fileContent.content;
-
-        // Transform content for pure models
-    let content = originalContent;
-        
-        // Fix import paths to use .model extension instead of lowercase names
-        content = content.replace(
-          /import\s+{\s*(\w+)Schema\s*}\s+from\s+['"]\.\/(\w+)['"];/g,
-          (match, schemaName, importPath) => {
-            // Convert lowercase import path to PascalCase.model
-            const modelName = importPath.charAt(0).toUpperCase() + importPath.slice(1);
-            const modelImportName = schemaName.replace('Schema', 'Model');
-            return `import { ${modelImportName} } from './${modelName}.model';`;
+        const { fileName, schemaExport } = buildNames(modelName);
+        const filePath = `${modelsOutputPath}/${fileName}`;
+        let content = schemaData.fileContent.content;
+  logger.debug(`[pure-models] Preparing ${modelName} -> file ${fileName}`);
+        // Adjust relation imports when legacy .model pattern encountered
+        if (filePattern.includes('.model.ts')) {
+          content = content.replace(/from '\.\/(\w+)\.schema';/g, "from './$1.model';");
+        } else {
+          content = content.replace(/from '\.\/(\w+)\.model';/g, "from './$1.schema';");
+        }
+  // Adjust enum import to correct relative path from models/ -> ../schemas/enums when present
+  content = content.replace(/from '\.\/enums\//g, "from '../schemas/enums/");
+  // Remove accidental duplicate enum imports (defensive clean-up)
+  content = content.replace(/^(import { (\w+)Schema } from '..\/enums\/\2\.schema';)\n\1/mg, '$1');
+        // Rename exported const & type if suffix customization used
+        if (schemaSuffix !== 'Schema' || typeSuffix !== 'Type' || filePattern !== '{Model}.schema.ts') {
+          // Replace default export const ModelSchema with new name
+          const defaultConstRegex = new RegExp(`export const ${modelName}Schema`,'g');
+          content = content.replace(defaultConstRegex, `export const ${schemaExport}`);
+          // Replace inferred type export line
+          const defaultTypeRegex = new RegExp(`export type ${modelName}Type = z.infer<typeof ${modelName}Schema>;`,'g');
+          content = content.replace(defaultTypeRegex, `export type ${modelName}${typeSuffix || 'Type'} = z.infer<typeof ${schemaExport}>;`);
+          // If legacy alias requested, add it after primary export
+          if (legacyAliases) {
+            content += `\n// Legacy aliases\nexport const ${modelName}Schema = ${schemaExport};\nexport type ${modelName}Type = z.infer<typeof ${schemaExport}>;`;
           }
-        );
-        
-        // Also fix any references to the imported schemas in lazy() calls
-        content = content.replace(
-          /z\.lazy\(\(\)\s*=>\s*(\w+)Schema\)/g,
-          'z.lazy(() => $1Model)'
-        );
-        
-        // Change export name from Schema to Model
-        content = content.replace(
-          new RegExp(`export const ${modelName}Schema`, 'g'),
-          `export const ${modelName}Model`
-        );
-        
-        // Update variable references within the file
-        content = content.replace(
-          new RegExp(`typeof ${modelName}Schema`, 'g'),
-          `typeof ${modelName}Model`
-        );
-        
-        // Update JSDoc comments
-        content = content.replace(
-          /Generated Zod schema for (\w+) model/g,
-          'Generated Zod model for $1'
-        );
-        
-        // Update type export
-        content = content.replace(
-          new RegExp(`z\\.infer<typeof ${modelName}Schema>`, 'g'),
-          `z.infer<typeof ${modelName}Model>`
-        );
-        
-        logger.debug(`   📝 Creating pure model: ${fileName} (${modelName}Model)`);
-        
-  // Use direct file writing to avoid formatting issues
-  await fs.writeFile(filePath, content);
-
-  // Also write a compatibility .schema.ts file using Schema naming
-  const schemaCompatPath = `${modelsOutputPath}/${modelName}.schema.ts`;
-  const schemaCompatContent = originalContent
-    // Rename exported constant from Model -> Schema
-    .replace(new RegExp(`export const ${modelName}Model`, 'g'), `export const ${modelName}Schema`)
-    // Update typeof references
-    .replace(new RegExp(`typeof ${modelName}Model`, 'g'), `typeof ${modelName}Schema`);
-
-  await fs.writeFile(schemaCompatPath, schemaCompatContent);
-        
+        } else if (legacyAliases) {
+          content += `\n// Legacy aliases\nexport const ${modelName}Model = ${modelName}Schema;`;
+        }
+        if (singleFileMode) {
+          await writeFileSafely(filePath, content, false);
+        } else {
+          await fs.writeFile(filePath, content);
+        }
+  logger.debug(`[pure-models] Wrote ${filePath}`);
+        if (legacyAliases && !/Legacy aliases/.test(content)) {
+          // Fallback ensure alias block exists
+          const aliasBase = schemaSuffix === '' ? `${modelName}` : `${modelName}Schema`;
+          await fs.appendFile(filePath, `\n// Legacy aliases\nexport const ${modelName}Model = ${aliasBase};`);
+        }
+        logger.debug(`   📝 Created pure model schema: ${fileName}`);
       } catch (modelError) {
         console.error(`   ❌ Error processing model ${modelName}: ${modelError instanceof Error ? modelError.message : 'Unknown error'}`);
-        // Continue with other models
       }
     }
-    
-    // Generate models index file
-    const modelsIndexContent = [
-      '/**',
-      ' * Pure Model Schemas',
-      ' * Auto-generated - do not edit manually',
-      ' */',
-      '',
-      ...Array.from(schemaCollection.schemas.keys()).map(modelName => [
-        // Backward-compatible alias export as Schema for tests expecting *Schema
-        `export { ${modelName}Model as ${modelName}Schema } from './${modelName}.model';`,
-        // Primary export as Model
-        `export { ${modelName}Model } from './${modelName}.model';`
-      ].join('\n')),
-      ''
-    ].join('\n');
-    
-    const indexPath = `${modelsOutputPath}/index.ts`;
-    await fs.writeFile(indexPath, modelsIndexContent);
-    
-  // Compatibility files already written with full schema content per model above
 
-    // Add the models directory to the main index exports
-    const { addIndexExport } = await import('./utils/writeIndexFile');
-    addIndexExport(indexPath);
+    if (!singleFileMode) {
+      const modelsIndexContent = [
+        '/**',
+        ' * Pure Model Schemas',
+        ' * Auto-generated - do not edit manually',
+        ' */',
+        '',
+        ...Array.from(schemaCollection.schemas.keys()).map(modelName => {
+          const { fileName, schemaExport } = buildNames(modelName);
+          const base = fileName.replace(/\.ts$/, '');
+          return `export { ${schemaExport} } from './${base}';`;
+        }),
+        ''
+      ].join('\n');
+      const indexPath = `${modelsOutputPath}/index.ts`;
+      await fs.writeFile(indexPath, modelsIndexContent);
+      const { addIndexExport } = await import('./utils/writeIndexFile');
+      addIndexExport(indexPath);
+    }
     
-    logger.debug(`📦 Generated pure model schemas for ${enabledModels.length} models`);
+  logger.debug(`📦 Generated pure model schemas for ${enabledModels.length} models`);
     
   } catch (error) {
     console.error(`❌ Pure model generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

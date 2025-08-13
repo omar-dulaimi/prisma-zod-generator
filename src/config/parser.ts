@@ -33,6 +33,13 @@ export interface GeneratorConfig {
   
   /** Whether to generate pure model schemas */
   pureModels?: boolean;
+  /** When generating pure model schemas, emit a lean version without JSDoc/stats/comments. Default: true */
+  pureModelsLean?: boolean;
+  /** When pureModels are enabled, include relation fields in generated model objects. Default: false (relations omitted). */
+  pureModelsIncludeRelations?: boolean;
+
+  /** Strategy for DateTime scalar mapping in pure models and variants. Default: 'date' */
+  dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
   
   /** Global field exclusions */
   globalExclusions?: {
@@ -87,6 +94,45 @@ export interface GeneratorConfig {
    * Default: false (do not format schemas).
    */
   formatGeneratedSchemas?: boolean;
+
+  /** Naming customization (experimental) */
+  naming?: {
+    /** Apply a preset for quick migration */
+    preset?: 'default' | 'zod-prisma' | 'zod-prisma-types' | 'legacy-model-suffix';
+    /** Pure model naming overrides */
+    pureModel?: {
+      /** File name pattern, tokens: {Model} {model} {camel} {kebab}; must end with .ts */
+      filePattern?: string;
+      /** Suffix appended to schema const (default Schema) */
+      schemaSuffix?: string; // allow empty string
+      /** Suffix appended to inferred type export (default Type) */
+      typeSuffix?: string; // allow empty string
+      /** Pattern for export variable name. Tokens: {Model} {SchemaSuffix} */
+      exportNamePattern?: string;
+      /** Emit legacy alias exports (e.g. UserModel) */
+      legacyAliases?: boolean;
+    };
+  };
+
+  /**
+   * Explicit emission controls. When provided, these booleans override heuristic
+   * behaviors (minimal mode, pure-variant-only, etc.) for the respective groups.
+   * Omitting a key preserves legacy behavior for that group.
+   */
+  emit?: {
+    /** Generate enum schemas (referenced by inputs / crud). Default true */
+    enums?: boolean;
+    /** Generate object/input schemas (objects/ directory). Default true unless heuristics suppress. */
+    objects?: boolean;
+    /** Generate CRUD operation argument schemas (findUnique, createOne, ...). Default true unless heuristics suppress. */
+    crud?: boolean;
+    /** Generate result schemas (results/ directory). Default legacy gating (disabled by minimal mode or variants.result.enabled === false). */
+    results?: boolean;
+    /** Generate pure model schemas (mirrors pureModels flag if unspecified). */
+    pureModels?: boolean;
+    /** Generate variant wrapper schemas (variants/ directory & index). Default true if any variant enabled. */
+    variants?: boolean;
+  };
 }
 
 /**

@@ -88,6 +88,7 @@ Folders:
 - hide-fields/ — Hide properties globally/per-model (Issue #75)
 - granular-per-model/ — Select operations per model, disable models (Issue #49)
 - trpc-optimized/ — Input/output focused for tRPC (Issues #49, #139)
+- pure-models-lean/ — Pure models only with lean docs + DateTime strategy options
 - schema-comments/schema.prisma — Rich @zod field validation (Issue #80)
 - derive-trpc-schemas/derive-trpc-schemas.ts — Derive request schemas via omit/extend (Issue #49)
 

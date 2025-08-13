@@ -1,0 +1,11 @@
+{
+	"mode": "full",
+	"output": "./generated/schemas",
+	"useMultipleFiles": true,
+	"pureModels": true,
+	"generateResultSchemas": true,
+	"models": {
+		"User": { "enabled": true },
+		"Post": { "enabled": true }
+	}
+}
