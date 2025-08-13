@@ -1,3 +1,9 @@
+## [1.9.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.9.1...v1.9.2) (2025-08-13)
+
+### 🐛 Bug Fixes
+
+* **prisma-import:** point Zod schema Prisma imports to client entry for new prisma-client generator ([f009211](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f009211f3793a61c5033dd339526e0e2ab0f54f0))
+
 ## [1.9.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.9.0...v1.9.1) (2025-08-13)
 
 ### 🐛 Bug Fixes
