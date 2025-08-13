@@ -1,3 +1,17 @@
+## [1.9.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.8.0...v1.9.0) (2025-08-13)
+
+### 🚀 Features
+
+* **docs,homepage:** mobile hero refinements, button redesign, badge replacement, GitHub CTA styling ([529bbc8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/529bbc8bef4632fed6767c418d45e5aa4feae829))
+
+### ♻️ Code Refactoring
+
+* **types:** remove explicit any in source/tests and ignore docusaurus build artifacts ([163d6be](https://github.com/omar-dulaimi/prisma-zod-generator/commit/163d6be77e4e35e5e7afd29f8b30a8ba445fd0c5))
+
+### 📚 Documentation
+
+* add Docusaurus site, version 1.8.0 snapshot, automation & link checks ([8590d02](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8590d023626c0a99fcf600605bfc30a3a73ba859))
+
 ## [1.8.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.7.0...v1.8.0) (2025-08-13)
 
 ### ⚠ BREAKING CHANGES
