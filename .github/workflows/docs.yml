@@ -15,7 +15,55 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.compute.outputs.should_deploy }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Decide if docs should deploy
+        id: compute
+        shell: bash
+        run: |
+          set -euo pipefail
+          PREV="${{ github.event.before }}"
+          CUR="${{ github.sha }}"
+          # Determine diff/log range (handle initial pushes)
+          if [ -z "$PREV" ] || [ "$PREV" = "0000000000000000000000000000000000000000" ]; then
+            RANGE="$CUR~1..$CUR"
+          else
+            RANGE="$PREV..$CUR"
+          fi
+
+          echo "Using range: $RANGE"
+
+          DOCS_CHANGED=false
+          if git diff --name-only $RANGE | grep -E '^website/' >/dev/null 2>&1; then
+            DOCS_CHANGED=true
+          fi
+
+          HAS_FIX_FEAT=false
+          if git log --format=%s $RANGE | grep -Ei '^(feat|fix)(\(|!:|:)' >/dev/null 2>&1; then
+            HAS_FIX_FEAT=true
+          fi
+
+          SHOULD_DEPLOY=false
+          if [ "$DOCS_CHANGED" = true ] || [ "$HAS_FIX_FEAT" = true ]; then
+            SHOULD_DEPLOY=true
+          fi
+
+          echo "docs_changed=$DOCS_CHANGED"
+          echo "feat_or_fix=$HAS_FIX_FEAT"
+          echo "should_deploy=$SHOULD_DEPLOY"
+
+          echo "should_deploy=$SHOULD_DEPLOY" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: filter
+    if: needs.filter.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
