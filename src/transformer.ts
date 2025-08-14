@@ -1113,17 +1113,24 @@ export default class Transformer {
           // Both native type and @zod.max exist - use the more restrictive one
           const finalMaxLength = Math.min(nativeMaxLength, existingMaxConstraint);
           
-          if (finalMaxLength !== existingMaxConstraint) {
-            // Replace the existing max constraint with the more restrictive one
-            line = line.replace(/\.max\(\d+\)/, `.max(${finalMaxLength})`);
-          }
-          // If the existing constraint is already more restrictive, keep it as is
+          // Always replace all max constraints with the single most restrictive one
+          line = this.replaceAllMaxConstraints(line, finalMaxLength);
         } else if (!hasEnhancedZodSchema) {
           // Only native type constraint exists - apply it to the base validator
           line = line.replace('z.string()', `z.string().max(${nativeMaxLength})`);
+        } else if (hasEnhancedZodSchema && existingMaxConstraint === null) {
+          // Enhanced @zod schema exists but no max constraint - add native constraint
+          // Find the base type and add max constraint after it
+          if (line.includes('z.string()')) {
+            line = line.replace('z.string()', `z.string().max(${nativeMaxLength})`);
+          } else {
+            // Handle cases where the string type is already transformed
+            const baseStringMatch = line.match(/(z\.string\(\)[^.]*)/);
+            if (baseStringMatch) {
+              line = line.replace(baseStringMatch[1], `${baseStringMatch[1]}.max(${nativeMaxLength})`);
+            }
+          }
         }
-        // If hasEnhancedZodSchema is true but no existing max constraint, 
-        // we don't add native constraint to avoid interfering with custom @zod schemas
       }
     }
 
@@ -1232,16 +1239,46 @@ export default class Transformer {
       return null;
     }
 
-    // Look for .max(number) in the validation string
-    const maxMatch = zodValidation.match(/\.max\((\d+)\)/);
-    if (maxMatch) {
-      const maxValue = parseInt(maxMatch[1], 10);
-      if (!isNaN(maxValue) && maxValue > 0) {
-        return maxValue;
+    // Look for all .max(number) in the validation string and return the most restrictive
+    const maxMatches = zodValidation.match(/\.max\((\d+)\)/g);
+    if (maxMatches && maxMatches.length > 0) {
+      let minMax = Infinity;
+      
+      for (const match of maxMatches) {
+        const valueMatch = match.match(/\.max\((\d+)\)/);
+        if (valueMatch) {
+          const maxValue = parseInt(valueMatch[1], 10);
+          if (!isNaN(maxValue) && maxValue > 0) {
+            minMax = Math.min(minMax, maxValue);
+          }
+        }
       }
+      
+      return minMax === Infinity ? null : minMax;
     }
 
     return null;
+  }
+
+  /**
+   * Replace all max constraints in a validation string with a single constraint
+   */
+  private replaceAllMaxConstraints(validationString: string, newMaxValue: number): string {
+    // Remove all existing .max(number) constraints
+    const withoutMax = validationString.replace(/\.max\(\d+\)/g, '');
+    
+    // Add the new max constraint after z.string()
+    if (withoutMax.includes('z.string()')) {
+      return withoutMax.replace('z.string()', `z.string().max(${newMaxValue})`);
+    } else {
+      // Handle cases where string type is already transformed - add after the base type
+      const baseStringMatch = withoutMax.match(/(z\.string\(\)[^.]*)/);
+      if (baseStringMatch) {
+        return withoutMax.replace(baseStringMatch[1], `${baseStringMatch[1]}.max(${newMaxValue})`);
+      }
+    }
+    
+    return withoutMax;
   }
 
   /**
