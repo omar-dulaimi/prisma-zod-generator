@@ -1102,6 +1102,31 @@ export default class Transformer {
       console.warn(`Failed to process @zod comments for field ${field.name}:`, error);
     }
 
+    // Apply native type constraints (e.g., @db.VarChar(255) -> .max(255))
+    // Only for String types and only if no enhanced Zod schema is already applied
+    if (inputType.type === 'String' && field.name) {
+      const nativeMaxLength = this.extractMaxLengthFromNativeType(field);
+      const existingMaxConstraint = hasEnhancedZodSchema ? this.extractExistingMaxConstraint(line) : null;
+      
+      if (nativeMaxLength !== null) {
+        if (hasEnhancedZodSchema && existingMaxConstraint !== null) {
+          // Both native type and @zod.max exist - use the more restrictive one
+          const finalMaxLength = Math.min(nativeMaxLength, existingMaxConstraint);
+          
+          if (finalMaxLength !== existingMaxConstraint) {
+            // Replace the existing max constraint with the more restrictive one
+            line = line.replace(/\.max\(\d+\)/, `.max(${finalMaxLength})`);
+          }
+          // If the existing constraint is already more restrictive, keep it as is
+        } else if (!hasEnhancedZodSchema) {
+          // Only native type constraint exists - apply it to the base validator
+          line = line.replace('z.string()', `z.string().max(${nativeMaxLength})`);
+        }
+        // If hasEnhancedZodSchema is true but no existing max constraint, 
+        // we don't add native constraint to avoid interfering with custom @zod schemas
+      }
+    }
+
     if (inputType.isList) {
       if (inputType.type === 'DateTime') {
         // For DateTime lists, support both Date and ISO datetime arrays
@@ -1144,6 +1169,79 @@ export default class Transformer {
 
   addSchemaImport(name: string) {
     this.schemaImports.add(name);
+  }
+
+  /**
+   * Extract max length constraint from native type (e.g., @db.VarChar(255) -> 255)
+   */
+  private extractMaxLengthFromNativeType(field: PrismaDMMF.SchemaArg): number | null {
+    // Check if the field has the enhanced field information with native type
+    if (!this.enhancedModels || !field.name) {
+      return null;
+    }
+
+    // Extract model name from the current transformer context
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    if (!modelName) {
+      return null;
+    }
+
+    // Find the enhanced model information
+    const enhancedModel = this.enhancedModels.find(em => em.model.name === modelName);
+    if (!enhancedModel) {
+      return null;
+    }
+
+    // Find the enhanced field information
+    const enhancedField = enhancedModel.enhancedFields.find(ef => ef.field.name === field.name);
+    if (!enhancedField || !enhancedField.field.nativeType) {
+      return null;
+    }
+
+    const nativeType = enhancedField.field.nativeType;
+    
+    // nativeType is an array: [typeName, [param1, param2, ...]]
+    if (!Array.isArray(nativeType) || nativeType.length < 2) {
+      return null;
+    }
+
+    const [typeName, params] = nativeType;
+    
+    // Handle string length constraints for various native types
+    if (typeof typeName === 'string' && Array.isArray(params) && params.length > 0) {
+      const supportedTypes = ['VarChar', 'Char', 'NVarChar', 'NChar', 'VARCHAR', 'CHAR'];
+      
+      if (supportedTypes.includes(typeName)) {
+        const lengthParam = params[0];
+        const maxLength = parseInt(lengthParam, 10);
+        
+        if (!isNaN(maxLength) && maxLength > 0) {
+          return maxLength;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Extract existing max constraint from @zod validations
+   */
+  private extractExistingMaxConstraint(zodValidation: string | null): number | null {
+    if (!zodValidation) {
+      return null;
+    }
+
+    // Look for .max(number) in the validation string
+    const maxMatch = zodValidation.match(/\.max\((\d+)\)/);
+    if (maxMatch) {
+      const maxValue = parseInt(maxMatch[1], 10);
+      if (!isNaN(maxValue) && maxValue > 0) {
+        return maxValue;
+      }
+    }
+
+    return null;
   }
 
   /**
