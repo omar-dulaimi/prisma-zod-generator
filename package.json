@@ -72,7 +72,7 @@
     "ci:test": "npm run test:comprehensive",
     "ci:build": "npm run gen-example",
     "docs:dev": "cd website && docusaurus start",
-    "docs:build": "cd website && docusaurus build",
+    "docs:build": "node website/scripts/build-metrics.js && cd website && docusaurus build",
     "docs:serve": "cd website && docusaurus serve",
     "docs:version": "cd website && docusaurus docs:version",
     "postrelease": "node scripts/auto-docs-version.mjs"
@@ -96,6 +96,7 @@
     "@prisma/internals": "^6.13.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
+    "node-fetch": "^3.3.2",
     "prettier": "^3.6.2",
     "tslib": "^2.8.1",
     "zod": "^4.0.17"

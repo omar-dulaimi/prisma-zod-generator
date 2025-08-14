@@ -15,6 +15,15 @@ const config: Config = {
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   i18n: { defaultLocale: 'en', locales: ['en'] },
+  headTags: [
+    {
+      tagName: 'meta',
+      attributes: {
+        name: 'viewport',
+        content: 'width=device-width, initial-scale=1.0, maximum-scale=5.0',
+      },
+    },
+  ],
   themes: [],
   presets: [
     [
@@ -45,10 +54,16 @@ const config: Config = {
   ],
   themeConfig: {
     image: 'img/social-card.png',
+    colorMode: {
+      defaultMode: 'dark',
+      disableSwitch: false,
+      respectPrefersColorScheme: false,
+    },
     navbar: {
       title: 'Prisma Zod Generator',
       items: [
         {type: 'docSidebar', sidebarId: 'docs', position: 'left', label: 'Docs'},
+        {type: 'html', position: 'right', value: '<div class="navbar-theme-toggle"></div>'},
         {href: 'https://github.com/omar-dulaimi/prisma-zod-generator', label: 'GitHub', position: 'right'}
       ]
     },
