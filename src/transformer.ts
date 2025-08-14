@@ -1102,6 +1102,38 @@ export default class Transformer {
       console.warn(`Failed to process @zod comments for field ${field.name}:`, error);
     }
 
+    // Apply native type constraints (e.g., @db.VarChar(255) -> .max(255))
+    // Only for String types and only if no enhanced Zod schema is already applied
+    if (inputType.type === 'String' && field.name) {
+      const nativeMaxLength = this.extractMaxLengthFromNativeType(field);
+      const existingMaxConstraint = hasEnhancedZodSchema ? this.extractExistingMaxConstraint(line) : null;
+      
+      if (nativeMaxLength !== null) {
+        if (hasEnhancedZodSchema && existingMaxConstraint !== null) {
+          // Both native type and @zod.max exist - use the more restrictive one
+          const finalMaxLength = Math.min(nativeMaxLength, existingMaxConstraint);
+          
+          // Always replace all max constraints with the single most restrictive one
+          line = this.replaceAllMaxConstraints(line, finalMaxLength);
+        } else if (!hasEnhancedZodSchema) {
+          // Only native type constraint exists - apply it to the base validator
+          line = line.replace('z.string()', `z.string().max(${nativeMaxLength})`);
+        } else if (hasEnhancedZodSchema && existingMaxConstraint === null) {
+          // Enhanced @zod schema exists but no max constraint - add native constraint
+          // Find the base type and add max constraint after it
+          if (line.includes('z.string()')) {
+            line = line.replace('z.string()', `z.string().max(${nativeMaxLength})`);
+          } else {
+            // Handle cases where the string type is already transformed
+            const baseStringMatch = line.match(/(z\.string\(\)[^.]*)/);
+            if (baseStringMatch) {
+              line = line.replace(baseStringMatch[1], `${baseStringMatch[1]}.max(${nativeMaxLength})`);
+            }
+          }
+        }
+      }
+    }
+
     if (inputType.isList) {
       if (inputType.type === 'DateTime') {
         // For DateTime lists, support both Date and ISO datetime arrays
@@ -1144,6 +1176,117 @@ export default class Transformer {
 
   addSchemaImport(name: string) {
     this.schemaImports.add(name);
+  }
+
+  /**
+   * Extract max length constraint from native type (e.g., @db.VarChar(255) -> 255)
+   */
+  private extractMaxLengthFromNativeType(field: PrismaDMMF.SchemaArg): number | null {
+    // Check if the field has the enhanced field information with native type
+    if (!this.enhancedModels || !field.name) {
+      return null;
+    }
+
+    // Extract model name from the current transformer context
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    if (!modelName) {
+      return null;
+    }
+
+    // Find the enhanced model information
+    const enhancedModel = this.enhancedModels.find(em => em.model.name === modelName);
+    if (!enhancedModel) {
+      return null;
+    }
+
+    // Find the enhanced field information
+    const enhancedField = enhancedModel.enhancedFields.find(ef => ef.field.name === field.name);
+    if (!enhancedField || !enhancedField.field.nativeType) {
+      return null;
+    }
+
+    const nativeType = enhancedField.field.nativeType;
+    
+    // nativeType is an array: [typeName, [param1, param2, ...]]
+    if (!Array.isArray(nativeType) || nativeType.length < 2) {
+      return null;
+    }
+
+    const [typeName, params] = nativeType;
+    
+    // Handle string length constraints for various native types
+    if (typeof typeName === 'string') {
+      // SQL database string types with explicit length parameters
+      if (Array.isArray(params) && params.length > 0) {
+        const supportedTypes = ['VarChar', 'Char', 'NVarChar', 'NChar', 'VARCHAR', 'CHAR'];
+        
+        if (supportedTypes.includes(typeName)) {
+          const lengthParam = params[0];
+          const maxLength = parseInt(lengthParam, 10);
+          
+          if (!isNaN(maxLength) && maxLength > 0) {
+            return maxLength;
+          }
+        }
+      }
+      
+      // MongoDB ObjectId has a fixed length (24 hex characters)
+      if (typeName === 'ObjectId') {
+        return 24;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Extract existing max constraint from @zod validations
+   */
+  private extractExistingMaxConstraint(zodValidation: string | null): number | null {
+    if (!zodValidation) {
+      return null;
+    }
+
+    // Look for all .max(number) in the validation string and return the most restrictive
+    const maxMatches = zodValidation.match(/\.max\((\d+)\)/g);
+    if (maxMatches && maxMatches.length > 0) {
+      let minMax = Infinity;
+      
+      for (const match of maxMatches) {
+        const valueMatch = match.match(/\.max\((\d+)\)/);
+        if (valueMatch) {
+          const maxValue = parseInt(valueMatch[1], 10);
+          if (!isNaN(maxValue) && maxValue > 0) {
+            minMax = Math.min(minMax, maxValue);
+          }
+        }
+      }
+      
+      return minMax === Infinity ? null : minMax;
+    }
+
+    return null;
+  }
+
+  /**
+   * Replace all max constraints in a validation string with a single constraint
+   */
+  private replaceAllMaxConstraints(validationString: string, newMaxValue: number): string {
+    // Remove all existing .max(number) constraints
+    const withoutMax = validationString.replace(/\.max\(\d+\)/g, '');
+    
+    // Add the new max constraint after z.string()
+    if (withoutMax.includes('z.string()')) {
+      return withoutMax.replace('z.string()', `z.string().max(${newMaxValue})`);
+    } else {
+      // Handle cases where string type is already transformed - add after the base type
+      const baseStringMatch = withoutMax.match(/(z\.string\(\)[^.]*)/);
+      if (baseStringMatch) {
+        return withoutMax.replace(baseStringMatch[1], `${baseStringMatch[1]}.max(${newMaxValue})`);
+      }
+    }
+    
+    return withoutMax;
   }
 
   /**

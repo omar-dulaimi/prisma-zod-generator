@@ -128,8 +128,8 @@ jobs:
       timeout-minutes: 15
         
   package-test:
-  runs-on: ubuntu-latest
-  needs: test
+    runs-on: ubuntu-latest
+    needs: test
     
     steps:
     - name: Checkout code
