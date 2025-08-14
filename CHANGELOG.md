@@ -1,3 +1,13 @@
+## [1.9.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.9.2...v1.9.3) (2025-08-14)
+
+### 🐛 Bug Fixes
+
+* docs workflow build process ([864668f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/864668f1ca3d188d695b6079f1d87161d07666c5))
+
+### 📚 Documentation
+
+* add version 1.9.2 documentation ([a7c2d91](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a7c2d91942cbd75f3ef046ed3757b33df2c73919))
+
 ## [1.9.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.9.1...v1.9.2) (2025-08-13)
 
 ### 🐛 Bug Fixes
