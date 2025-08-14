@@ -1,3 +1,22 @@
+## [1.10.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.9.3...v1.10.0) (2025-08-14)
+
+### 🚀 Features
+
+* add MongoDB ObjectId max length validation support ([1c139c1](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1c139c1ab4cab2e5f7eea5da5874cbf71bf33f6a)), closes [#167](https://github.com/omar-dulaimi/prisma-zod-generator/issues/167)
+* add native type max length validation for varchar/char fields ([74c6ad4](https://github.com/omar-dulaimi/prisma-zod-generator/commit/74c6ad462aa4b1b47c4ba57e087049827ccb34d4)), closes [#167](https://github.com/omar-dulaimi/prisma-zod-generator/issues/167)
+
+### 🐛 Bug Fixes
+
+* correct YAML indentation in CI workflow ([876d637](https://github.com/omar-dulaimi/prisma-zod-generator/commit/876d6372b8bde83306c5454f4646893e5ea32f57))
+* enhance native type constraint handling and conflict resolution ([4cd8cad](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4cd8cad7244565c0d693457070ce0730de01ebf6))
+
+### 📚 Documentation
+
+* add comprehensive native type max length validation documentation ([9389b0f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9389b0f44f07a7a76ceb442acd8f14e101d3c743)), closes [#167](https://github.com/omar-dulaimi/prisma-zod-generator/issues/167)
+* **ci:** gate docs deploy to docs changes or feat/fix commits ([34b089b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/34b089b5c3f4cb03ee673a6ece42e63d9df22ce1))
+* modernize website with responsive design and automated metrics ([e810676](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e810676c7440e18eacb21f21fe0cedeaf41d8a53))
+* **readme:** modernize intro, tidy quick start and prerequisites, refine header subline and star cue ([cff65d9](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cff65d995f826ba14fcbbf1a87b08e7aca20d8aa))
+
 ## [1.9.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.9.2...v1.9.3) (2025-08-14)
 
 ### 🐛 Bug Fixes
