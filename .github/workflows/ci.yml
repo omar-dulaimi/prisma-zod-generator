@@ -7,7 +7,73 @@ on:
     branches: [ master ]
 
 jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.compute.outputs.should_run }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Decide if CI should run
+        id: compute
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -n "${BASE_REF:-}" ]; then
+            git fetch --no-tags --prune --depth=1 origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
+            RANGE="origin/${BASE_REF}...HEAD"
+          else
+            PREV="${{ github.event.before }}"
+            CUR="${{ github.sha }}"
+            if [ -z "$PREV" ] || [ "$PREV" = "0000000000000000000000000000000000000000" ]; then
+              RANGE="$CUR~1..$CUR"
+            else
+              RANGE="$PREV..$CUR"
+            fi
+          fi
+
+          echo "Using range: $RANGE"
+
+          # Collect changed files in range
+          CHANGED=$(git diff --name-only $RANGE || true)
+          echo "Changed files:\n$CHANGED"
+
+          # Determine if all changes are non-code only
+          # Non-code: docs site, markdown/docs, recipes, images/assets, and workflow config
+          DOCS_ONLY=true
+          if [ -n "$CHANGED" ]; then
+            if echo "$CHANGED" | grep -Ev '^(website/|README\.md$|CHANGELOG\.md$|CONFIG_REFERENCE\.md$|FILTERING\.md$|CLAUDE\.md$|LICENSE$|zodSchemas\.png$|recipes/|\.github/workflows/)' >/dev/null 2>&1; then
+              DOCS_ONLY=false
+            fi
+          fi
+
+          # Check commit messages for allowed types or breaking change
+          HAS_ALLOWED=false
+          if git log --format=%s $RANGE | grep -Ei '^(feat|fix|perf|revert|refactor|test|build|ci)(\(|!:|:)' >/dev/null 2>&1; then
+            HAS_ALLOWED=true
+          elif git log --format=%B $RANGE | grep -q 'BREAKING CHANGE'; then
+            HAS_ALLOWED=true
+          fi
+
+          SHOULD_RUN=false
+          if [ "$DOCS_ONLY" = false ] || [ "$HAS_ALLOWED" = true ]; then
+            SHOULD_RUN=true
+          fi
+
+          echo "docs_only=$DOCS_ONLY"
+          echo "has_allowed=$HAS_ALLOWED"
+          echo "should_run=$SHOULD_RUN"
+          echo "should_run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+
   test:
+    needs: filter
+    if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     
     strategy:
@@ -62,8 +128,8 @@ jobs:
       timeout-minutes: 15
         
   package-test:
-    runs-on: ubuntu-latest
-    needs: test
+  runs-on: ubuntu-latest
+  needs: test
     
     steps:
     - name: Checkout code
