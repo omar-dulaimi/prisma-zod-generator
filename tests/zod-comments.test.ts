@@ -1463,5 +1463,59 @@ model Post {
         await testEnv.cleanup();
       }
     }, GENERATION_TIMEOUT);
+
+    it('should handle MongoDB ObjectId native type constraints', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('native-mongodb-objectid');
+      
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = "mongodb://localhost:27017/test"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model MongoUser {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  email    String   @unique
+  name     String?
+  profileId String? @db.ObjectId
+}
+`;
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+        const testCreatePath = join(objectsDir, 'MongoUserCreateInput.schema.ts');
+
+        if (existsSync(testCreatePath)) {
+          const content = readFileSync(testCreatePath, 'utf-8');
+          
+          // MongoDB ObjectId should have max length of 24
+          expect(content).toMatch(/id.*\.max\(24\)/);
+          expect(content).toMatch(/profileId.*\.max\(24\)/);
+          
+          // Regular string fields should not have max constraints
+          expect(content).not.toMatch(/email.*\.max\(/);
+          expect(content).not.toMatch(/name.*\.max\(/);
+        }
+
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
   });
 });
