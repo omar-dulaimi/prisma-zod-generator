@@ -1215,16 +1215,24 @@ export default class Transformer {
     const [typeName, params] = nativeType;
     
     // Handle string length constraints for various native types
-    if (typeof typeName === 'string' && Array.isArray(params) && params.length > 0) {
-      const supportedTypes = ['VarChar', 'Char', 'NVarChar', 'NChar', 'VARCHAR', 'CHAR'];
-      
-      if (supportedTypes.includes(typeName)) {
-        const lengthParam = params[0];
-        const maxLength = parseInt(lengthParam, 10);
+    if (typeof typeName === 'string') {
+      // SQL database string types with explicit length parameters
+      if (Array.isArray(params) && params.length > 0) {
+        const supportedTypes = ['VarChar', 'Char', 'NVarChar', 'NChar', 'VARCHAR', 'CHAR'];
         
-        if (!isNaN(maxLength) && maxLength > 0) {
-          return maxLength;
+        if (supportedTypes.includes(typeName)) {
+          const lengthParam = params[0];
+          const maxLength = parseInt(lengthParam, 10);
+          
+          if (!isNaN(maxLength) && maxLength > 0) {
+            return maxLength;
+          }
         }
+      }
+      
+      // MongoDB ObjectId has a fixed length (24 hex characters)
+      if (typeName === 'ObjectId') {
+        return 24;
       }
     }
 
