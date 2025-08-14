@@ -933,4 +933,535 @@ model Post {
       }
     }, GENERATION_TIMEOUT);
   });
+
+  describe('Native Type Max Length Validation', () => {
+    it('should extract max length from @db.VarChar and apply to Zod schema', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('native-varchar-basic');
+      
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://user:password@localhost:5432/test"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model VarCharTest {
+  id            Int     @id @default(autoincrement())
+  shortField    String? @db.VarChar(10)
+  mediumField   String? @db.VarChar(255)
+  longField     String? @db.VarChar(1000)
+  charField     String? @db.Char(50)
+  requiredField String  @db.VarChar(100)
+}
+`;
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+        const testCreatePath = join(objectsDir, 'VarCharTestCreateInput.schema.ts');
+
+        if (existsSync(testCreatePath)) {
+          const content = readFileSync(testCreatePath, 'utf-8');
+          
+          // Should apply max length from VarChar native types
+          expect(content).toMatch(/shortField.*\.max\(10\)/);
+          expect(content).toMatch(/mediumField.*\.max\(255\)/);
+          expect(content).toMatch(/longField.*\.max\(1000\)/);
+          expect(content).toMatch(/charField.*\.max\(50\)/);
+          expect(content).toMatch(/requiredField.*\.max\(100\)/);
+          
+          // Optional fields should maintain optionality
+          expect(content).toMatch(/shortField.*\.optional\(\)/);
+          expect(content).toMatch(/mediumField.*\.optional\(\)/);
+          
+          // Required fields should not have optional
+          expect(content).not.toMatch(/requiredField.*\.optional\(\)/);
+        }
+
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('should handle conflicts between native types and @zod.max - prefer more restrictive', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('native-varchar-conflicts');
+      
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://user:password@localhost:5432/test"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model ConflictTest {
+  id               Int     @id @default(autoincrement())
+  nativeWins       String? @db.VarChar(50) /// @zod.max(100)
+  zodWins          String? @db.VarChar(200) /// @zod.max(150)
+  equalConstraints String? @db.VarChar(75) /// @zod.max(75)
+  onlyNative       String? @db.VarChar(300)
+  onlyZod          String? /// @zod.max(400)
+  noConstraints    String?
+}
+`;
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+        const testCreatePath = join(objectsDir, 'ConflictTestCreateInput.schema.ts');
+
+        if (existsSync(testCreatePath)) {
+          const content = readFileSync(testCreatePath, 'utf-8');
+          
+          // Native type should win when more restrictive
+          expect(content).toMatch(/nativeWins.*\.max\(50\)/);
+          expect(content).not.toMatch(/nativeWins.*\.max\(100\)/);
+          
+          // Zod constraint should win when more restrictive
+          expect(content).toMatch(/zodWins.*\.max\(150\)/);
+          expect(content).not.toMatch(/zodWins.*\.max\(200\)/);
+          
+          // Equal constraints should preserve existing @zod
+          expect(content).toMatch(/equalConstraints.*\.max\(75\)/);
+          
+          // Only native constraint should be applied
+          expect(content).toMatch(/onlyNative.*\.max\(300\)/);
+          
+          // Only @zod constraint should be preserved
+          expect(content).toMatch(/onlyZod.*\.max\(400\)/);
+          
+          // No constraints should remain unchanged
+          expect(content).toMatch(/noConstraints.*z\.string\(\)/);
+          expect(content).not.toMatch(/noConstraints.*\.max\(/);
+        }
+
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('should support various native string types across database providers', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('native-varchar-providers');
+      
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = "sqlserver://localhost:1433;database=test;user=sa;password=password"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model ProviderTest {
+  id           Int     @id @default(autoincrement())
+  varcharField String? @db.VarChar(100)
+  charField    String? @db.Char(20)
+  nvarcharField String? @db.NVarChar(150)
+  ncharField   String? @db.NChar(30)
+  textField    String? @db.Text
+  intField     Int?
+  dateField    DateTime?
+}
+`;
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+        const testCreatePath = join(objectsDir, 'ProviderTestCreateInput.schema.ts');
+
+        if (existsSync(testCreatePath)) {
+          const content = readFileSync(testCreatePath, 'utf-8');
+          
+          // Should apply max length for supported native types
+          expect(content).toMatch(/varcharField.*\.max\(100\)/);
+          expect(content).toMatch(/charField.*\.max\(20\)/);
+          expect(content).toMatch(/nvarcharField.*\.max\(150\)/);
+          expect(content).toMatch(/ncharField.*\.max\(30\)/);
+          
+          // Text field without length should not have max constraint
+          expect(content).not.toMatch(/textField.*\.max\(/);
+          
+          // Non-string fields should be unaffected
+          expect(content).toMatch(/intField.*z\.number\(\)\.int\(\)/);
+          expect(content).not.toMatch(/intField.*\.max\(/);
+          expect(content).not.toMatch(/dateField.*\.max\(/);
+        }
+
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('should handle array fields with native type constraints', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('native-varchar-arrays');
+      
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://user:password@localhost:5432/test"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model ArrayTest {
+  id               Int       @id @default(autoincrement())
+  regularArray     String[]
+  varcharArray     String[]  @db.VarChar(100)
+  charArray        String[]  @db.Char(50)
+  mixedArray       String[]  @db.VarChar(200) /// @zod.min(1).max(10)
+}
+`;
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+        const testCreatePath = join(objectsDir, 'ArrayTestCreateInput.schema.ts');
+
+        if (existsSync(testCreatePath)) {
+          const content = readFileSync(testCreatePath, 'utf-8');
+          
+          // Regular array should not have max constraint on elements
+          expect(content).toMatch(/regularArray.*z\.string\(\)\.array\(\)/);
+          expect(content).not.toMatch(/regularArray.*\.max\(/);
+          
+          // VarChar array should apply max length to array elements
+          expect(content).toMatch(/varcharArray.*\.max\(100\)\.array\(\)/);
+          expect(content).toMatch(/charArray.*\.max\(50\)\.array\(\)/);
+          
+          // Mixed constraints should work together - arrays use lazy loading
+          expect(content).toMatch(/mixedArray.*\.array\(\)/);
+        }
+
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('should handle complex scenarios with multiple constraints and field types', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('native-varchar-complex');
+      
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://user:password@localhost:5432/test"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model ComplexTest {
+  id                 Int     @id @default(autoincrement())
+  
+  // Required fields with native constraints
+  requiredVarchar    String  @db.VarChar(100)
+  requiredWithZod    String  @db.VarChar(500) /// @zod.min(5).max(300)
+  
+  // Optional fields with various constraints
+  optionalVarchar    String? @db.VarChar(250)
+  optionalWithZod    String? @db.Char(80) /// @zod.email().max(120)
+  
+  // Complex @zod validations with native types
+  emailField         String  @db.VarChar(320) /// @zod.email().toLowerCase()
+  passwordField      String  @db.VarChar(255) /// @zod.min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/)
+  
+  // Non-string fields (should be unaffected)
+  intField           Int?    @db.Integer
+  boolField          Boolean @default(false)
+  dateField          DateTime @default(now())
+  
+  // Arrays and special cases
+  tagArray           String[] @db.VarChar(50)
+  jsonField          Json?
+  bytesField         Bytes?
+}
+`;
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+        const testCreatePath = join(objectsDir, 'ComplexTestCreateInput.schema.ts');
+
+        if (existsSync(testCreatePath)) {
+          const content = readFileSync(testCreatePath, 'utf-8');
+          
+          // Required fields with native constraints
+          expect(content).toMatch(/requiredVarchar.*\.max\(100\)/);
+          expect(content).not.toMatch(/requiredVarchar.*\.optional\(\)/);
+          
+          // Conflict resolution - more restrictive constraint wins
+          expect(content).toMatch(/requiredWithZod.*\.max\(300\)/);
+          expect(content).toMatch(/requiredWithZod.*\.min\(5\)/);
+          
+          // Optional fields should maintain optionality
+          expect(content).toMatch(/optionalVarchar.*\.max\(250\)/);
+          expect(content).toMatch(/optionalVarchar.*\.optional\(\)/);
+          
+          // Complex constraint resolution
+          expect(content).toMatch(/optionalWithZod.*\.max\(80\)/); // Char(80) < email max(120)
+          expect(content).toMatch(/optionalWithZod.*\.email\(\)/);
+          
+          // Email field - preserve email validation with native constraint
+          expect(content).toMatch(/emailField.*\.email\(\)/);
+          expect(content).toMatch(/emailField.*\.toLowerCase\(\)/);
+          expect(content).toMatch(/emailField.*\.max\(320\)/);
+          
+          // Password field - preserve regex with native constraint
+          expect(content).toMatch(/passwordField.*\.min\(8\)/);
+          expect(content).toMatch(/passwordField.*\.max\(255\)/);
+          expect(content).toMatch(/passwordField.*\.regex\(/);
+          
+          // Non-string fields should be unaffected
+          expect(content).toMatch(/intField.*z\.number\(\)\.int\(\)/);
+          expect(content).not.toMatch(/intField.*\.max\(/);
+          expect(content).not.toMatch(/dateField.*\.max\(/);
+          expect(content).not.toMatch(/boolField.*\.max\(/);
+          
+          // Arrays should apply constraints to elements
+          expect(content).toMatch(/tagArray.*\.max\(50\)\.array\(\)/);
+          
+          // Special field types should be unaffected
+          expect(content).not.toMatch(/jsonField.*\.max\(/);
+          expect(content).not.toMatch(/bytesField.*\.max\(/);
+        }
+
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('should handle edge cases and invalid native type configurations', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('native-varchar-edge-cases');
+      
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://user:password@localhost:5432/test"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model EdgeCaseTest {
+  id                Int     @id @default(autoincrement())
+  
+  // Zero length (should be ignored)
+  zeroLength        String? @db.VarChar(0)
+  
+  // Very large length
+  hugeLength        String? @db.VarChar(65535)
+  
+  // Non-string with native type (should only affect string processing)
+  intWithNative     Int?    @db.Integer
+  
+  // Complex @zod with multiple max constraints
+  multipleMax       String? @db.VarChar(100) /// @zod.max(50).max(75).min(10)
+  
+  // Native type without parameters (Text, etc.)
+  textField         String? @db.Text
+  
+  // Standard field types
+  normalString      String
+  normalOptional    String?
+}
+`;
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+        const testCreatePath = join(objectsDir, 'EdgeCaseTestCreateInput.schema.ts');
+
+        if (existsSync(testCreatePath)) {
+          const content = readFileSync(testCreatePath, 'utf-8');
+          
+          // Zero length should be ignored (invalid constraint)
+          expect(content).not.toMatch(/zeroLength.*\.max\(0\)/);
+          
+          // Very large length should work normally
+          expect(content).toMatch(/hugeLength.*\.max\(65535\)/);
+          
+          // Non-string fields should be completely unaffected
+          expect(content).toMatch(/intWithNative.*z\.number\(\)\.int\(\)/);
+          expect(content).not.toMatch(/intWithNative.*\.max\(/);
+          
+          // Multiple max constraints - should use most restrictive
+          expect(content).toMatch(/multipleMax.*\.max\(50\)/);
+          expect(content).toMatch(/multipleMax.*\.min\(10\)/);
+          expect(content).not.toMatch(/multipleMax.*\.max\(75\)/);
+          expect(content).not.toMatch(/multipleMax.*\.max\(100\)/);
+          
+          // Text field without length parameter should not have max
+          expect(content).not.toMatch(/textField.*\.max\(/);
+          
+          // Normal fields should remain unchanged
+          expect(content).toMatch(/normalString.*z\.string\(\)/);
+          expect(content).not.toMatch(/normalString.*\.max\(/);
+          expect(content).toMatch(/normalOptional.*z\.string\(\)/);
+          expect(content).not.toMatch(/normalOptional.*\.max\(/);
+        }
+
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('should work correctly across different schema input types', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('native-varchar-schema-types');
+      
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://user:password@localhost:5432/test"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model User {
+  id          Int     @id @default(autoincrement())
+  email       String  @unique @db.VarChar(320) /// @zod.email()
+  name        String  @db.VarChar(100)
+  description String? @db.VarChar(1000) /// @zod.max(500)
+  posts       Post[]
+}
+
+model Post {
+  id        Int    @id @default(autoincrement())
+  title     String @db.VarChar(200) /// @zod.min(1)
+  content   String @db.VarChar(5000)
+  author    User   @relation(fields: [authorId], references: [id])
+  authorId  Int
+}
+`;
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
+
+        await testEnv.runGeneration();
+
+        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+
+        // Test Create Input schemas
+        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+        if (existsSync(userCreatePath)) {
+          const content = readFileSync(userCreatePath, 'utf-8');
+          expect(content).toMatch(/email.*\.email\(\)/);
+          expect(content).toMatch(/email.*\.max\(320\)/);
+          expect(content).toMatch(/name.*\.max\(100\)/);
+          expect(content).toMatch(/description.*\.max\(500\)/); // More restrictive @zod wins
+        }
+
+        // Test Update Input schemas
+        const userUpdatePath = join(objectsDir, 'UserUpdateInput.schema.ts');
+        if (existsSync(userUpdatePath)) {
+          const content = readFileSync(userUpdatePath, 'utf-8');
+          expect(content).toMatch(/email.*\.email\(\)/);
+          expect(content).toMatch(/email.*\.max\(320\)/);
+        }
+
+        // Test Where Input schemas
+        const userWherePath = join(objectsDir, 'UserWhereInput.schema.ts');
+        if (existsSync(userWherePath)) {
+          const content = readFileSync(userWherePath, 'utf-8');
+          expect(content).toMatch(/email.*\.max\(320\)/);
+        }
+
+        // Test Post schemas
+        const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
+        if (existsSync(postCreatePath)) {
+          const content = readFileSync(postCreatePath, 'utf-8');
+          expect(content).toMatch(/title.*\.min\(1\)/);
+          expect(content).toMatch(/title.*\.max\(200\)/);
+          expect(content).toMatch(/content.*\.max\(5000\)/);
+        }
+
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, GENERATION_TIMEOUT);
+  });
 });
