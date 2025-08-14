@@ -60,14 +60,6 @@ jobs:
       if: matrix.node-version != '18.x'
       run: npm run test:multi:sequential
       timeout-minutes: 15
-      
-    - name: Upload coverage reports
-      if: matrix.node-version == '20.x'
-      uses: codecov/codecov-action@v5
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage/coverage-final.json
-        fail_ci_if_error: false
         
   package-test:
     runs-on: ubuntu-latest
