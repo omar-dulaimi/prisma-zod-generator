@@ -63,6 +63,7 @@ const config: Config = {
       title: 'Prisma Zod Generator',
       items: [
         {type: 'docSidebar', sidebarId: 'docs', position: 'left', label: 'Docs'},
+        {to: '/docs/changelog', label: 'Changelog', position: 'left'},
         {type: 'html', position: 'right', value: '<div class="navbar-theme-toggle"></div>'},
         {href: 'https://github.com/omar-dulaimi/prisma-zod-generator', label: 'GitHub', position: 'right'}
       ]
