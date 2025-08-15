@@ -76,7 +76,7 @@
 
 ### ⚠ BREAKING CHANGES
 
-* **pure-models:** pure model exports are now *Schema and only <Model>.schema.ts files are generated (no <Model>.model.ts). Updated README. Adjust your imports accordingly.
+* **pure-models:** pure model exports are now *Schema and only &lt;Model&gt;.schema.ts files are generated (no &lt;Model&gt;.model.ts). Updated README. Adjust your imports accordingly.
 * **pureModels:** pureModels no longer emits relation (object) fields unless pureModelsIncludeRelations=true. Set that flag to retain prior behavior. Added config parsing, defaults, docs, and tests.
 
 ### 🚀 Features
@@ -129,7 +129,7 @@
 ### 📚 Documentation
 
 * **recipes:** fix wrong file names and snippet paths in recipe READMEs; clarify usage steps ([20ec581](https://github.com/omar-dulaimi/prisma-zod-generator/commit/20ec581e048569cc93f845c215d2d1ccbe94665a))
-* **recipes:** remove top-level snippets and update references to recipes/*\n\n- Delete snippets/ folder\n- Update README and recipes/README to point to recipes/<name>/schema.prisma\n- Keep historical mention in CHANGELOG as-is ([3aa4009](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3aa4009bafcc27ee35f12753766adbd1f5503e84))
+* **recipes:** remove top-level snippets and update references to recipes/*\n\n- Delete snippets/ folder\n- Update README and recipes/README to point to recipes/&lt;name&gt;/schema.prisma\n- Keep historical mention in CHANGELOG as-is ([3aa4009](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3aa4009bafcc27ee35f12753766adbd1f5503e84))
 
 ## [1.6.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.5.0...v1.6.0) (2025-08-11)
 
@@ -153,7 +153,7 @@
 
 ### 🚀 Features
 
-* **config,transformer:** add strictCreateInputs/preserveRequiredScalarsOnCreate and apply to Create-like inputs; use Omit<> for typed exports when filtered\n\n- config: introduce strictCreateInputs (default true) and preserveRequiredScalarsOnCreate (default true)\n- transformer: respect flags for Create* inputs; re-add required scalars in filtered mode; track excluded fields and wrap typed exports with Omit<>\n- tests/recipes/docs: update helpers and recipes; document options in README ([cf48027](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cf480274d1a5e66c3d8744645711794d0bab6b4e))
+* **config,transformer:** add strictCreateInputs/preserveRequiredScalarsOnCreate and apply to Create-like inputs; use `Omit<>` for typed exports when filtered\n\n- config: introduce strictCreateInputs (default true) and preserveRequiredScalarsOnCreate (default true)\n- transformer: respect flags for Create* inputs; re-add required scalars in filtered mode; track excluded fields and wrap typed exports with `Omit<>`\n- tests/recipes/docs: update helpers and recipes; document options in README ([cf48027](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cf480274d1a5e66c3d8744645711794d0bab6b4e))
 
 ### 🐛 Bug Fixes
 
