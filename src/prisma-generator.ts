@@ -1349,9 +1349,22 @@ function generateVariantSchemaContent(
     const isEnum = field.kind === 'enum';
     // Base type: enum fields reference generated schema directly (no z.)
     const base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
-    const optional = (!field.isRequired && variantName === 'input') ? '.optional()' : '';
-    const nullable = (!field.isRequired && field.type === 'String') ? '.nullable()' : '';
-    return `    ${field.name}: ${base}${optional}${nullable}`;
+    
+    // Apply consistent optional/nullable patterns based on Prisma behavior:
+    // - Database stores NULL for optional fields (never undefined)
+    // - Input can accept omitted fields (become NULL) or explicit NULL
+    let modifiers = '';
+    if (!field.isRequired) {
+      if (variantName === 'input') {
+        // Input schemas: allow omitting fields OR passing null explicitly
+        modifiers = '.optional().nullable()';
+      } else {
+        // Pure/Result schemas: database returns null for optional fields, never undefined
+        modifiers = '.nullable()';
+      }
+    }
+    
+    return `    ${field.name}: ${base}${modifiers}`;
   }).join(',\n');
 
   return `import { z } from 'zod';\n${enumSchemaImportLines}// prettier-ignore
