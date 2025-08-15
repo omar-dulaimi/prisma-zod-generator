@@ -9,6 +9,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout code
@@ -25,18 +27,7 @@ jobs:
         
     - name: Install dependencies
       run: npm ci
-      
-    - name: Install semantic-release dependencies
-      run: |
-        npm install --save-dev \
-          semantic-release \
-          @semantic-release/changelog \
-          @semantic-release/git \
-          @semantic-release/github \
-          @semantic-release/npm \
-          @semantic-release/commit-analyzer \
-          @semantic-release/release-notes-generator \
-          conventional-changelog-conventionalcommits
+    
         
     - name: Build and test
       run: |
@@ -59,19 +50,28 @@ jobs:
         DOCS_VERSION_ON_PATCH: '1'
       run: node scripts/auto-docs-version.mjs
 
-    - name: Commit and push docs version bump (if any)
+    - name: Commit and push workflow mutations (if any)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
       run: |
         set -euo pipefail
-        if [ -n "$(git status --porcelain)" ]; then
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add website/versioned_docs website/versioned_sidebars website/versions.json
-          LAST_TAG=$(git describe --tags --abbrev=0 || echo "latest")
-          git commit -m "docs: snapshot docs for ${LAST_TAG} [skip ci]"
-          git push origin HEAD:${GITHUB_REF_NAME}
-        else
+        # Stage docs and common release-mutation files to avoid failing on dirty tree
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -A \
+          website/versioned_docs \
+          website/versioned_sidebars \
+          website/versions.json \
+          package.json \
+          package-lock.json \
+          package/package.json \
+          CHANGELOG.md || true
+        # If nothing is staged, skip committing to avoid exit 1 from git commit
+        if git diff --cached --quiet; then
           echo "No docs changes to commit"
+          exit 0
         fi
+        LAST_TAG=$(git describe --tags --abbrev=0 || echo "latest")
+        git commit -m "chore(ci): commit workflow mutations (version bumps, lockfile, docs) for ${LAST_TAG} [skip ci]"
+        git push origin HEAD:${GITHUB_REF_NAME}
