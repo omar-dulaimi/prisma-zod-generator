@@ -48,8 +48,30 @@ jobs:
     - name: Build package
       run: ./package.sh
       
-    - name: Semantic Release
+    - name: Semantic Release (with npm lifecycle)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: npx semantic-release
+      run: npm run release
+
+    - name: Version docs for new release
+      env:
+        DOCS_VERSION_ON_PATCH: '1'
+      run: node scripts/auto-docs-version.mjs
+
+    - name: Commit and push docs version bump (if any)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -n "$(git status --porcelain)" ]; then
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add website/versioned_docs website/versioned_sidebars website/versions.json
+          LAST_TAG=$(git describe --tags --abbrev=0 || echo "latest")
+          git commit -m "docs: snapshot docs for ${LAST_TAG} [skip ci]"
+          git push origin HEAD:${GITHUB_REF_NAME}
+        else
+          echo "No docs changes to commit"
+        fi
