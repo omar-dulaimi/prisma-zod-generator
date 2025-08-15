@@ -66,7 +66,8 @@ const sidebars: SidebarsConfig = {
   'performance',
   'upgrade-guide',
     'contributing',
-    'release-and-versioning'
+    'release-and-versioning',
+    'changelog'
   ]
 };
 

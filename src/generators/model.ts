@@ -2061,13 +2061,30 @@ export class PrismaTypeMapper {
       const commentValidations = field.validations.filter(v => v.trim().startsWith('//'));
 
       let base = field.zodSchema;
-      if (dotValidations.length > 0 && base.includes('.optional()')) {
-        base = base.replace(/\.optional\(\)(?!.*\.optional\(\))/,'');
+      let modifierSuffix = '';
+      
+      // Extract and handle both .optional() and .nullable() modifiers
+      const hasOptional = base.includes('.optional()');
+      const hasNullable = base.includes('.nullable()');
+      
+      if (dotValidations.length > 0) {
+        // Remove existing modifiers to add dot validations in between
+        base = base.replace(/\.optional\(\)/g, '').replace(/\.nullable\(\)/g, '');
         base = base.replace(/\s+$/,'');
+        
+        // Re-add modifiers after dot validations
+        if (hasOptional) modifierSuffix += '.optional()';
+        if (hasNullable) modifierSuffix += '.nullable()';
+      } else {
+        // For fields without dot validations, ensure proper nullable handling for optional fields
+        if (field.isOptional && !hasNullable && !hasOptional) {
+          // Pure model schemas should have .nullable() for optional fields (database returns null, not undefined)
+          modifierSuffix = '.nullable()';
+        }
       }
+      
       const chain = dotValidations.join('');
-      const optionalSuffix = (dotValidations.length > 0 && field.zodSchema.includes('.optional()')) ? '.optional()' : '';
-      lines.push(`  ${field.fieldName}: ${base}${chain}${optionalSuffix},`);
+      lines.push(`  ${field.fieldName}: ${base}${chain}${modifierSuffix},`);
 
       if (!lean) {
         commentValidations.forEach(cv => lines.push(`  ${cv}`));

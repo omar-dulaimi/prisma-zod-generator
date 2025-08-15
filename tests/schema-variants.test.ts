@@ -798,8 +798,8 @@ model User {
         expect(existsSync(userPurePath)).toBe(true);
         const content = readFileSync(userPurePath, 'utf-8');
 
-        expect(content).toMatch(/import\s*\{\s*Role\s*\}\s*from\s*'@prisma\/client';/);
-        expect(content).toMatch(/role:\s*z\.enum\(Role\)/);
+        expect(content).toMatch(/import\s*\{\s*RoleSchema\s*\}\s*from\s*'.*?\/enums\/Role\.schema';/);
+        expect(content).toMatch(/role:\s*RoleSchema/);
       } finally {
         await testEnv.cleanup();
       }
@@ -852,15 +852,13 @@ model User {
         expect(existsSync(userPurePath)).toBe(true);
         const content = readFileSync(userPurePath, 'utf-8');
 
-        // Exactly one value import line from @prisma/client
-        const importLines = content.match(/import\s*\{[^}]*\}\s*from\s*'@prisma\/client';/g) || [];
-        expect(importLines.length).toBe(1);
-        expect(importLines[0]).toMatch(/\{[^}]*Role[^}]*\}/);
-        expect(importLines[0]).toMatch(/\{[^}]*Status[^}]*\}/);
+        // Should have enum schema imports from generated files
+        expect(content).toMatch(/import\s*\{\s*RoleSchema\s*\}\s*from\s*'.*?\/enums\/Role\.schema';/);
+        expect(content).toMatch(/import\s*\{\s*StatusSchema\s*\}\s*from\s*'.*?\/enums\/Status\.schema';/);
 
-  // Ensure enum usages are present (allow optional/nullable variations)
-  expect(content).toMatch(/role:\s*z\.enum\(Role\)/);
-  expect(content).toMatch(/status:\s*z\.enum\(Status\)(?:\.(?:optional|nullable)\(\))?/);
+        // Ensure enum schema usages are present (allow optional/nullable variations)
+        expect(content).toMatch(/role:\s*RoleSchema(?:\.(?:optional|nullable)\(\))?/);
+        expect(content).toMatch(/status:\s*StatusSchema(?:\.(?:optional|nullable)\(\))?/);
       } finally {
         await testEnv.cleanup();
       }

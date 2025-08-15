@@ -365,7 +365,7 @@ export class VariantFileGenerationCoordinator {
     if (context.variant === 'pure') {
       // Variant base content currently uses generated enum schemas (RoleSchema). Convert them back to native enum usage.
       // 1. Detect imports of generated enum schemas and extract enum names.
-      const enumSchemaImportRe = /import\s*\{\s*([A-Za-z0-9_]+)Schema\s*\}\s*from\s*['"].*?\/enums\/\1\.schema['"];?\n?/g;
+      const enumSchemaImportRe = /import\s*\{\s*([A-Za-z0-9_]+)Schema\s*\}\s*from\s*['"].*?\/enums\/[A-Za-z0-9_]+\.schema['"];?\n?/g;
       customizedContent = customizedContent.replace(enumSchemaImportRe, (_full, enumBase: string) => {
         if (!usedEnumNames.includes(enumBase)) usedEnumNames.push(enumBase);
         return '';// remove the schema import

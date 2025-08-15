@@ -27,6 +27,7 @@ import Transformer from './transformer';
 import { AggregateOperationSupport } from './types';
 import { logger } from './utils/logger';
 import removeDir from './utils/removeDir';
+
 import { flushSingleFile, initSingleFile, isSingleFileEnabled, setSingleFilePrismaImportPath } from './utils/singleFileAggregator';
 import { writeFileSafely } from './utils/writeFileSafely';
 
@@ -1331,30 +1332,42 @@ function generateVariantSchemaContent(
       .map(field => String(field.type))
   ));
   
-  // Build enum schema import lines (relative from variants/<variant>/ to enums directory)
-  // Directory layout: schemas/enums vs schemas/variants/<variant>
-  // Relative path: ../../enums/<Enum>.schema
-  let enumSchemaImportLines = '';
+  // Build enum schema import lines - consistent across all variant types
+  // All variants use generated enum schemas for consistency and self-containment
+  let enumImportLines = '';
   if (enumTypes.length > 0) {
     try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic require avoids ESM circular issues in build output
-  const { generateEnumSchemaImportLines } = require('./utils/enumImport');
-      enumSchemaImportLines = generateEnumSchemaImportLines(enumTypes, 2) + '\n';
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic require avoids ESM circular issues in build output
+      const { generateEnumSchemaImportLines } = require('./utils/enumImport');
+      enumImportLines = generateEnumSchemaImportLines(enumTypes, 2) + '\n';
     } catch {
-      enumSchemaImportLines = enumTypes.map(e => `import { ${e}Schema } from '../../enums/${e}.schema';`).join('\n') + '\n';
+      enumImportLines = enumTypes.map(e => `import { ${e}Schema } from '../../enums/${e}.schema';`).join('\n') + '\n';
     }
   }
 
   const fieldDefinitions = enabledFields.map(field => {
     const isEnum = field.kind === 'enum';
-    // Base type: enum fields reference generated schema directly (no z.)
+    // Base type: always use generated enum schemas for consistency across all variants
     const base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
-    const optional = (!field.isRequired && variantName === 'input') ? '.optional()' : '';
-    const nullable = (!field.isRequired && field.type === 'String') ? '.nullable()' : '';
-    return `    ${field.name}: ${base}${optional}${nullable}`;
+    
+    // Apply consistent optional/nullable patterns based on Prisma behavior:
+    // - Database stores NULL for optional fields (never undefined)
+    // - Input can accept omitted fields (become NULL) or explicit NULL
+    let modifiers = '';
+    if (!field.isRequired) {
+      if (variantName === 'input') {
+        // Input schemas: allow omitting fields OR passing null explicitly
+        modifiers = '.optional().nullable()';
+      } else {
+        // Pure/Result schemas: database returns null for optional fields, never undefined
+        modifiers = '.nullable()';
+      }
+    }
+    
+    return `    ${field.name}: ${base}${modifiers}`;
   }).join(',\n');
 
-  return `import { z } from 'zod';\n${enumSchemaImportLines}// prettier-ignore
+  return `import { z } from 'zod';\n${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
 }).strict();
