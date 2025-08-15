@@ -1,3 +1,17 @@
+## [1.10.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.10.0...v1.10.1) (2025-08-15)
+
+### 🐛 Bug Fixes
+
+* ensure consistent nullable handling for optional fields across all types ([a732f19](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a732f195d7ea102b81ca7ad79a6dfe7c25d24c0d))
+
+### ♻️ Code Refactoring
+
+* standardize enum handling across all variant types ([b94f2fa](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b94f2fa5d8a60763a5f25c90d7325ec0ccb8a398))
+
+### 📚 Documentation
+
+* add automated changelog sync to website ([b2390e2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b2390e2ee28784e3644ce5da8dc93f6d8e948db4))
+
 ## [1.10.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.9.3...v1.10.0) (2025-08-14)
 
 ### 🚀 Features

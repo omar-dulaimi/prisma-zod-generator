@@ -1,6 +1,6 @@
 {
   "name": "prisma-zod-generator",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
@@ -40,7 +40,7 @@
     "test:performance": "VITEST_PARALLEL=true vitest run tests/multi-provider/multi-provider.test.ts -t 'Performance Comparison'",
     "test:compatibility": "VITEST_PARALLEL=true vitest run tests/multi-provider/multi-provider.test.ts -t 'Cross-Provider Compatibility'",
     "test:features": "vitest run tests/config.test.ts tests/filtering.test.ts tests/minimal-mode.test.ts tests/field-exclusion.test.ts tests/zod-comments.test.ts tests/pure-models.test.ts tests/schema-variants.test.ts tests/result-schemas.test.ts",
-    "test:features:parallel": "VITEST_MAX_WORKERS=4 vitest run tests/config.test.ts tests/filtering.test.ts tests/minimal-mode.test.ts tests/field-exclusion.test.ts tests/zod-comments.test.ts tests/pure-models.test.ts tests/schema-variants.test.ts tests/result-schemas.test.ts",
+    "test:features:parallel": "VITEST_MAX_WORKERS=8 vitest run tests/config.test.ts tests/filtering.test.ts tests/minimal-mode.test.ts tests/field-exclusion.test.ts tests/zod-comments.test.ts tests/pure-models.test.ts tests/schema-variants.test.ts tests/result-schemas.test.ts --reporter default",
     "test:features:coverage": "vitest run --coverage tests/config.test.ts tests/filtering.test.ts tests/minimal-mode.test.ts tests/field-exclusion.test.ts tests/zod-comments.test.ts tests/pure-models.test.ts tests/schema-variants.test.ts tests/result-schemas.test.ts",
     "test:features:config": "vitest run tests/config.test.ts",
     "test:features:filtering": "vitest run tests/filtering.test.ts",
@@ -72,7 +72,7 @@
     "ci:test": "npm run test:comprehensive",
     "ci:build": "npm run gen-example",
     "docs:dev": "cd website && docusaurus start",
-    "docs:build": "node website/scripts/build-metrics.js && cd website && docusaurus build",
+    "docs:build": "node website/scripts/sync-changelog.js && node website/scripts/build-metrics.js && cd website && docusaurus build",
     "docs:serve": "cd website && docusaurus serve",
     "docs:version": "cd website && docusaurus docs:version",
     "postrelease": "node scripts/auto-docs-version.mjs"
