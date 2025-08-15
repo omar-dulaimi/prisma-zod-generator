@@ -57,6 +57,13 @@
     [
       "@semantic-release/npm",
       {
+        "pkgRoot": ".",
+        "npmPublish": false
+      }
+    ],
+    [
+      "@semantic-release/npm",
+      {
         "pkgRoot": "package"
       }
     ],
@@ -65,6 +72,7 @@
       {
         "assets": [
           "package.json",
+          "package-lock.json",
           "package/package.json",
           "CHANGELOG.md"
         ],
