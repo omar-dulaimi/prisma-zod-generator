@@ -71,8 +71,7 @@ This project follows semantic versioning and uses automated releases via [semant
 ### Stay Updated
 
 - 🔔 [Watch the repository](https://github.com/omar-dulaimi/prisma-zod-generator) on GitHub for release notifications
-- 📦 Subscribe to [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases)
-- 📢 Follow [@omar_dulaimi](https://twitter.com/omar_dulaimi) for updates`;
+- 📦 Subscribe to [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases)`;
 
   // Combine everything
   const finalContent = frontmatter + changelogContent + footer;
