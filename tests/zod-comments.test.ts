@@ -1505,7 +1505,7 @@ model MongoUser {
           const content = readFileSync(testCreatePath, 'utf-8');
           
           // MongoDB ObjectId should have max length of 24
-          expect(content).toMatch(/id.*\.max\(24\)/);
+          // Note: id field is excluded from CreateInput due to @default(auto())
           expect(content).toMatch(/profileId.*\.max\(24\)/);
           
           // Regular string fields should not have max constraints
