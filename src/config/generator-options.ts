@@ -21,6 +21,7 @@ export interface ExtendedGeneratorOptions {
   pureModelsLean?: boolean;        // Lean pure models (suppress docs)
   pureModelsIncludeRelations?: boolean; // Include relation fields when generating pure models (default false)
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString'; // DateTime scalar strategy
+  optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish'; // How to handle optional fields
   
   // Existing options (for backward compatibility)
   isGenerateSelect?: boolean;
@@ -77,6 +78,13 @@ export function parseGeneratorOptions(
       throw new GeneratorOptionError('dateTimeStrategy', v, 'Must be one of "date", "coerce", "isoString"');
     }
     options.dateTimeStrategy = v as 'date' | 'coerce' | 'isoString';
+  }
+  if (generatorConfig.optionalFieldBehavior !== undefined) {
+    const v = generatorConfig.optionalFieldBehavior;
+    if (!['optional', 'nullable', 'nullish'].includes(v)) {
+      throw new GeneratorOptionError('optionalFieldBehavior', v, 'Must be one of "optional", "nullable", "nullish"');
+    }
+    options.optionalFieldBehavior = v as 'optional' | 'nullable' | 'nullish';
   }
 
   // Parse existing options for backward compatibility
@@ -312,6 +320,9 @@ export function generatorOptionsToConfigOverrides(
   if (options.dateTimeStrategy) {
     overrides.dateTimeStrategy = options.dateTimeStrategy;
   }
+  if (options.optionalFieldBehavior) {
+    overrides.optionalFieldBehavior = options.optionalFieldBehavior;
+  }
 
   return overrides;
 }
@@ -331,6 +342,7 @@ export interface GeneratorConfigOverrides {
   pureModelsLean?: boolean;
   pureModelsIncludeRelations?: boolean;
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
+  optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
   variants?: {
     pure?: { enabled?: boolean };
     input?: { enabled?: boolean };

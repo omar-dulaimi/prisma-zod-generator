@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client"
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  config   = "./zod-generator.config.json"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  name     String? // Optional field - behavior controlled by config
+  bio      String? // Optional field - behavior controlled by config
+  avatar   String? // Optional field - behavior controlled by config
+  role     Role?   // Optional enum - behavior controlled by config
+  posts    Post[]
+  profile  Profile?
+}
+
+model Post {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String?  // Optional field
+  published   Boolean  @default(false)
+  publishedAt DateTime?  // Optional DateTime
+  authorId    Int?     // Optional foreign key
+  author      User?    @relation(fields: [authorId], references: [id])
+  tags        String[] @default([])
+}
+
+model Profile {
+  id     Int     @id @default(autoincrement())
+  userId Int     @unique
+  user   User    @relation(fields: [userId], references: [id])
+  bio    String?  // Optional field
+  website String? // Optional field
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}

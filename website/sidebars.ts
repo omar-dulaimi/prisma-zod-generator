@@ -20,6 +20,7 @@ const sidebars: SidebarsConfig = {
         'config/modes',
         'config/variants',
         'config/naming',
+        'config/optional-fields',
         'config/filtering',
         'config/emission-controls',
         'config/file-layout'
@@ -49,7 +50,8 @@ const sidebars: SidebarsConfig = {
         'recipes/trpc-optimized',
         'recipes/single-file',
         'recipes/granular-per-model',
-        'recipes/hide-fields'
+        'recipes/hide-fields',
+        'recipes/optional-field-control'
       ]
     },
     {
