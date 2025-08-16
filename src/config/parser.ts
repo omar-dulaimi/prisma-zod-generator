@@ -41,6 +41,9 @@ export interface GeneratorConfig {
   /** Strategy for DateTime scalar mapping in pure models and variants. Default: 'date' */
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
   
+  /** How to handle optional fields in Zod schemas. Default: 'nullish' */
+  optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
+  
   /** Global field exclusions */
   globalExclusions?: {
     input?: string[];

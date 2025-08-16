@@ -1060,17 +1060,27 @@ export default class Transformer {
         : `z.union([${alternatives.join(', ')}])${opt}`;
 
     if (field.isNullable) {
-      // Handle the order correctly: validations -> .optional() -> .nullable()
+      // Handle optional/nullable based on configuration
+      const config = Transformer.getGeneratorConfig();
+      const optionalFieldBehavior = config?.optionalFieldBehavior || 'nullish';
+      
       if (field.isNullable && !field.isRequired) {
-        // If both optional and nullable, we need to reorder to get validations.optional().nullable()
-        if (resString.includes('.optional()')) {
-          // Remove the .optional() and add it before .nullable()
+        // Field is both nullable and optional
+        if (optionalFieldBehavior === 'nullish') {
+          // Remove any existing .optional() and use .nullish()
           resString = resString.replace('.optional()', '');
-          resString += '.optional().nullable()';
-        } else {
+          resString += '.nullish()';
+        } else if (optionalFieldBehavior === 'optional') {
+          // Use .optional() only (remove .optional() if already there, then add it)
+          resString = resString.replace('.optional()', '');
+          resString += '.optional()';
+        } else if (optionalFieldBehavior === 'nullable') {
+          // Use .nullable() only (remove any existing .optional())
+          resString = resString.replace('.optional()', '');
           resString += '.nullable()';
         }
       } else {
+        // Field is nullable but required
         resString += '.nullable()';
       }
     }

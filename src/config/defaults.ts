@@ -55,6 +55,7 @@ export class DefaultConfigurationManager {
   pureModelsLean: true,
   pureModelsIncludeRelations: false,
   dateTimeStrategy: 'date',
+  optionalFieldBehavior: 'nullish',
       naming: {
         preset: 'default',
   // Intentionally leave pureModel overrides empty so presets can supply their own
