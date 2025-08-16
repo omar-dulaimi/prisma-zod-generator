@@ -12,3 +12,5 @@ title: FAQ
 **Can I only emit pure models?**  Enable `pureModels`, disable variants or set all variant enabled flags false (custom mode) → pureModelsOnly heuristic.
 
 **Why enums missing?**  `emit.enums=false` was set; object/CRUD schemas referencing enums may fail.
+
+**How do I control optional field validation?**  Use `optionalFieldBehavior` to choose between `.nullish()` (default), `.optional()`, or `.nullable()` for optional Prisma fields.

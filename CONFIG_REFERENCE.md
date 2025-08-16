@@ -47,6 +47,7 @@ Quick navigation:
 | `pureModelsLean` | `boolean` | `true` | `true` | When `pureModels` are enabled, emit a lean form (no JSDoc header blocks, statistics, or field doc comments). Set `false` to restore rich docs. |
 | `pureModelsIncludeRelations` | `boolean` | `false` | `false` | When `pureModels` are enabled, include relation fields (lazy refs). Default omits relations for slimmer pure models. |
 | `dateTimeStrategy` | `"date" | "coerce" | "isoString"` | `"date"` | `"date"` | Maps Prisma `DateTime` scalars in generated schemas. See DateTime Strategies section. |
+| `optionalFieldBehavior` | `"nullish" | "optional" | "nullable"` | `"nullish"` | `"nullish"` | Controls how optional Prisma fields are mapped to Zod validations. See Optional Field Strategies section. |
 
 ## Explicit Emission Controls
 
@@ -243,6 +244,50 @@ Example JSON config snippet:
   "dateTimeStrategy": "isoString"
 }
 ```
+
+### Optional Field Strategies
+
+Control how optional Prisma fields (marked with `?`) are represented in generated Zod schemas using `optionalFieldBehavior`.
+
+| Value | Zod Shape | TypeScript Type | Use Case |
+|-------|-----------|-----------------|----------|
+| `nullish` (default) | `z.string().nullish()` | `string \| null \| undefined` | Most semantically correct - field can be omitted entirely, explicitly null, or have a value. Best for API boundaries. |
+| `optional` | `z.string().optional()` | `string \| undefined` | Field can be omitted or have a value, but not explicitly null. Good when null values should be rejected. |
+| `nullable` | `z.string().nullable()` | `string \| null` | Field must be present but can be null or have a value. Useful when the field is always sent in requests. |
+
+All three options maintain full type compatibility with Prisma's generated types and pass the same runtime validation tests.
+
+**Configuration Examples:**
+
+Generator block (Prisma schema):
+```prisma
+generator zod {
+  provider = "prisma-zod-generator"
+  optionalFieldBehavior = "optional"
+}
+```
+
+JSON config:
+```jsonc
+{
+  "optionalFieldBehavior": "nullish"
+}
+```
+
+**Generated Output Examples:**
+
+For a Prisma model with an optional field:
+```prisma
+model User {
+  id   Int     @id
+  name String?  // Optional field
+}
+```
+
+The generated schemas will be:
+- `nullish`: `name: z.string().nullish()`
+- `optional`: `name: z.string().optional()`  
+- `nullable`: `name: z.string().nullable()`
 
 ### pureModelsLean
 
