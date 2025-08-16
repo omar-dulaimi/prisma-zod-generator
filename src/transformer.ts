@@ -1834,6 +1834,24 @@ export default class Transformer {
         );
       }
 
+      // Generate findUniqueOrThrow schema (same as findUnique but with error-throwing behavior)
+      if (Transformer.isOperationEnabled(modelName, 'findUniqueOrThrow')) {
+        const imports = [
+          selectImport,
+          includeImport,
+          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
+        ];
+        await writeFileSafely(
+          path.join(Transformer.getSchemasPath(), `findUniqueOrThrow${modelName}.schema.ts`),
+          `${this.generateImportStatements(
+            imports,
+          )}${this.generateExportSchemaStatement(
+            `${modelName}FindUniqueOrThrow`,
+            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${modelName}WhereUniqueInputObjectSchema })`,
+          )}`,
+        );
+      }
+
       if (findFirst && Transformer.isOperationEnabled(modelName, 'findFirst')) {
         const shouldInline = this.shouldInlineSelectSchema(model);
         
@@ -1883,6 +1901,57 @@ export default class Transformer {
 
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${findFirst}.schema.ts`),
+          schemaContent + dualExports,
+        );
+      }
+
+      // Generate findFirstOrThrow schema (same as findFirst but with error-throwing behavior)
+      if (Transformer.isOperationEnabled(modelName, 'findFirstOrThrow')) {
+        const shouldInline = this.shouldInlineSelectSchema(model);
+        
+        // Build imports based on aggressive inlining strategy
+        const baseImports = [
+          includeImport, // Include always external
+          orderByImport,
+          this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
+          this.generateImportStatement(`${modelName}WhereUniqueInputObjectSchema`, `./objects/${modelName}WhereUniqueInput.schema`),
+          this.generateImportStatement(`${modelName}ScalarFieldEnumSchema`, `./enums/${modelName}ScalarFieldEnum.schema`),
+        ];
+        
+        // Add select import only if NOT inlining, add inline imports if inlining
+        const imports = shouldInline 
+          ? [...baseImports, ...this.generateInlineSelectImports(model)]
+          : [...baseImports, selectImport];
+        // Determine select field reference based on dual export strategy
+        const selectFieldReference = shouldInline 
+          ? (Transformer.exportTypedSchemas 
+              ? `${modelName}FindFirstOrThrowSelect${Transformer.typedSchemaSuffix}.optional()`
+              : `${modelName}FindFirstOrThrowSelect${Transformer.zodSchemaSuffix}.optional()`)
+          : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
+        
+        const selectField = `select: ${selectFieldReference},`;
+        const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
+        const schemaFields = `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`.trim().replace(/,\s*,/g, ',');
+        
+        // Add Prisma type import for explicit type binding
+        const crudDir = Transformer.getSchemasPath();
+        const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+        let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+        // Add inline select schema definitions (dual export pattern)
+        if (shouldInline) {
+          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model, 'FindFirstOrThrow')}\n\n`;
+        }
+
+        const schemaObjectDefinition = `z.object({ ${schemaFields } }).strict()`;
+        const dualExports = this.generateDualSchemaExports(
+          modelName, 
+          'FindFirstOrThrow', 
+          schemaObjectDefinition,
+          `Prisma.${modelName}FindFirstOrThrowArgs`
+        );
+        await writeFileSafely(
+          path.join(Transformer.getSchemasPath(), `findFirstOrThrow${modelName}.schema.ts`),
           schemaContent + dualExports,
         );
       }
@@ -1973,6 +2042,34 @@ export default class Transformer {
           )}${this.generateExportSchemaStatement(
             `${modelName}CreateMany`,
             `z.object({ data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]), ${
+              Transformer.provider === 'postgresql' ||
+              Transformer.provider === 'cockroachdb'
+                ? 'skipDuplicates: z.boolean().optional()'
+                : ''
+            } })`,
+          )}`,
+  );
+  }
+      }
+
+      // Generate createManyAndReturn schema (same as createMany but returns created records)
+      if (Transformer.isOperationEnabled(modelName, 'createManyAndReturn')) {
+        const cfg = Transformer.getGeneratorConfig();
+        if (cfg?.mode === 'minimal') {
+          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createManyAndReturn`);
+        } else {
+        const imports = [
+          selectImport,
+          includeImport,
+          this.generateImportStatement(`${modelName}CreateManyInputObjectSchema`, `./objects/${modelName}CreateManyInput.schema`),
+        ];
+        await writeFileSafely(
+          path.join(Transformer.getSchemasPath(), `createManyAndReturn${modelName}.schema.ts`),
+          `${this.generateImportStatements(
+            imports,
+          )}${this.generateExportSchemaStatement(
+            `${modelName}CreateManyAndReturn`,
+            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]), ${
               Transformer.provider === 'postgresql' ||
               Transformer.provider === 'cockroachdb'
                 ? 'skipDuplicates: z.boolean().optional()'
@@ -2109,6 +2206,30 @@ export default class Transformer {
   }
       }
 
+      // Generate updateManyAndReturn schema (same as updateMany but returns updated records)
+      if (Transformer.isOperationEnabled(modelName, 'updateManyAndReturn')) {
+        const cfg = Transformer.getGeneratorConfig();
+        if (cfg?.mode === 'minimal') {
+          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.updateManyAndReturn`);
+        } else {
+        const imports = [
+          selectImport,
+          includeImport,
+          this.generateImportStatement(`${modelName}UpdateManyMutationInputObjectSchema`, `./objects/${modelName}UpdateManyMutationInput.schema`),
+          this.generateImportStatement(`${modelName}WhereInputObjectSchema`, `./objects/${modelName}WhereInput.schema`),
+        ];
+        await writeFileSafely(
+          path.join(Transformer.getSchemasPath(), `updateManyAndReturn${modelName}.schema.ts`),
+          `${this.generateImportStatements(
+            imports,
+          )}${this.generateExportSchemaStatement(
+            `${modelName}UpdateManyAndReturn`,
+            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${modelName}UpdateManyMutationInputObjectSchema, where: ${modelName}WhereInputObjectSchema.optional()  })`,
+          )}`,
+  );
+  }
+      }
+
       if (upsertOne && Transformer.isOperationEnabled(modelName, 'upsertOne')) {
         const cfg = Transformer.getGeneratorConfig();
         if (cfg?.mode === 'minimal') {
@@ -2202,6 +2323,9 @@ export default class Transformer {
           this.generateImportStatement(`${modelName}OrderByWithAggregationInputObjectSchema`, `./objects/${modelName}OrderByWithAggregationInput.schema`),
           this.generateImportStatement(`${modelName}ScalarWhereWithAggregatesInputObjectSchema`, `./objects/${modelName}ScalarWhereWithAggregatesInput.schema`),
           this.generateImportStatement(`${modelName}ScalarFieldEnumSchema`, `./enums/${modelName}ScalarFieldEnum.schema`),
+          this.generateImportStatement(`${modelName}CountAggregateInputObjectSchema`, `./objects/${modelName}CountAggregateInput.schema`),
+          this.generateImportStatement(`${modelName}MinAggregateInputObjectSchema`, `./objects/${modelName}MinAggregateInput.schema`),
+          this.generateImportStatement(`${modelName}MaxAggregateInputObjectSchema`, `./objects/${modelName}MaxAggregateInput.schema`),
         ];
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`),
@@ -2209,7 +2333,7 @@ export default class Transformer {
             imports,
           )}${this.generateExportSchemaStatement(
             `${modelName}GroupBy`,
-            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: z.union([${modelName}OrderByWithAggregationInputObjectSchema, ${modelName}OrderByWithAggregationInputObjectSchema.array()]).optional(), having: ${modelName}ScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${modelName}ScalarFieldEnumSchema)  })`,
+            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: z.union([${modelName}OrderByWithAggregationInputObjectSchema, ${modelName}OrderByWithAggregationInputObjectSchema.array()]).optional(), having: ${modelName}ScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${modelName}ScalarFieldEnumSchema), _count: z.union([z.boolean(), ${modelName}CountAggregateInputObjectSchema]).optional(), _min: ${modelName}MinAggregateInputObjectSchema.optional(), _max: ${modelName}MaxAggregateInputObjectSchema.optional() })`,
           )}`,
         );
       }
@@ -2817,7 +2941,7 @@ ${selectFields.join(',\n')}
   /**
    * Generates dual select schema exports for inlined schemas
    */
-  generateDualSelectSchemaExports(model: PrismaDMMF.Model, operation?: 'FindFirst' | 'FindMany' | 'FindUnique'): string {
+  generateDualSelectSchemaExports(model: PrismaDMMF.Model, operation?: 'FindFirst' | 'FindFirstOrThrow' | 'FindMany' | 'FindUnique' | 'FindUniqueOrThrow'): string {
     const modelName = model.name;
     const schemaDefinition = this.generateInlineSelectSchemaDefinition(model);
     const exports: string[] = [];
