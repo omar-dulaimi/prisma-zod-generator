@@ -1,3 +1,16 @@
+## [1.11.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.10.1...v1.11.0) (2025-08-16)
+
+### 🚀 Features
+
+* add complete CRUD operation support and fix GroupBy aggregation fields ([2bd0cf8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2bd0cf860aab75ea1a253a78225747b95c1629b5))
+
+### 📚 Documentation
+
+* **changelog:** remove Twitter/X follow line from Stay Updated section ([e63b800](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e63b800db4882832ae855a1f3028fc18a4e72c19))
+* fix MDX parsing in changelog by escaping angle brackets; point navbar Changelog to stable next route ([d1ab1ff](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d1ab1ff3843bcda094fb4e3e33fdd7f76c3c1c2b))
+* snapshot docs for v1.10.1 [skip ci] ([846f4bc](https://github.com/omar-dulaimi/prisma-zod-generator/commit/846f4bc1aaee83260e2af28d427ef0201672a9e7))
+* versioning script supports patch releases via DOCS_VERSION_ON_PATCH and normalizes tags ([59a6683](https://github.com/omar-dulaimi/prisma-zod-generator/commit/59a668388a8d928864bb2a757f6828fabc117917))
+
 ## [1.10.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.10.0...v1.10.1) (2025-08-15)
 
 ### 🐛 Bug Fixes
