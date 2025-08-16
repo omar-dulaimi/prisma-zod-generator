@@ -1,3 +1,13 @@
+## [1.12.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.11.0...v1.12.0) (2025-08-16)
+
+### 🚀 Features
+
+* add optionalFieldBehavior configuration option ([6bdfc11](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6bdfc1134e10edac2153db064f040f3516e75cd8))
+
+### 📚 Documentation
+
+* add comprehensive documentation for optionalFieldBehavior ([127fa84](https://github.com/omar-dulaimi/prisma-zod-generator/commit/127fa84c818a1be8ad74dacdd7ea7ef4beef2112))
+
 ## [1.11.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.10.1...v1.11.0) (2025-08-16)
 
 ### 🚀 Features
