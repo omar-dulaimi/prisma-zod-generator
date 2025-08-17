@@ -4,9 +4,6 @@ import { join } from 'path';
 import { 
   TestEnvironment, 
   ConfigGenerator, 
-  PrismaSchemaGenerator,
-  SchemaValidationUtils,
-  FileSystemUtils,
   GENERATION_TIMEOUT 
 } from './helpers';
 

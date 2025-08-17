@@ -562,7 +562,7 @@ ${allFields.join(',\n')}
       'BigInt': 'z.bigint()'
     };
 
-    let baseType = typeMap[field.type] || 'z.unknown()';
+    const baseType = typeMap[field.type] || 'z.unknown()';
     
     // Handle arrays
     if (field.isList) {
