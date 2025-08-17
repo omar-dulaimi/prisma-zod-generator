@@ -21,6 +21,8 @@ body:
           required: true
         - label: I’m using the latest version of prisma-zod-generator
           required: true
+        - label: I have starred the repository to support the project ⭐
+          required: true
 
   - type: textarea
     id: description

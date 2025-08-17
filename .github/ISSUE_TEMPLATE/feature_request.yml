@@ -23,6 +23,8 @@ body:
           required: true
         - label: I’m willing to sponsor this work to help keep the project active
         - label: I can help with a PR (implementation or review)
+        - label: I have starred the repository to support the project ⭐
+          required: true
 
   - type: input
     id: summary

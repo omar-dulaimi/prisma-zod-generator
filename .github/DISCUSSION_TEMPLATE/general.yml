@@ -1,0 +1,39 @@
+name: Discussion
+about: Start a discussion or ask a question
+labels: ['discussion']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 💬 Discussion
+
+        Thanks for starting a discussion! For bugs and feature requests, please use the corresponding issue templates.
+
+        🚨 Sponsor to keep this project active: https://github.com/sponsors/omar-dulaimi
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you post
+      options:
+        - label: I searched existing issues and discussions for duplicates
+          required: true
+        - label: I have starred the repository to support the project ⭐
+          required: true
+
+  - type: input
+    id: topic
+    attributes:
+      label: Topic
+      description: A concise title for your discussion
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Share your question, ideas, or context
+      placeholder: Include examples, code snippets, or links if helpful
+    validations:
+      required: true
