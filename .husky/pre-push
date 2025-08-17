@@ -1,0 +1,7 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run type check, lint and prettier check before pushing
+npm run test:type-check || exit 1
+npm run lint || exit 1
+npm run format:check || exit 1
