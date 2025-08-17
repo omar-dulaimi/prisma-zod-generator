@@ -7,7 +7,7 @@ jobs:
   link-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install deps (docs only)
         run: npm ci --omit=dev || npm ci
       - name: Build docs
