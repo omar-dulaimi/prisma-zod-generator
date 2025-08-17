@@ -23,9 +23,9 @@ class ComprehensiveSchemaTest {
    */
   async discoverSchemas(): Promise<SchemaInfo[]> {
     const schemas: SchemaInfo[] = [];
-    
+
     try {
-      const providers = readdirSync(this.basePath).filter(dir => {
+      const providers = readdirSync(this.basePath).filter((dir) => {
         const fullPath = join(this.basePath, dir);
         return statSync(fullPath).isDirectory();
       });
@@ -38,7 +38,7 @@ class ComprehensiveSchemaTest {
 
       for (const provider of providers) {
         const generatedPath = join(this.basePath, provider, 'generated', 'schemas');
-        
+
         if (this.pathExists(generatedPath)) {
           await this.discoverProviderSchemas(generatedPath, provider, schemas);
         }
@@ -54,14 +54,14 @@ class ComprehensiveSchemaTest {
    * Discover schemas for a specific provider
    */
   private async discoverProviderSchemas(
-    generatedPath: string, 
-    provider: string, 
-    schemas: SchemaInfo[]
+    generatedPath: string,
+    provider: string,
+    schemas: SchemaInfo[],
   ): Promise<void> {
     // Discover enum schemas
     const enumsPath = join(generatedPath, 'enums');
     if (this.pathExists(enumsPath)) {
-      const enumFiles = readdirSync(enumsPath).filter(f => f.endsWith('.schema.ts'));
+      const enumFiles = readdirSync(enumsPath).filter((f) => f.endsWith('.schema.ts'));
       for (const file of enumFiles) {
         schemas.push({
           path: join(enumsPath, file),
@@ -75,7 +75,7 @@ class ComprehensiveSchemaTest {
     // Discover object schemas
     const objectsPath = join(generatedPath, 'objects');
     if (this.pathExists(objectsPath)) {
-      const objectFiles = readdirSync(objectsPath).filter(f => f.endsWith('.schema.ts'));
+      const objectFiles = readdirSync(objectsPath).filter((f) => f.endsWith('.schema.ts'));
       for (const file of objectFiles) {
         schemas.push({
           path: join(objectsPath, file),
@@ -87,9 +87,10 @@ class ComprehensiveSchemaTest {
     }
 
     // Discover operation schemas (root level)
-    const operationFiles = readdirSync(generatedPath)
-      .filter(f => f.endsWith('.schema.ts') && !f.includes('index'));
-    
+    const operationFiles = readdirSync(generatedPath).filter(
+      (f) => f.endsWith('.schema.ts') && !f.includes('index'),
+    );
+
     for (const file of operationFiles) {
       schemas.push({
         path: join(generatedPath, file),
@@ -107,7 +108,7 @@ class ComprehensiveSchemaTest {
     try {
       // Try different import approaches for maximum compatibility
       let module;
-      
+
       try {
         // Try relative path from project root
         const relativePath = './' + schemaInfo.path.replace('.ts', '');
@@ -123,20 +124,25 @@ class ComprehensiveSchemaTest {
           module = await import(fsPath);
         }
       }
-      
-      if (!module) return false;
-      
-      // Find the exported schema (usually the default export or named export)
-      const schemaExport = module.default || 
-                          Object.values(module).find((exp: unknown) => 
-                            exp && typeof exp === 'object' && (exp as { _def?: unknown })._def
-                          );
 
-      if (schemaExport && typeof schemaExport === 'object' && (schemaExport as { _def?: unknown })._def) {
+      if (!module) return false;
+
+      // Find the exported schema (usually the default export or named export)
+      const schemaExport =
+        module.default ||
+        Object.values(module).find(
+          (exp: unknown) => exp && typeof exp === 'object' && (exp as { _def?: unknown })._def,
+        );
+
+      if (
+        schemaExport &&
+        typeof schemaExport === 'object' &&
+        (schemaExport as { _def?: unknown })._def
+      ) {
         schemaInfo.schema = schemaExport as z.ZodTypeAny;
         return true;
       }
-      
+
       return false;
     } catch {
       // Skip problematic schemas silently to maintain test performance
@@ -252,19 +258,19 @@ describe('Comprehensive Schema Coverage Tests', () => {
 
   it('should discover all generated schemas', async () => {
     allSchemas = await tester.discoverSchemas();
-    
+
     expect(allSchemas.length).toBeGreaterThan(100); // Should find substantial number of schemas
-    
+
     // Check we have schemas from providers
-    const providers = [...new Set(allSchemas.map(s => s.provider))];
+    const providers = [...new Set(allSchemas.map((s) => s.provider))];
     expect(providers.length).toBeGreaterThanOrEqual(1);
-    
+
     // Check we have different categories
-    const categories = [...new Set(allSchemas.map(s => s.category))];
+    const categories = [...new Set(allSchemas.map((s) => s.category))];
     expect(categories).toContain('enum');
     expect(categories).toContain('object');
     expect(categories).toContain('operation');
-    
+
     console.log(`📊 Discovered ${allSchemas.length} schemas across ${providers.length} providers`);
     console.log(`📋 Providers: ${providers.join(', ')}`);
     console.log(`🗂️  Categories: ${categories.join(', ')}`);
@@ -272,12 +278,12 @@ describe('Comprehensive Schema Coverage Tests', () => {
 
   describe('Provider Schema Tests', () => {
     const providers = ['postgresql', 'mysql', 'mongodb', 'sqlite', 'sqlserver'];
-    
-    providers.forEach(provider => {
+
+    providers.forEach((provider) => {
       describe(`${provider} Schema Validation`, () => {
         it(`should import and validate all ${provider} schemas`, async () => {
-          const providerSchemas = allSchemas.filter(s => s.provider === provider);
-          
+          const providerSchemas = allSchemas.filter((s) => s.provider === provider);
+
           if (providerSchemas.length === 0) {
             console.warn(`⚠️ No schemas found for provider: ${provider}`);
             return;
@@ -299,12 +305,14 @@ describe('Comprehensive Schema Coverage Tests', () => {
             }
           }
 
-          console.log(`✅ ${provider}: ${imported}/${providerSchemas.length} imported, ${validated}/${imported} validated`);
-          
+          console.log(
+            `✅ ${provider}: ${imported}/${providerSchemas.length} imported, ${validated}/${imported} validated`,
+          );
+
           // More lenient expectations due to import complexity
           // Expect at least 50% successful import rate (many schemas have complex dependencies)
           expect(imported / providerSchemas.length).toBeGreaterThan(0.5);
-          
+
           // Expect at least 80% validation rate of imported schemas
           if (imported > 0) {
             expect(validated / imported).toBeGreaterThan(0.8);
@@ -315,10 +323,10 @@ describe('Comprehensive Schema Coverage Tests', () => {
   });
 
   describe('Schema Category Tests', () => {
-    ['enum', 'object', 'operation'].forEach(category => {
+    ['enum', 'object', 'operation'].forEach((category) => {
       it(`should validate all ${category} schemas`, async () => {
-        const categorySchemas = allSchemas.filter(s => s.category === category);
-        
+        const categorySchemas = allSchemas.filter((s) => s.category === category);
+
         if (categorySchemas.length === 0) {
           console.warn(`⚠️ No ${category} schemas found`);
           return;
@@ -341,7 +349,7 @@ describe('Comprehensive Schema Coverage Tests', () => {
         }
 
         console.log(`📈 ${category}: ${successful}/${sampleSize} schemas validated successfully`);
-        
+
         // Expect reasonable success rate
         expect(successful / sampleSize).toBeGreaterThan(0.7);
       });
@@ -353,7 +361,7 @@ describe('Comprehensive Schema Coverage Tests', () => {
       // Test a representative sample
       const sampleSchemas = allSchemas.slice(0, 50);
       const startTime = Date.now();
-      
+
       let processedCount = 0;
       for (const schemaInfo of sampleSchemas) {
         const importSuccess = await tester.importSchema(schemaInfo);
@@ -366,12 +374,14 @@ describe('Comprehensive Schema Coverage Tests', () => {
           }
         }
       }
-      
+
       const duration = Date.now() - startTime;
       const avgTime = duration / processedCount;
-      
-      console.log(`⚡ Performance: ${processedCount} schemas in ${duration}ms (${avgTime.toFixed(2)}ms avg)`);
-      
+
+      console.log(
+        `⚡ Performance: ${processedCount} schemas in ${duration}ms (${avgTime.toFixed(2)}ms avg)`,
+      );
+
       // Should process schemas reasonably quickly
       expect(avgTime).toBeLessThan(100); // Less than 100ms per schema
       expect(processedCount).toBeGreaterThan(0);

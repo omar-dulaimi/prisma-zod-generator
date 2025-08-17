@@ -90,7 +90,7 @@ export class VariantImportExportManager {
       extensions: ['.ts', '.js'],
       useRelativePaths: true,
       pathMapping: {},
-      ...moduleResolutionConfig
+      ...moduleResolutionConfig,
     };
   }
 
@@ -99,7 +99,7 @@ export class VariantImportExportManager {
    */
   async generateBarrelExports(
     collections: ModelVariantCollection[],
-    configs: Record<VariantType, BarrelExportConfig>
+    configs: Record<VariantType, BarrelExportConfig>,
   ): Promise<{
     files: Array<{
       path: string;
@@ -126,7 +126,7 @@ export class VariantImportExportManager {
 
     return {
       files: generatedFiles,
-      mainIndex
+      mainIndex,
     };
   }
 
@@ -136,13 +136,13 @@ export class VariantImportExportManager {
   private async generateVariantBarrelExport(
     collections: ModelVariantCollection[],
     variantType: VariantType,
-    config: BarrelExportConfig
+    config: BarrelExportConfig,
   ): Promise<{ path: string; content: string; exports: string[] }> {
     const exports: ExportStatement[] = [];
     const allExports: string[] = [];
 
     // Collect exports from all models for this variant
-    collections.forEach(collection => {
+    collections.forEach((collection) => {
       const variant = collection.variants[variantType];
       if (variant) {
         const modelExports: string[] = [];
@@ -159,7 +159,7 @@ export class VariantImportExportManager {
           exports.push({
             namedExports: modelExports,
             moduleSpecifier,
-            isTypeOnly: false
+            isTypeOnly: false,
           });
           allExports.push(...modelExports);
         }
@@ -184,7 +184,7 @@ export class VariantImportExportManager {
     return {
       path: filePath,
       content: formattedContent,
-      exports: allExports
+      exports: allExports,
     };
   }
 
@@ -192,19 +192,19 @@ export class VariantImportExportManager {
    * Generate main index file that exports all variant barrels
    */
   private async generateMainIndexFile(
-    barrelFiles: Array<{ path: string; content: string; exports: string[] }>
+    barrelFiles: Array<{ path: string; content: string; exports: string[] }>,
   ): Promise<{ path: string; content: string; exports: string[] }> {
     const exports: ExportStatement[] = [];
     const allExports: string[] = [];
 
     // Create re-exports for each barrel file
-    barrelFiles.forEach(barrelFile => {
+    barrelFiles.forEach((barrelFile) => {
       const variantType = this.extractVariantTypeFromPath(barrelFile.path);
       if (variantType) {
         exports.push({
           namedExports: ['*'],
           moduleSpecifier: `./${variantType}`,
-          namespaceExport: variantType
+          namespaceExport: variantType,
         });
         allExports.push(...barrelFile.exports);
       }
@@ -222,7 +222,7 @@ export class VariantImportExportManager {
     return {
       path: filePath,
       content: formattedContent,
-      exports: allExports
+      exports: allExports,
     };
   }
 
@@ -230,34 +230,36 @@ export class VariantImportExportManager {
    * Handle cross-variant references
    */
   async manageCrossVariantReferences(
-    collections: ModelVariantCollection[]
+    collections: ModelVariantCollection[],
   ): Promise<CrossVariantReference[]> {
     const references: CrossVariantReference[] = [];
 
     // Analyze each collection for cross-variant dependencies
-    collections.forEach(collection => {
-      Object.entries(collection.crossVariantReferences).forEach(([sourceVariant, targetVariants]) => {
-        const source = sourceVariant as VariantType;
-        
-        targetVariants.forEach(targetVariant => {
-          const sourceResult = collection.variants[source];
-          const targetResult = collection.variants[targetVariant];
+    collections.forEach((collection) => {
+      Object.entries(collection.crossVariantReferences).forEach(
+        ([sourceVariant, targetVariants]) => {
+          const source = sourceVariant as VariantType;
 
-          if (sourceResult && targetResult) {
-            // Determine what items are referenced
-            const referencedItems = this.findReferencedItems(sourceResult, targetResult);
-            
-            if (referencedItems.length > 0) {
-              references.push({
-                sourceVariant: source,
-                targetVariant,
-                referencedItems,
-                referenceType: this.determineReferenceType(source, targetVariant)
-              });
+          targetVariants.forEach((targetVariant) => {
+            const sourceResult = collection.variants[source];
+            const targetResult = collection.variants[targetVariant];
+
+            if (sourceResult && targetResult) {
+              // Determine what items are referenced
+              const referencedItems = this.findReferencedItems(sourceResult, targetResult);
+
+              if (referencedItems.length > 0) {
+                references.push({
+                  sourceVariant: source,
+                  targetVariant,
+                  referencedItems,
+                  referenceType: this.determineReferenceType(source, targetVariant),
+                });
+              }
             }
-          }
-        });
-      });
+          });
+        },
+      );
     });
 
     // Update files with cross-variant imports
@@ -271,13 +273,13 @@ export class VariantImportExportManager {
    */
   private async updateFilesWithCrossVariantImports(
     collections: ModelVariantCollection[],
-    references: CrossVariantReference[]
+    references: CrossVariantReference[],
   ): Promise<void> {
     // Group references by source file
     const referencesBySource = new Map<string, CrossVariantReference[]>();
-    
-    references.forEach(ref => {
-      collections.forEach(collection => {
+
+    references.forEach((ref) => {
+      collections.forEach((collection) => {
         const sourceVariant = collection.variants[ref.sourceVariant];
         if (sourceVariant) {
           const sourceFile = sourceVariant.filePath;
@@ -303,29 +305,32 @@ export class VariantImportExportManager {
    */
   private async addImportsToFile(
     filePath: string,
-    references: CrossVariantReference[]
+    references: CrossVariantReference[],
   ): Promise<void> {
     try {
       let content = await fs.readFile(filePath, 'utf8');
 
       // Generate import statements
       const importStatements = this.generateImportStatements(references);
-      
+
       // Insert imports at the top of the file
-      const importSection = importStatements.map(imp => this.formatImportStatement(imp)).join('\n');
-      
+      const importSection = importStatements
+        .map((imp) => this.formatImportStatement(imp))
+        .join('\n');
+
       if (importSection) {
         // Find the position to insert imports (after existing imports but before other code)
         const importInsertionPoint = this.findImportInsertionPoint(content);
-        content = content.slice(0, importInsertionPoint) + 
-                 importSection + '\n' + 
-                 content.slice(importInsertionPoint);
+        content =
+          content.slice(0, importInsertionPoint) +
+          importSection +
+          '\n' +
+          content.slice(importInsertionPoint);
       }
 
       // Format and write back
       const formattedContent = await formatFile(content);
       await writeFileSafely(filePath, formattedContent);
-
     } catch (error) {
       console.warn(`Failed to update imports in ${filePath}:`, error);
     }
@@ -340,15 +345,15 @@ export class VariantImportExportManager {
       circularDependencies: [],
       unresolvedImports: [],
       duplicateExports: [],
-      warnings: []
+      warnings: [],
     };
 
     // Check for duplicate exports across variants
     const allExports = new Map<string, VariantType[]>();
-    collections.forEach(collection => {
+    collections.forEach((collection) => {
       Object.entries(collection.variants).forEach(([variant, result]) => {
         if (result) {
-          result.exports.forEach(exportName => {
+          result.exports.forEach((exportName) => {
             if (!allExports.has(exportName)) {
               allExports.set(exportName, []);
             }
@@ -378,7 +383,9 @@ export class VariantImportExportManager {
     // Validate import resolution
     result.unresolvedImports = this.findUnresolvedImports(collections);
     if (result.unresolvedImports.length > 0) {
-      result.warnings.push(`Found ${result.unresolvedImports.length} potentially unresolved imports`);
+      result.warnings.push(
+        `Found ${result.unresolvedImports.length} potentially unresolved imports`,
+      );
     }
 
     return result;
@@ -391,7 +398,7 @@ export class VariantImportExportManager {
   private generateBarrelFileContent(
     exports: ExportStatement[],
     variantType: VariantType,
-    config: BarrelExportConfig
+    config: BarrelExportConfig,
   ): string {
     const lines: string[] = [];
 
@@ -408,7 +415,7 @@ export class VariantImportExportManager {
     lines.push('');
 
     // Add export statements
-    exports.forEach(exportStmt => {
+    exports.forEach((exportStmt) => {
       if (exportStmt.moduleSpecifier) {
         const exportList = exportStmt.namedExports.join(', ');
         lines.push(`export { ${exportList} } from '${exportStmt.moduleSpecifier}';`);
@@ -430,10 +437,12 @@ export class VariantImportExportManager {
     lines.push('');
 
     // Add re-exports
-    exports.forEach(exportStmt => {
+    exports.forEach((exportStmt) => {
       if (exportStmt.moduleSpecifier) {
         if (exportStmt.namespaceExport) {
-          lines.push(`export * as ${exportStmt.namespaceExport} from '${exportStmt.moduleSpecifier}';`);
+          lines.push(
+            `export * as ${exportStmt.namespaceExport} from '${exportStmt.moduleSpecifier}';`,
+          );
         } else {
           lines.push(`export * from '${exportStmt.moduleSpecifier}';`);
         }
@@ -455,25 +464,31 @@ export class VariantImportExportManager {
 
   private extractVariantTypeFromPath(path: string): VariantType | null {
     const fileName = path.split('/').pop()?.replace('.ts', '');
-    return Object.values(VariantType).find(variant => variant === fileName) || null;
+    return Object.values(VariantType).find((variant) => variant === fileName) || null;
   }
 
-  private findReferencedItems(source: VariantGenerationResult, target: VariantGenerationResult): string[] {
+  private findReferencedItems(
+    source: VariantGenerationResult,
+    target: VariantGenerationResult,
+  ): string[] {
     // This would analyze the content to find actual references
     // For now, return basic schema/type references
     const references: string[] = [];
-    
+
     if (source.content.includes(target.schemaName)) {
       references.push(target.schemaName);
     }
     if (source.content.includes(target.typeName)) {
       references.push(target.typeName);
     }
-    
+
     return references;
   }
 
-  private determineReferenceType(source: VariantType, target: VariantType): 'import' | 'extends' | 'utility' {
+  private determineReferenceType(
+    source: VariantType,
+    target: VariantType,
+  ): 'import' | 'extends' | 'utility' {
     // Determine the type of reference based on variant relationship
     if (source === VariantType.INPUT && target === VariantType.PURE) {
       return 'extends';
@@ -487,12 +502,12 @@ export class VariantImportExportManager {
   private generateImportStatements(references: CrossVariantReference[]): ImportStatement[] {
     const importsByModule = new Map<string, Set<string>>();
 
-    references.forEach(ref => {
+    references.forEach((ref) => {
       const moduleSpecifier = `./${ref.targetVariant}`;
       if (!importsByModule.has(moduleSpecifier)) {
         importsByModule.set(moduleSpecifier, new Set());
       }
-      ref.referencedItems.forEach(item => {
+      ref.referencedItems.forEach((item) => {
         const imports = importsByModule.get(moduleSpecifier);
         if (imports) {
           imports.add(item);
@@ -503,29 +518,29 @@ export class VariantImportExportManager {
     return Array.from(importsByModule.entries()).map(([moduleSpecifier, imports]) => ({
       moduleSpecifier,
       namedImports: Array.from(imports),
-      isTypeOnly: false
+      isTypeOnly: false,
     }));
   }
 
   private formatImportStatement(importStmt: ImportStatement): string {
     const parts: string[] = [];
-    
+
     if (importStmt.defaultImport) {
       parts.push(importStmt.defaultImport);
     }
-    
+
     if (importStmt.namedImports.length > 0) {
       const namedList = importStmt.namedImports.join(', ');
       parts.push(`{ ${namedList} }`);
     }
-    
+
     if (importStmt.namespaceImport) {
       parts.push(`* as ${importStmt.namespaceImport}`);
     }
 
     const importList = parts.join(', ');
     const typeOnly = importStmt.isTypeOnly ? 'type ' : '';
-    
+
     return `import ${typeOnly}${importList} from '${importStmt.moduleSpecifier}';`;
   }
 
@@ -536,9 +551,14 @@ export class VariantImportExportManager {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (line.startsWith('import ') || line.startsWith('export ') && line.includes('from')) {
+      if (line.startsWith('import ') || (line.startsWith('export ') && line.includes('from'))) {
         insertionLine = i + 1;
-      } else if (line && !line.startsWith('//') && !line.startsWith('/*') && !line.startsWith('*')) {
+      } else if (
+        line &&
+        !line.startsWith('//') &&
+        !line.startsWith('/*') &&
+        !line.startsWith('*')
+      ) {
         break;
       }
     }
@@ -555,7 +575,7 @@ export class VariantImportExportManager {
     const circularDeps: string[][] = [];
 
     // Build dependency graph
-    collections.forEach(collection => {
+    collections.forEach((collection) => {
       const modelName = collection.modelName;
       dependencies.set(modelName, Array.from(collection.dependencies));
     });
@@ -576,7 +596,7 @@ export class VariantImportExportManager {
       recursionStack.add(node);
 
       const deps = dependencies.get(node) || [];
-      deps.forEach(dep => {
+      deps.forEach((dep) => {
         detectCycle(dep, [...path, node]);
       });
 
@@ -597,19 +617,19 @@ export class VariantImportExportManager {
     const availableExports = new Set<string>();
 
     // Collect all available exports
-    collections.forEach(collection => {
-      Object.values(collection.variants).forEach(variant => {
+    collections.forEach((collection) => {
+      Object.values(collection.variants).forEach((variant) => {
         if (variant) {
-          variant.exports.forEach(exp => availableExports.add(exp));
+          variant.exports.forEach((exp) => availableExports.add(exp));
         }
       });
     });
 
     // Check each import against available exports
-    collections.forEach(collection => {
-      Object.values(collection.variants).forEach(variant => {
+    collections.forEach((collection) => {
+      Object.values(collection.variants).forEach((variant) => {
         if (variant) {
-          variant.imports.forEach(imp => {
+          variant.imports.forEach((imp) => {
             if (!availableExports.has(imp) && !this.isExternalImport(imp)) {
               unresolved.push(`${imp} in ${variant.fileName}`);
             }
@@ -624,8 +644,9 @@ export class VariantImportExportManager {
   private isExternalImport(importName: string): boolean {
     // Check if import is from external libraries (like 'zod', '@prisma/client', etc.)
     const externalLibraries = ['zod', '@prisma/client', 'prisma'];
-    return externalLibraries.some(lib => importName.startsWith(lib)) || 
-           importName.startsWith('z.');
+    return (
+      externalLibraries.some((lib) => importName.startsWith(lib)) || importName.startsWith('z.')
+    );
   }
 }
 

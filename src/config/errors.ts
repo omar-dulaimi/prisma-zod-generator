@@ -6,20 +6,20 @@ import { ValidationError } from './schema';
 export abstract class ConfigurationError extends Error {
   abstract readonly errorCode: string;
   abstract readonly category: ConfigurationErrorCategory;
-  
+
   public readonly timestamp: Date;
   public readonly context: Record<string, unknown>;
 
   constructor(
     message: string,
     public readonly cause?: Error,
-    context: Record<string, unknown> = {}
+    context: Record<string, unknown> = {},
   ) {
     super(message);
     this.name = this.constructor.name;
     this.timestamp = new Date();
     this.context = context;
-    
+
     // Ensure the error stack trace points to the actual error location
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
@@ -37,12 +37,14 @@ export abstract class ConfigurationError extends Error {
       message: this.message,
       timestamp: this.timestamp.toISOString(),
       context: this.context,
-      cause: this.cause ? {
-        name: this.cause.name,
-        message: this.cause.message,
-        stack: this.cause.stack
-      } : undefined,
-      stack: this.stack
+      cause: this.cause
+        ? {
+            name: this.cause.name,
+            message: this.cause.message,
+            stack: this.cause.stack,
+          }
+        : undefined,
+      stack: this.stack,
     };
   }
 
@@ -57,10 +59,10 @@ export abstract class ConfigurationError extends Error {
  */
 export enum ConfigurationErrorCategory {
   FILE_SYSTEM = 'FILE_SYSTEM',
-  PARSING = 'PARSING', 
+  PARSING = 'PARSING',
   VALIDATION = 'VALIDATION',
   BUSINESS_LOGIC = 'BUSINESS_LOGIC',
-  INTEGRATION = 'INTEGRATION'
+  INTEGRATION = 'INTEGRATION',
 }
 
 /**
@@ -89,11 +91,7 @@ export class ConfigFileNotFoundError extends ConfigurationError {
   readonly category = ConfigurationErrorCategory.FILE_SYSTEM;
 
   constructor(filePath: string, cause?: Error) {
-    super(
-      `Configuration file not found: ${filePath}`,
-      cause,
-      { filePath }
-    );
+    super(`Configuration file not found: ${filePath}`, cause, { filePath });
   }
 
   getUserFriendlyMessage(): string {
@@ -121,17 +119,16 @@ export class ConfigFilePermissionError extends ConfigurationError {
   readonly category = ConfigurationErrorCategory.FILE_SYSTEM;
 
   constructor(filePath: string, operation: string, cause?: Error) {
-    super(
-      `Permission denied accessing configuration file: ${filePath}`,
-      cause,
-      { filePath, operation }
-    );
+    super(`Permission denied accessing configuration file: ${filePath}`, cause, {
+      filePath,
+      operation,
+    });
   }
 
   getUserFriendlyMessage(): string {
     const filePath = this.context.filePath as string;
     const operation = this.context.operation as string;
-    
+
     return `Permission denied ${operation} configuration file: ${filePath}
 
 Troubleshooting steps:
@@ -155,11 +152,12 @@ export class ConfigParsingError extends ConfigurationError {
   readonly category = ConfigurationErrorCategory.PARSING;
 
   constructor(filePath: string, parseError: string, line?: number, column?: number, cause?: Error) {
-    super(
-      `Failed to parse configuration file: ${filePath}`,
-      cause,
-      { filePath, parseError, line, column }
-    );
+    super(`Failed to parse configuration file: ${filePath}`, cause, {
+      filePath,
+      parseError,
+      line,
+      column,
+    });
   }
 
   getUserFriendlyMessage(): string {
@@ -206,11 +204,11 @@ export class ConfigValidationError extends ConfigurationError {
 
   constructor(validationErrors: ValidationError[], filePath?: string) {
     const errorCount = validationErrors.length;
-    super(
-      `Configuration validation failed with ${errorCount} error(s)`,
-      undefined,
-      { validationErrors, filePath, errorCount }
-    );
+    super(`Configuration validation failed with ${errorCount} error(s)`, undefined, {
+      validationErrors,
+      filePath,
+      errorCount,
+    });
   }
 
   getUserFriendlyMessage(): string {
@@ -226,15 +224,15 @@ export class ConfigValidationError extends ConfigurationError {
     validationErrors.forEach((error, index) => {
       message += `\n${index + 1}. ${error.message}`;
       message += `\n   Path: ${error.path}`;
-      
+
       if (error.value !== undefined) {
         message += `\n   Current value: ${JSON.stringify(error.value)}`;
       }
-      
+
       if (error.allowedValues && error.allowedValues.length > 0) {
         message += `\n   Allowed values: ${error.allowedValues.join(', ')}`;
       }
-      
+
       message += '\n';
     });
 
@@ -262,11 +260,11 @@ export class ModelReferenceError extends ConfigurationError {
   readonly category = ConfigurationErrorCategory.BUSINESS_LOGIC;
 
   constructor(modelName: string, availableModels: string[], configPath?: string) {
-    super(
-      `Model "${modelName}" not found in Prisma schema`,
-      undefined,
-      { modelName, availableModels, configPath }
-    );
+    super(`Model "${modelName}" not found in Prisma schema`, undefined, {
+      modelName,
+      availableModels,
+      configPath,
+    });
   }
 
   getUserFriendlyMessage(): string {
@@ -275,7 +273,7 @@ export class ModelReferenceError extends ConfigurationError {
     const configPath = this.context.configPath as string;
 
     let message = `Model reference error: "${modelName}" not found in Prisma schema`;
-    
+
     if (configPath) {
       message += `\nConfiguration path: ${configPath}`;
     }
@@ -306,11 +304,7 @@ export class IntegrationError extends ConfigurationError {
   readonly category = ConfigurationErrorCategory.INTEGRATION;
 
   constructor(component: string, issue: string, cause?: Error) {
-    super(
-      `Integration error with ${component}: ${issue}`,
-      cause,
-      { component, issue }
-    );
+    super(`Integration error with ${component}: ${issue}`, cause, { component, issue });
   }
 
   getUserFriendlyMessage(): string {
@@ -344,7 +338,7 @@ export class ConfigurationWarning {
   constructor(
     public readonly message: string,
     public readonly path?: string,
-    public readonly context: Record<string, unknown> = {}
+    public readonly context: Record<string, unknown> = {},
   ) {}
 
   toString(): string {
@@ -357,7 +351,7 @@ export class ConfigurationWarning {
 
   getUserFriendlyMessage(): string {
     let message = `⚠️  ${this.message}`;
-    
+
     if (this.path) {
       message += `\n   Location: ${this.path}`;
     }
@@ -382,20 +376,20 @@ export class ConfigurationErrorHandler {
    */
   handleFileSystemError(error: unknown, filePath: string, operation: string): never {
     const nodeError = error as NodeJS.ErrnoException;
-    
+
     switch (nodeError.code) {
       case 'ENOENT':
         throw new ConfigFileNotFoundError(filePath, nodeError);
-      
+
       case 'EACCES':
       case 'EPERM':
         throw new ConfigFilePermissionError(filePath, operation, nodeError);
-      
+
       default:
         throw new IntegrationError(
           'file system',
           `Failed to ${operation} file: ${nodeError.message}`,
-          nodeError
+          nodeError,
         );
     }
   }
@@ -408,20 +402,14 @@ export class ConfigurationErrorHandler {
       // Try to extract line/column information from JSON syntax error
       const match = error.message.match(/at position (\d+)|line (\d+)|column (\d+)/i);
       const position = match ? parseInt(match[1] || match[2] || match[3], 10) : undefined;
-      
-      throw new ConfigParsingError(
-        filePath,
-        error.message,
-        position,
-        undefined,
-        error
-      );
+
+      throw new ConfigParsingError(filePath, error.message, position, undefined, error);
     }
 
     throw new IntegrationError(
       'parser',
       `Unexpected parsing error: ${(error as Error).message}`,
-      error as Error
+      error as Error,
     );
   }
 
@@ -435,14 +423,22 @@ export class ConfigurationErrorHandler {
   /**
    * Handle model reference errors
    */
-  handleModelReferenceError(modelName: string, availableModels: string[], configPath?: string): never {
+  handleModelReferenceError(
+    modelName: string,
+    availableModels: string[],
+    configPath?: string,
+  ): never {
     throw new ModelReferenceError(modelName, availableModels, configPath);
   }
 
   /**
    * Create warning
    */
-  createWarning(message: string, path?: string, context?: Record<string, unknown>): ConfigurationWarning {
+  createWarning(
+    message: string,
+    path?: string,
+    context?: Record<string, unknown>,
+  ): ConfigurationWarning {
     return new ConfigurationWarning(message, path, { ...this.context, ...context });
   }
 
@@ -459,7 +455,7 @@ export class ConfigurationErrorHandler {
     }
 
     let message = `Multiple configuration errors (${errors.length}):\n\n`;
-    
+
     errors.forEach((error, index) => {
       message += `${index + 1}. ${error.errorCode}: ${error.message}\n`;
       message += `   Category: ${error.category}\n`;
@@ -479,7 +475,7 @@ export class ConfigurationErrorHandler {
     }
 
     let message = `Configuration warnings (${warnings.length}):\n\n`;
-    
+
     warnings.forEach((warning, index) => {
       message += `${index + 1}. ${warning.getUserFriendlyMessage()}\n\n`;
     });
@@ -491,7 +487,9 @@ export class ConfigurationErrorHandler {
 /**
  * Create error handler with context
  */
-export function createErrorHandler(context: Record<string, unknown> = {}): ConfigurationErrorHandler {
+export function createErrorHandler(
+  context: Record<string, unknown> = {},
+): ConfigurationErrorHandler {
   return new ConfigurationErrorHandler(context);
 }
 

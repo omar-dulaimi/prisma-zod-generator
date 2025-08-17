@@ -14,9 +14,9 @@ describe('Variant Input/Result Enum Handling', () => {
         variants: {
           pure: { enabled: false },
           input: { enabled: true },
-          result: { enabled: true }
+          result: { enabled: true },
         },
-        pureModels: false
+        pureModels: false,
       };
       const configPath = join(testEnv.testDir, 'config.json');
       writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -25,8 +25,20 @@ describe('Variant Input/Result Enum Handling', () => {
       writeFileSync(testEnv.schemaPath, schema);
       await testEnv.runGeneration();
 
-      const inputVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'input', 'User.input.ts');
-      const resultVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'result', 'User.result.ts');
+      const inputVariantPath = join(
+        testEnv.outputDir,
+        'schemas',
+        'variants',
+        'input',
+        'User.input.ts',
+      );
+      const resultVariantPath = join(
+        testEnv.outputDir,
+        'schemas',
+        'variants',
+        'result',
+        'User.result.ts',
+      );
 
       expect(existsSync(inputVariantPath)).toBe(true);
       expect(existsSync(resultVariantPath)).toBe(true);
@@ -34,7 +46,8 @@ describe('Variant Input/Result Enum Handling', () => {
       const inputContent = readFileSync(inputVariantPath, 'utf8');
       const resultContent = readFileSync(resultVariantPath, 'utf8');
 
-      const importRegex = /import\s*\{\s*RoleSchema\s*\}\s*from\s*'\.\.\/\.\.\/enums\/Role\.schema'/;
+      const importRegex =
+        /import\s*\{\s*RoleSchema\s*\}\s*from\s*'\.\.\/\.\.\/enums\/Role\.schema'/;
 
       expect(inputContent).toMatch(/role:\s*RoleSchema/);
       expect(resultContent).toMatch(/role:\s*RoleSchema/);

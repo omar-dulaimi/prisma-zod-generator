@@ -1,37 +1,32 @@
 import { GeneratorConfig, ModelConfig, VariantConfig } from './parser';
-import {
-  DEFAULT_CONFIG,
-  GENERATION_MODES,
-  MINIMAL_OPERATIONS,
-  PRISMA_OPERATIONS
-} from './schema';
+import { DEFAULT_CONFIG, GENERATION_MODES, MINIMAL_OPERATIONS, PRISMA_OPERATIONS } from './schema';
 
 /**
  * Deep merge utility for configuration objects
  */
 function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
   const result = { ...target };
-  
+
   for (const key in source) {
     if (source[key] !== undefined) {
       if (
-        typeof source[key] === 'object' && 
-        source[key] !== null && 
+        typeof source[key] === 'object' &&
+        source[key] !== null &&
         !Array.isArray(source[key]) &&
-        typeof target[key] === 'object' && 
-        target[key] !== null && 
+        typeof target[key] === 'object' &&
+        target[key] !== null &&
         !Array.isArray(target[key])
       ) {
         (result as Record<string, unknown>)[key] = deepMerge(
-          target[key] as Record<string, unknown>, 
-          source[key] as Record<string, unknown>
+          target[key] as Record<string, unknown>,
+          source[key] as Record<string, unknown>,
         );
       } else {
         (result as Record<string, unknown>)[key] = source[key];
       }
     }
   }
-  
+
   return result;
 }
 
@@ -46,46 +41,46 @@ export class DefaultConfigurationManager {
     return {
       mode: DEFAULT_CONFIG.mode,
       output: DEFAULT_CONFIG.output,
-  useMultipleFiles: true,
-  singleFileName: 'schemas.ts',
-  strictCreateInputs: true,
-  preserveRequiredScalarsOnCreate: true,
-  inferCreateArgsFromSchemas: false,
+      useMultipleFiles: true,
+      singleFileName: 'schemas.ts',
+      strictCreateInputs: true,
+      preserveRequiredScalarsOnCreate: true,
+      inferCreateArgsFromSchemas: false,
       pureModels: false, // Default to false, can be overridden by user config
-  pureModelsLean: true,
-  pureModelsIncludeRelations: false,
-  dateTimeStrategy: 'date',
-  optionalFieldBehavior: 'nullish',
+      pureModelsLean: true,
+      pureModelsIncludeRelations: false,
+      dateTimeStrategy: 'date',
+      optionalFieldBehavior: 'nullish',
       naming: {
         preset: 'default',
-  // Intentionally leave pureModel overrides empty so presets can supply their own
-  // values without being clobbered by merged defaults. Resolver will apply
-  // fallback defaults when no preset/overrides are provided.
-  pureModel: {}
+        // Intentionally leave pureModel overrides empty so presets can supply their own
+        // values without being clobbered by merged defaults. Resolver will apply
+        // fallback defaults when no preset/overrides are provided.
+        pureModel: {},
       },
       globalExclusions: {
         input: [],
         result: [],
-        pure: []
+        pure: [],
       },
       variants: {
         pure: {
           enabled: DEFAULT_CONFIG.variants.pure.enabled,
           suffix: DEFAULT_CONFIG.variants.pure.suffix,
-          excludeFields: []
+          excludeFields: [],
         },
         input: {
           enabled: DEFAULT_CONFIG.variants.input.enabled,
           suffix: DEFAULT_CONFIG.variants.input.suffix,
-          excludeFields: []
+          excludeFields: [],
         },
         result: {
           enabled: DEFAULT_CONFIG.variants.result.enabled,
           suffix: DEFAULT_CONFIG.variants.result.suffix,
-          excludeFields: []
-        }
+          excludeFields: [],
+        },
       },
-      models: {}
+      models: {},
     };
   }
 
@@ -98,29 +93,29 @@ export class DefaultConfigurationManager {
       ...baseConfig,
       mode: 'minimal',
       pureModels: true, // Enable pure models by default in minimal mode
-  pureModelsLean: true,
-  pureModelsIncludeRelations: false,
+      pureModelsLean: true,
+      pureModelsIncludeRelations: false,
       naming: {
         preset: 'default',
-  pureModel: {}
+        pureModel: {},
       },
       variants: {
         pure: {
           enabled: true,
           suffix: '.model',
-          excludeFields: []
+          excludeFields: [],
         },
         input: {
           enabled: true,
           suffix: '.input',
-          excludeFields: ['id', 'createdAt', 'updatedAt']
+          excludeFields: ['id', 'createdAt', 'updatedAt'],
         },
         result: {
           enabled: false, // Not typically needed in minimal mode
           suffix: '.result',
-          excludeFields: []
-        }
-      }
+          excludeFields: [],
+        },
+      },
     };
   }
 
@@ -131,20 +126,23 @@ export class DefaultConfigurationManager {
     const baseConfig = this.getDefaultConfiguration();
     return {
       ...baseConfig,
-      mode: 'custom'
+      mode: 'custom',
     };
   }
 
   /**
    * Get default variant configuration
    */
-  static getDefaultVariantConfig(variantType: 'pure' | 'input' | 'result', modelFields?: string[]): VariantConfig {
+  static getDefaultVariantConfig(
+    variantType: 'pure' | 'input' | 'result',
+    modelFields?: string[],
+  ): VariantConfig {
     const defaults = DEFAULT_CONFIG.variants[variantType as keyof typeof DEFAULT_CONFIG.variants];
-    
+
     const baseConfig: VariantConfig = {
       enabled: defaults.enabled,
       suffix: defaults.suffix,
-      excludeFields: []
+      excludeFields: [],
     };
 
     // Apply variant-specific defaults
@@ -152,27 +150,27 @@ export class DefaultConfigurationManager {
       case 'input':
         // Only exclude fields that actually exist in the model
         const commonInputExclusions = ['id', 'createdAt', 'updatedAt'];
-        const actualExclusions = modelFields 
-          ? commonInputExclusions.filter(field => modelFields.includes(field))
+        const actualExclusions = modelFields
+          ? commonInputExclusions.filter((field) => modelFields.includes(field))
           : commonInputExclusions;
-        
+
         return {
           ...baseConfig,
-          excludeFields: actualExclusions
+          excludeFields: actualExclusions,
         };
-      
+
       case 'result':
         return {
           ...baseConfig,
-          excludeFields: [] // Usually include all fields in results
+          excludeFields: [], // Usually include all fields in results
         };
-      
+
       case 'pure':
         return {
           ...baseConfig,
-          excludeFields: [] // Pure models typically include all fields
+          excludeFields: [], // Pure models typically include all fields
         };
-      
+
       default:
         return baseConfig;
     }
@@ -181,17 +179,21 @@ export class DefaultConfigurationManager {
   /**
    * Get default model configuration
    */
-  static getDefaultModelConfig(modelName: string, mode: string = 'full', modelFields?: string[]): ModelConfig {
+  static getDefaultModelConfig(
+    modelName: string,
+    mode: string = 'full',
+    modelFields?: string[],
+  ): ModelConfig {
     const operations = mode === 'minimal' ? [...MINIMAL_OPERATIONS] : [...PRISMA_OPERATIONS];
-    
+
     return {
       enabled: true,
       operations,
       variants: {
         pure: this.getDefaultVariantConfig('pure', modelFields),
         input: this.getDefaultVariantConfig('input', modelFields),
-        result: this.getDefaultVariantConfig('result', modelFields)
-      }
+        result: this.getDefaultVariantConfig('result', modelFields),
+      },
     };
   }
 
@@ -201,7 +203,7 @@ export class DefaultConfigurationManager {
   static mergeWithDefaults(userConfig: Partial<GeneratorConfig>): GeneratorConfig {
     // Start with appropriate default based on mode
     let defaultConfig: GeneratorConfig;
-    
+
     switch (userConfig.mode) {
       case 'minimal':
         defaultConfig = this.getMinimalConfiguration();
@@ -217,8 +219,8 @@ export class DefaultConfigurationManager {
 
     // Deep merge user config with defaults
     const mergedConfig = deepMerge(
-      defaultConfig as Record<string, unknown>, 
-      userConfig as Record<string, unknown>
+      defaultConfig as Record<string, unknown>,
+      userConfig as Record<string, unknown>,
     ) as GeneratorConfig;
 
     // Apply mode-specific adjustments
@@ -237,10 +239,10 @@ export class DefaultConfigurationManager {
         if (result.variants?.result && result.variants.result.enabled === undefined) {
           result.variants.result.enabled = false;
         }
-        
+
         // Apply minimal operations to models that don't specify operations
         if (result.models) {
-          Object.keys(result.models).forEach(modelName => {
+          Object.keys(result.models).forEach((modelName) => {
             const modelConfig = result.models?.[modelName];
             if (modelConfig && !modelConfig.operations) {
               modelConfig.operations = [...MINIMAL_OPERATIONS];
@@ -252,7 +254,7 @@ export class DefaultConfigurationManager {
       case 'full':
         // Ensure all variants are enabled by default in full mode
         if (result.variants) {
-          Object.keys(result.variants).forEach(variantName => {
+          Object.keys(result.variants).forEach((variantName) => {
             const variant = result.variants?.[variantName as keyof typeof result.variants];
             if (variant && variant.enabled === undefined) {
               variant.enabled = true;
@@ -273,31 +275,39 @@ export class DefaultConfigurationManager {
    * Fill in missing model configurations with defaults
    */
   static fillMissingModelConfigs(
-    config: GeneratorConfig, 
+    config: GeneratorConfig,
     availableModels: string[],
-    modelFieldInfo?: { [modelName: string]: string[] }
+    modelFieldInfo?: { [modelName: string]: string[] },
   ): GeneratorConfig {
     const result = { ...config };
-    
+
     if (!result.models) {
       result.models = {};
     }
 
     // Add default configuration for models not explicitly configured
-    availableModels.forEach(modelName => {
+    availableModels.forEach((modelName) => {
       const models = result.models;
       if (!models?.[modelName]) {
         if (models) {
-          models[modelName] = this.getDefaultModelConfig(modelName, result.mode, modelFieldInfo?.[modelName]);
+          models[modelName] = this.getDefaultModelConfig(
+            modelName,
+            result.mode,
+            modelFieldInfo?.[modelName],
+          );
         }
       } else {
         // Fill in missing properties for existing model configs
         const modelConfig = models[modelName];
-        const defaultModelConfig = this.getDefaultModelConfig(modelName, result.mode, modelFieldInfo?.[modelName]);
-        
+        const defaultModelConfig = this.getDefaultModelConfig(
+          modelName,
+          result.mode,
+          modelFieldInfo?.[modelName],
+        );
+
         models[modelName] = deepMerge(
-          defaultModelConfig as Record<string, unknown>, 
-          modelConfig as Record<string, unknown>
+          defaultModelConfig as Record<string, unknown>,
+          modelConfig as Record<string, unknown>,
         ) as ModelConfig;
       }
     });
@@ -333,7 +343,7 @@ export class DefaultConfigurationManager {
     }
 
     const variantTypes: Array<'input' | 'result' | 'pure'> = ['input', 'result', 'pure'];
-    variantTypes.forEach(variantType => {
+    variantTypes.forEach((variantType) => {
       const globalExclusions = result.globalExclusions;
       if (globalExclusions && !Array.isArray(globalExclusions[variantType])) {
         globalExclusions[variantType] = [];
@@ -346,7 +356,7 @@ export class DefaultConfigurationManager {
     }
 
     const variants: Array<'pure' | 'input' | 'result'> = ['pure', 'input', 'result'];
-    variants.forEach(variantName => {
+    variants.forEach((variantName) => {
       const variantsConfig = result.variants;
       if (variantsConfig && !variantsConfig[variantName]) {
         variantsConfig[variantName] = this.getDefaultVariantConfig(variantName);
@@ -355,8 +365,8 @@ export class DefaultConfigurationManager {
         if (variant) {
           const defaultVariant = this.getDefaultVariantConfig(variantName);
           variantsConfig[variantName] = deepMerge(
-            defaultVariant as Record<string, unknown>, 
-            variant as Record<string, unknown>
+            defaultVariant as Record<string, unknown>,
+            variant as Record<string, unknown>,
           ) as VariantConfig;
         }
       }
@@ -366,7 +376,7 @@ export class DefaultConfigurationManager {
     if (!result.models) {
       result.models = {};
     }
-    
+
     // Normalize file options
     if (typeof result.useMultipleFiles !== 'boolean') {
       result.useMultipleFiles = true;
@@ -393,26 +403,26 @@ export class DefaultConfigurationManager {
           globalExclusions: {
             input: ['id', 'createdAt', 'updatedAt'],
             result: [],
-            pure: ['password', 'hashedPassword']
+            pure: ['password', 'hashedPassword'],
           },
           variants: {
             pure: {
               enabled: true,
               suffix: '.model',
-              excludeFields: []
+              excludeFields: [],
             },
             input: {
               enabled: true,
               suffix: '.input',
-              excludeFields: []
+              excludeFields: [],
             },
             result: {
               enabled: true,
               suffix: '.output',
-              excludeFields: []
-            }
+              excludeFields: [],
+            },
           },
-          models: {}
+          models: {},
         };
 
       case 'api-validation':
@@ -422,26 +432,26 @@ export class DefaultConfigurationManager {
           globalExclusions: {
             input: ['id', 'createdAt', 'updatedAt'],
             result: [],
-            pure: []
+            pure: [],
           },
           variants: {
             pure: {
               enabled: false,
               suffix: '.model',
-              excludeFields: []
+              excludeFields: [],
             },
             input: {
               enabled: true,
               suffix: '.request',
-              excludeFields: []
+              excludeFields: [],
             },
             result: {
               enabled: true,
               suffix: '.response',
-              excludeFields: []
-            }
+              excludeFields: [],
+            },
           },
-          models: {}
+          models: {},
         };
 
       case 'full-featured':
@@ -453,20 +463,20 @@ export class DefaultConfigurationManager {
             pure: {
               enabled: true,
               suffix: '.model',
-              excludeFields: []
+              excludeFields: [],
             },
             input: {
               enabled: true,
               suffix: '.input',
-              excludeFields: ['id', 'createdAt', 'updatedAt']
+              excludeFields: ['id', 'createdAt', 'updatedAt'],
             },
             result: {
               enabled: true,
               suffix: '.result',
-              excludeFields: []
-            }
+              excludeFields: [],
+            },
           },
-          models: {}
+          models: {},
         };
 
       default:
@@ -482,23 +492,23 @@ export class DefaultConfigurationManager {
       {
         name: 'minimal',
         description: 'Basic CRUD operations only, minimal file output',
-        useCase: 'Simple applications that only need basic database operations'
+        useCase: 'Simple applications that only need basic database operations',
       },
       {
         name: 'trpc',
         description: 'Optimized for tRPC usage with input/output variants',
-        useCase: 'Full-stack applications using tRPC for type-safe APIs'
+        useCase: 'Full-stack applications using tRPC for type-safe APIs',
       },
       {
-        name: 'api-validation', 
+        name: 'api-validation',
         description: 'Request/response validation for REST APIs',
-        useCase: 'REST API applications needing request/response validation'
+        useCase: 'REST API applications needing request/response validation',
       },
       {
         name: 'full-featured',
         description: 'Complete schema generation with all features enabled',
-        useCase: 'Complex applications needing comprehensive schema coverage'
-      }
+        useCase: 'Complex applications needing comprehensive schema coverage',
+      },
     ];
   }
 }
@@ -546,11 +556,15 @@ export function mergeWithDefaults(userConfig: Partial<GeneratorConfig>): Generat
  * Fill missing model configurations
  */
 export function fillMissingModelConfigs(
-  config: GeneratorConfig, 
+  config: GeneratorConfig,
   availableModels: string[],
-  modelFieldInfo?: { [modelName: string]: string[] }
+  modelFieldInfo?: { [modelName: string]: string[] },
 ): GeneratorConfig {
-  return DefaultConfigurationManager.fillMissingModelConfigs(config, availableModels, modelFieldInfo);
+  return DefaultConfigurationManager.fillMissingModelConfigs(
+    config,
+    availableModels,
+    modelFieldInfo,
+  );
 }
 
 /**
@@ -576,25 +590,25 @@ export function getAvailablePresets(): ConfigurationPresetInfo[] {
 
 /**
  * Process and finalize configuration
- * 
+ *
  * This is the main function that should be used to process configuration
  * from parsing through defaults application and normalization.
  */
 export function processConfiguration(
   userConfig: Partial<GeneratorConfig>,
   availableModels?: string[],
-  modelFieldInfo?: { [modelName: string]: string[] }
+  modelFieldInfo?: { [modelName: string]: string[] },
 ): GeneratorConfig {
   // 1. Merge with defaults
   let config = mergeWithDefaults(userConfig);
-  
+
   // 2. Normalize the configuration
   config = normalizeConfiguration(config);
-  
+
   // 3. Fill in missing model configurations if models are provided
   if (availableModels && availableModels.length > 0) {
     config = fillMissingModelConfigs(config, availableModels, modelFieldInfo);
   }
-  
+
   return config;
 }

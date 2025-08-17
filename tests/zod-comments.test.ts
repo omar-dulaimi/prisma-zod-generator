@@ -1,62 +1,67 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { 
-  TestEnvironment, 
-  ConfigGenerator, 
+import {
+  TestEnvironment,
+  ConfigGenerator,
   PrismaSchemaGenerator,
   SchemaValidationUtils,
-  GENERATION_TIMEOUT 
+  GENERATION_TIMEOUT,
 } from './helpers';
 
 describe('Inline @zod Comments Tests', () => {
   describe('@zod Comment Parsing', () => {
-    it('should parse basic @zod validation annotations', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-basic');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const schema = PrismaSchemaGenerator.createSchemaWithZodComments();
+    it(
+      'should parse basic @zod validation annotations',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-basic');
 
-        const configPath = join(testEnv.testDir, 'config.json');
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const schema = PrismaSchemaGenerator.createSchemaWithZodComments();
 
-        await testEnv.runGeneration();
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          await testEnv.runGeneration();
 
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          
-          // Should contain email validation from @zod.email()
-          expect(content).toMatch(/\.email\(\)/);
-          
-          // Should contain string length validation from @zod.min(2).max(50)
-          expect(content).toMatch(/\.min\(2\)/);
-          expect(content).toMatch(/\.max\(50\)/);
-          
-          // Should contain age validation from @zod.min(0).max(120)
-          expect(content).toMatch(/\.min\(0\)/);
-          expect(content).toMatch(/\.max\(120\)/);
-          
-          // Should contain regex validation from @zod.regex(/^[a-zA-Z0-9_]+$/)
-          expect(content).toMatch(/\.regex\(/);
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+
+            // Should contain email validation from @zod.email()
+            expect(content).toMatch(/\.email\(\)/);
+
+            // Should contain string length validation from @zod.min(2).max(50)
+            expect(content).toMatch(/\.min\(2\)/);
+            expect(content).toMatch(/\.max\(50\)/);
+
+            // Should contain age validation from @zod.min(0).max(120)
+            expect(content).toMatch(/\.min\(0\)/);
+            expect(content).toMatch(/\.max\(120\)/);
+
+            // Should contain regex validation from @zod.regex(/^[a-zA-Z0-9_]+$/)
+            expect(content).toMatch(/\.regex\(/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle multiple @zod annotations per field',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-multiple');
 
-    it('should handle multiple @zod annotations per field', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-multiple');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -80,47 +85,50 @@ model User {
   website  String? /// @zod.url().optional()
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          
-          // Email field: @zod.email().toLowerCase()
-          expect(content).toMatch(/\.email\(\)/);
-          expect(content).toMatch(/\.toLowerCase\(\)/);
-          
-          // Password field: @zod.min(8).max(100).regex(...)
-          expect(content).toMatch(/\.min\(8\)/);
-          expect(content).toMatch(/\.max\(100\)/);
-          expect(content).toMatch(/\.regex\(/);
-          
-          // Name field: @zod.min(1).max(50).trim()
-          expect(content).toMatch(/\.min\(1\)/);
-          expect(content).toMatch(/\.max\(50\)/);
-          expect(content).toMatch(/\.trim\(\)/);
-          
-          // Website field: @zod.url().optional()
-          expect(content).toMatch(/\.url\(\)/);
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+
+            // Email field: @zod.email().toLowerCase()
+            expect(content).toMatch(/\.email\(\)/);
+            expect(content).toMatch(/\.toLowerCase\(\)/);
+
+            // Password field: @zod.min(8).max(100).regex(...)
+            expect(content).toMatch(/\.min\(8\)/);
+            expect(content).toMatch(/\.max\(100\)/);
+            expect(content).toMatch(/\.regex\(/);
+
+            // Name field: @zod.min(1).max(50).trim()
+            expect(content).toMatch(/\.min\(1\)/);
+            expect(content).toMatch(/\.max\(50\)/);
+            expect(content).toMatch(/\.trim\(\)/);
+
+            // Website field: @zod.url().optional()
+            expect(content).toMatch(/\.url\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle @zod annotations with parameters',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-parameters');
 
-    it('should handle @zod annotations with parameters', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-parameters');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -145,40 +153,43 @@ model Product {
   weight      Float?  /// @zod.positive().multipleOf(0.01, "Weight precision error")
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const productCreatePath = join(objectsDir, 'ProductCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const productCreatePath = join(objectsDir, 'ProductCreateInput.schema.ts');
 
-        if (existsSync(productCreatePath)) {
-          const content = readFileSync(productCreatePath, 'utf-8');
-          
-          // Should contain validation with custom error messages
-          expect(content).toMatch(/\.min\(1,\s*'Name is required'\)/);
-          expect(content).toMatch(/\.max\(100,\s*'Name too long'\)/);
-          expect(content).toMatch(/\.positive\('Price must be positive'\)/);
-          expect(content).toMatch(/\.max\(999999\.99\)/);
-          expect(content).toMatch(/\.multipleOf\(0\.01,\s*'Weight precision error'\)/);
-          
-          // Should handle regex with parameters
-          expect(content).toContain('.regex(/^[A-Z0-9-]+$/, \'Invalid SKU format\')');
+          if (existsSync(productCreatePath)) {
+            const content = readFileSync(productCreatePath, 'utf-8');
+
+            // Should contain validation with custom error messages
+            expect(content).toMatch(/\.min\(1,\s*'Name is required'\)/);
+            expect(content).toMatch(/\.max\(100,\s*'Name too long'\)/);
+            expect(content).toMatch(/\.positive\('Price must be positive'\)/);
+            expect(content).toMatch(/\.max\(999999\.99\)/);
+            expect(content).toMatch(/\.multipleOf\(0\.01,\s*'Weight precision error'\)/);
+
+            // Should handle regex with parameters
+            expect(content).toContain(".regex(/^[A-Z0-9-]+$/, 'Invalid SKU format')");
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should parse @zod annotations from multi-line comments',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-multiline');
 
-    it('should parse @zod annotations from multi-line comments', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-multiline');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -215,42 +226,45 @@ model User {
   phone String?
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          
-          // Should parse from multi-line block comments
-          expect(content).toMatch(/\.email\(\)/);
-          expect(content).toMatch(/\.toLowerCase\(\)/);
-          expect(content).toMatch(/\.min\(2\)/);
-          expect(content).toMatch(/\.max\(50\)/);
-          expect(content).toMatch(/\.trim\(\)/);
-          
-          // Should parse from single-line comments
-          expect(content).toMatch(/\.regex\(/);
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+
+            // Should parse from multi-line block comments
+            expect(content).toMatch(/\.email\(\)/);
+            expect(content).toMatch(/\.toLowerCase\(\)/);
+            expect(content).toMatch(/\.min\(2\)/);
+            expect(content).toMatch(/\.max\(50\)/);
+            expect(content).toMatch(/\.trim\(\)/);
+
+            // Should parse from single-line comments
+            expect(content).toMatch(/\.regex\(/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 
   describe('@zod Validation Application', () => {
-    it('should apply validations to correct field types', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-validation-field-types');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+    it(
+      'should apply validations to correct field types',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-validation-field-types');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -276,53 +290,56 @@ model TestTypes {
   jsonField   Json?    /// @zod.object()
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const testTypesCreatePath = join(objectsDir, 'TestTypesCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const testTypesCreatePath = join(objectsDir, 'TestTypesCreateInput.schema.ts');
 
-        if (existsSync(testTypesCreatePath)) {
-          const content = readFileSync(testTypesCreatePath, 'utf-8');
-          
-          // String field validations
-          expect(content).toMatch(/stringField.*\.min\(1\)/);
-          expect(content).toMatch(/stringField.*\.max\(100\)/);
-          
-          // Int field validations
-          expect(content).toMatch(/intField.*\.min\(0\)/);
-          expect(content).toMatch(/intField.*\.max\(1000\)/);
-          
-          // Float field validations
-          expect(content).toMatch(/floatField.*\.positive\(\)/);
-          
-          // Boolean field validations
-          expect(content).toMatch(/boolField.*\.default\(false\)/);
-          
-          // Date field validations
-          expect(content).toMatch(/dateField.*\.min\(/);
-          
-          // JSON field validations
-          expect(content).toMatch(/jsonField.*\.object\(\)/);
+          if (existsSync(testTypesCreatePath)) {
+            const content = readFileSync(testTypesCreatePath, 'utf-8');
+
+            // String field validations
+            expect(content).toMatch(/stringField.*\.min\(1\)/);
+            expect(content).toMatch(/stringField.*\.max\(100\)/);
+
+            // Int field validations
+            expect(content).toMatch(/intField.*\.min\(0\)/);
+            expect(content).toMatch(/intField.*\.max\(1000\)/);
+
+            // Float field validations
+            expect(content).toMatch(/floatField.*\.positive\(\)/);
+
+            // Boolean field validations
+            expect(content).toMatch(/boolField.*\.default\(false\)/);
+
+            // Date field validations
+            expect(content).toMatch(/dateField.*\.min\(/);
+
+            // JSON field validations
+            expect(content).toMatch(/jsonField.*\.object\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle optional fields with @zod annotations',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-validation-optional-fields');
 
-    it('should handle optional fields with @zod annotations', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-validation-optional-fields');
-      
-      try {
-        const config = {
-          ...ConfigGenerator.createBasicConfig(),
-          optionalFieldBehavior: 'optional'
-        };
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            optionalFieldBehavior: 'optional',
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -347,45 +364,48 @@ model User {
   phone     String? /// @zod.regex(/^\\+?[1-9]\\d{1,14}$/).optional()
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          
-          // Required field should not have .optional()
-          expect(content).toMatch(/email.*\.email\(\)/);
-          expect(content).not.toMatch(/email.*\.optional\(\)/);
-          
-          // Optional fields should handle validation correctly
-          expect(content).toMatch(/name.*\.min\(2\)/);
-          expect(content).toMatch(/name.*\.max\(50\)/);
-          expect(content).toMatch(/bio.*\.max\(1000\)/);
-          expect(content).toMatch(/website.*\.url\(\)/);
-          expect(content).toMatch(/phone[\s\S]*?\.regex\(/);
-          
-          // Optional fields should maintain optionality
-          expect(content).toMatch(/name.*optional|\.optional\(\)/);
-          expect(content).toMatch(/bio.*optional|\.optional\(\)/);
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+
+            // Required field should not have .optional()
+            expect(content).toMatch(/email.*\.email\(\)/);
+            expect(content).not.toMatch(/email.*\.optional\(\)/);
+
+            // Optional fields should handle validation correctly
+            expect(content).toMatch(/name.*\.min\(2\)/);
+            expect(content).toMatch(/name.*\.max\(50\)/);
+            expect(content).toMatch(/bio.*\.max\(1000\)/);
+            expect(content).toMatch(/website.*\.url\(\)/);
+            expect(content).toMatch(/phone[\s\S]*?\.regex\(/);
+
+            // Optional fields should maintain optionality
+            expect(content).toMatch(/name.*optional|\.optional\(\)/);
+            expect(content).toMatch(/bio.*optional|\.optional\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle @zod annotations with default values',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-validation-defaults');
 
-    it('should handle @zod annotations with default values', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-validation-defaults');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -409,47 +429,50 @@ model Settings {
   timeout     Float   @default(30.0) /// @zod.positive().default(30.0)
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const settingsCreatePath = join(objectsDir, 'SettingsCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const settingsCreatePath = join(objectsDir, 'SettingsCreateInput.schema.ts');
 
-        if (existsSync(settingsCreatePath)) {
-          const content = readFileSync(settingsCreatePath, 'utf-8');
-          
-          // Should handle enum validation
-          expect(content).toMatch(/theme.*\.enum\(\['light',\s*'dark'\]\)/);
-          
-          // Should handle boolean defaults
-          expect(content).toMatch(/notifications.*\.default\(true\)/);
-          
-          // Should handle integer with range and default
-          expect(content).toMatch(/maxItems.*\.min\(1\)/);
-          expect(content).toMatch(/maxItems.*\.max\(100\)/);
-          expect(content).toMatch(/maxItems.*\.default\(10\)/);
-          
-          // Should handle float with validation and default
-          expect(content).toMatch(/timeout.*\.positive\(\)/);
-          expect(content).toMatch(/timeout.*\.default\(30\)/);
+          if (existsSync(settingsCreatePath)) {
+            const content = readFileSync(settingsCreatePath, 'utf-8');
+
+            // Should handle enum validation
+            expect(content).toMatch(/theme.*\.enum\(\['light',\s*'dark'\]\)/);
+
+            // Should handle boolean defaults
+            expect(content).toMatch(/notifications.*\.default\(true\)/);
+
+            // Should handle integer with range and default
+            expect(content).toMatch(/maxItems.*\.min\(1\)/);
+            expect(content).toMatch(/maxItems.*\.max\(100\)/);
+            expect(content).toMatch(/maxItems.*\.default\(10\)/);
+
+            // Should handle float with validation and default
+            expect(content).toMatch(/timeout.*\.positive\(\)/);
+            expect(content).toMatch(/timeout.*\.default\(30\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 
   describe('@zod Integration with Existing Comment Processing', () => {
-    it('should preserve existing JSDoc while adding @zod validations', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-jsdoc-integration');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+    it(
+      'should preserve existing JSDoc while adding @zod validations',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-jsdoc-integration');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -487,43 +510,46 @@ model User {
   bio   String?
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          
-          // Should have @zod validations applied
-          expect(content).toMatch(/\.email\(\)/);
-          expect(content).toMatch(/\.min\(2\)/);
-          expect(content).toMatch(/\.max\(50\)/);
-          expect(content).toMatch(/\.max\(1000\)/);
-          
-          // Should preserve JSDoc comments as schema descriptions
-          if (content.includes('/**')) {
-            expect(content).toMatch(/The user's email address|email address/);
-            expect(content).toMatch(/Display name|name/);
-            expect(content).toMatch(/profile description|description/);
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+
+            // Should have @zod validations applied
+            expect(content).toMatch(/\.email\(\)/);
+            expect(content).toMatch(/\.min\(2\)/);
+            expect(content).toMatch(/\.max\(50\)/);
+            expect(content).toMatch(/\.max\(1000\)/);
+
+            // Should preserve JSDoc comments as schema descriptions
+            if (content.includes('/**')) {
+              expect(content).toMatch(/The user's email address|email address/);
+              expect(content).toMatch(/Display name|name/);
+              expect(content).toMatch(/profile description|description/);
+            }
           }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle @zod annotations alongside other Prisma comments',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-prisma-integration');
 
-    it('should handle @zod annotations alongside other Prisma comments', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-prisma-integration');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -555,39 +581,42 @@ model User {
   oldBio String?
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          
-          // Should apply @zod validations regardless of other annotations
-          expect(content).toMatch(/\.email\(\)/);
-          expect(content).toMatch(/\.toLowerCase\(\)/);
-          expect(content).toMatch(/\.min\(1\)/);
-          expect(content).toMatch(/\.max\(100\)/);
-          expect(content).toMatch(/\.max\(500\)/);
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+
+            // Should apply @zod validations regardless of other annotations
+            expect(content).toMatch(/\.email\(\)/);
+            expect(content).toMatch(/\.toLowerCase\(\)/);
+            expect(content).toMatch(/\.min\(1\)/);
+            expect(content).toMatch(/\.max\(100\)/);
+            expect(content).toMatch(/\.max\(500\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 
   describe('@zod Error Handling', () => {
-    it('should handle invalid @zod syntax gracefully', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-invalid-syntax');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+    it(
+      'should handle invalid @zod syntax gracefully',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-invalid-syntax');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -619,38 +648,41 @@ model User {
   email  String @unique
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        // Should not throw error for invalid @zod syntax
-        await testEnv.runGeneration();
+          // Should not throw error for invalid @zod syntax
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          
-          // Should still generate schema with valid annotations
-          expect(content).toMatch(/email.*\.email\(\)/);
-          
-          // Should not include invalid syntax
-          expect(content).not.toMatch(/\.invalidMethod\(\)/);
-          expect(content).not.toMatch(/\.min\(\s*\)/); // Empty min
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+
+            // Should still generate schema with valid annotations
+            expect(content).toMatch(/email.*\.email\(\)/);
+
+            // Should not include invalid syntax
+            expect(content).not.toMatch(/\.invalidMethod\(\)/);
+            expect(content).not.toMatch(/\.min\(\s*\)/); // Empty min
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle @zod annotations on incompatible field types',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-incompatible-types');
 
-    it('should handle @zod annotations on incompatible field types', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-incompatible-types');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -685,44 +717,47 @@ model User {
   points   Int
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          
-          // Should apply valid type-compatible validations
-          expect(content).toMatch(/email.*\.email\(\)/);
-          expect(content).toMatch(/age.*\.positive\(\)/);
-          
-          // Should not apply incompatible validations
-          expect(content).not.toMatch(/isActive.*\.email\(\)/);
-          expect(content).not.toMatch(/isAdmin.*\.min\(/);
-          expect(content).not.toMatch(/points.*\.url\(\)/);
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+
+            // Should apply valid type-compatible validations
+            expect(content).toMatch(/email.*\.email\(\)/);
+            expect(content).toMatch(/age.*\.positive\(\)/);
+
+            // Should not apply incompatible validations
+            expect(content).not.toMatch(/isActive.*\.email\(\)/);
+            expect(content).not.toMatch(/isAdmin.*\.min\(/);
+            expect(content).not.toMatch(/points.*\.url\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 
   describe('@zod Complex Validation Scenarios', () => {
-    it('should handle complex regex patterns in @zod annotations', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-complex-regex');
-      
-      try {
-        const config = {
-          ...ConfigGenerator.createBasicConfig(),
-          optionalFieldBehavior: 'optional'
-        };
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+    it(
+      'should handle complex regex patterns in @zod annotations',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-complex-regex');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            optionalFieldBehavior: 'optional',
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -757,40 +792,43 @@ model Validation {
   website      String?
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const validationCreatePath = join(objectsDir, 'ValidationCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const validationCreatePath = join(objectsDir, 'ValidationCreateInput.schema.ts');
 
-        if (existsSync(validationCreatePath)) {
-          const content = readFileSync(validationCreatePath, 'utf-8');
-          
-          // Should contain all regex patterns
-          expect(content).toMatch(/email[\s\S]*?\.regex\(/);
-          expect(content).toMatch(/password[\s\S]*?\.regex\(/);
-          expect(content).toMatch(/phone[\s\S]*?\.regex\(/);
-          expect(content).toMatch(/productCode[\s\S]*?\.regex\(/);
-          expect(content).toMatch(/website[\s\S]*?optional/);
-          
-          // Should include custom error message
-          expect(content).toMatch(/'Invalid product code format'/);
+          if (existsSync(validationCreatePath)) {
+            const content = readFileSync(validationCreatePath, 'utf-8');
+
+            // Should contain all regex patterns
+            expect(content).toMatch(/email[\s\S]*?\.regex\(/);
+            expect(content).toMatch(/password[\s\S]*?\.regex\(/);
+            expect(content).toMatch(/phone[\s\S]*?\.regex\(/);
+            expect(content).toMatch(/productCode[\s\S]*?\.regex\(/);
+            expect(content).toMatch(/website[\s\S]*?optional/);
+
+            // Should include custom error message
+            expect(content).toMatch(/'Invalid product code format'/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle conditional and transform validations',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-transforms');
 
-    it('should handle conditional and transform validations', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-transforms');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -825,44 +863,47 @@ model User {
   tags      String
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          
-          // Should handle chained transformations
-          expect(content).toMatch(/\.email\(\)/);
-          expect(content).toMatch(/\.toLowerCase\(\)/);
-          expect(content).toMatch(/\.trim\(\)/);
-          
-          // Should handle transform functions
-          expect(content).toMatch(/\.transform\(/);
-          
-          // Should handle datetime/transform validation
-          expect(content).toMatch(/joinedAt[\s\S]*?\.transform\(/);
-          
-          // Should handle array validation
-          expect(content).toMatch(/\.array\(/);
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+
+            // Should handle chained transformations
+            expect(content).toMatch(/\.email\(\)/);
+            expect(content).toMatch(/\.toLowerCase\(\)/);
+            expect(content).toMatch(/\.trim\(\)/);
+
+            // Should handle transform functions
+            expect(content).toMatch(/\.transform\(/);
+
+            // Should handle datetime/transform validation
+            expect(content).toMatch(/joinedAt[\s\S]*?\.transform\(/);
+
+            // Should handle array validation
+            expect(content).toMatch(/\.array\(/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle @zod annotations across different schema types',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-schema-types');
 
-    it('should handle @zod annotations across different schema types', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('zod-comments-schema-types');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -897,60 +938,63 @@ model Post {
   authorId Int
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
 
-        // Check User create input
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
-        if (existsSync(userCreatePath)) {
-          SchemaValidationUtils.expectSchemaContent(userCreatePath, {
-            hasValidations: ['.email()', '.min(2)', '.max(50)']
-          });
+          // Check User create input
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          if (existsSync(userCreatePath)) {
+            SchemaValidationUtils.expectSchemaContent(userCreatePath, {
+              hasValidations: ['.email()', '.min(2)', '.max(50)'],
+            });
+          }
+
+          // Check User where input
+          const userWherePath = join(objectsDir, 'UserWhereInput.schema.ts');
+          if (existsSync(userWherePath)) {
+            const content = readFileSync(userWherePath, 'utf-8');
+            expect(content).toMatch(/email[\s\S]*?\.email\(\)/);
+          }
+
+          // Check Post create input
+          const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
+          if (existsSync(postCreatePath)) {
+            SchemaValidationUtils.expectSchemaContent(postCreatePath, {
+              hasValidations: ['.min(1)', '.max(200)', '.min(10)'],
+            });
+          }
+
+          // Check Update inputs
+          const userUpdatePath = join(objectsDir, 'UserUpdateInput.schema.ts');
+          if (existsSync(userUpdatePath)) {
+            const content = readFileSync(userUpdatePath, 'utf-8');
+            expect(content).toMatch(/email[\s\S]*?\.email\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
-
-        // Check User where input
-        const userWherePath = join(objectsDir, 'UserWhereInput.schema.ts');
-        if (existsSync(userWherePath)) {
-          const content = readFileSync(userWherePath, 'utf-8');
-          expect(content).toMatch(/email[\s\S]*?\.email\(\)/);
-        }
-
-        // Check Post create input
-        const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
-        if (existsSync(postCreatePath)) {
-          SchemaValidationUtils.expectSchemaContent(postCreatePath, {
-            hasValidations: ['.min(1)', '.max(200)', '.min(10)']
-          });
-        }
-
-        // Check Update inputs
-        const userUpdatePath = join(objectsDir, 'UserUpdateInput.schema.ts');
-        if (existsSync(userUpdatePath)) {
-          const content = readFileSync(userUpdatePath, 'utf-8');
-          expect(content).toMatch(/email[\s\S]*?\.email\(\)/);
-        }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 
   describe('Native Type Max Length Validation', () => {
-    it('should extract max length from @db.VarChar and apply to Zod schema', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('native-varchar-basic');
-      
-      try {
-        const config = {
-          ...ConfigGenerator.createBasicConfig(),
-          optionalFieldBehavior: 'optional'
-        };
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+    it(
+      'should extract max length from @db.VarChar and apply to Zod schema',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('native-varchar-basic');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            optionalFieldBehavior: 'optional',
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -975,44 +1019,47 @@ model VarCharTest {
   requiredField String  @db.VarChar(100)
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const testCreatePath = join(objectsDir, 'VarCharTestCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const testCreatePath = join(objectsDir, 'VarCharTestCreateInput.schema.ts');
 
-        if (existsSync(testCreatePath)) {
-          const content = readFileSync(testCreatePath, 'utf-8');
-          
-          // Should apply max length from VarChar native types
-          expect(content).toMatch(/shortField.*\.max\(10\)/);
-          expect(content).toMatch(/mediumField.*\.max\(255\)/);
-          expect(content).toMatch(/longField.*\.max\(1000\)/);
-          expect(content).toMatch(/charField.*\.max\(50\)/);
-          expect(content).toMatch(/requiredField.*\.max\(100\)/);
-          
-          // Optional fields should maintain optionality
-          expect(content).toMatch(/shortField.*\.optional\(\)/);
-          expect(content).toMatch(/mediumField.*\.optional\(\)/);
-          
-          // Required fields should not have optional
-          expect(content).not.toMatch(/requiredField.*\.optional\(\)/);
+          if (existsSync(testCreatePath)) {
+            const content = readFileSync(testCreatePath, 'utf-8');
+
+            // Should apply max length from VarChar native types
+            expect(content).toMatch(/shortField.*\.max\(10\)/);
+            expect(content).toMatch(/mediumField.*\.max\(255\)/);
+            expect(content).toMatch(/longField.*\.max\(1000\)/);
+            expect(content).toMatch(/charField.*\.max\(50\)/);
+            expect(content).toMatch(/requiredField.*\.max\(100\)/);
+
+            // Optional fields should maintain optionality
+            expect(content).toMatch(/shortField.*\.optional\(\)/);
+            expect(content).toMatch(/mediumField.*\.optional\(\)/);
+
+            // Required fields should not have optional
+            expect(content).not.toMatch(/requiredField.*\.optional\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle conflicts between native types and @zod.max - prefer more restrictive',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('native-varchar-conflicts');
 
-    it('should handle conflicts between native types and @zod.max - prefer more restrictive', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('native-varchar-conflicts');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -1038,51 +1085,54 @@ model ConflictTest {
   noConstraints    String?
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const testCreatePath = join(objectsDir, 'ConflictTestCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const testCreatePath = join(objectsDir, 'ConflictTestCreateInput.schema.ts');
 
-        if (existsSync(testCreatePath)) {
-          const content = readFileSync(testCreatePath, 'utf-8');
-          
-          // Native type should win when more restrictive
-          expect(content).toMatch(/nativeWins.*\.max\(50\)/);
-          expect(content).not.toMatch(/nativeWins.*\.max\(100\)/);
-          
-          // Zod constraint should win when more restrictive
-          expect(content).toMatch(/zodWins.*\.max\(150\)/);
-          expect(content).not.toMatch(/zodWins.*\.max\(200\)/);
-          
-          // Equal constraints should preserve existing @zod
-          expect(content).toMatch(/equalConstraints.*\.max\(75\)/);
-          
-          // Only native constraint should be applied
-          expect(content).toMatch(/onlyNative.*\.max\(300\)/);
-          
-          // Only @zod constraint should be preserved
-          expect(content).toMatch(/onlyZod.*\.max\(400\)/);
-          
-          // No constraints should remain unchanged
-          expect(content).toMatch(/noConstraints.*z\.string\(\)/);
-          expect(content).not.toMatch(/noConstraints.*\.max\(/);
+          if (existsSync(testCreatePath)) {
+            const content = readFileSync(testCreatePath, 'utf-8');
+
+            // Native type should win when more restrictive
+            expect(content).toMatch(/nativeWins.*\.max\(50\)/);
+            expect(content).not.toMatch(/nativeWins.*\.max\(100\)/);
+
+            // Zod constraint should win when more restrictive
+            expect(content).toMatch(/zodWins.*\.max\(150\)/);
+            expect(content).not.toMatch(/zodWins.*\.max\(200\)/);
+
+            // Equal constraints should preserve existing @zod
+            expect(content).toMatch(/equalConstraints.*\.max\(75\)/);
+
+            // Only native constraint should be applied
+            expect(content).toMatch(/onlyNative.*\.max\(300\)/);
+
+            // Only @zod constraint should be preserved
+            expect(content).toMatch(/onlyZod.*\.max\(400\)/);
+
+            // No constraints should remain unchanged
+            expect(content).toMatch(/noConstraints.*z\.string\(\)/);
+            expect(content).not.toMatch(/noConstraints.*\.max\(/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should support various native string types across database providers',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('native-varchar-providers');
 
-    it('should support various native string types across database providers', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('native-varchar-providers');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -1109,44 +1159,47 @@ model ProviderTest {
   dateField    DateTime?
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const testCreatePath = join(objectsDir, 'ProviderTestCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const testCreatePath = join(objectsDir, 'ProviderTestCreateInput.schema.ts');
 
-        if (existsSync(testCreatePath)) {
-          const content = readFileSync(testCreatePath, 'utf-8');
-          
-          // Should apply max length for supported native types
-          expect(content).toMatch(/varcharField.*\.max\(100\)/);
-          expect(content).toMatch(/charField.*\.max\(20\)/);
-          expect(content).toMatch(/nvarcharField.*\.max\(150\)/);
-          expect(content).toMatch(/ncharField.*\.max\(30\)/);
-          
-          // Text field without length should not have max constraint
-          expect(content).not.toMatch(/textField.*\.max\(/);
-          
-          // Non-string fields should be unaffected
-          expect(content).toMatch(/intField.*z\.number\(\)\.int\(\)/);
-          expect(content).not.toMatch(/intField.*\.max\(/);
-          expect(content).not.toMatch(/dateField.*\.max\(/);
+          if (existsSync(testCreatePath)) {
+            const content = readFileSync(testCreatePath, 'utf-8');
+
+            // Should apply max length for supported native types
+            expect(content).toMatch(/varcharField.*\.max\(100\)/);
+            expect(content).toMatch(/charField.*\.max\(20\)/);
+            expect(content).toMatch(/nvarcharField.*\.max\(150\)/);
+            expect(content).toMatch(/ncharField.*\.max\(30\)/);
+
+            // Text field without length should not have max constraint
+            expect(content).not.toMatch(/textField.*\.max\(/);
+
+            // Non-string fields should be unaffected
+            expect(content).toMatch(/intField.*z\.number\(\)\.int\(\)/);
+            expect(content).not.toMatch(/intField.*\.max\(/);
+            expect(content).not.toMatch(/dateField.*\.max\(/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle array fields with native type constraints',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('native-varchar-arrays');
 
-    it('should handle array fields with native type constraints', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('native-varchar-arrays');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -1170,44 +1223,47 @@ model ArrayTest {
   mixedArray       String[]  @db.VarChar(200) /// @zod.min(1).max(10)
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const testCreatePath = join(objectsDir, 'ArrayTestCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const testCreatePath = join(objectsDir, 'ArrayTestCreateInput.schema.ts');
 
-        if (existsSync(testCreatePath)) {
-          const content = readFileSync(testCreatePath, 'utf-8');
-          
-          // Regular array should not have max constraint on elements
-          expect(content).toMatch(/regularArray.*z\.string\(\)\.array\(\)/);
-          expect(content).not.toMatch(/regularArray.*\.max\(/);
-          
-          // VarChar array should apply max length to array elements
-          expect(content).toMatch(/varcharArray.*\.max\(100\)\.array\(\)/);
-          expect(content).toMatch(/charArray.*\.max\(50\)\.array\(\)/);
-          
-          // Mixed constraints should work together - arrays use lazy loading
-          expect(content).toMatch(/mixedArray.*\.array\(\)/);
+          if (existsSync(testCreatePath)) {
+            const content = readFileSync(testCreatePath, 'utf-8');
+
+            // Regular array should not have max constraint on elements
+            expect(content).toMatch(/regularArray.*z\.string\(\)\.array\(\)/);
+            expect(content).not.toMatch(/regularArray.*\.max\(/);
+
+            // VarChar array should apply max length to array elements
+            expect(content).toMatch(/varcharArray.*\.max\(100\)\.array\(\)/);
+            expect(content).toMatch(/charArray.*\.max\(50\)\.array\(\)/);
+
+            // Mixed constraints should work together - arrays use lazy loading
+            expect(content).toMatch(/mixedArray.*\.array\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle complex scenarios with multiple constraints and field types',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('native-varchar-complex');
 
-    it('should handle complex scenarios with multiple constraints and field types', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('native-varchar-complex');
-      
-      try {
-        const config = {
-          ...ConfigGenerator.createBasicConfig(),
-          optionalFieldBehavior: 'optional'
-        };
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            optionalFieldBehavior: 'optional',
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -1249,69 +1305,72 @@ model ComplexTest {
   bytesField         Bytes?
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const testCreatePath = join(objectsDir, 'ComplexTestCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const testCreatePath = join(objectsDir, 'ComplexTestCreateInput.schema.ts');
 
-        if (existsSync(testCreatePath)) {
-          const content = readFileSync(testCreatePath, 'utf-8');
-          
-          // Required fields with native constraints
-          expect(content).toMatch(/requiredVarchar.*\.max\(100\)/);
-          expect(content).not.toMatch(/requiredVarchar.*\.optional\(\)/);
-          
-          // Conflict resolution - more restrictive constraint wins
-          expect(content).toMatch(/requiredWithZod.*\.max\(300\)/);
-          expect(content).toMatch(/requiredWithZod.*\.min\(5\)/);
-          
-          // Optional fields should maintain optionality
-          expect(content).toMatch(/optionalVarchar.*\.max\(250\)/);
-          expect(content).toMatch(/optionalVarchar.*\.optional\(\)/);
-          
-          // Complex constraint resolution
-          expect(content).toMatch(/optionalWithZod.*\.max\(80\)/); // Char(80) < email max(120)
-          expect(content).toMatch(/optionalWithZod.*\.email\(\)/);
-          
-          // Email field - preserve email validation with native constraint
-          expect(content).toMatch(/emailField.*\.email\(\)/);
-          expect(content).toMatch(/emailField.*\.toLowerCase\(\)/);
-          expect(content).toMatch(/emailField.*\.max\(320\)/);
-          
-          // Password field - preserve regex with native constraint
-          expect(content).toMatch(/passwordField.*\.min\(8\)/);
-          expect(content).toMatch(/passwordField.*\.max\(255\)/);
-          expect(content).toMatch(/passwordField.*\.regex\(/);
-          
-          // Non-string fields should be unaffected
-          expect(content).toMatch(/intField.*z\.number\(\)\.int\(\)/);
-          expect(content).not.toMatch(/intField.*\.max\(/);
-          expect(content).not.toMatch(/dateField.*\.max\(/);
-          expect(content).not.toMatch(/boolField.*\.max\(/);
-          
-          // Arrays should apply constraints to elements
-          expect(content).toMatch(/tagArray.*\.max\(50\)\.array\(\)/);
-          
-          // Special field types should be unaffected
-          expect(content).not.toMatch(/jsonField.*\.max\(/);
-          expect(content).not.toMatch(/bytesField.*\.max\(/);
+          if (existsSync(testCreatePath)) {
+            const content = readFileSync(testCreatePath, 'utf-8');
+
+            // Required fields with native constraints
+            expect(content).toMatch(/requiredVarchar.*\.max\(100\)/);
+            expect(content).not.toMatch(/requiredVarchar.*\.optional\(\)/);
+
+            // Conflict resolution - more restrictive constraint wins
+            expect(content).toMatch(/requiredWithZod.*\.max\(300\)/);
+            expect(content).toMatch(/requiredWithZod.*\.min\(5\)/);
+
+            // Optional fields should maintain optionality
+            expect(content).toMatch(/optionalVarchar.*\.max\(250\)/);
+            expect(content).toMatch(/optionalVarchar.*\.optional\(\)/);
+
+            // Complex constraint resolution
+            expect(content).toMatch(/optionalWithZod.*\.max\(80\)/); // Char(80) < email max(120)
+            expect(content).toMatch(/optionalWithZod.*\.email\(\)/);
+
+            // Email field - preserve email validation with native constraint
+            expect(content).toMatch(/emailField.*\.email\(\)/);
+            expect(content).toMatch(/emailField.*\.toLowerCase\(\)/);
+            expect(content).toMatch(/emailField.*\.max\(320\)/);
+
+            // Password field - preserve regex with native constraint
+            expect(content).toMatch(/passwordField.*\.min\(8\)/);
+            expect(content).toMatch(/passwordField.*\.max\(255\)/);
+            expect(content).toMatch(/passwordField.*\.regex\(/);
+
+            // Non-string fields should be unaffected
+            expect(content).toMatch(/intField.*z\.number\(\)\.int\(\)/);
+            expect(content).not.toMatch(/intField.*\.max\(/);
+            expect(content).not.toMatch(/dateField.*\.max\(/);
+            expect(content).not.toMatch(/boolField.*\.max\(/);
+
+            // Arrays should apply constraints to elements
+            expect(content).toMatch(/tagArray.*\.max\(50\)\.array\(\)/);
+
+            // Special field types should be unaffected
+            expect(content).not.toMatch(/jsonField.*\.max\(/);
+            expect(content).not.toMatch(/bytesField.*\.max\(/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should handle edge cases and invalid native type configurations',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('native-varchar-edge-cases');
 
-    it('should handle edge cases and invalid native type configurations', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('native-varchar-edge-cases');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -1350,55 +1409,58 @@ model EdgeCaseTest {
   normalOptional    String?
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const testCreatePath = join(objectsDir, 'EdgeCaseTestCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const testCreatePath = join(objectsDir, 'EdgeCaseTestCreateInput.schema.ts');
 
-        if (existsSync(testCreatePath)) {
-          const content = readFileSync(testCreatePath, 'utf-8');
-          
-          // Zero length should be ignored (invalid constraint)
-          expect(content).not.toMatch(/zeroLength.*\.max\(0\)/);
-          
-          // Very large length should work normally
-          expect(content).toMatch(/hugeLength.*\.max\(65535\)/);
-          
-          // Non-string fields should be completely unaffected
-          expect(content).toMatch(/intWithNative.*z\.number\(\)\.int\(\)/);
-          expect(content).not.toMatch(/intWithNative.*\.max\(/);
-          
-          // Multiple max constraints - should use most restrictive
-          expect(content).toMatch(/multipleMax.*\.max\(50\)/);
-          expect(content).toMatch(/multipleMax.*\.min\(10\)/);
-          expect(content).not.toMatch(/multipleMax.*\.max\(75\)/);
-          expect(content).not.toMatch(/multipleMax.*\.max\(100\)/);
-          
-          // Text field without length parameter should not have max
-          expect(content).not.toMatch(/textField.*\.max\(/);
-          
-          // Normal fields should remain unchanged
-          expect(content).toMatch(/normalString.*z\.string\(\)/);
-          expect(content).not.toMatch(/normalString.*\.max\(/);
-          expect(content).toMatch(/normalOptional.*z\.string\(\)/);
-          expect(content).not.toMatch(/normalOptional.*\.max\(/);
+          if (existsSync(testCreatePath)) {
+            const content = readFileSync(testCreatePath, 'utf-8');
+
+            // Zero length should be ignored (invalid constraint)
+            expect(content).not.toMatch(/zeroLength.*\.max\(0\)/);
+
+            // Very large length should work normally
+            expect(content).toMatch(/hugeLength.*\.max\(65535\)/);
+
+            // Non-string fields should be completely unaffected
+            expect(content).toMatch(/intWithNative.*z\.number\(\)\.int\(\)/);
+            expect(content).not.toMatch(/intWithNative.*\.max\(/);
+
+            // Multiple max constraints - should use most restrictive
+            expect(content).toMatch(/multipleMax.*\.max\(50\)/);
+            expect(content).toMatch(/multipleMax.*\.min\(10\)/);
+            expect(content).not.toMatch(/multipleMax.*\.max\(75\)/);
+            expect(content).not.toMatch(/multipleMax.*\.max\(100\)/);
+
+            // Text field without length parameter should not have max
+            expect(content).not.toMatch(/textField.*\.max\(/);
+
+            // Normal fields should remain unchanged
+            expect(content).toMatch(/normalString.*z\.string\(\)/);
+            expect(content).not.toMatch(/normalString.*\.max\(/);
+            expect(content).toMatch(/normalOptional.*z\.string\(\)/);
+            expect(content).not.toMatch(/normalOptional.*\.max\(/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+    it(
+      'should work correctly across different schema input types',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('native-varchar-schema-types');
 
-    it('should work correctly across different schema input types', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('native-varchar-schema-types');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -1430,59 +1492,62 @@ model Post {
   authorId  Int
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
 
-        // Test Create Input schemas
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          expect(content).toMatch(/email.*\.email\(\)/);
-          expect(content).toMatch(/email.*\.max\(320\)/);
-          expect(content).toMatch(/name.*\.max\(100\)/);
-          expect(content).toMatch(/description.*\.max\(500\)/); // More restrictive @zod wins
+          // Test Create Input schemas
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+            expect(content).toMatch(/email.*\.email\(\)/);
+            expect(content).toMatch(/email.*\.max\(320\)/);
+            expect(content).toMatch(/name.*\.max\(100\)/);
+            expect(content).toMatch(/description.*\.max\(500\)/); // More restrictive @zod wins
+          }
+
+          // Test Update Input schemas
+          const userUpdatePath = join(objectsDir, 'UserUpdateInput.schema.ts');
+          if (existsSync(userUpdatePath)) {
+            const content = readFileSync(userUpdatePath, 'utf-8');
+            expect(content).toMatch(/email.*\.email\(\)/);
+            expect(content).toMatch(/email.*\.max\(320\)/);
+          }
+
+          // Test Where Input schemas
+          const userWherePath = join(objectsDir, 'UserWhereInput.schema.ts');
+          if (existsSync(userWherePath)) {
+            const content = readFileSync(userWherePath, 'utf-8');
+            expect(content).toMatch(/email.*\.max\(320\)/);
+          }
+
+          // Test Post schemas
+          const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
+          if (existsSync(postCreatePath)) {
+            const content = readFileSync(postCreatePath, 'utf-8');
+            expect(content).toMatch(/title.*\.min\(1\)/);
+            expect(content).toMatch(/title.*\.max\(200\)/);
+            expect(content).toMatch(/content.*\.max\(5000\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-        // Test Update Input schemas
-        const userUpdatePath = join(objectsDir, 'UserUpdateInput.schema.ts');
-        if (existsSync(userUpdatePath)) {
-          const content = readFileSync(userUpdatePath, 'utf-8');
-          expect(content).toMatch(/email.*\.email\(\)/);
-          expect(content).toMatch(/email.*\.max\(320\)/);
-        }
+    it(
+      'should handle MongoDB ObjectId native type constraints',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('native-mongodb-objectid');
 
-        // Test Where Input schemas
-        const userWherePath = join(objectsDir, 'UserWhereInput.schema.ts');
-        if (existsSync(userWherePath)) {
-          const content = readFileSync(userWherePath, 'utf-8');
-          expect(content).toMatch(/email.*\.max\(320\)/);
-        }
-
-        // Test Post schemas
-        const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
-        if (existsSync(postCreatePath)) {
-          const content = readFileSync(postCreatePath, 'utf-8');
-          expect(content).toMatch(/title.*\.min\(1\)/);
-          expect(content).toMatch(/title.*\.max\(200\)/);
-          expect(content).toMatch(/content.*\.max\(5000\)/);
-        }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
-
-    it('should handle MongoDB ObjectId native type constraints', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('native-mongodb-objectid');
-      
-      try {
-        const config = ConfigGenerator.createBasicConfig();
-        const configPath = join(testEnv.testDir, 'config.json');
-        const schema = `
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -1505,29 +1570,30 @@ model MongoUser {
   profileId String? @db.ObjectId
 }
 `;
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const testCreatePath = join(objectsDir, 'MongoUserCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const testCreatePath = join(objectsDir, 'MongoUserCreateInput.schema.ts');
 
-        if (existsSync(testCreatePath)) {
-          const content = readFileSync(testCreatePath, 'utf-8');
-          
-          // MongoDB ObjectId should have max length of 24
-          // Note: id field is excluded from CreateInput due to @default(auto())
-          expect(content).toMatch(/profileId.*\.max\(24\)/);
-          
-          // Regular string fields should not have max constraints
-          expect(content).not.toMatch(/email.*\.max\(/);
-          expect(content).not.toMatch(/name.*\.max\(/);
+          if (existsSync(testCreatePath)) {
+            const content = readFileSync(testCreatePath, 'utf-8');
+
+            // MongoDB ObjectId should have max length of 24
+            // Note: id field is excluded from CreateInput due to @default(auto())
+            expect(content).toMatch(/profileId.*\.max\(24\)/);
+
+            // Regular string fields should not have max constraints
+            expect(content).not.toMatch(/email.*\.max\(/);
+            expect(content).not.toMatch(/name.*\.max\(/);
+          }
+        } finally {
+          await testEnv.cleanup();
         }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 });

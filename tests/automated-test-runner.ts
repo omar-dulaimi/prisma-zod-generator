@@ -94,10 +94,7 @@ class AutomatedTestRunner {
     // Group schemas by type
     const operations = schemas.filter(
       (s) =>
-        s.includes('find') ||
-        s.includes('create') ||
-        s.includes('update') ||
-        s.includes('delete'),
+        s.includes('find') || s.includes('create') || s.includes('update') || s.includes('delete'),
     );
     const enums = schemas.filter((s) => s.includes('enums/'));
     const objects = schemas.filter((s) => s.includes('objects/'));
@@ -132,9 +129,7 @@ class AutomatedTestRunner {
       const stat = statSync(fullPath);
 
       if (stat.isDirectory()) {
-        files.push(
-          ...this.getAllSchemaFiles(fullPath).map((f) => join(item, f)),
-        );
+        files.push(...this.getAllSchemaFiles(fullPath).map((f) => join(item, f)));
       } else if (item.endsWith('.schema.ts')) {
         files.push(item);
       }
@@ -164,9 +159,7 @@ class AutomatedTestRunner {
   /**
    * Run schema validation tests
    */
-  private async runSchemaValidationTests(
-    testSuites: TestSuite[],
-  ): Promise<void> {
+  private async runSchemaValidationTests(testSuites: TestSuite[]): Promise<void> {
     console.log('🔬 Running schema validation tests...');
 
     for (const suite of testSuites) {
@@ -184,9 +177,7 @@ class AutomatedTestRunner {
           errors,
         });
 
-        console.log(
-          `✅ ${suite.name} validation passed (${suite.schemas.length} schemas)`,
-        );
+        console.log(`✅ ${suite.name} validation passed (${suite.schemas.length} schemas)`);
       } catch (error) {
         errors.push(error instanceof Error ? error.message : String(error));
         this.testResults.set(suite.name, {
@@ -219,9 +210,7 @@ class AutomatedTestRunner {
           const result = (value as z.ZodTypeAny).safeParse({});
           // Schema should either pass or fail gracefully
           if (result === undefined) {
-            throw new Error(
-              `Schema ${key} in ${schemaPath} returned undefined`,
-            );
+            throw new Error(`Schema ${key} in ${schemaPath} returned undefined`);
           }
         }
       }
@@ -238,9 +227,7 @@ class AutomatedTestRunner {
     console.log('='.repeat(50));
 
     const totalTests = this.testResults.size;
-    const passedTests = Array.from(this.testResults.values()).filter(
-      (r) => r.success,
-    ).length;
+    const passedTests = Array.from(this.testResults.values()).filter((r) => r.success).length;
     const failedTests = totalTests - passedTests;
 
     console.log(`Total Test Suites: ${totalTests}`);
@@ -339,9 +326,7 @@ if (require.main === module) {
         break;
 
       default:
-        console.error(
-          'Unknown command. Use: full, specific <pattern>, or performance',
-        );
+        console.error('Unknown command. Use: full, specific <pattern>, or performance');
         process.exit(1);
     }
   }

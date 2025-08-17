@@ -17,9 +17,9 @@ describe('Issue #119 Regression Tests', () => {
     });
 
     it('should validate with sort and optional nulls field', () => {
-      const validData = { 
-        sort: 'desc' as const, 
-        nulls: 'first' as const 
+      const validData = {
+        sort: 'desc' as const,
+        nulls: 'first' as const,
       };
       SchemaTestUtils.testValidData(SortOrderInputObjectSchema, validData);
     });
@@ -48,14 +48,14 @@ describe('Issue #119 Regression Tests', () => {
 
     it('should validate UserArgs with select field', () => {
       const validData = {
-        select: { id: true, email: true, posts: true }
+        select: { id: true, email: true, posts: true },
       };
       SchemaTestUtils.testValidData(UserArgsObjectSchema, validData);
     });
 
     it('should validate UserArgs with include field', () => {
       const validData = {
-        include: { posts: true }
+        include: { posts: true },
       };
       SchemaTestUtils.testValidData(UserArgsObjectSchema, validData);
     });
@@ -63,7 +63,7 @@ describe('Issue #119 Regression Tests', () => {
     it('should validate PostArgs with select and include', () => {
       const validData = {
         select: { id: true, title: true },
-        include: { author: true }
+        include: { author: true },
       };
       SchemaTestUtils.testValidData(PostArgsObjectSchema, validData);
     });
@@ -84,7 +84,7 @@ describe('Issue #119 Regression Tests', () => {
       const invalidData = {
         title: 123, // Should be string
         likes: 'not-a-bigint', // Should be BigInt
-        bytes: 'not-bytes' // Should be Bytes
+        bytes: 'not-bytes', // Should be Bytes
       };
       SchemaTestUtils.testInvalidData(PostCreateInputObjectSchema, invalidData, ['title']);
     });
@@ -100,7 +100,7 @@ describe('Issue #119 Regression Tests', () => {
       const validData = {
         id: true,
         email: true,
-        posts: true
+        posts: true,
       };
       SchemaTestUtils.testValidData(UserSelectObjectSchema, validData);
     });
@@ -110,8 +110,8 @@ describe('Issue #119 Regression Tests', () => {
         id: true,
         email: true,
         posts: {
-          select: { id: true, title: true }
-        }
+          select: { id: true, title: true },
+        },
       };
       SchemaTestUtils.testValidData(UserSelectObjectSchema, validData);
     });
@@ -121,8 +121,8 @@ describe('Issue #119 Regression Tests', () => {
         id: true,
         title: true,
         author: {
-          select: { id: true, email: true }
-        }
+          select: { id: true, email: true },
+        },
       };
       SchemaTestUtils.testValidData(PostSelectObjectSchema, validData);
     });
@@ -133,7 +133,7 @@ describe('Issue #119 Regression Tests', () => {
       // This test ensures SortOrderInput uses direct enum references
       const schema = SortOrderInputObjectSchema;
       const result = schema.safeParse({ sort: 'asc' });
-      
+
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.sort).toBe('asc');
@@ -143,10 +143,10 @@ describe('Issue #119 Regression Tests', () => {
     it('should maintain Args schema functionality without Prisma type constraints', () => {
       // This test ensures Args schemas work without causing TypeScript compilation errors
       const userArgsResult = UserArgsObjectSchema.safeParse({
-        select: { id: true }
+        select: { id: true },
       });
       const postArgsResult = PostArgsObjectSchema.safeParse({
-        include: { author: true }
+        include: { author: true },
       });
 
       expect(userArgsResult.success).toBe(true);
@@ -157,7 +157,7 @@ describe('Issue #119 Regression Tests', () => {
       // Test that core Issue #119 fixes work without breaking existing functionality
       const testCases = [
         { schema: SortOrderInputObjectSchema, data: { sort: 'asc' } },
-        { schema: UserArgsObjectSchema, data: { select: { id: true } } }
+        { schema: UserArgsObjectSchema, data: { select: { id: true } } },
       ];
 
       testCases.forEach(({ schema, data }) => {

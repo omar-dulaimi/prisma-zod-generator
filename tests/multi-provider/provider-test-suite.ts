@@ -50,21 +50,20 @@ export class ProviderTestSuite {
   private async setupProvider(): Promise<void> {
     try {
       console.log(`Setting up ${this.config.name} provider...`);
-      
+
       // Generate schemas
       const schemaPath = join(process.cwd(), this.config.schemaPath);
       const generateCommand = `npx prisma generate --schema="${schemaPath}"`;
-      
-      execSync(generateCommand, { 
+
+      execSync(generateCommand, {
         cwd: process.cwd(),
-        stdio: 'inherit'
+        stdio: 'inherit',
       });
 
       // Import generated schemas
       await this.importGeneratedSchemas();
-      
+
       console.log(`✅ ${this.config.name} provider setup complete`);
-      
     } catch (error) {
       console.error(`❌ Failed to setup ${this.config.name} provider:`, error);
       throw error;
@@ -85,12 +84,11 @@ export class ProviderTestSuite {
   private async importGeneratedSchemas(): Promise<void> {
     try {
       const generatedPath = join(process.cwd(), this.config.generatedPath);
-      
+
       // Dynamic import of schemas based on provider
       // This would need to be implemented based on the actual generated structure
-      
+
       console.log(`Imported schemas from ${generatedPath}`);
-      
     } catch (error) {
       console.warn(`Warning: Could not import schemas for ${this.config.name}:`, error);
     }
@@ -101,7 +99,7 @@ export class ProviderTestSuite {
    */
   private createTypeTests(): void {
     describe('Type Validation', () => {
-      this.config.features.nativeTypes.forEach(nativeType => {
+      this.config.features.nativeTypes.forEach((nativeType) => {
         it(`should validate ${nativeType} type`, async () => {
           // Test implementation based on provider and type
           const testPassed = await this.testNativeType(nativeType);
@@ -156,10 +154,10 @@ export class ProviderTestSuite {
         'delete',
         'deleteMany',
         'aggregate',
-        'groupBy'
+        'groupBy',
       ];
 
-      operations.forEach(operation => {
+      operations.forEach((operation) => {
         it(`should generate valid ${operation} schema`, async () => {
           const testPassed = await this.testOperation(operation);
           expect(testPassed).toBe(true);
@@ -219,7 +217,7 @@ export class ProviderTestSuite {
    */
   private createProviderSpecificTests(): void {
     describe('Provider-Specific Features', () => {
-      this.config.features.specificFeatures.forEach(feature => {
+      this.config.features.specificFeatures.forEach((feature) => {
         it(`should support ${feature}`, async () => {
           const testPassed = await this.testSpecificFeature(feature);
           expect(testPassed).toBe(true);
@@ -227,7 +225,7 @@ export class ProviderTestSuite {
       });
 
       // Test limitations
-      this.config.limitations.unsupportedFeatures.forEach(limitation => {
+      this.config.limitations.unsupportedFeatures.forEach((limitation) => {
         it(`should handle ${limitation} limitation gracefully`, async () => {
           const testPassed = await this.testLimitation(limitation);
           expect(testPassed).toBe(true);
@@ -245,7 +243,7 @@ export class ProviderTestSuite {
         const startTime = Date.now();
         await this.testSchemaGeneration();
         const duration = Date.now() - startTime;
-        
+
         // Performance threshold (adjustable)
         const threshold = 30000; // 30 seconds
         expect(duration).toBeLessThan(threshold);
@@ -253,14 +251,14 @@ export class ProviderTestSuite {
 
       it('should validate schemas quickly', async () => {
         const avgTime = await this.testValidationPerformance();
-        
+
         // Validation should be under 1ms on average
         expect(avgTime).toBeLessThan(1);
       });
 
       it('should generate reasonably sized files', async () => {
         const fileSize = await this.testGeneratedFileSize();
-        
+
         // Files should be under 1MB each (adjustable)
         const maxSize = 1024 * 1024; // 1MB
         expect(fileSize).toBeLessThan(maxSize);
@@ -439,8 +437,8 @@ export function createProviderTestSuite(providerName: string): ProviderTestSuite
 // Export function to create all provider test suites
 export function createAllProviderTestSuites(): void {
   const providers = ['postgresql', 'mysql', 'mongodb', 'sqlite', 'sqlserver'];
-  
-  providers.forEach(provider => {
+
+  providers.forEach((provider) => {
     const suite = createProviderTestSuite(provider);
     suite.createTestSuite();
   });

@@ -19,7 +19,7 @@ export const writeFileSafely = async (
 
     const dir = path.dirname(writeLocation);
     fs.mkdirSync(dir, { recursive: true });
-    
+
     // Control formatting via config, default off for schemas for speed
     const cfg = Transformer.getGeneratorConfig();
     const isSchemasFile = /[\\\/]schemas[\\\/]/.test(writeLocation);
@@ -29,7 +29,7 @@ export const writeFileSafely = async (
     } else {
       fs.writeFileSync(writeLocation, await formatFile(content));
     }
-  if (addToIndex) {
+    if (addToIndex) {
       try {
         // Avoid bloating index in minimal mode: don't add object schemas or helper files
         const isObjectSchema = /\/objects\//.test(writeLocation);

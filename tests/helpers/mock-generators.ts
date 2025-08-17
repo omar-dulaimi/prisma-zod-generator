@@ -17,17 +17,19 @@ export class PrismaSchemaGenerator {
   /**
    * Generate a basic Prisma schema for testing
    */
-  static createBasicSchema(options: {
-    models?: string[];
-    provider?: string;
-    outputPath?: string;
-    generatorOptions?: Record<string, unknown>;
-  } = {}): string {
+  static createBasicSchema(
+    options: {
+      models?: string[];
+      provider?: string;
+      outputPath?: string;
+      generatorOptions?: Record<string, unknown>;
+    } = {},
+  ): string {
     const {
       models = ['User', 'Post'],
       provider = 'sqlite',
       outputPath = './generated/schemas',
-      generatorOptions = {}
+      generatorOptions = {},
     } = options;
 
     const generatorOptionsStr = Object.entries(generatorOptions)
@@ -35,40 +37,42 @@ export class PrismaSchemaGenerator {
       .join('\n');
 
     // Create models based on what's requested, with appropriate relationships
-    const modelDefinitions = models.map(model => {
-      switch (model) {
-        case 'User':
-          // Only include Post relationship if Post model is also being generated
-          const hasPostRelation = models.includes('Post');
-          return `
+    const modelDefinitions = models
+      .map((model) => {
+        switch (model) {
+          case 'User':
+            // Only include Post relationship if Post model is also being generated
+            const hasPostRelation = models.includes('Post');
+            return `
 model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
   name  String?${hasPostRelation ? '\n  posts Post[]' : ''}
 }`;
-        case 'Post':
-          // Only include User relationship if User model is also being generated
-          const hasUserRelation = models.includes('User');
-          return `
+          case 'Post':
+            // Only include User relationship if User model is also being generated
+            const hasUserRelation = models.includes('User');
+            return `
 model Post {
   id       Int     @id @default(autoincrement())
   title    String
   content  String?${hasUserRelation ? '\n  author   User    @relation(fields: [authorId], references: [id])\n  authorId Int' : ''}
 }`;
-        case 'Profile':
-          return `
+          case 'Profile':
+            return `
 model Profile {
   id   Int    @id @default(autoincrement())
   bio  String?
 }`;
-        default:
-          return `
+          default:
+            return `
 model ${model} {
   id   Int    @id @default(autoincrement())
   name String
 }`;
-      }
-    }).join('\n');
+        }
+      })
+      .join('\n');
 
     return `
 generator client {
@@ -248,6 +252,7 @@ export class ConfigGenerator {
     return {
       mode: 'full',
       output: './generated/schemas',
+      optionalFieldBehavior: 'optional',
       relationModel: true,
       modelCase: 'PascalCase',
       modelSuffix: 'Schema',
@@ -257,16 +262,16 @@ export class ConfigGenerator {
       addSelectType: false,
       validateWhereUniqueInput: true,
       prismaClientPath: '@prisma/client',
-  // Test helper defaults: exercise filtered Create* inputs
-  strictCreateInputs: false,
-  preserveRequiredScalarsOnCreate: false,
+      // Test helper defaults: exercise filtered Create* inputs
+      strictCreateInputs: false,
+      preserveRequiredScalarsOnCreate: false,
       globalExclusions: {},
       variants: {
         pure: { enabled: true },
         input: { enabled: true },
-        result: { enabled: true }
+        result: { enabled: true },
       },
-      models: {}
+      models: {},
     };
   }
 
@@ -279,19 +284,19 @@ export class ConfigGenerator {
       models: {
         User: {
           enabled: true,
-          operations: ['findMany', 'findUnique', 'create', 'update']
+          operations: ['findMany', 'findUnique', 'create', 'update'],
         },
         Post: {
           enabled: true,
-          operations: ['findMany', 'create']
+          operations: ['findMany', 'create'],
         },
         Profile: {
-          enabled: true
+          enabled: true,
         },
         Admin: {
-          enabled: false
-        }
-      }
+          enabled: false,
+        },
+      },
     };
   }
 
@@ -301,7 +306,7 @@ export class ConfigGenerator {
   static createMinimalConfig(): Record<string, unknown> {
     return {
       ...this.createBasicConfig(),
-      mode: 'minimal'
+      mode: 'minimal',
     };
   }
 
@@ -315,19 +320,19 @@ export class ConfigGenerator {
         input: {
           enabled: true,
           suffix: '.input',
-          excludeFields: ['id', 'createdAt', 'updatedAt']
+          excludeFields: ['id', 'createdAt', 'updatedAt'],
         },
         result: {
           enabled: true,
           suffix: '.result',
-          excludeFields: ['password']
+          excludeFields: ['password'],
         },
         pure: {
           enabled: true,
           suffix: '.model',
-          excludeFields: []
-        }
-      }
+          excludeFields: [],
+        },
+      },
     };
   }
 
@@ -340,7 +345,7 @@ export class ConfigGenerator {
       globalExclusions: {
         input: ['password', 'secretKey'],
         result: ['password', 'secretKey'],
-        pure: ['password', 'secretKey']
+        pure: ['password', 'secretKey'],
       },
       models: {
         User: {
@@ -348,29 +353,29 @@ export class ConfigGenerator {
           variants: {
             input: {
               enabled: true,
-              excludeFields: ['internalId', 'metadata']
-            }
-          }
+              excludeFields: ['internalId', 'metadata'],
+            },
+          },
         },
         Post: {
           enabled: true,
           variants: {
             input: {
               enabled: true,
-              excludeFields: ['authorId']
-            }
-          }
-        }
+              excludeFields: ['authorId'],
+            },
+          },
+        },
       },
       variants: {
         pure: {
           enabled: true,
           suffix: '.public',
-          excludeFields: ['password', 'email', 'internalId']
+          excludeFields: ['password', 'email', 'internalId'],
         },
         input: { enabled: true },
-        result: { enabled: true }
-      }
+        result: { enabled: true },
+      },
     };
   }
 }
@@ -387,7 +392,7 @@ export class TestEnvironment {
     schemaPath: string;
     outputDir: string;
     runGeneration: () => Promise<void>;
-  runGenerationWithOutput: () => Promise<{ stdout: string; stderr: string }>;
+    runGenerationWithOutput: () => Promise<{ stdout: string; stderr: string }>;
     cleanup: () => Promise<void>;
   }> {
     const testDir = join(process.cwd(), `test-env-${testName}-${Date.now()}`);
@@ -402,10 +407,10 @@ export class TestEnvironment {
     const runGeneration = async () => {
       // Always build the generator to ensure latest code is used
       await execAsync('npx tsc', { cwd: process.cwd() });
-      
+
       // Run prisma generate
       await execAsync(`npx prisma generate --schema="${schemaPath}"`, {
-        cwd: process.cwd()
+        cwd: process.cwd(),
       });
     };
 
@@ -413,7 +418,7 @@ export class TestEnvironment {
     const runGenerationWithOutput = async (): Promise<{ stdout: string; stderr: string }> => {
       await execAsync('npx tsc', { cwd: process.cwd() });
       return execAsync(`npx prisma generate --schema="${schemaPath}"`, {
-        cwd: process.cwd()
+        cwd: process.cwd(),
       });
     };
 
@@ -430,8 +435,8 @@ export class TestEnvironment {
       schemaPath,
       outputDir,
       runGeneration,
-  runGenerationWithOutput,
-      cleanup
+      runGenerationWithOutput,
+      cleanup,
     };
   }
 
@@ -441,18 +446,18 @@ export class TestEnvironment {
   static async setupWithConfig(
     testName: string,
     schema: string,
-    config?: Record<string, unknown>
+    config?: Record<string, unknown>,
   ): Promise<{
     testDir: string;
     schemaPath: string;
     outputDir: string;
     configPath?: string;
     runGeneration: () => Promise<void>;
-  runGenerationWithOutput: () => Promise<{ stdout: string; stderr: string }>;
+    runGenerationWithOutput: () => Promise<{ stdout: string; stderr: string }>;
     cleanup: () => Promise<void>;
   }> {
     const env = await this.createTestEnv(testName);
-    
+
     // Write schema file
     writeFileSync(env.schemaPath, schema);
 
@@ -466,17 +471,17 @@ export class TestEnvironment {
     const runGeneration = async () => {
       // Always build the generator to ensure latest code is used
       await execAsync('npx tsc', { cwd: process.cwd() });
-      
+
       // Run prisma generate
       await execAsync(`npx prisma generate --schema="${env.schemaPath}"`, {
-        cwd: process.cwd()
+        cwd: process.cwd(),
       });
     };
 
     const runGenerationWithOutput = async (): Promise<{ stdout: string; stderr: string }> => {
       await execAsync('npx tsc', { cwd: process.cwd() });
       return execAsync(`npx prisma generate --schema="${env.schemaPath}"`, {
-        cwd: process.cwd()
+        cwd: process.cwd(),
       });
     };
 
@@ -496,32 +501,34 @@ export class MockDMMF {
   /**
    * Create a mock DMMF document for testing
    */
-  static createMockDocument(options: {
-    models?: DMMF.Model[];
-    enums?: DMMF.DatamodelEnum[];
-  } = {}): DMMF.Document {
+  static createMockDocument(
+    options: {
+      models?: DMMF.Model[];
+      enums?: DMMF.DatamodelEnum[];
+    } = {},
+  ): DMMF.Document {
     return {
       datamodel: {
         models: options.models || [this.createUserModel(), this.createPostModel()],
         enums: options.enums || [this.createStatusEnum()],
         types: [],
-        indexes: []
+        indexes: [],
       },
       schema: {
         inputObjectTypes: {
-          prisma: []
+          prisma: [],
         },
         outputObjectTypes: {
           prisma: [],
-          model: []
+          model: [],
         },
         enumTypes: {
           prisma: [],
-          model: []
+          model: [],
         },
         fieldRefTypes: {
-          prisma: []
-        }
+          prisma: [],
+        },
       },
       mappings: {
         modelOperations: [
@@ -541,14 +548,14 @@ export class MockDMMF {
             updateMany: 'updateManyUser',
             upsert: 'upsertOneUser',
             aggregate: 'aggregateUser',
-            groupBy: 'groupByUser'
-          }
+            groupBy: 'groupByUser',
+          },
         ],
         otherOperations: {
           read: [],
-          write: []
-        }
-      }
+          write: [],
+        },
+      },
     };
   }
 
@@ -559,7 +566,7 @@ export class MockDMMF {
     return {
       name: 'User',
       dbName: null,
-  schema: null,
+      schema: null,
       fields: [
         {
           name: 'id',
@@ -573,7 +580,7 @@ export class MockDMMF {
           type: 'Int',
           default: { name: 'autoincrement', args: [] },
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'email',
@@ -587,7 +594,7 @@ export class MockDMMF {
           type: 'String',
           documentation: '@zod.email()',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'name',
@@ -601,7 +608,7 @@ export class MockDMMF {
           type: 'String',
           documentation: '@zod.min(2).max(50)',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'posts',
@@ -617,13 +624,13 @@ export class MockDMMF {
           relationFromFields: [],
           relationToFields: [],
           isGenerated: false,
-          isUpdatedAt: false
-        }
+          isUpdatedAt: false,
+        },
       ],
       primaryKey: null,
       uniqueFields: [],
       uniqueIndexes: [],
-      isGenerated: false
+      isGenerated: false,
     };
   }
 
@@ -634,7 +641,7 @@ export class MockDMMF {
     return {
       name: 'Post',
       dbName: null,
-  schema: null,
+      schema: null,
       fields: [
         {
           name: 'id',
@@ -648,7 +655,7 @@ export class MockDMMF {
           type: 'Int',
           default: { name: 'autoincrement', args: [] },
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'title',
@@ -662,7 +669,7 @@ export class MockDMMF {
           type: 'String',
           documentation: '@zod.min(1).max(100)',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'content',
@@ -675,7 +682,7 @@ export class MockDMMF {
           hasDefaultValue: false,
           type: 'String',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'author',
@@ -691,7 +698,7 @@ export class MockDMMF {
           relationFromFields: ['authorId'],
           relationToFields: ['id'],
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'authorId',
@@ -704,13 +711,13 @@ export class MockDMMF {
           hasDefaultValue: false,
           type: 'Int',
           isGenerated: false,
-          isUpdatedAt: false
-        }
+          isUpdatedAt: false,
+        },
       ],
       primaryKey: null,
       uniqueFields: [],
       uniqueIndexes: [],
-      isGenerated: false
+      isGenerated: false,
     };
   }
 
@@ -723,9 +730,9 @@ export class MockDMMF {
       values: [
         { name: 'ACTIVE', dbName: null },
         { name: 'INACTIVE', dbName: null },
-        { name: 'PENDING', dbName: null }
+        { name: 'PENDING', dbName: null },
       ],
-      dbName: null
+      dbName: null,
     };
   }
 }

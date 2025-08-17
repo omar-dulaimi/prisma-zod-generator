@@ -20,7 +20,8 @@ describe('Recipes configuration validity', () => {
   }
 
   it('all recipe JSON files should parse and validate', async () => {
-    const { validateConfiguration, formatValidationErrors, formatValidationWarnings } = await import('../src/config/validator');
+    const { validateConfiguration, formatValidationErrors, formatValidationWarnings } =
+      await import('../src/config/validator');
 
     const invalid: Array<{ file: string; errors: string }> = [];
     const warningsCollected: Array<{ file: string; warnings: string }> = [];
@@ -45,16 +46,14 @@ describe('Recipes configuration validity', () => {
 
     // Log warnings to help maintainers tune recipes, but don't fail on warnings
     if (warningsCollected.length > 0) {
-       
       console.warn('\nRecipe validation warnings:');
       for (const w of warningsCollected) {
-         
         console.warn(`- ${w.file}:\n${w.warnings}`);
       }
     }
 
     if (invalid.length > 0) {
-      const details = invalid.map(i => `\nFile: ${i.file}\n${i.errors}`).join('\n');
+      const details = invalid.map((i) => `\nFile: ${i.file}\n${i.errors}`).join('\n');
       throw new Error(`Some recipe configs are invalid:${details}`);
     }
 

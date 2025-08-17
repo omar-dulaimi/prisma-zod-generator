@@ -2,10 +2,10 @@ import { DMMF } from '@prisma/generator-helper';
 import Transformer from '../transformer';
 import { shouldGenerateIncludeForModel } from './include-helpers';
 import {
-    checkIsModelRelationField,
-    checkModelHasEnabledManyModelRelation,
-    getEnabledModels,
-    getFilteredModelFields
+  checkIsModelRelationField,
+  checkModelHasEnabledManyModelRelation,
+  getEnabledModels,
+  getFilteredModelFields,
 } from './model-helpers';
 
 export function addMissingInputObjectTypesForSelect(
@@ -20,7 +20,7 @@ export function addMissingInputObjectTypesForSelect(
   }
   // Filter models to only include enabled ones
   const enabledModels = getEnabledModels(models);
-  
+
   // generate input object types necessary to support ModelSelect._count
   const modelCountOutputTypes = getFilteredModelCountOutputTypes(outputObjectTypes);
   const modelCountOutputTypeSelectInputObjectTypes =
@@ -28,8 +28,7 @@ export function addMissingInputObjectTypesForSelect(
   const modelCountOutputTypeArgsInputObjectTypes =
     generateModelCountOutputTypeArgsInputObjectTypes(modelCountOutputTypes);
 
-  const modelSelectInputObjectTypes =
-    generateModelSelectInputObjectTypes(enabledModels);
+  const modelSelectInputObjectTypes = generateModelSelectInputObjectTypes(enabledModels);
 
   const generatedInputObjectTypes = [
     modelCountOutputTypeSelectInputObjectTypes,
@@ -43,9 +42,7 @@ export function addMissingInputObjectTypesForSelect(
 }
 
 function getModelCountOutputTypes(outputObjectTypes: DMMF.OutputType[]) {
-  return outputObjectTypes.filter(({ name }) =>
-    name.includes('CountOutputType'),
-  );
+  return outputObjectTypes.filter(({ name }) => name.includes('CountOutputType'));
 }
 
 function getFilteredModelCountOutputTypes(outputObjectTypes: DMMF.OutputType[]) {
@@ -62,10 +59,8 @@ function generateModelCountOutputTypeSelectInputObjectTypes(
 ) {
   const modelCountOutputTypeSelectInputObjectTypes: DMMF.InputType[] = [];
   for (const modelCountOutputType of modelCountOutputTypes) {
-    const {
-      name: modelCountOutputTypeName,
-      fields: modelCountOutputTypeFields,
-    } = modelCountOutputType;
+    const { name: modelCountOutputTypeName, fields: modelCountOutputTypeFields } =
+      modelCountOutputType;
     const modelCountOutputTypeSelectInputObjectType: DMMF.InputType = {
       name: `${modelCountOutputTypeName}Select`,
       constraints: {
@@ -85,9 +80,7 @@ function generateModelCountOutputTypeSelectInputObjectTypes(
         ],
       })),
     };
-    modelCountOutputTypeSelectInputObjectTypes.push(
-      modelCountOutputTypeSelectInputObjectType,
-    );
+    modelCountOutputTypeSelectInputObjectTypes.push(modelCountOutputTypeSelectInputObjectType);
   }
   return modelCountOutputTypeSelectInputObjectTypes;
 }
@@ -120,9 +113,7 @@ function generateModelCountOutputTypeArgsInputObjectTypes(
         },
       ],
     };
-    modelCountOutputTypeArgsInputObjectTypes.push(
-      modelCountOutputTypeArgsInputObjectType,
-    );
+    modelCountOutputTypeArgsInputObjectTypes.push(modelCountOutputTypeArgsInputObjectType);
   }
   return modelCountOutputTypeArgsInputObjectTypes;
 }
@@ -131,12 +122,12 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
   const modelSelectInputObjectTypes: DMMF.InputType[] = [];
   for (const model of models) {
     const { name: modelName } = model;
-    
+
     // Skip if model doesn't support select operations
     if (!shouldGenerateIncludeForModel(modelName)) {
       continue;
     }
-    
+
     const fields: DMMF.SchemaArg[] = [];
 
     // Get filtered fields for the 'result' variant (what can be selected)
@@ -163,7 +154,14 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
             location: 'inputObjectTypes',
             namespace: 'prisma',
           };
-          (field.inputTypes as Array<{ isList: boolean; type: string; location: string; namespace?: string }>).push(schemaArgInputType);
+          (
+            field.inputTypes as Array<{
+              isList: boolean;
+              type: string;
+              location: string;
+              namespace?: string;
+            }>
+          ).push(schemaArgInputType);
         }
       }
 

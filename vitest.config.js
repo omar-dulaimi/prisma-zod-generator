@@ -16,46 +16,42 @@ export default defineConfig({
       [
         'default',
         {
-          summary: false
-        }
-      ]
+          summary: false,
+        },
+      ],
     ],
     // Increase worker timeout to handle long-running tests
     pool: 'threads',
     poolOptions: {
       threads: {
         singleThread: false,
-        useAtomics: true
-      }
+        useAtomics: true,
+      },
     },
-  // Concurrency: allow overriding via env; default to parallel unless explicitly forced sequential.
-  maxWorkers: process.env.VITEST_MAX_WORKERS ? Number(process.env.VITEST_MAX_WORKERS) : (process.env.FEATURE_TESTS_SEQUENTIAL === '1' ? 1 : undefined),
-  minWorkers: process.env.VITEST_MIN_WORKERS ? Number(process.env.VITEST_MIN_WORKERS) : undefined,
-  coverage: {
+    // Concurrency: allow overriding via env; default to parallel unless explicitly forced sequential.
+    maxWorkers: process.env.VITEST_MAX_WORKERS
+      ? Number(process.env.VITEST_MAX_WORKERS)
+      : process.env.FEATURE_TESTS_SEQUENTIAL === '1'
+        ? 1
+        : undefined,
+    minWorkers: process.env.VITEST_MIN_WORKERS ? Number(process.env.VITEST_MIN_WORKERS) : undefined,
+    coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: [
-        'prisma/schemas/*/generated/**/*.ts',
-        'prisma/generated/schemas/**/*.ts'
-      ],
-      exclude: [
-        'node_modules', 
-        '**/index.ts',
-        '**/node_modules/**',
-        '**/*.d.ts'
-      ],
+      include: ['prisma/schemas/*/generated/**/*.ts', 'prisma/generated/schemas/**/*.ts'],
+      exclude: ['node_modules', '**/index.ts', '**/node_modules/**', '**/*.d.ts'],
       thresholds: {
-    statements: 0,
-    branches: 0,
-    functions: 0,
-    lines: 0
+        statements: 0,
+        branches: 0,
+        functions: 0,
+        lines: 0,
       },
-      reportsDirectory: './coverage'
-    }
+      reportsDirectory: './coverage',
+    },
   },
   resolve: {
     alias: {
-      '@': './prisma/generated/schemas'
-    }
-  }
+      '@': './prisma/generated/schemas',
+    },
+  },
 });

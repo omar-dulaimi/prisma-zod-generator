@@ -4,7 +4,8 @@ import { themes as prismThemes } from 'prism-react-renderer';
 
 const config: Config = {
   title: 'Prisma Zod Generator',
-  tagline: 'Typed, configurable Zod schemas from your Prisma schema: variants, pure models, minimal mode, and more.',
+  tagline:
+    'Typed, configurable Zod schemas from your Prisma schema: variants, pure models, minimal mode, and more.',
   favicon: 'img/favicon.ico',
   url: 'https://omar-dulaimi.github.io',
   baseUrl: '/prisma-zod-generator/',
@@ -34,23 +35,26 @@ const config: Config = {
           editUrl: 'https://github.com/omar-dulaimi/prisma-zod-generator/tree/master/website/',
           showLastUpdateTime: true,
           showLastUpdateAuthor: false,
-          path: 'docs'
+          path: 'docs',
         },
         blog: false,
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
-        sitemap: { changefreq: 'weekly', priority: 0.5 }
+        sitemap: { changefreq: 'weekly', priority: 0.5 },
       } satisfies Preset.Options,
     ],
   ],
   plugins: [
-    [require.resolve('docusaurus-plugin-search-local'), {
-      highlightSearchTermsOnTargetPage: true,
-      hashed: true,
-      indexDocs: true,
-      indexBlog: false
-    }]
+    [
+      require.resolve('docusaurus-plugin-search-local'),
+      {
+        highlightSearchTermsOnTargetPage: true,
+        hashed: true,
+        indexDocs: true,
+        indexBlog: false,
+      },
+    ],
   ],
   themeConfig: {
     image: 'img/social-card.png',
@@ -59,20 +63,24 @@ const config: Config = {
       disableSwitch: false,
       respectPrefersColorScheme: false,
     },
-  navbar: {
+    navbar: {
       title: 'Prisma Zod Generator',
       items: [
-    {type: 'docSidebar', sidebarId: 'docs', position: 'left', label: 'Docs'},
-  {to: '/docs/next/changelog', label: 'Changelog', position: 'left'},
-        {type: 'html', position: 'right', value: '<div class="navbar-theme-toggle"></div>'},
-        {href: 'https://github.com/omar-dulaimi/prisma-zod-generator', label: 'GitHub', position: 'right'}
-      ]
+        { type: 'docSidebar', sidebarId: 'docs', position: 'left', label: 'Docs' },
+        { to: '/docs/next/changelog', label: 'Changelog', position: 'left' },
+        { type: 'html', position: 'right', value: '<div class="navbar-theme-toggle"></div>' },
+        {
+          href: 'https://github.com/omar-dulaimi/prisma-zod-generator',
+          label: 'GitHub',
+          position: 'right',
+        },
+      ],
     },
     footer: {
       style: 'dark',
-      copyright: `Copyright © ${new Date().getFullYear()} Omar Dulaimi. Built with Docusaurus.`
+      copyright: `Copyright © ${new Date().getFullYear()} Omar Dulaimi. Built with Docusaurus.`,
     },
-    prism: { theme: prismThemes.github, darkTheme: prismThemes.dracula }
+    prism: { theme: prismThemes.github, darkTheme: prismThemes.dracula },
   } satisfies Preset.ThemeConfig,
 };
 export default config;

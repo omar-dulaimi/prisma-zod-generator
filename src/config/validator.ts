@@ -1,14 +1,14 @@
 import Ajv, { JSONSchemaType, ValidateFunction, ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
-import { 
-  ConfigurationSchema, 
-  ValidationError, 
+import {
+  ConfigurationSchema,
+  ValidationError,
   ValidationErrorType,
   isValidOperation,
   isValidVariant,
   PRISMA_OPERATIONS,
   SCHEMA_VARIANTS,
-  DEFAULT_CONFIG
+  DEFAULT_CONFIG,
 } from './schema';
 import { GeneratorConfig } from './parser';
 
@@ -18,13 +18,13 @@ import { GeneratorConfig } from './parser';
 export interface ValidationResult {
   /** Whether the configuration is valid */
   valid: boolean;
-  
+
   /** Array of validation errors (empty if valid) */
   errors: ValidationError[];
-  
+
   /** The validated configuration (potentially with defaults applied) */
   config?: GeneratorConfig;
-  
+
   /** Warnings that don't prevent usage but should be noted */
   warnings: string[];
 }
@@ -48,17 +48,17 @@ export class ConfigurationValidator {
 
   constructor() {
     // Initialize AJV with strict mode and additional formats
-    this.ajv = new Ajv({ 
+    this.ajv = new Ajv({
       strict: true,
       allErrors: true,
       verbose: true,
       discriminator: true,
-      removeAdditional: false
+      removeAdditional: false,
     });
-    
+
     // Add format validation (email, uri, etc.)
     addFormats(this.ajv);
-    
+
     // Compile the configuration schema
     this.validateConfig = this.ajv.compile(ConfigurationSchema as JSONSchemaType<GeneratorConfig>);
   }
@@ -70,12 +70,12 @@ export class ConfigurationValidator {
     const result: ValidationResult = {
       valid: false,
       errors: [],
-      warnings: []
+      warnings: [],
     };
 
     // First, validate against JSON Schema
     const schemaValid = this.validateConfig(config);
-    
+
     if (!schemaValid && this.validateConfig.errors) {
       result.errors.push(...this.convertAjvErrors(this.validateConfig.errors));
     }
@@ -87,13 +87,13 @@ export class ConfigurationValidator {
 
     // Cast to GeneratorConfig for further validation
     const typedConfig = config as GeneratorConfig;
-    
+
     // Create validation context
     const context: ValidationContext = {
       config: typedConfig,
       errors: [...result.errors],
       warnings: [...result.warnings],
-      modelNames
+      modelNames,
     };
 
     // Perform cross-field and business logic validation
@@ -106,7 +106,7 @@ export class ConfigurationValidator {
     result.errors = context.errors;
     result.warnings = context.warnings;
     result.valid = result.errors.length === 0;
-    
+
     if (result.valid) {
       result.config = this.applyDefaults(typedConfig);
     }
@@ -125,7 +125,7 @@ export class ConfigurationValidator {
    * Convert AJV validation errors to our error format
    */
   private convertAjvErrors(ajvErrors: ErrorObject[]): ValidationError[] {
-    return ajvErrors.map(error => this.convertSingleAjvError(error));
+    return ajvErrors.map((error) => this.convertSingleAjvError(error));
   }
 
   /**
@@ -133,7 +133,7 @@ export class ConfigurationValidator {
    */
   private convertSingleAjvError(error: ErrorObject): ValidationError {
     const path = error.instancePath || 'root';
-    
+
     switch (error.keyword) {
       case 'enum':
         return {
@@ -141,39 +141,39 @@ export class ConfigurationValidator {
           message: `Invalid value at ${path}. Expected one of: ${error.schema}`,
           path,
           value: error.data,
-          allowedValues: Array.isArray(error.schema) ? error.schema : [error.schema]
+          allowedValues: Array.isArray(error.schema) ? error.schema : [error.schema],
         };
-      
+
       case 'pattern':
         return {
           type: ValidationErrorType.INVALID_JSON_SCHEMA,
           message: `Invalid format at ${path}. ${this.getPatternErrorMessage(path, error.schema as string)}`,
           path,
-          value: error.data
+          value: error.data,
         };
-      
+
       case 'required':
         return {
           type: ValidationErrorType.MISSING_REQUIRED,
           message: `Missing required property: ${error.params?.missingProperty}`,
           path: `${path}/${error.params?.missingProperty}`,
-          value: error.data
+          value: error.data,
         };
-      
+
       case 'additionalProperties':
         return {
           type: ValidationErrorType.INVALID_JSON_SCHEMA,
           message: `Unknown property: ${error.params?.additionalProperty}`,
           path: `${path}/${error.params?.additionalProperty}`,
-          value: error.data
+          value: error.data,
         };
-      
+
       default:
         return {
           type: ValidationErrorType.INVALID_JSON_SCHEMA,
           message: error.message || 'Unknown validation error',
           path,
-          value: error.data
+          value: error.data,
         };
     }
   }
@@ -185,19 +185,19 @@ export class ConfigurationValidator {
     if (pattern === '^[a-zA-Z_][a-zA-Z0-9_]*$') {
       return 'Must be a valid identifier (letters, numbers, underscores, cannot start with number)';
     }
-    
+
     if (pattern === '^[A-Z][a-zA-Z0-9_]*$') {
       return 'Must be a valid model name (PascalCase, letters, numbers, underscores)';
     }
-    
+
     if (pattern === '^\\.[a-zA-Z][a-zA-Z0-9_]*$') {
       return 'Must be a valid file suffix (start with dot, followed by identifier)';
     }
-    
+
     if (pattern === '^[^<>:"|?*\\x00-\\x1f]+$') {
       return 'Must be a valid file path (no invalid characters)';
     }
-    
+
     return `Must match pattern: ${pattern}`;
   }
 
@@ -213,17 +213,18 @@ export class ConfigurationValidator {
       if (config.variants?.result?.enabled) {
         context.warnings.push('Result variants are not typically used in minimal mode');
       }
-      
+
       if (config.models && Object.keys(config.models).length > 0) {
         // Check if any model has non-minimal operations
         Object.entries(config.models).forEach(([modelName, modelConfig]) => {
           if (modelConfig.operations) {
-            const nonMinimalOps = modelConfig.operations.filter(op => 
-              !['findMany', 'findUnique', 'create', 'update', 'delete', 'upsert'].includes(op)
+            const nonMinimalOps = modelConfig.operations.filter(
+              (op) =>
+                !['findMany', 'findUnique', 'create', 'update', 'delete', 'upsert'].includes(op),
             );
             if (nonMinimalOps.length > 0) {
               context.warnings.push(
-                `Model ${modelName} has non-minimal operations in minimal mode: ${nonMinimalOps.join(', ')}`
+                `Model ${modelName} has non-minimal operations in minimal mode: ${nonMinimalOps.join(', ')}`,
               );
             }
           }
@@ -241,7 +242,7 @@ export class ConfigurationValidator {
               type: ValidationErrorType.DUPLICATE_VALUES,
               message: `Duplicate suffix "${variantConfig.suffix}" found in variants`,
               path: `variants.${variantName}.suffix`,
-              value: variantConfig.suffix
+              value: variantConfig.suffix,
             });
           }
           suffixes.add(variantConfig.suffix);
@@ -255,32 +256,32 @@ export class ConfigurationValidator {
    */
   private validateModelReferences(context: ValidationContext): void {
     const { config, modelNames } = context;
-    
+
     if (!modelNames || !config.models) {
       return;
     }
 
     // Check if configured models exist in Prisma schema
-    Object.keys(config.models).forEach(configuredModel => {
+    Object.keys(config.models).forEach((configuredModel) => {
       if (!modelNames.includes(configuredModel)) {
         context.errors.push({
           type: ValidationErrorType.INVALID_MODEL_NAME,
           message: `Model "${configuredModel}" not found in Prisma schema`,
           path: `models.${configuredModel}`,
           value: configuredModel,
-          allowedValues: modelNames
+          allowedValues: modelNames,
         });
       }
     });
 
     // Warn about Prisma models not explicitly configured
-    const unconfiguredModels = modelNames.filter(modelName => 
-      !config.models || !config.models[modelName]
+    const unconfiguredModels = modelNames.filter(
+      (modelName) => !config.models || !config.models[modelName],
     );
-    
+
     if (unconfiguredModels.length > 0 && config.mode === 'custom') {
       context.warnings.push(
-        `The following models are not configured and will use defaults: ${unconfiguredModels.join(', ')}`
+        `The following models are not configured and will use defaults: ${unconfiguredModels.join(', ')}`,
       );
     }
   }
@@ -299,14 +300,14 @@ export class ConfigurationValidator {
     if (config.models) {
       Object.entries(config.models).forEach(([modelName, modelConfig]) => {
         if (modelConfig.variants) {
-          Object.keys(modelConfig.variants).forEach(variantName => {
+          Object.keys(modelConfig.variants).forEach((variantName) => {
             if (!isValidVariant(variantName)) {
               context.errors.push({
                 type: ValidationErrorType.INVALID_VARIANT,
                 message: `Invalid variant name "${variantName}" in model ${modelName}`,
                 path: `models.${modelName}.variants.${variantName}`,
                 value: variantName,
-                allowedValues: [...SCHEMA_VARIANTS]
+                allowedValues: [...SCHEMA_VARIANTS],
               });
             }
           });
@@ -328,14 +329,14 @@ export class ConfigurationValidator {
     Object.entries(config.models).forEach(([modelName, modelConfig]) => {
       if (modelConfig.operations) {
         // Check for invalid operations
-        modelConfig.operations.forEach(operation => {
+        modelConfig.operations.forEach((operation) => {
           if (!isValidOperation(operation)) {
             context.errors.push({
               type: ValidationErrorType.INVALID_OPERATION,
               message: `Invalid operation "${operation}" for model ${modelName}`,
               path: `models.${modelName}.operations`,
               value: operation,
-              allowedValues: [...PRISMA_OPERATIONS]
+              allowedValues: [...PRISMA_OPERATIONS],
             });
           }
         });
@@ -347,7 +348,7 @@ export class ConfigurationValidator {
             type: ValidationErrorType.DUPLICATE_VALUES,
             message: `Duplicate operations found for model ${modelName}`,
             path: `models.${modelName}.operations`,
-            value: modelConfig.operations
+            value: modelConfig.operations,
           });
         }
       }
@@ -366,20 +367,20 @@ export class ConfigurationValidator {
         pure: {
           enabled: config.variants?.pure?.enabled ?? DEFAULT_CONFIG.variants.pure.enabled,
           suffix: config.variants?.pure?.suffix || DEFAULT_CONFIG.variants.pure.suffix,
-          excludeFields: config.variants?.pure?.excludeFields || []
+          excludeFields: config.variants?.pure?.excludeFields || [],
         },
         input: {
           enabled: config.variants?.input?.enabled ?? DEFAULT_CONFIG.variants.input.enabled,
           suffix: config.variants?.input?.suffix || DEFAULT_CONFIG.variants.input.suffix,
-          excludeFields: config.variants?.input?.excludeFields || []
+          excludeFields: config.variants?.input?.excludeFields || [],
         },
         result: {
           enabled: config.variants?.result?.enabled ?? DEFAULT_CONFIG.variants.result.enabled,
           suffix: config.variants?.result?.suffix || DEFAULT_CONFIG.variants.result.suffix,
-          excludeFields: config.variants?.result?.excludeFields || []
-        }
+          excludeFields: config.variants?.result?.excludeFields || [],
+        },
       },
-      models: config.models || DEFAULT_CONFIG.models
+      models: config.models || DEFAULT_CONFIG.models,
     };
   }
 }
@@ -387,10 +388,7 @@ export class ConfigurationValidator {
 /**
  * Convenience function to validate configuration
  */
-export function validateConfiguration(
-  config: unknown, 
-  modelNames?: string[]
-): ValidationResult {
+export function validateConfiguration(config: unknown, modelNames?: string[]): ValidationResult {
   const validator = new ConfigurationValidator();
   return validator.validate(config, modelNames);
 }
@@ -400,7 +398,7 @@ export function validateConfiguration(
  */
 export function validateConfigurationWithModels(
   config: unknown,
-  modelNames: string[]
+  modelNames: string[],
 ): ValidationResult {
   const validator = new ConfigurationValidator();
   return validator.validateWithModels(config, modelNames);
@@ -415,19 +413,19 @@ export function formatValidationErrors(errors: ValidationError[]): string {
   }
 
   let message = `Configuration validation failed with ${errors.length} error(s):\n\n`;
-  
+
   errors.forEach((error, index) => {
     message += `${index + 1}. ${error.message}\n`;
     message += `   Path: ${error.path}\n`;
-    
+
     if (error.value !== undefined) {
       message += `   Value: ${JSON.stringify(error.value)}\n`;
     }
-    
+
     if (error.allowedValues && error.allowedValues.length > 0) {
       message += `   Allowed values: ${error.allowedValues.join(', ')}\n`;
     }
-    
+
     message += '\n';
   });
 
@@ -443,7 +441,7 @@ export function formatValidationWarnings(warnings: string[]): string {
   }
 
   let message = `Configuration warnings (${warnings.length}):\n\n`;
-  
+
   warnings.forEach((warning, index) => {
     message += `${index + 1}. ${warning}\n`;
   });

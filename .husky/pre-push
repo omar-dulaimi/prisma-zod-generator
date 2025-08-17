@@ -1,0 +1,7 @@
+# Fail on first error
+set -e
+
+# Run type check, lint and prettier check before pushing
+npm run test:type-check
+npm run lint
+npm run format:check

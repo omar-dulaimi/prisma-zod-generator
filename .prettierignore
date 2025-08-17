@@ -8,3 +8,6 @@ coverage/
 *.json
 *.js.map
 *.d.ts
+website/build/
+**/generated/
+**/schemas/

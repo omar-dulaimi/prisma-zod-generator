@@ -93,7 +93,7 @@ describe('Generated Schema Tests', () => {
               name: 'Test User 2',
               password: 'P@ssw0rd456',
               role: Role.ADMIN,
-            }
+            },
           ],
         };
 
@@ -127,7 +127,7 @@ describe('Generated Schema Tests', () => {
         const validValues = ['id', 'email', 'name'];
         const invalidValues = ['invalid', 'createdAt', 'updatedAt'];
 
-  SchemaTestUtils.testEnumValues(UserScalarFieldEnumSchema, validValues, invalidValues);
+        SchemaTestUtils.testEnumValues(UserScalarFieldEnumSchema, validValues, invalidValues);
       });
     });
 
@@ -136,7 +136,7 @@ describe('Generated Schema Tests', () => {
         const validValues = ['asc', 'desc'];
         const invalidValues = ['ascending', 'descending', 'ASC', 'DESC'];
 
-  SchemaTestUtils.testEnumValues(SortOrderSchema, validValues, invalidValues);
+        SchemaTestUtils.testEnumValues(SortOrderSchema, validValues, invalidValues);
       });
     });
   });
@@ -165,7 +165,7 @@ describe('Generated Schema Tests', () => {
               title: 'Test Post',
               content: 'Test content',
               likes: BigInt(0),
-              bytes: new Uint8Array([1, 2, 3])
+              bytes: new Uint8Array([1, 2, 3]),
             },
           },
         };
@@ -181,11 +181,7 @@ describe('Generated Schema Tests', () => {
           role: Role.USER,
         };
 
-        SchemaTestUtils.testRequiredFields(
-          UserCreateInputObjectSchema,
-          baseData,
-          ['email'],
-        );
+        SchemaTestUtils.testRequiredFields(UserCreateInputObjectSchema, baseData, ['email']);
       });
     });
 
@@ -301,16 +297,10 @@ describe('Generated Schema Tests', () => {
         skip: 0,
       };
 
-      const performance = SchemaTestUtils.performanceTest(
-        UserFindManySchema,
-        testData,
-        100,
-      );
+      const performance = SchemaTestUtils.performanceTest(UserFindManySchema, testData, 100);
 
       expect(performance.avgTime).toBeLessThan(1); // Should validate in less than 1ms on average
-      console.log(
-        `Average validation time: ${performance.avgTime.toFixed(3)}ms`,
-      );
+      console.log(`Average validation time: ${performance.avgTime.toFixed(3)}ms`);
     });
   });
 

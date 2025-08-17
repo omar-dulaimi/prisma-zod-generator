@@ -19,9 +19,9 @@ export interface GlobalNamingOptions {
  * Name collision resolution strategies
  */
 export enum CollisionStrategy {
-  SUFFIX_INCREMENT = 'suffix_increment',  // Add _1, _2, etc.
-  PREFIX_VARIANT = 'prefix_variant',      // Add variant prefix
-  THROW_ERROR = 'throw_error'             // Throw error on collision
+  SUFFIX_INCREMENT = 'suffix_increment', // Add _1, _2, etc.
+  PREFIX_VARIANT = 'prefix_variant', // Add variant prefix
+  THROW_ERROR = 'throw_error', // Throw error on collision
 }
 
 /**
@@ -42,15 +42,15 @@ export interface NamingResult {
   fileName: string;
   filePath: string;
   directoryPath: string;
-  
+
   // Schema names
   schemaName: string;
   typeName: string;
-  
+
   // Export names
   schemaExportName: string;
   typeExportName: string;
-  
+
   // Metadata
   variantType: VariantType;
   modelName: string;
@@ -85,15 +85,15 @@ export class VariantNamingSystem {
     globalOptions: GlobalNamingOptions = {},
     collisionConfig: CollisionResolutionConfig = {
       strategy: CollisionStrategy.SUFFIX_INCREMENT,
-      maxAttempts: 10
-    }
+      maxAttempts: 10,
+    },
   ) {
     this.globalOptions = {
       useModelPrefix: true,
       usePascalCase: true,
       customSeparator: '.',
       baseDirectory: './generated/schemas',
-      ...globalOptions
+      ...globalOptions,
     };
     this.collisionConfig = collisionConfig;
   }
@@ -104,7 +104,7 @@ export class VariantNamingSystem {
   generateNaming(
     modelName: string,
     variantType: VariantType,
-    customConfig?: Partial<NamingConfig>
+    customConfig?: Partial<NamingConfig>,
   ): NamingResult {
     const config = this.mergeNamingConfig(variantType, customConfig);
     const normalizedModelName = this.normalizeModelName(modelName);
@@ -118,7 +118,7 @@ export class VariantNamingSystem {
     const resolvedNames = this.resolveNamingCollisions({
       fileName: baseFileName,
       schemaName: baseSchemaName,
-      typeName: baseTypeName
+      typeName: baseTypeName,
     });
 
     // Build full paths
@@ -140,11 +140,13 @@ export class VariantNamingSystem {
       variantType,
       modelName,
       isCollisionResolved: resolvedNames.isCollisionResolved,
-      originalNames: resolvedNames.isCollisionResolved ? {
-        fileName: baseFileName,
-        schemaName: baseSchemaName,
-        typeName: baseTypeName
-      } : undefined
+      originalNames: resolvedNames.isCollisionResolved
+        ? {
+            fileName: baseFileName,
+            schemaName: baseSchemaName,
+            typeName: baseTypeName,
+          }
+        : undefined,
     };
   }
 
@@ -152,10 +154,10 @@ export class VariantNamingSystem {
    * Generate file name for a variant
    */
   private generateFileName(modelName: string, config: NamingConfig): string {
-    const baseName = this.globalOptions.usePascalCase 
+    const baseName = this.globalOptions.usePascalCase
       ? this.toPascalCase(modelName)
       : this.toCamelCase(modelName);
-    
+
     return `${baseName}${config.suffix}`;
   }
 
@@ -163,10 +165,10 @@ export class VariantNamingSystem {
    * Generate schema name for a variant
    */
   private generateSchemaName(modelName: string, config: NamingConfig): string {
-    const baseName = this.globalOptions.usePascalCase 
+    const baseName = this.globalOptions.usePascalCase
       ? this.toPascalCase(modelName)
       : this.toCamelCase(modelName);
-    
+
     return `${baseName}${config.schemaNameSuffix}`;
   }
 
@@ -174,10 +176,10 @@ export class VariantNamingSystem {
    * Generate type name for a variant
    */
   private generateTypeName(modelName: string, config: NamingConfig): string {
-    const baseName = this.globalOptions.usePascalCase 
+    const baseName = this.globalOptions.usePascalCase
       ? this.toPascalCase(modelName)
       : this.toCamelCase(modelName);
-    
+
     return `${baseName}${config.typeNameSuffix}`;
   }
 
@@ -187,7 +189,7 @@ export class VariantNamingSystem {
   private buildDirectoryPath(variantType: VariantType): string {
     const baseDir = this.globalOptions.baseDirectory || './generated/schemas';
     const separator = this.globalOptions.customSeparator || '/';
-    
+
     return `${baseDir}${separator}${variantType}`;
   }
 
@@ -195,8 +197,8 @@ export class VariantNamingSystem {
    * Build full file path
    */
   private buildFilePath(directoryPath: string, fileName: string): string {
-    const separator = this.globalOptions.customSeparator === '.' ? '/' : 
-                     this.globalOptions.customSeparator || '/';
+    const separator =
+      this.globalOptions.customSeparator === '.' ? '/' : this.globalOptions.customSeparator || '/';
     return `${directoryPath}${separator}${fileName}`;
   }
 
@@ -218,7 +220,10 @@ export class VariantNamingSystem {
     let attempts = 0;
 
     // Check for file name collisions
-    while (this.usedFileNames.has(fileName) && attempts < (this.collisionConfig.maxAttempts || 10)) {
+    while (
+      this.usedFileNames.has(fileName) &&
+      attempts < (this.collisionConfig.maxAttempts || 10)
+    ) {
       fileName = this.resolveFileNameCollision(names.fileName, attempts + 1);
       isCollisionResolved = true;
       attempts++;
@@ -226,7 +231,10 @@ export class VariantNamingSystem {
 
     // Check for schema name collisions
     attempts = 0;
-    while (this.usedSchemaNames.has(schemaName) && attempts < (this.collisionConfig.maxAttempts || 10)) {
+    while (
+      this.usedSchemaNames.has(schemaName) &&
+      attempts < (this.collisionConfig.maxAttempts || 10)
+    ) {
       schemaName = this.resolveSchemaNameCollision(names.schemaName, attempts + 1);
       isCollisionResolved = true;
       attempts++;
@@ -234,7 +242,10 @@ export class VariantNamingSystem {
 
     // Type names typically follow schema names
     if (isCollisionResolved) {
-      typeName = typeName.replace(names.schemaName.replace('Schema', ''), schemaName.replace('Schema', ''));
+      typeName = typeName.replace(
+        names.schemaName.replace('Schema', ''),
+        schemaName.replace('Schema', ''),
+      );
     }
 
     if (attempts >= (this.collisionConfig.maxAttempts || 10)) {
@@ -247,7 +258,7 @@ export class VariantNamingSystem {
       fileName,
       schemaName,
       typeName,
-      isCollisionResolved
+      isCollisionResolved,
     };
   }
 
@@ -296,12 +307,12 @@ export class VariantNamingSystem {
    */
   private mergeNamingConfig(
     variantType: VariantType,
-    customConfig?: Partial<NamingConfig>
+    customConfig?: Partial<NamingConfig>,
   ): NamingConfig {
     const defaultConfig = DEFAULT_NAMING_CONFIGS[variantType];
     return {
       ...defaultConfig,
-      ...customConfig
+      ...customConfig,
     };
   }
 
@@ -310,18 +321,14 @@ export class VariantNamingSystem {
    */
   private normalizeModelName(modelName: string): string {
     // Remove special characters and ensure proper casing
-    return modelName
-      .replace(/[^a-zA-Z0-9]/g, '')
-      .replace(/^\d+/, ''); // Remove leading numbers
+    return modelName.replace(/[^a-zA-Z0-9]/g, '').replace(/^\d+/, ''); // Remove leading numbers
   }
 
   /**
    * Convert string to PascalCase
    */
   private toPascalCase(str: string): string {
-    return str
-      .replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase())
-      .replace(/\s+/g, '');
+    return str.replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase()).replace(/\s+/g, '');
   }
 
   /**
@@ -356,9 +363,13 @@ export class VariantNamingSystem {
     }
 
     // Check for naming consistency
-    if (!naming.schemaName.includes(naming.modelName) && 
-        !naming.schemaName.toLowerCase().includes(naming.modelName.toLowerCase())) {
-      warnings.push(`Schema name '${naming.schemaName}' doesn't clearly reference model '${naming.modelName}'`);
+    if (
+      !naming.schemaName.includes(naming.modelName) &&
+      !naming.schemaName.toLowerCase().includes(naming.modelName.toLowerCase())
+    ) {
+      warnings.push(
+        `Schema name '${naming.schemaName}' doesn't clearly reference model '${naming.modelName}'`,
+      );
     }
 
     // Suggest improvements
@@ -374,7 +385,7 @@ export class VariantNamingSystem {
       isValid: errors.length === 0,
       errors,
       warnings,
-      suggestions
+      suggestions,
     };
   }
 
@@ -384,10 +395,12 @@ export class VariantNamingSystem {
   private isValidFileName(fileName: string): boolean {
     // Basic file system compatibility check
     const invalidChars = /[<>:"/\\|?*]/;
-    return !invalidChars.test(fileName) && 
-           fileName.length > 0 && 
-           fileName.length <= 255 &&
-           fileName.endsWith('.ts');
+    return (
+      !invalidChars.test(fileName) &&
+      fileName.length > 0 &&
+      fileName.length <= 255 &&
+      fileName.endsWith('.ts')
+    );
   }
 
   /**
@@ -396,9 +409,7 @@ export class VariantNamingSystem {
   private isValidSchemaName(schemaName: string): boolean {
     // Must be valid TypeScript identifier
     const validIdentifier = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
-    return validIdentifier.test(schemaName) && 
-           schemaName.length > 0 &&
-           /^[A-Z]/.test(schemaName); // Should start with uppercase
+    return validIdentifier.test(schemaName) && schemaName.length > 0 && /^[A-Z]/.test(schemaName); // Should start with uppercase
   }
 
   /**
@@ -407,9 +418,7 @@ export class VariantNamingSystem {
   private isValidTypeName(typeName: string): boolean {
     // Must be valid TypeScript identifier
     const validIdentifier = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
-    return validIdentifier.test(typeName) && 
-           typeName.length > 0 &&
-           /^[A-Z]/.test(typeName); // Should start with uppercase
+    return validIdentifier.test(typeName) && typeName.length > 0 && /^[A-Z]/.test(typeName); // Should start with uppercase
   }
 
   /**
@@ -466,11 +475,11 @@ export class NamingUtils {
   static extractModelNameFromFileName(fileName: string, variantType: VariantType): string {
     const config = DEFAULT_NAMING_CONFIGS[variantType];
     const suffix = config.suffix;
-    
+
     if (fileName.endsWith(suffix)) {
       return fileName.substring(0, fileName.length - suffix.length);
     }
-    
+
     return fileName.replace(/\.ts$/, '');
   }
 

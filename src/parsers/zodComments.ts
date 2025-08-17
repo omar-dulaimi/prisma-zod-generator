@@ -1,6 +1,6 @@
 /**
  * Zod Comment Parser
- * 
+ *
  * Parses @zod validation annotations from Prisma schema field comments
  * to generate enhanced Zod validation schemas.
  */
@@ -31,10 +31,10 @@ export interface ExtractedFieldComment {
 
 /**
  * Extract comments from Prisma DMMF model fields
- * 
+ *
  * This function processes Prisma model field definitions and extracts
  * comment data with proper normalization and context for downstream parsing.
- * 
+ *
  * @param models - Array of Prisma DMMF models
  * @returns Array of extracted field comments with context
  */
@@ -44,7 +44,7 @@ export function extractFieldComments(models: DMMF.Model[]): ExtractedFieldCommen
   for (const model of models) {
     for (const field of model.fields) {
       const comment = field.documentation || '';
-      
+
       // Skip fields without comments
       if (!comment.trim()) {
         continue;
@@ -57,7 +57,7 @@ export function extractFieldComments(models: DMMF.Model[]): ExtractedFieldCommen
           fieldType: field.type,
           comment: comment,
           isOptional: !field.isRequired,
-          isList: field.isList
+          isList: field.isList,
         };
 
         const extractedComment = extractFieldComment(context);
@@ -71,11 +71,13 @@ export function extractFieldComments(models: DMMF.Model[]): ExtractedFieldCommen
             fieldType: field.type,
             comment: comment,
             isOptional: !field.isRequired,
-            isList: field.isList
+            isList: field.isList,
           },
           normalizedComment: '',
           hasZodAnnotations: false,
-          extractionErrors: [`Failed to extract comment: ${error instanceof Error ? error.message : String(error)}`]
+          extractionErrors: [
+            `Failed to extract comment: ${error instanceof Error ? error.message : String(error)}`,
+          ],
         });
       }
     }
@@ -86,20 +88,20 @@ export function extractFieldComments(models: DMMF.Model[]): ExtractedFieldCommen
 
 /**
  * Extract and normalize a single field comment
- * 
+ *
  * @param context - Field context with comment and metadata
  * @returns Extracted comment with processing information
  */
 export function extractFieldComment(context: FieldCommentContext): ExtractedFieldComment {
   const errors: string[] = [];
-  
+
   try {
     // Normalize whitespace and handle multi-line comments
     const normalizedComment = normalizeComment(context.comment);
-    
+
     // Check if comment contains @zod annotations
     const hasZodAnnotations = detectZodAnnotations(normalizedComment);
-    
+
     // Validate comment structure
     const structureErrors = validateCommentStructure(normalizedComment, context);
     errors.push(...structureErrors);
@@ -108,26 +110,28 @@ export function extractFieldComment(context: FieldCommentContext): ExtractedFiel
       context,
       normalizedComment,
       hasZodAnnotations,
-      extractionErrors: errors
+      extractionErrors: errors,
     };
   } catch (error) {
-    errors.push(`Comment extraction failed: ${error instanceof Error ? error.message : String(error)}`);
-    
+    errors.push(
+      `Comment extraction failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+
     return {
       context,
       normalizedComment: '',
       hasZodAnnotations: false,
-      extractionErrors: errors
+      extractionErrors: errors,
     };
   }
 }
 
 /**
  * Normalize comment content for consistent processing
- * 
+ *
  * Handles multi-line comments, whitespace normalization, and ensures
  * consistent format for downstream parsing.
- * 
+ *
  * @param comment - Raw comment from Prisma field
  * @returns Normalized comment string
  */
@@ -137,22 +141,22 @@ export function normalizeComment(comment: string): string {
   }
 
   // Handle multi-line comments by preserving @zod annotations on separate lines
-  const lines = comment.split(/\r?\n/).map(line => line.trim());
-  
+  const lines = comment.split(/\r?\n/).map((line) => line.trim());
+
   // Remove empty lines and normalize whitespace
   const normalizedLines = lines
-    .filter(line => line.length > 0)
-    .map(line => line.replace(/\s+/g, ' ').trim());
+    .filter((line) => line.length > 0)
+    .map((line) => line.replace(/\s+/g, ' ').trim());
 
   return normalizedLines.join(' ');
 }
 
 /**
  * Detect if comment contains @zod validation annotations
- * 
+ *
  * Performs a quick check to determine if the comment contains
  * any @zod annotations before more expensive parsing operations.
- * 
+ *
  * @param comment - Normalized comment string
  * @returns True if @zod annotations are detected
  */
@@ -168,10 +172,10 @@ export function detectZodAnnotations(comment: string): boolean {
 
 /**
  * Validate comment structure and detect potential issues
- * 
+ *
  * Performs structural validation to catch common comment formatting
  * issues that could cause parsing problems later.
- * 
+ *
  * @param comment - Normalized comment string
  * @param context - Field context for error reporting
  * @returns Array of validation errors
@@ -187,7 +191,7 @@ export function validateCommentStructure(comment: string, context: FieldCommentC
   if (detectZodAnnotations(comment)) {
     const parenthesesErrors = validateParentheses(comment, context);
     errors.push(...parenthesesErrors);
-    
+
     // Check for malformed @zod syntax
     const syntaxErrors = validateZodSyntax(comment, context);
     errors.push(...syntaxErrors);
@@ -198,7 +202,7 @@ export function validateCommentStructure(comment: string, context: FieldCommentC
 
 /**
  * Validate parentheses matching in comments
- * 
+ *
  * @param comment - Comment to validate
  * @param context - Field context for error reporting
  * @returns Array of parentheses validation errors
@@ -206,7 +210,7 @@ export function validateCommentStructure(comment: string, context: FieldCommentC
 function validateParentheses(comment: string, context: FieldCommentContext): string[] {
   const errors: string[] = [];
   let parenCount = 0;
-  
+
   for (let i = 0; i < comment.length; i++) {
     const char = comment[i];
     if (char === '(') {
@@ -214,51 +218,59 @@ function validateParentheses(comment: string, context: FieldCommentContext): str
     } else if (char === ')') {
       parenCount--;
       if (parenCount < 0) {
-        errors.push(`${context.modelName}.${context.fieldName}: Unmatched closing parenthesis at position ${i}`);
+        errors.push(
+          `${context.modelName}.${context.fieldName}: Unmatched closing parenthesis at position ${i}`,
+        );
         break;
       }
     }
   }
-  
+
   if (parenCount > 0) {
-    errors.push(`${context.modelName}.${context.fieldName}: ${parenCount} unmatched opening parenthesis(es)`);
+    errors.push(
+      `${context.modelName}.${context.fieldName}: ${parenCount} unmatched opening parenthesis(es)`,
+    );
   }
-  
+
   return errors;
 }
 
 /**
  * Validate basic @zod annotation syntax
- * 
+ *
  * @param comment - Comment to validate
  * @param context - Field context for error reporting
  * @returns Array of syntax validation errors
  */
 function validateZodSyntax(comment: string, context: FieldCommentContext): string[] {
   const errors: string[] = [];
-  
+
   // Look for @zod annotations and validate basic structure
   const zodMatches = comment.match(/@zod\.[a-zA-Z_][a-zA-Z0-9_]*(\([^)]*\))?/gi);
-  
+
   if (zodMatches) {
     zodMatches.forEach((match, _index) => {
       // Check for common syntax issues
       if (match.includes('..')) {
-        errors.push(`${context.modelName}.${context.fieldName}: Invalid double dots in @zod annotation: ${match}`);
+        errors.push(
+          `${context.modelName}.${context.fieldName}: Invalid double dots in @zod annotation: ${match}`,
+        );
       }
-      
+
       if (match.includes('@zod.()')) {
-        errors.push(`${context.modelName}.${context.fieldName}: Empty method name in @zod annotation: ${match}`);
+        errors.push(
+          `${context.modelName}.${context.fieldName}: Empty method name in @zod annotation: ${match}`,
+        );
       }
     });
   }
-  
+
   return errors;
 }
 
 /**
  * Get comment extraction statistics for debugging
- * 
+ *
  * @param extractedComments - Array of extracted comments
  * @returns Statistics about comment extraction
  */
@@ -269,31 +281,35 @@ export function getExtractionStatistics(extractedComments: ExtractedFieldComment
   extractionErrors: number;
 } {
   const totalFields = extractedComments.length;
-  const fieldsWithComments = extractedComments.filter(ec => ec.normalizedComment.length > 0).length;
-  const fieldsWithZodAnnotations = extractedComments.filter(ec => ec.hasZodAnnotations).length;
-  const extractionErrors = extractedComments.filter(ec => ec.extractionErrors.length > 0).length;
+  const fieldsWithComments = extractedComments.filter(
+    (ec) => ec.normalizedComment.length > 0,
+  ).length;
+  const fieldsWithZodAnnotations = extractedComments.filter((ec) => ec.hasZodAnnotations).length;
+  const extractionErrors = extractedComments.filter((ec) => ec.extractionErrors.length > 0).length;
 
   return {
     totalFields,
     fieldsWithComments,
     fieldsWithZodAnnotations,
-    extractionErrors
+    extractionErrors,
   };
 }
 
 /**
  * Filter extracted comments to only those with @zod annotations
- * 
+ *
  * @param extractedComments - Array of all extracted comments
  * @returns Array of comments containing @zod annotations
  */
-export function filterZodComments(extractedComments: ExtractedFieldComment[]): ExtractedFieldComment[] {
-  return extractedComments.filter(ec => ec.hasZodAnnotations && ec.extractionErrors.length === 0);
+export function filterZodComments(
+  extractedComments: ExtractedFieldComment[],
+): ExtractedFieldComment[] {
+  return extractedComments.filter((ec) => ec.hasZodAnnotations && ec.extractionErrors.length === 0);
 }
 
 /**
  * Get all extraction errors across multiple field comments
- * 
+ *
  * @param extractedComments - Array of extracted comments
  * @returns Array of all errors with field context
  */
@@ -303,11 +319,11 @@ export function getAllExtractionErrors(extractedComments: ExtractedFieldComment[
   errors: string[];
 }> {
   return extractedComments
-    .filter(ec => ec.extractionErrors.length > 0)
-    .map(ec => ({
+    .filter((ec) => ec.extractionErrors.length > 0)
+    .map((ec) => ({
       modelName: ec.context.modelName,
       fieldName: ec.context.fieldName,
-      errors: ec.extractionErrors
+      errors: ec.extractionErrors,
     }));
 }
 
@@ -332,19 +348,22 @@ export interface ZodAnnotationParseResult {
 
 /**
  * Parse @zod annotations from normalized comment text
- * 
+ *
  * Extracts and parses all @zod annotations including method names,
  * parameters, and handles complex chaining scenarios.
- * 
+ *
  * @param comment - Normalized comment string
  * @param context - Field context for error reporting
  * @returns Parse result with annotations and errors
  */
-export function parseZodAnnotations(comment: string, context: FieldCommentContext): ZodAnnotationParseResult {
+export function parseZodAnnotations(
+  comment: string,
+  context: FieldCommentContext,
+): ZodAnnotationParseResult {
   const result: ZodAnnotationParseResult = {
     annotations: [],
     parseErrors: [],
-    isValid: true
+    isValid: true,
   };
 
   if (!comment || !detectZodAnnotations(comment)) {
@@ -355,13 +374,13 @@ export function parseZodAnnotations(comment: string, context: FieldCommentContex
     // Check if we have multiple method calls (chained) by counting dots after @zod
     const methodCount = (comment.match(/\.([a-zA-Z_][a-zA-Z0-9_]*)/g) || []).length;
     const hasChainedAnnotations = methodCount > 1;
-    
+
     if (hasChainedAnnotations) {
       // Handle chained @zod annotations (e.g., @zod.min(1).max(100))
       const chainedAnnotations = parseChainedZodAnnotations(comment, context);
       result.annotations.push(...chainedAnnotations.annotations);
       result.parseErrors.push(...chainedAnnotations.parseErrors);
-      
+
       if (chainedAnnotations.parseErrors.length > 0) {
         result.isValid = false;
       }
@@ -369,7 +388,7 @@ export function parseZodAnnotations(comment: string, context: FieldCommentContex
       // Handle simple @zod annotations
       // Matches: @zod.methodName(), @zod.methodName(param), @zod.methodName(param1, param2)
       const zodPattern = /@zod\.([a-zA-Z_][a-zA-Z0-9_]*)\s*(\([^)]*\))?/gi;
-      
+
       let match;
       while ((match = zodPattern.exec(comment)) !== null) {
         try {
@@ -387,17 +406,19 @@ export function parseZodAnnotations(comment: string, context: FieldCommentContex
     if (result.annotations.length > 0) {
       const validAnnotations: ParsedZodAnnotation[] = [];
       const validationErrors: string[] = [];
-      
+
       for (const annotation of result.annotations) {
         try {
           validateZodMethod(annotation, context);
           validAnnotations.push(annotation);
         } catch (error) {
-          validationErrors.push(`${context.modelName}.${context.fieldName}: ${error instanceof Error ? error.message : String(error)}`);
+          validationErrors.push(
+            `${context.modelName}.${context.fieldName}: ${error instanceof Error ? error.message : String(error)}`,
+          );
           // Continue processing other annotations instead of failing completely
         }
       }
-      
+
       // Only fail if no annotations are valid
       if (validAnnotations.length === 0 && validationErrors.length > 0) {
         result.parseErrors.push(...validationErrors);
@@ -410,9 +431,10 @@ export function parseZodAnnotations(comment: string, context: FieldCommentContex
         }
       }
     }
-
   } catch (error) {
-    result.parseErrors.push(`General parsing error: ${error instanceof Error ? error.message : String(error)}`);
+    result.parseErrors.push(
+      `General parsing error: ${error instanceof Error ? error.message : String(error)}`,
+    );
     result.isValid = false;
   }
 
@@ -421,12 +443,15 @@ export function parseZodAnnotations(comment: string, context: FieldCommentContex
 
 /**
  * Parse a single @zod annotation match
- * 
+ *
  * @param match - Regex match result
  * @param context - Field context for error reporting
  * @returns Parsed annotation object
  */
-function parseZodAnnotation(match: RegExpExecArray, context: FieldCommentContext): ParsedZodAnnotation {
+function parseZodAnnotation(
+  match: RegExpExecArray,
+  context: FieldCommentContext,
+): ParsedZodAnnotation {
   const [fullMatch, methodName, parameterString] = match;
   const position = match.index || 0;
 
@@ -436,7 +461,9 @@ function parseZodAnnotation(match: RegExpExecArray, context: FieldCommentContext
     try {
       parameters = parseZodParameters(parameterString, context, methodName);
     } catch (error) {
-      throw new Error(`Invalid parameters in ${methodName}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Invalid parameters in ${methodName}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -444,22 +471,25 @@ function parseZodAnnotation(match: RegExpExecArray, context: FieldCommentContext
     method: methodName,
     parameters,
     rawMatch: fullMatch,
-    position
+    position,
   };
 }
 
 /**
  * Parse chained @zod annotations like @zod.min(1).max(100)
- * 
+ *
  * @param comment - Comment string
  * @param context - Field context
  * @returns Parse result for chained annotations
  */
-function parseChainedZodAnnotations(comment: string, context: FieldCommentContext): ZodAnnotationParseResult {
+function parseChainedZodAnnotations(
+  comment: string,
+  context: FieldCommentContext,
+): ZodAnnotationParseResult {
   const result: ZodAnnotationParseResult = {
     annotations: [],
     parseErrors: [],
-    isValid: true
+    isValid: true,
   };
 
   try {
@@ -468,16 +498,17 @@ function parseChainedZodAnnotations(comment: string, context: FieldCommentContex
     if (zodIndex === -1) {
       return result;
     }
-    
+
     // Extract the entire @zod chain starting from @zod
     const zodChain = comment.slice(zodIndex);
-    
+
     // Use the improved parseMethodChain function to handle the entire chain
     const chainedMethods = parseMethodChain(zodChain, context);
     result.annotations.push(...chainedMethods);
-    
   } catch (error) {
-    result.parseErrors.push(`Failed to parse chained annotation: ${error instanceof Error ? error.message : String(error)}`);
+    result.parseErrors.push(
+      `Failed to parse chained annotation: ${error instanceof Error ? error.message : String(error)}`,
+    );
     result.isValid = false;
   }
 
@@ -486,40 +517,43 @@ function parseChainedZodAnnotations(comment: string, context: FieldCommentContex
 
 /**
  * Parse a method chain like .min(1).max(100)
- * 
+ *
  * @param chainString - The chained method string
  * @param context - Field context
  * @returns Array of parsed annotations
  */
-function parseMethodChain(chainString: string, context: FieldCommentContext): ParsedZodAnnotation[] {
+function parseMethodChain(
+  chainString: string,
+  context: FieldCommentContext,
+): ParsedZodAnnotation[] {
   const annotations: ParsedZodAnnotation[] = [];
-  
+
   // Parse method calls manually to handle nested parentheses properly
   let i = 0;
   while (i < chainString.length) {
     // Find next method call starting with a dot
     const dotIndex = chainString.indexOf('.', i);
     if (dotIndex === -1) break;
-    
+
     // Extract method name
     const methodStart = dotIndex + 1;
     let methodEnd = methodStart;
     while (methodEnd < chainString.length && /[a-zA-Z0-9_]/.test(chainString[methodEnd])) {
       methodEnd++;
     }
-    
+
     if (methodEnd === methodStart) {
       i = dotIndex + 1;
       continue;
     }
-    
+
     const methodName = chainString.slice(methodStart, methodEnd);
-    
+
     // Skip whitespace
     while (methodEnd < chainString.length && /\s/.test(chainString[methodEnd])) {
       methodEnd++;
     }
-    
+
     // Check for parameter list
     let parameterString = '';
     if (methodEnd < chainString.length && chainString[methodEnd] === '(') {
@@ -527,7 +561,7 @@ function parseMethodChain(chainString: string, context: FieldCommentContext): Pa
       let parenCount = 1;
       const paramStart = methodEnd + 1;
       let paramEnd = paramStart;
-      
+
       while (paramEnd < chainString.length && parenCount > 0) {
         const char = chainString[paramEnd];
         if (char === '(') {
@@ -537,7 +571,7 @@ function parseMethodChain(chainString: string, context: FieldCommentContext): Pa
         }
         paramEnd++;
       }
-      
+
       if (parenCount === 0) {
         parameterString = chainString.slice(methodEnd, paramEnd);
         i = paramEnd;
@@ -549,14 +583,16 @@ function parseMethodChain(chainString: string, context: FieldCommentContext): Pa
       parameterString = '()';
       i = methodEnd;
     }
-    
+
     // Parse parameters
     let parameters: unknown[] = [];
     if (parameterString && parameterString.trim() !== '()') {
       try {
         parameters = parseZodParameters(parameterString, context, methodName);
       } catch (error) {
-        throw new Error(`Invalid parameters in chained method ${methodName}: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(
+          `Invalid parameters in chained method ${methodName}: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
@@ -564,7 +600,7 @@ function parseMethodChain(chainString: string, context: FieldCommentContext): Pa
       method: methodName,
       parameters,
       rawMatch: `.${methodName}${parameterString}`,
-      position: dotIndex
+      position: dotIndex,
     });
   }
 
@@ -573,18 +609,22 @@ function parseMethodChain(chainString: string, context: FieldCommentContext): Pa
 
 /**
  * Parse parameter string from @zod annotation
- * 
+ *
  * Handles various parameter types: numbers, strings, booleans, arrays, objects
- * 
+ *
  * @param parameterString - Parameter string including parentheses
  * @param context - Field context for error reporting
  * @param methodName - Method name for error context
  * @returns Array of parsed parameters
  */
-function parseZodParameters(parameterString: string, context: FieldCommentContext, methodName: string): unknown[] {
+function parseZodParameters(
+  parameterString: string,
+  context: FieldCommentContext,
+  methodName: string,
+): unknown[] {
   // Remove outer parentheses
   const innerParams = parameterString.slice(1, -1).trim();
-  
+
   if (!innerParams) {
     return [];
   }
@@ -597,30 +637,31 @@ function parseZodParameters(parameterString: string, context: FieldCommentContex
 
     // Handle multiple parameters - split by commas not inside quotes or nested structures
     const paramParts = splitParameters(innerParams);
-    return paramParts.map(part => parseSimpleParameter(part.trim()));
-    
+    return paramParts.map((part) => parseSimpleParameter(part.trim()));
   } catch (error) {
-    throw new Error(`Failed to parse parameters "${innerParams}" for ${methodName}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to parse parameters "${innerParams}" for ${methodName}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
 /**
  * Check if parameter string is a simple single parameter
- * 
+ *
  * @param paramString - Parameter string
  * @returns True if simple parameter
  */
 function isSimpleParameter(paramString: string): boolean {
   const trimmed = paramString.trim();
-  
+
   // Check if it contains unquoted commas (indicating multiple parameters)
   let inQuotes = false;
   let quoteChar = '';
   let bracketDepth = 0;
-  
+
   for (let i = 0; i < trimmed.length; i++) {
     const char = trimmed[i];
-    
+
     if (!inQuotes && (char === '"' || char === "'")) {
       inQuotes = true;
       quoteChar = char;
@@ -637,13 +678,13 @@ function isSimpleParameter(paramString: string): boolean {
       }
     }
   }
-  
+
   return true;
 }
 
 /**
  * Split parameter string by commas, respecting quotes and nested structures
- * 
+ *
  * @param paramString - Parameter string
  * @returns Array of parameter parts
  */
@@ -653,10 +694,10 @@ function splitParameters(paramString: string): string[] {
   let inQuotes = false;
   let quoteChar = '';
   let bracketDepth = 0;
-  
+
   for (let i = 0; i < paramString.length; i++) {
     const char = paramString[i];
-    
+
     if (!inQuotes && (char === '"' || char === "'")) {
       inQuotes = true;
       quoteChar = char;
@@ -682,23 +723,23 @@ function splitParameters(paramString: string): string[] {
       current += char;
     }
   }
-  
+
   if (current) {
     parts.push(current);
   }
-  
+
   return parts;
 }
 
 /**
  * Parse a single parameter value
- * 
+ *
  * @param paramValue - Parameter string value
  * @returns Parsed parameter value
  */
 function parseSimpleParameter(paramValue: string): unknown {
   const trimmed = paramValue.trim();
-  
+
   if (!trimmed) {
     throw new Error('Empty parameter value');
   }
@@ -706,11 +747,11 @@ function parseSimpleParameter(paramValue: string): unknown {
   // Boolean values
   if (trimmed === 'true') return true;
   if (trimmed === 'false') return false;
-  
+
   // Null and undefined
   if (trimmed === 'null') return null;
   if (trimmed === 'undefined') return undefined;
-  
+
   // Numbers (integers and floats)
   if (/^-?\d+$/.test(trimmed)) {
     return parseInt(trimmed, 10);
@@ -718,13 +759,15 @@ function parseSimpleParameter(paramValue: string): unknown {
   if (/^-?\d*\.\d+$/.test(trimmed)) {
     return parseFloat(trimmed);
   }
-  
+
   // Quoted strings
-  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-      (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
     return trimmed.slice(1, -1);
   }
-  
+
   // Regular expressions
   if (trimmed.startsWith('/') && trimmed.match(/\/[gimuy]*$/)) {
     try {
@@ -736,7 +779,7 @@ function parseSimpleParameter(paramValue: string): unknown {
       throw new Error(`Invalid regex: ${trimmed}`);
     }
   }
-  
+
   // Arrays (basic support)
   if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
     try {
@@ -745,7 +788,7 @@ function parseSimpleParameter(paramValue: string): unknown {
       throw new Error(`Invalid array: ${trimmed}`);
     }
   }
-  
+
   // Objects (basic support)
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
     try {
@@ -754,18 +797,18 @@ function parseSimpleParameter(paramValue: string): unknown {
       throw new Error(`Invalid object: ${trimmed}`);
     }
   }
-  
+
   // Complex expressions (like new Date(), function calls, etc.)
   if (trimmed.includes('(') && trimmed.includes(')')) {
     // Pass through complex expressions as-is for evaluation at runtime
     return trimmed;
   }
-  
+
   // Unquoted strings (identifiers, etc.)
   if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
     return trimmed;
   }
-  
+
   // If we can't parse it, pass it through as a raw string
   // This allows complex expressions to be used in the generated code
   return trimmed;
@@ -773,19 +816,24 @@ function parseSimpleParameter(paramValue: string): unknown {
 
 /**
  * Validate parsed @zod annotations for semantic correctness
- * 
+ *
  * @param annotations - Array of parsed annotations
  * @param context - Field context
  * @returns Array of validation errors
  */
-export function validateZodAnnotations(annotations: ParsedZodAnnotation[], context: FieldCommentContext): string[] {
+export function validateZodAnnotations(
+  annotations: ParsedZodAnnotation[],
+  context: FieldCommentContext,
+): string[] {
   const errors: string[] = [];
 
   for (const annotation of annotations) {
     try {
       validateZodMethod(annotation, context);
     } catch (error) {
-      errors.push(`${context.modelName}.${context.fieldName}: ${error instanceof Error ? error.message : String(error)}`);
+      errors.push(
+        `${context.modelName}.${context.fieldName}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -794,7 +842,7 @@ export function validateZodAnnotations(annotations: ParsedZodAnnotation[], conte
 
 /**
  * Validate a single @zod method annotation
- * 
+ *
  * @param annotation - Parsed annotation
  * @param context - Field context
  */
@@ -802,28 +850,93 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   const { method, parameters } = annotation;
 
   // Common string validation methods
-  const stringMethods = ['min', 'max', 'length', 'email', 'url', 'uuid', 'regex', 'includes', 'startsWith', 'endsWith', 'trim', 'toLowerCase', 'toUpperCase'];
-  
+  const stringMethods = [
+    'min',
+    'max',
+    'length',
+    'email',
+    'url',
+    'uuid',
+    'regex',
+    'includes',
+    'startsWith',
+    'endsWith',
+    'trim',
+    'toLowerCase',
+    'toUpperCase',
+  ];
+
   // Common number validation methods
-  const numberMethods = ['min', 'max', 'int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite', 'multipleOf', 'step'];
-  
+  const numberMethods = [
+    'min',
+    'max',
+    'int',
+    'positive',
+    'negative',
+    'nonnegative',
+    'nonpositive',
+    'finite',
+    'multipleOf',
+    'step',
+  ];
+
   // Common array validation methods
   const arrayMethods = ['min', 'max', 'length', 'nonempty'];
-  
+
   // Methods that require parameters
-  const requiresParams = ['min', 'max', 'length', 'regex', 'includes', 'startsWith', 'endsWith', 'enum', 'default', 'refine', 'transform', 'multipleOf', 'step'];
-  
+  const requiresParams = [
+    'min',
+    'max',
+    'length',
+    'regex',
+    'includes',
+    'startsWith',
+    'endsWith',
+    'enum',
+    'default',
+    'refine',
+    'transform',
+    'multipleOf',
+    'step',
+  ];
+
   // Methods that don't allow parameters
   const noParams = ['email', 'url', 'uuid', 'nonempty', 'trim', 'toLowerCase', 'toUpperCase'];
-  
+
   // Methods that accept optional error message parameter
-  const optionalErrorMessage = ['int', 'positive', 'negative', 'nonnegative', 'nonpositive', 'finite'];
+  const optionalErrorMessage = [
+    'int',
+    'positive',
+    'negative',
+    'nonnegative',
+    'nonpositive',
+    'finite',
+  ];
 
   // Additional known methods not covered above
-  const additionalMethods = ['default', 'optional', 'nullable', 'nullish', 'refine', 'transform', 'enum', 'object', 'array', 'record'];
-  
+  const additionalMethods = [
+    'default',
+    'optional',
+    'nullable',
+    'nullish',
+    'refine',
+    'transform',
+    'enum',
+    'object',
+    'array',
+    'record',
+  ];
+
   // Check if method is known
-  const allKnownMethods = [...new Set([...stringMethods, ...numberMethods, ...arrayMethods, ...additionalMethods, ...optionalErrorMessage])];
+  const allKnownMethods = [
+    ...new Set([
+      ...stringMethods,
+      ...numberMethods,
+      ...arrayMethods,
+      ...additionalMethods,
+      ...optionalErrorMessage,
+    ]),
+  ];
   if (!allKnownMethods.includes(method)) {
     throw new Error(`Unknown @zod method: ${method} - this method is not supported`);
   }
@@ -836,13 +949,17 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   if (noParams.includes(method) && parameters.length > 0) {
     throw new Error(`Method ${method} does not accept parameters`);
   }
-  
+
   // Validate optional error message methods
   if (optionalErrorMessage.includes(method) && parameters.length > 1) {
     throw new Error(`Method ${method} accepts at most one parameter (error message)`);
   }
-  
-  if (optionalErrorMessage.includes(method) && parameters.length === 1 && typeof parameters[0] !== 'string') {
+
+  if (
+    optionalErrorMessage.includes(method) &&
+    parameters.length === 1 &&
+    typeof parameters[0] !== 'string'
+  ) {
     throw new Error(`Method ${method} error message parameter must be a string`);
   }
 
@@ -856,7 +973,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
 
 /**
  * Validate parameters for string validation methods
- * 
+ *
  * @param method - Validation method name
  * @param parameters - Method parameters
  */
@@ -866,13 +983,19 @@ function validateStringMethodParameters(method: string, parameters: unknown[]): 
     case 'max':
     case 'length':
       // Allow 1 parameter (number) or 2 parameters (number + error message)
-      if (parameters.length < 1 || parameters.length > 2 || 
-          typeof parameters[0] !== 'number' || parameters[0] < 0 ||
-          (parameters.length === 2 && typeof parameters[1] !== 'string')) {
-        throw new Error(`${method} requires a non-negative number parameter and optional error message`);
+      if (
+        parameters.length < 1 ||
+        parameters.length > 2 ||
+        typeof parameters[0] !== 'number' ||
+        parameters[0] < 0 ||
+        (parameters.length === 2 && typeof parameters[1] !== 'string')
+      ) {
+        throw new Error(
+          `${method} requires a non-negative number parameter and optional error message`,
+        );
       }
       break;
-    
+
     case 'regex':
       if (parameters.length < 1 || parameters.length > 2) {
         throw new Error(`regex requires 1-2 parameters (RegExp/string, optional error message)`);
@@ -884,7 +1007,7 @@ function validateStringMethodParameters(method: string, parameters: unknown[]): 
         throw new Error(`regex second parameter (error message) must be a string`);
       }
       break;
-    
+
     case 'includes':
     case 'startsWith':
     case 'endsWith':
@@ -897,7 +1020,7 @@ function validateStringMethodParameters(method: string, parameters: unknown[]): 
 
 /**
  * Validate parameters for number validation methods
- * 
+ *
  * @param method - Validation method name
  * @param parameters - Method parameters
  */
@@ -906,30 +1029,35 @@ function validateNumberMethodParameters(method: string, parameters: unknown[]): 
     case 'min':
     case 'max':
       // Allow 1 parameter (number) or 2 parameters (number + error message)
-      if (parameters.length < 1 || parameters.length > 2 || 
-          typeof parameters[0] !== 'number' ||
-          (parameters.length === 2 && typeof parameters[1] !== 'string')) {
+      if (
+        parameters.length < 1 ||
+        parameters.length > 2 ||
+        typeof parameters[0] !== 'number' ||
+        (parameters.length === 2 && typeof parameters[1] !== 'string')
+      ) {
         throw new Error(`${method} requires a number parameter and optional error message`);
       }
       break;
-    
+
     case 'positive':
     case 'negative':
     case 'int':
     case 'finite':
       // Allow 0 parameters or 1 parameter (error message)
-      if (parameters.length > 1 || 
-          (parameters.length === 1 && typeof parameters[0] !== 'string')) {
+      if (parameters.length > 1 || (parameters.length === 1 && typeof parameters[0] !== 'string')) {
         throw new Error(`${method} accepts optional error message parameter`);
       }
       break;
-    
+
     case 'multipleOf':
     case 'step':
       // Allow 1 parameter (number) or 2 parameters (number + error message)
-      if (parameters.length < 1 || parameters.length > 2 || 
-          typeof parameters[0] !== 'number' ||
-          (parameters.length === 2 && typeof parameters[1] !== 'string')) {
+      if (
+        parameters.length < 1 ||
+        parameters.length > 2 ||
+        typeof parameters[0] !== 'number' ||
+        (parameters.length === 2 && typeof parameters[1] !== 'string')
+      ) {
         throw new Error(`${method} requires a number parameter and optional error message`);
       }
       break;
@@ -960,23 +1088,23 @@ export interface ValidationMethodConfig {
 
 /**
  * Map parsed @zod annotations to Zod schema method calls
- * 
+ *
  * Converts parsed annotations into actual Zod validation method chains
  * that can be used in generated schema code.
- * 
+ *
  * @param annotations - Array of parsed annotations
  * @param context - Field context for validation
  * @returns Schema generation result with method chain and imports
  */
 export function mapAnnotationsToZodSchema(
-  annotations: ParsedZodAnnotation[], 
-  context: FieldCommentContext
+  annotations: ParsedZodAnnotation[],
+  context: FieldCommentContext,
 ): ZodSchemaGenerationResult {
   const result: ZodSchemaGenerationResult = {
     schemaChain: '',
     imports: new Set<string>(),
     errors: [],
-    isValid: true
+    isValid: true,
   };
 
   if (annotations.length === 0) {
@@ -985,18 +1113,20 @@ export function mapAnnotationsToZodSchema(
 
   try {
     const methodCalls: string[] = [];
-    
+
     for (const annotation of annotations) {
       try {
         const methodCall = mapAnnotationToZodMethod(annotation, context);
         methodCalls.push(methodCall.methodCall);
-        
+
         // Add any required imports
         if (methodCall.requiredImport) {
           result.imports.add(methodCall.requiredImport);
         }
       } catch (error) {
-        result.errors.push(`Failed to map ${annotation.method}: ${error instanceof Error ? error.message : String(error)}`);
+        result.errors.push(
+          `Failed to map ${annotation.method}: ${error instanceof Error ? error.message : String(error)}`,
+        );
         result.isValid = false;
       }
     }
@@ -1005,9 +1135,10 @@ export function mapAnnotationsToZodSchema(
     if (methodCalls.length > 0) {
       result.schemaChain = methodCalls.join('');
     }
-
   } catch (error) {
-    result.errors.push(`Schema generation failed: ${error instanceof Error ? error.message : String(error)}`);
+    result.errors.push(
+      `Schema generation failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
     result.isValid = false;
   }
 
@@ -1024,35 +1155,44 @@ interface MethodMappingResult {
 
 /**
  * Map a single annotation to a Zod method call
- * 
+ *
  * @param annotation - Parsed annotation
  * @param context - Field context
  * @returns Method mapping result
  */
-function mapAnnotationToZodMethod(annotation: ParsedZodAnnotation, context: FieldCommentContext): MethodMappingResult {
+function mapAnnotationToZodMethod(
+  annotation: ParsedZodAnnotation,
+  context: FieldCommentContext,
+): MethodMappingResult {
   const { method, parameters } = annotation;
-  
+
   // Get method configuration
   const methodConfig = getValidationMethodConfig(method, context.fieldType);
-  
+
   if (!methodConfig) {
     // Unknown method - pass through as-is with warning
     console.warn(`Unknown @zod method: ${method} - generating as-is`);
     return {
-      methodCall: `.${method}(${formatParameters(parameters)})`
+      methodCall: `.${method}(${formatParameters(parameters)})`,
     };
   }
 
   // Validate field type compatibility
-  if (methodConfig.fieldTypeCompatibility && 
-      !methodConfig.fieldTypeCompatibility.includes(context.fieldType)) {
-    throw new Error(`Method ${method} is not compatible with field type ${context.fieldType}. Compatible types: ${methodConfig.fieldTypeCompatibility.join(', ')}`);
+  if (
+    methodConfig.fieldTypeCompatibility &&
+    !methodConfig.fieldTypeCompatibility.includes(context.fieldType)
+  ) {
+    throw new Error(
+      `Method ${method} is not compatible with field type ${context.fieldType}. Compatible types: ${methodConfig.fieldTypeCompatibility.join(', ')}`,
+    );
   }
 
   // Validate parameter count
   if (methodConfig.parameterCount !== 'variable') {
     if (parameters.length !== methodConfig.parameterCount) {
-      throw new Error(`Method ${method} expects ${methodConfig.parameterCount} parameters, got ${parameters.length}`);
+      throw new Error(
+        `Method ${method} expects ${methodConfig.parameterCount} parameters, got ${parameters.length}`,
+      );
     }
   }
 
@@ -1062,56 +1202,189 @@ function mapAnnotationToZodMethod(annotation: ParsedZodAnnotation, context: Fiel
 
   return {
     methodCall,
-    requiredImport: methodConfig.requiresImport
+    requiredImport: methodConfig.requiresImport,
   };
 }
 
 /**
  * Get validation method configuration
- * 
+ *
  * @param methodName - Name of the validation method
  * @param fieldType - Field type for compatibility checking
  * @returns Method configuration or null if unknown
  */
-function getValidationMethodConfig(methodName: string, fieldType?: string): ValidationMethodConfig | null {
+function getValidationMethodConfig(
+  methodName: string,
+  fieldType?: string,
+): ValidationMethodConfig | null {
   const configs: ValidationMethodConfig[] = [
     // String validation methods
-    { methodName: 'min', zodMethod: 'min', parameterCount: 'variable', fieldTypeCompatibility: ['String'] },
-    { methodName: 'max', zodMethod: 'max', parameterCount: 'variable', fieldTypeCompatibility: ['String'] },
-    { methodName: 'length', zodMethod: 'length', parameterCount: 'variable', fieldTypeCompatibility: ['String'] },
-    { methodName: 'email', zodMethod: 'email', parameterCount: 0, fieldTypeCompatibility: ['String'] },
+    {
+      methodName: 'min',
+      zodMethod: 'min',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'max',
+      zodMethod: 'max',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'length',
+      zodMethod: 'length',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'email',
+      zodMethod: 'email',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
     { methodName: 'url', zodMethod: 'url', parameterCount: 0, fieldTypeCompatibility: ['String'] },
-    { methodName: 'uuid', zodMethod: 'uuid', parameterCount: 0, fieldTypeCompatibility: ['String'] },
-    { methodName: 'regex', zodMethod: 'regex', parameterCount: 'variable', fieldTypeCompatibility: ['String'] },
-    { methodName: 'includes', zodMethod: 'includes', parameterCount: 1, fieldTypeCompatibility: ['String'] },
-    { methodName: 'startsWith', zodMethod: 'startsWith', parameterCount: 1, fieldTypeCompatibility: ['String'] },
-    { methodName: 'endsWith', zodMethod: 'endsWith', parameterCount: 1, fieldTypeCompatibility: ['String'] },
-    { methodName: 'trim', zodMethod: 'trim', parameterCount: 0, fieldTypeCompatibility: ['String'] },
-    { methodName: 'toLowerCase', zodMethod: 'toLowerCase', parameterCount: 0, fieldTypeCompatibility: ['String'] },
-    { methodName: 'toUpperCase', zodMethod: 'toUpperCase', parameterCount: 0, fieldTypeCompatibility: ['String'] },
-    
+    {
+      methodName: 'uuid',
+      zodMethod: 'uuid',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'regex',
+      zodMethod: 'regex',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'includes',
+      zodMethod: 'includes',
+      parameterCount: 1,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'startsWith',
+      zodMethod: 'startsWith',
+      parameterCount: 1,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'endsWith',
+      zodMethod: 'endsWith',
+      parameterCount: 1,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'trim',
+      zodMethod: 'trim',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'toLowerCase',
+      zodMethod: 'toLowerCase',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'toUpperCase',
+      zodMethod: 'toUpperCase',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+
     // Number validation methods
-    { methodName: 'min', zodMethod: 'min', parameterCount: 'variable', fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
-    { methodName: 'max', zodMethod: 'max', parameterCount: 'variable', fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
-    { methodName: 'int', zodMethod: 'int', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float'] },
-    { methodName: 'positive', zodMethod: 'positive', parameterCount: 'variable', fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
-    { methodName: 'negative', zodMethod: 'negative', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
-    { methodName: 'nonnegative', zodMethod: 'nonnegative', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
-    { methodName: 'nonpositive', zodMethod: 'nonpositive', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float', 'BigInt'] },
-    { methodName: 'finite', zodMethod: 'finite', parameterCount: 0, fieldTypeCompatibility: ['Float'] },
-    { methodName: 'safe', zodMethod: 'safe', parameterCount: 0, fieldTypeCompatibility: ['Int', 'Float'] },
-    { methodName: 'multipleOf', zodMethod: 'multipleOf', parameterCount: 'variable', fieldTypeCompatibility: ['Int', 'Float'] },
-    
+    {
+      methodName: 'min',
+      zodMethod: 'min',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'max',
+      zodMethod: 'max',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'int',
+      zodMethod: 'int',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['Int', 'Float'],
+    },
+    {
+      methodName: 'positive',
+      zodMethod: 'positive',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'negative',
+      zodMethod: 'negative',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'nonnegative',
+      zodMethod: 'nonnegative',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'nonpositive',
+      zodMethod: 'nonpositive',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'finite',
+      zodMethod: 'finite',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['Float'],
+    },
+    {
+      methodName: 'safe',
+      zodMethod: 'safe',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['Int', 'Float'],
+    },
+    {
+      methodName: 'multipleOf',
+      zodMethod: 'multipleOf',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float'],
+    },
+
     // Array validation methods
     { methodName: 'min', zodMethod: 'min', parameterCount: 1, fieldTypeCompatibility: ['Array'] },
     { methodName: 'max', zodMethod: 'max', parameterCount: 1, fieldTypeCompatibility: ['Array'] },
-    { methodName: 'length', zodMethod: 'length', parameterCount: 1, fieldTypeCompatibility: ['Array'] },
-    { methodName: 'nonempty', zodMethod: 'nonempty', parameterCount: 0, fieldTypeCompatibility: ['Array'] },
-    
+    {
+      methodName: 'length',
+      zodMethod: 'length',
+      parameterCount: 1,
+      fieldTypeCompatibility: ['Array'],
+    },
+    {
+      methodName: 'nonempty',
+      zodMethod: 'nonempty',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['Array'],
+    },
+
     // Date validation methods
-    { methodName: 'min', zodMethod: 'min', parameterCount: 1, fieldTypeCompatibility: ['DateTime'] },
-    { methodName: 'max', zodMethod: 'max', parameterCount: 1, fieldTypeCompatibility: ['DateTime'] },
-    
+    {
+      methodName: 'min',
+      zodMethod: 'min',
+      parameterCount: 1,
+      fieldTypeCompatibility: ['DateTime'],
+    },
+    {
+      methodName: 'max',
+      zodMethod: 'max',
+      parameterCount: 1,
+      fieldTypeCompatibility: ['DateTime'],
+    },
+
     // Custom validation methods
     { methodName: 'refine', zodMethod: 'refine', parameterCount: 'variable' },
     { methodName: 'transform', zodMethod: 'transform', parameterCount: 1 },
@@ -1119,32 +1392,43 @@ function getValidationMethodConfig(methodName: string, fieldType?: string): Vali
     { methodName: 'nullable', zodMethod: 'nullable', parameterCount: 0 },
     { methodName: 'nullish', zodMethod: 'nullish', parameterCount: 0 },
     { methodName: 'default', zodMethod: 'default', parameterCount: 1 },
-    { methodName: 'enum', zodMethod: 'enum', parameterCount: 1, fieldTypeCompatibility: ['String'] },
-    { methodName: 'datetime', zodMethod: 'datetime', parameterCount: 0, fieldTypeCompatibility: ['String'] },
+    {
+      methodName: 'enum',
+      zodMethod: 'enum',
+      parameterCount: 1,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'datetime',
+      zodMethod: 'datetime',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
     { methodName: 'object', zodMethod: 'object', parameterCount: 0 },
-    { methodName: 'array', zodMethod: 'array', parameterCount: 'variable' }
+    { methodName: 'array', zodMethod: 'array', parameterCount: 'variable' },
     // Note: Removed 'string', 'number', 'boolean' method configs as they duplicate base types
   ];
 
   // If field type is provided, find the config that matches both method name and field type
   if (fieldType) {
-    const compatibleConfigs = configs.filter(config => 
-      config.methodName === methodName && 
-      (!config.fieldTypeCompatibility || config.fieldTypeCompatibility.includes(fieldType))
+    const compatibleConfigs = configs.filter(
+      (config) =>
+        config.methodName === methodName &&
+        (!config.fieldTypeCompatibility || config.fieldTypeCompatibility.includes(fieldType)),
     );
-    
+
     if (compatibleConfigs.length > 0) {
       return compatibleConfigs[0];
     }
   }
 
   // Fallback to first match by method name only
-  return configs.find(config => config.methodName === methodName) || null;
+  return configs.find((config) => config.methodName === methodName) || null;
 }
 
 /**
  * Format parameters for Zod method calls
- * 
+ *
  * @param parameters - Array of parameter values
  * @returns Formatted parameter string
  */
@@ -1153,12 +1437,12 @@ function formatParameters(parameters: unknown[]): string {
     return '';
   }
 
-  return parameters.map(param => formatSingleParameter(param)).join(', ');
+  return parameters.map((param) => formatSingleParameter(param)).join(', ');
 }
 
 /**
  * Format a single parameter for Zod method calls
- * 
+ *
  * @param param - Parameter value
  * @returns Formatted parameter string
  */
@@ -1166,11 +1450,11 @@ function formatSingleParameter(param: unknown): string {
   if (param === null) {
     return 'null';
   }
-  
+
   if (param === undefined) {
     return 'undefined';
   }
-  
+
   if (typeof param === 'string') {
     // Check if it's a complex expression that shouldn't be quoted
     // Complex expressions include: new Date(), RegExp(), function calls, or dotted calls like z.string()
@@ -1179,30 +1463,30 @@ function formatSingleParameter(param: unknown): string {
     }
     return `'${param.replace(/'/g, "\\'")}'`;
   }
-  
+
   if (typeof param === 'number' || typeof param === 'boolean') {
     return String(param);
   }
-  
+
   if (param instanceof RegExp) {
     return param.toString();
   }
-  
+
   if (Array.isArray(param)) {
     return `[${param.map(formatSingleParameter).join(', ')}]`;
   }
-  
+
   if (typeof param === 'object') {
     return JSON.stringify(param);
   }
-  
+
   // Fallback for unknown types
   return String(param);
 }
 
 /**
  * Generate complete Zod schema with base type and validations
- * 
+ *
  * @param baseType - Base Zod type (e.g., 'z.string()', 'z.number()')
  * @param annotations - Parsed annotations
  * @param context - Field context
@@ -1211,36 +1495,36 @@ function formatSingleParameter(param: unknown): string {
 export function generateCompleteZodSchema(
   baseType: string,
   annotations: ParsedZodAnnotation[],
-  context: FieldCommentContext
+  context: FieldCommentContext,
 ): ZodSchemaGenerationResult {
   const validationResult = mapAnnotationsToZodSchema(annotations, context);
-  
+
   if (!validationResult.isValid) {
     return validationResult;
   }
-  
+
   // Combine base type with validation chain
   let schemaChain = validationResult.schemaChain;
-  
+
   // Remove redundant .optional() calls if base type already includes .optional()
   if (baseType.includes('.optional()') && schemaChain.includes('.optional()')) {
     // Remove all .optional() calls from the chain since base type already handles optionality
     schemaChain = schemaChain.replace(/\.optional\(\)/g, '');
   }
-  
+
   const fullSchema = baseType + schemaChain;
-  
+
   return {
     schemaChain: fullSchema,
     imports: validationResult.imports,
     errors: validationResult.errors,
-    isValid: validationResult.isValid
+    isValid: validationResult.isValid,
   };
 }
 
 /**
  * Get base Zod type for Prisma field type
- * 
+ *
  * @param fieldType - Prisma field type
  * @param isOptional - Whether field is optional
  * @param isList - Whether field is a list
@@ -1248,7 +1532,7 @@ export function generateCompleteZodSchema(
  */
 export function getBaseZodType(fieldType: string, isOptional: boolean, isList: boolean): string {
   let baseType: string;
-  
+
   switch (fieldType) {
     case 'String':
       baseType = 'z.string()';
@@ -1282,33 +1566,36 @@ export function getBaseZodType(fieldType: string, isOptional: boolean, isList: b
       baseType = `z.enum(${fieldType})`;
       break;
   }
-  
+
   // Handle arrays
   if (isList) {
     baseType = `z.array(${baseType})`;
   }
-  
+
   // Handle optional fields
   if (isOptional) {
     baseType = `${baseType}.optional()`;
   }
-  
+
   return baseType;
 }
 
 /**
  * Get required imports for Zod schema generation
- * 
+ *
  * @param fieldType - Prisma field type
  * @param customImports - Additional imports from validation methods
  * @returns Set of import statements
  */
-export function getRequiredImports(fieldType: string, customImports: Set<string> = new Set()): Set<string> {
+export function getRequiredImports(
+  fieldType: string,
+  customImports: Set<string> = new Set(),
+): Set<string> {
   const imports = new Set<string>(customImports);
-  
+
   // Always need zod
   imports.add('z');
-  
+
   // Special imports for certain types
   switch (fieldType) {
     case 'Bytes':
@@ -1325,6 +1612,6 @@ export function getRequiredImports(fieldType: string, customImports: Set<string>
       }
       break;
   }
-  
+
   return imports;
 }

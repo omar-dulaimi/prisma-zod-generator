@@ -6,7 +6,12 @@
 import { DMMF } from '@prisma/generator-helper';
 import { promises as fs } from 'fs';
 import { PrismaTypeMapper } from '../generators/model';
-import { ModelVariantCollection, VariantConfig, VariantGenerationResult, VariantType } from '../types/variants';
+import {
+  ModelVariantCollection,
+  VariantConfig,
+  VariantGenerationResult,
+  VariantType,
+} from '../types/variants';
 import { formatFile } from '../utils/formatFile';
 import { NamingResult, VariantNamingSystem } from '../utils/naming';
 import { writeFileSafely } from '../utils/writeFileSafely';
@@ -80,7 +85,7 @@ export class VariantFileGenerationCoordinator {
   constructor(
     configManager?: VariantConfigurationManager,
     namingSystem?: VariantNamingSystem,
-    typeMapper?: PrismaTypeMapper
+    typeMapper?: PrismaTypeMapper,
   ) {
     this.configManager = configManager || new VariantConfigurationManager();
     this.namingSystem = namingSystem || new VariantNamingSystem();
@@ -92,7 +97,7 @@ export class VariantFileGenerationCoordinator {
    */
   async generateAllVariants(
     models: DMMF.Model[],
-    options: GenerationCoordinationOptions = {}
+    options: GenerationCoordinationOptions = {},
   ): Promise<{
     collections: ModelVariantCollection[];
     statistics: GenerationStatistics;
@@ -107,7 +112,7 @@ export class VariantFileGenerationCoordinator {
       currentModel: '',
       currentVariant: VariantType.PURE,
       startTime,
-      errors: []
+      errors: [],
     };
 
     const collections: ModelVariantCollection[] = [];
@@ -116,11 +121,11 @@ export class VariantFileGenerationCoordinator {
     try {
       if (options.parallelGeneration) {
         // Generate models in parallel
-        const promises = models.map(model => 
-          this.generateModelVariants(model, options, progress)
+        const promises = models.map((model) =>
+          this.generateModelVariants(model, options, progress),
         );
         const results = await Promise.allSettled(promises);
-        
+
         results.forEach((result, index) => {
           if (result.status === 'fulfilled') {
             collections.push(result.value);
@@ -134,10 +139,10 @@ export class VariantFileGenerationCoordinator {
           try {
             progress.currentModel = model.name;
             this.notifyProgress(progress);
-            
+
             const collection = await this.generateModelVariants(model, options, progress);
             collections.push(collection);
-            
+
             progress.processedModels++;
           } catch (error) {
             const errorMessage = `Failed to generate variants for model ${model.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -146,7 +151,7 @@ export class VariantFileGenerationCoordinator {
               model: model.name,
               variant: progress.currentVariant,
               error: errorMessage,
-              timestamp: Date.now()
+              timestamp: Date.now(),
             });
           }
         }
@@ -163,15 +168,16 @@ export class VariantFileGenerationCoordinator {
       }
 
       const statistics = this.calculateStatistics(collections, startTime);
-      
+
       return {
         collections,
         statistics,
-        errors: allErrors
+        errors: allErrors,
       };
-
     } catch (error) {
-      throw new Error(`Generation coordination failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Generation coordination failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -181,36 +187,36 @@ export class VariantFileGenerationCoordinator {
   async generateModelVariants(
     model: DMMF.Model,
     options: GenerationCoordinationOptions = {},
-    progress?: GenerationProgress
+    progress?: GenerationProgress,
   ): Promise<ModelVariantCollection> {
     const enabledVariants = options.enabledVariants || Object.values(VariantType);
     const modelStartTime = Date.now();
-    
+
     const collection: ModelVariantCollection = {
       modelName: model.name,
       variants: {
         [VariantType.PURE]: null,
         [VariantType.INPUT]: null,
-        [VariantType.RESULT]: null
+        [VariantType.RESULT]: null,
       },
       dependencies: new Set(),
       crossVariantReferences: {
         [VariantType.PURE]: [],
         [VariantType.INPUT]: [],
-        [VariantType.RESULT]: []
+        [VariantType.RESULT]: [],
       },
       indexFile: {
         fileName: '',
         content: '',
-        exports: new Set()
+        exports: new Set(),
       },
       generationSummary: {
         totalVariants: enabledVariants.length,
         successfulVariants: 0,
         failedVariants: 0,
         totalErrors: 0,
-        processingTime: 0
-      }
+        processingTime: 0,
+      },
     };
 
     // Generate each enabled variant
@@ -223,27 +229,26 @@ export class VariantFileGenerationCoordinator {
 
         const variantResult = await this.generateSingleVariant(model, variantType, options);
         collection.variants[variantType] = variantResult;
-        
+
         // Track dependencies
-        variantResult.dependencies.forEach(dep => collection.dependencies.add(dep));
-        
+        variantResult.dependencies.forEach((dep) => collection.dependencies.add(dep));
+
         collection.generationSummary.successfulVariants++;
-        
+
         if (progress) {
           progress.processedVariants++;
         }
-
       } catch (error) {
         const errorMessage = `Failed to generate ${variantType} variant: ${error instanceof Error ? error.message : 'Unknown error'}`;
         collection.generationSummary.failedVariants++;
         collection.generationSummary.totalErrors++;
-        
+
         if (progress) {
           progress.errors.push({
             model: model.name,
             variant: variantType,
             error: errorMessage,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
         }
       }
@@ -251,12 +256,12 @@ export class VariantFileGenerationCoordinator {
 
     // Generate model index file
     collection.indexFile = this.generateModelIndexFile(collection);
-    
+
     // Calculate cross-variant references
     this.calculateCrossVariantReferences(collection);
-    
+
     collection.generationSummary.processingTime = Date.now() - modelStartTime;
-    
+
     return collection;
   }
 
@@ -266,18 +271,18 @@ export class VariantFileGenerationCoordinator {
   async generateSingleVariant(
     model: DMMF.Model,
     variantType: VariantType,
-    options: GenerationCoordinationOptions = {}
+    options: GenerationCoordinationOptions = {},
   ): Promise<VariantGenerationResult> {
     const config = this.configManager.getVariantConfig(model.name, variantType);
     const naming = this.namingSystem.generateNaming(model.name, variantType, config.naming);
-    
+
     const context: GenerationContext = {
       model,
       variant: variantType,
       config,
       naming,
       outputDirectory: options.outputDirectory || './generated/schemas',
-      typeMapper: this.typeMapper
+      typeMapper: this.typeMapper,
     };
 
     // Generate schema content using the model generator
@@ -308,7 +313,7 @@ export class VariantFileGenerationCoordinator {
       fieldCount: schemaComposition.fields.length,
       excludedFieldCount: this.calculateExcludedFields(model, context),
       validationCount: this.calculateValidationCount(schemaComposition),
-      errors: []
+      errors: [],
     };
   }
 
@@ -322,22 +327,22 @@ export class VariantFileGenerationCoordinator {
     const fieldExclusions = this.configManager.getEffectiveFieldExclusions(
       context.model.name,
       context.variant,
-      context.model.fields.map(f => f.name)
+      context.model.fields.map((f) => f.name),
     );
 
     // Remove excluded fields from content
-    fieldExclusions.excludedFields.forEach(fieldName => {
+    fieldExclusions.excludedFields.forEach((fieldName) => {
       const fieldRegex = new RegExp(`^\\s*${fieldName}:.*$`, 'gm');
       customizedContent = customizedContent.replace(fieldRegex, '');
     });
 
     // Apply validation customizations
-    context.model.fields.forEach(field => {
+    context.model.fields.forEach((field) => {
       if (!fieldExclusions.excludedFields.includes(field.name)) {
         const validationCustoms = this.configManager.getEffectiveValidationCustomizations(
           context.model.name,
           context.variant,
-          field.name
+          field.name,
         );
 
         if (validationCustoms.validations.length > 0) {
@@ -365,13 +370,17 @@ export class VariantFileGenerationCoordinator {
     if (context.variant === 'pure') {
       // Variant base content currently uses generated enum schemas (RoleSchema). Convert them back to native enum usage.
       // 1. Detect imports of generated enum schemas and extract enum names.
-      const enumSchemaImportRe = /import\s*\{\s*([A-Za-z0-9_]+)Schema\s*\}\s*from\s*['"].*?\/enums\/[A-Za-z0-9_]+\.schema['"];?\n?/g;
-      customizedContent = customizedContent.replace(enumSchemaImportRe, (_full, enumBase: string) => {
-        if (!usedEnumNames.includes(enumBase)) usedEnumNames.push(enumBase);
-        return '';// remove the schema import
-      });
+      const enumSchemaImportRe =
+        /import\s*\{\s*([A-Za-z0-9_]+)Schema\s*\}\s*from\s*['"].*?\/enums\/[A-Za-z0-9_]+\.schema['"];?\n?/g;
+      customizedContent = customizedContent.replace(
+        enumSchemaImportRe,
+        (_full, enumBase: string) => {
+          if (!usedEnumNames.includes(enumBase)) usedEnumNames.push(enumBase);
+          return ''; // remove the schema import
+        },
+      );
       // 2. Replace occurrences of EnumNameSchema with z.enum(EnumName)
-      usedEnumNames.forEach(enumName => {
+      usedEnumNames.forEach((enumName) => {
         const schemaRefRe = new RegExp(`${enumName}Schema`, 'g');
         customizedContent = customizedContent.replace(schemaRefRe, `z.enum(${enumName})`);
       });
@@ -383,11 +392,14 @@ export class VariantFileGenerationCoordinator {
       }
       if (usedEnumNames.length > 0) {
         // Remove existing @prisma/client enum imports to avoid duplication
-        customizedContent = customizedContent.replace(/import\s*\{[^}]*\}\s*from\s*['"]@prisma\/client['"];?\n?/g, '');
+        customizedContent = customizedContent.replace(
+          /import\s*\{[^}]*\}\s*from\s*['"]@prisma\/client['"];?\n?/g,
+          '',
+        );
         // Insert consolidated import after zod import
         customizedContent = customizedContent.replace(
           /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,
-          (m) => `${m}\nimport { ${usedEnumNames.join(', ')} } from '@prisma/client';`
+          (m) => `${m}\nimport { ${usedEnumNames.join(', ')} } from '@prisma/client';`,
         );
       }
     } else {
@@ -397,15 +409,18 @@ export class VariantFileGenerationCoordinator {
         return `${enumName}Schema`;
       });
       if (usedEnumNames.length > 0) {
-        customizedContent = customizedContent.replace(/import\s*\{[^}]*\}\s*from\s*['"]@prisma\/client['"];?\n?/g, '');
+        customizedContent = customizedContent.replace(
+          /import\s*\{[^}]*\}\s*from\s*['"]@prisma\/client['"];?\n?/g,
+          '',
+        );
         customizedContent = customizedContent.replace(
           /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,
           (match) => {
             const importLines = usedEnumNames
-              .map(name => `import { ${name}Schema } from '../../enums/${name}.schema';`)
+              .map((name) => `import { ${name}Schema } from '../../enums/${name}.schema';`)
               .join('\n');
             return `${match}\n${importLines}`;
-          }
+          },
         );
       }
     }
@@ -427,7 +442,9 @@ export class VariantFileGenerationCoordinator {
     // Collect exports from all variants
     Object.entries(collection.variants).forEach(([_variantType, result]) => {
       if (result) {
-        imports.push(`export { ${result.schemaName}, ${result.typeName} } from './${result.fileName.replace('.ts', '')}';`);
+        imports.push(
+          `export { ${result.schemaName}, ${result.typeName} } from './${result.fileName.replace('.ts', '')}';`,
+        );
         exports.add(result.schemaName);
         exports.add(result.typeName);
       }
@@ -441,13 +458,13 @@ export class VariantFileGenerationCoordinator {
       ' */',
       '',
       ...imports,
-      ''
+      '',
     ].join('\n');
 
     return {
       fileName: `${collection.modelName.toLowerCase()}.ts`,
       content,
-      exports
+      exports,
     };
   }
 
@@ -456,19 +473,19 @@ export class VariantFileGenerationCoordinator {
    */
   private async generateIndexFiles(
     collections: ModelVariantCollection[],
-    options: GenerationCoordinationOptions
+    options: GenerationCoordinationOptions,
   ): Promise<void> {
     const outputDir = options.outputDirectory || './generated/schemas';
 
     // Generate variant-specific index files
     for (const variantType of Object.values(VariantType)) {
       const variantExports: string[] = [];
-      
-      collections.forEach(collection => {
+
+      collections.forEach((collection) => {
         const variant = collection.variants[variantType];
         if (variant) {
           variantExports.push(
-            `export { ${variant.schemaName}, ${variant.typeName} } from './${variantType}/${variant.fileName.replace('.ts', '')}';`
+            `export { ${variant.schemaName}, ${variant.typeName} } from './${variantType}/${variant.fileName.replace('.ts', '')}';`,
           );
         }
       });
@@ -482,7 +499,7 @@ export class VariantFileGenerationCoordinator {
           ' */',
           '',
           ...variantExports,
-          ''
+          '',
         ].join('\n');
 
         const variantIndexPath = `${outputDir}/${variantType}.ts`;
@@ -498,10 +515,8 @@ export class VariantFileGenerationCoordinator {
       ` * Generated at: ${new Date().toISOString()}`,
       ' */',
       '',
-      ...Object.values(VariantType).map(variant => 
-        `export * from './${variant}';`
-      ),
-      ''
+      ...Object.values(VariantType).map((variant) => `export * from './${variant}';`),
+      '',
     ].join('\n');
 
     const mainIndexPath = `${outputDir}/index.ts`;
@@ -514,10 +529,10 @@ export class VariantFileGenerationCoordinator {
   private calculateCrossVariantReferences(collection: ModelVariantCollection): void {
     // This would analyze which variants reference each other
     // For now, implement basic logic
-    Object.keys(collection.variants).forEach(variantType => {
+    Object.keys(collection.variants).forEach((variantType) => {
       const variant = variantType as VariantType;
       collection.crossVariantReferences[variant] = [];
-      
+
       // Pure variants might be referenced by input/result variants
       if (variant === VariantType.PURE) {
         if (collection.variants[VariantType.INPUT]) {
@@ -534,7 +549,10 @@ export class VariantFileGenerationCoordinator {
    * Helper methods
    */
 
-  private calculateTotalVariants(models: DMMF.Model[], options: GenerationCoordinationOptions): number {
+  private calculateTotalVariants(
+    models: DMMF.Model[],
+    options: GenerationCoordinationOptions,
+  ): number {
     const enabledVariants = options.enabledVariants || Object.values(VariantType);
     return models.length * enabledVariants.length;
   }
@@ -543,12 +561,14 @@ export class VariantFileGenerationCoordinator {
     const exclusions = this.configManager.getEffectiveFieldExclusions(
       context.model.name,
       context.variant,
-      model.fields.map(f => f.name)
+      model.fields.map((f) => f.name),
     );
     return exclusions.excludedFields.length;
   }
 
-  private calculateValidationCount(composition: { statistics?: { enhancedFields?: number } }): number {
+  private calculateValidationCount(composition: {
+    statistics?: { enhancedFields?: number };
+  }): number {
     return composition.statistics?.enhancedFields || 0;
   }
 
@@ -561,7 +581,11 @@ export class VariantFileGenerationCoordinator {
     }
   }
 
-  private async writeVariantFile(filePath: string, content: string, preserveExisting?: boolean): Promise<void> {
+  private async writeVariantFile(
+    filePath: string,
+    content: string,
+    preserveExisting?: boolean,
+  ): Promise<void> {
     if (preserveExisting) {
       // Check if file exists and skip if it does
       try {
@@ -577,33 +601,38 @@ export class VariantFileGenerationCoordinator {
 
   private validateDependencies(collections: ModelVariantCollection[]): void {
     // Implement dependency validation logic
-    const allModels = new Set(collections.map(c => c.modelName));
-    
-    collections.forEach(collection => {
-      collection.dependencies.forEach(dep => {
+    const allModels = new Set(collections.map((c) => c.modelName));
+
+    collections.forEach((collection) => {
+      collection.dependencies.forEach((dep) => {
         if (!allModels.has(dep)) {
-          throw new Error(`Model ${collection.modelName} depends on ${dep} which is not being generated`);
+          throw new Error(
+            `Model ${collection.modelName} depends on ${dep} which is not being generated`,
+          );
         }
       });
     });
   }
 
-  private calculateStatistics(collections: ModelVariantCollection[], startTime: number): GenerationStatistics {
+  private calculateStatistics(
+    collections: ModelVariantCollection[],
+    startTime: number,
+  ): GenerationStatistics {
     const totalTime = Date.now() - startTime;
     const variantCounts: Record<VariantType, number> = {
       [VariantType.PURE]: 0,
       [VariantType.INPUT]: 0,
-      [VariantType.RESULT]: 0
+      [VariantType.RESULT]: 0,
     };
     const errorCounts: Record<VariantType, number> = {
       [VariantType.PURE]: 0,
       [VariantType.INPUT]: 0,
-      [VariantType.RESULT]: 0
+      [VariantType.RESULT]: 0,
     };
     const filesSizesKB: Record<string, number> = {};
     const dependencyGraph: Record<string, string[]> = {};
 
-    collections.forEach(collection => {
+    collections.forEach((collection) => {
       Object.entries(collection.variants).forEach(([variant, result]) => {
         if (result) {
           variantCounts[variant as VariantType]++;
@@ -620,12 +649,12 @@ export class VariantFileGenerationCoordinator {
       variantCounts,
       errorCounts,
       filesSizesKB,
-      dependencyGraph
+      dependencyGraph,
     };
   }
 
   private notifyProgress(progress: GenerationProgress): void {
-    this.progressCallbacks.forEach(callback => {
+    this.progressCallbacks.forEach((callback) => {
       try {
         callback(progress);
       } catch {

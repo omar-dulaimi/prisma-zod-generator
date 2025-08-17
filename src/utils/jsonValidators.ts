@@ -20,10 +20,15 @@ export function jsonMaxDepthRefinement(maxDepth: number): string {
 }
 
 /** Compose both structure and depth checks (if you want them together). */
-export function jsonStructureAndDepthRefinement(options: { maxDepth?: number; enforceSerializable?: boolean }): string {
+export function jsonStructureAndDepthRefinement(options: {
+  maxDepth?: number;
+  enforceSerializable?: boolean;
+}): string {
   const parts: string[] = [];
   if (options.enforceSerializable) {
-    parts.push('.refine((val) => { try { JSON.stringify(val); return true; } catch { return false; } }, "Must be valid JSON serializable data")');
+    parts.push(
+      '.refine((val) => { try { JSON.stringify(val); return true; } catch { return false; } }, "Must be valid JSON serializable data")',
+    );
   }
   if (options.maxDepth && options.maxDepth > 0) {
     parts.push(jsonMaxDepthRefinement(options.maxDepth));

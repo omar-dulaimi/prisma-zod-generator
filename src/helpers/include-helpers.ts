@@ -1,11 +1,11 @@
 import { DMMF } from '@prisma/generator-helper';
 import Transformer from '../transformer';
 import {
-    checkModelHasEnabledManyModelRelation,
-    checkModelHasEnabledModelRelation,
-    getEnabledModels,
-    getEnabledRelationFields,
-    isOperationEnabledForModel
+  checkModelHasEnabledManyModelRelation,
+  checkModelHasEnabledModelRelation,
+  getEnabledModels,
+  getEnabledRelationFields,
+  isOperationEnabledForModel,
 } from './model-helpers';
 
 export function addMissingInputObjectTypesForInclude(
@@ -20,7 +20,7 @@ export function addMissingInputObjectTypesForInclude(
   }
   // Filter models to only include enabled ones
   const enabledModels = getEnabledModels(models);
-  
+
   // generate input object types necessary to support ModelInclude with relation support
   const generatedIncludeInputObjectTypes = generateModelIncludeInputObjectTypes(
     enabledModels,
@@ -31,19 +31,16 @@ export function addMissingInputObjectTypesForInclude(
     inputObjectTypes.push(includeInputObjectType);
   }
 }
-function generateModelIncludeInputObjectTypes(
-  models: DMMF.Model[],
-  isGenerateSelect: boolean,
-) {
+function generateModelIncludeInputObjectTypes(models: DMMF.Model[], isGenerateSelect: boolean) {
   const modelIncludeInputObjectTypes: DMMF.InputType[] = [];
   for (const model of models) {
     const { name: modelName } = model;
-    
+
     // Skip if model doesn't support include/select operations
     if (!shouldGenerateIncludeForModel(modelName)) {
       continue;
     }
-    
+
     const fields: DMMF.SchemaArg[] = [];
 
     // Only include enabled relation fields
@@ -86,7 +83,14 @@ function generateModelIncludeInputObjectTypes(
         { isList: false, type: 'Boolean', location: 'scalar' },
       ];
       if (isGenerateSelect) {
-        (inputTypes as Array<{ isList: boolean; type: string; location: string; namespace?: string }>).push({
+        (
+          inputTypes as Array<{
+            isList: boolean;
+            type: string;
+            location: string;
+            namespace?: string;
+          }>
+        ).push({
           isList: false,
           type: `${modelName}CountOutputTypeArgs`,
           location: 'inputObjectTypes',
@@ -119,8 +123,10 @@ function generateModelIncludeInputObjectTypes(
  * Check if include schema should be generated for a model
  */
 export function shouldGenerateIncludeForModel(modelName: string): boolean {
-  return Transformer.isModelEnabled(modelName) && 
-         (isOperationEnabledForModel(modelName, 'findUnique') ||
-          isOperationEnabledForModel(modelName, 'findFirst') ||
-          isOperationEnabledForModel(modelName, 'findMany'));
+  return (
+    Transformer.isModelEnabled(modelName) &&
+    (isOperationEnabledForModel(modelName, 'findUnique') ||
+      isOperationEnabledForModel(modelName, 'findFirst') ||
+      isOperationEnabledForModel(modelName, 'findMany'))
+  );
 }

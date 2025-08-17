@@ -1,18 +1,18 @@
 /**
  * Zod Integration Helper
- * 
+ *
  * Integrates @zod comment parsing with existing comment processing
  * and transformer workflows while maintaining backward compatibility.
  */
 
 import { DMMF } from '@prisma/generator-helper';
-import { 
-  extractFieldComments, 
-  parseZodAnnotations, 
+import {
+  extractFieldComments,
+  parseZodAnnotations,
   generateCompleteZodSchema,
   getBaseZodType,
   getRequiredImports,
-  ExtractedFieldComment
+  ExtractedFieldComment,
 } from '../parsers/zodComments';
 
 /**
@@ -40,20 +40,20 @@ export interface EnhancedModelInfo {
 
 /**
  * Process models to extract and integrate @zod annotations
- * 
+ *
  * This function processes all models and their fields to:
  * 1. Extract @zod annotations from field comments
  * 2. Generate Zod schema strings for annotated fields
  * 3. Maintain compatibility with existing comment processing
  * 4. Collect import requirements and error information
- * 
+ *
  * @param models - Array of Prisma DMMF models
  * @param options - Processing options
  * @returns Enhanced model information with Zod integration
  */
 export function processModelsWithZodIntegration(
   models: DMMF.Model[],
-  options: ZodIntegrationOptions = {}
+  options: ZodIntegrationOptions = {},
 ): EnhancedModelInfo[] {
   const enhancedModels: EnhancedModelInfo[] = [];
 
@@ -64,14 +64,16 @@ export function processModelsWithZodIntegration(
     } catch (error) {
       // Handle model processing errors gracefully
       console.warn(`Failed to process model ${model.name} for Zod integration:`, error);
-      
+
       // Create fallback model info
       enhancedModels.push({
         model,
-        enhancedFields: model.fields.map(field => createFallbackFieldInfo(field)),
+        enhancedFields: model.fields.map((field) => createFallbackFieldInfo(field)),
         allZodImports: new Set(),
         hasAnyZodAnnotations: false,
-        zodProcessingErrors: [`Model processing failed: ${error instanceof Error ? error.message : String(error)}`]
+        zodProcessingErrors: [
+          `Model processing failed: ${error instanceof Error ? error.message : String(error)}`,
+        ],
       });
     }
   }
@@ -85,30 +87,30 @@ export function processModelsWithZodIntegration(
 export interface ZodIntegrationOptions {
   /** Whether to enable @zod annotation processing (default: true) */
   enableZodAnnotations?: boolean;
-  
+
   /** Whether to generate fallback schemas for fields without annotations (default: true) */
   generateFallbackSchemas?: boolean;
-  
+
   /** Whether to validate annotation compatibility with field types (default: true) */
   validateTypeCompatibility?: boolean;
-  
+
   /** Whether to collect detailed error information (default: true) */
   collectDetailedErrors?: boolean;
-  
+
   /** Custom base types for specific field types */
   customBaseTypes?: Record<string, string>;
 }
 
 /**
  * Process a single model with Zod integration
- * 
+ *
  * @param model - Prisma DMMF model
  * @param options - Processing options
  * @returns Enhanced model information
  */
 function processModelWithZodIntegration(
   model: DMMF.Model,
-  options: ZodIntegrationOptions
+  options: ZodIntegrationOptions,
 ): EnhancedModelInfo {
   const enhancedFields: EnhancedFieldInfo[] = [];
   const allZodImports = new Set<string>();
@@ -117,10 +119,10 @@ function processModelWithZodIntegration(
 
   // Extract comments from all fields in the model
   const extractedComments = extractFieldComments([model]);
-  
+
   // Create a map for quick field comment lookup
   const commentMap = new Map<string, ExtractedFieldComment>();
-  extractedComments.forEach(comment => {
+  extractedComments.forEach((comment) => {
     commentMap.set(comment.context.fieldName, comment);
   });
 
@@ -129,22 +131,23 @@ function processModelWithZodIntegration(
     try {
       const enhancedField = processFieldWithZodIntegration(field, model, commentMap, options);
       enhancedFields.push(enhancedField);
-      
+
       // Collect imports and track annotations
-      enhancedField.zodImports.forEach(imp => allZodImports.add(imp));
+      enhancedField.zodImports.forEach((imp) => allZodImports.add(imp));
       if (enhancedField.hasZodAnnotations) {
         hasAnyZodAnnotations = true;
       }
-      
+
       // Collect errors
       zodProcessingErrors.push(...enhancedField.zodErrors);
-      
     } catch (error) {
       // Handle field processing errors gracefully
       console.warn(`Failed to process field ${field.name} in model ${model.name}:`, error);
-      
+
       const fallbackField = createFallbackFieldInfo(field);
-      fallbackField.zodErrors.push(`Field processing failed: ${error instanceof Error ? error.message : String(error)}`);
+      fallbackField.zodErrors.push(
+        `Field processing failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       enhancedFields.push(fallbackField);
     }
   }
@@ -154,13 +157,13 @@ function processModelWithZodIntegration(
     enhancedFields,
     allZodImports,
     hasAnyZodAnnotations,
-    zodProcessingErrors: zodProcessingErrors.filter(error => error.length > 0)
+    zodProcessingErrors: zodProcessingErrors.filter((error) => error.length > 0),
   };
 }
 
 /**
  * Process a single field with Zod integration
- * 
+ *
  * @param field - Prisma DMMF field
  * @param model - Parent model
  * @param commentMap - Map of field comments
@@ -171,14 +174,14 @@ function processFieldWithZodIntegration(
   field: DMMF.Field,
   model: DMMF.Model,
   commentMap: Map<string, ExtractedFieldComment>,
-  options: ZodIntegrationOptions
+  options: ZodIntegrationOptions,
 ): EnhancedFieldInfo {
   const enhancedField: EnhancedFieldInfo = {
     field,
     hasZodAnnotations: false,
     zodImports: new Set(),
     zodErrors: [],
-    fallbackToDefault: false
+    fallbackToDefault: false,
   };
 
   // Check if Zod annotation processing is enabled
@@ -189,7 +192,7 @@ function processFieldWithZodIntegration(
 
   // Get comment for this field
   const extractedComment = commentMap.get(field.name);
-  
+
   if (!extractedComment || !extractedComment.hasZodAnnotations) {
     // No @zod annotations found
     if (options.generateFallbackSchemas !== false) {
@@ -202,8 +205,11 @@ function processFieldWithZodIntegration(
 
   // Process @zod annotations
   try {
-    const parseResult = parseZodAnnotations(extractedComment.normalizedComment, extractedComment.context);
-    
+    const parseResult = parseZodAnnotations(
+      extractedComment.normalizedComment,
+      extractedComment.context,
+    );
+
     if (!parseResult.isValid) {
       enhancedField.zodErrors.push(...parseResult.parseErrors);
       enhancedField.fallbackToDefault = true;
@@ -212,8 +218,12 @@ function processFieldWithZodIntegration(
 
     // Generate Zod schema from annotations
     const baseType = getBaseZodType(field.type, !field.isRequired, field.isList);
-    const schemaResult = generateCompleteZodSchema(baseType, parseResult.annotations, extractedComment.context);
-    
+    const schemaResult = generateCompleteZodSchema(
+      baseType,
+      parseResult.annotations,
+      extractedComment.context,
+    );
+
     if (schemaResult.isValid) {
       enhancedField.hasZodAnnotations = true;
       enhancedField.zodSchema = schemaResult.schemaChain;
@@ -221,18 +231,19 @@ function processFieldWithZodIntegration(
     } else {
       enhancedField.zodErrors.push(...schemaResult.errors);
       enhancedField.fallbackToDefault = true;
-      
+
       // Generate fallback if enabled
       if (options.generateFallbackSchemas !== false) {
         enhancedField.zodSchema = generateFallbackSchema(field);
         enhancedField.zodImports = getRequiredImports(field.type);
       }
     }
-
   } catch (error) {
-    enhancedField.zodErrors.push(`Annotation processing failed: ${error instanceof Error ? error.message : String(error)}`);
+    enhancedField.zodErrors.push(
+      `Annotation processing failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
     enhancedField.fallbackToDefault = true;
-    
+
     // Generate fallback if enabled
     if (options.generateFallbackSchemas !== false) {
       enhancedField.zodSchema = generateFallbackSchema(field);
@@ -245,7 +256,7 @@ function processFieldWithZodIntegration(
 
 /**
  * Create fallback field info for error cases
- * 
+ *
  * @param field - Prisma DMMF field
  * @returns Fallback enhanced field info
  */
@@ -256,13 +267,13 @@ function createFallbackFieldInfo(field: DMMF.Field): EnhancedFieldInfo {
     zodSchema: generateFallbackSchema(field),
     zodImports: getRequiredImports(field.type),
     zodErrors: [],
-    fallbackToDefault: true
+    fallbackToDefault: true,
   };
 }
 
 /**
  * Generate fallback Zod schema for field without annotations
- * 
+ *
  * @param field - Prisma DMMF field
  * @returns Fallback Zod schema string
  */
@@ -272,7 +283,7 @@ function generateFallbackSchema(field: DMMF.Field): string {
 
 /**
  * Get integration statistics for reporting
- * 
+ *
  * @param enhancedModels - Array of enhanced model information
  * @returns Integration statistics
  */
@@ -290,7 +301,7 @@ export function getZodIntegrationStatistics(enhancedModels: EnhancedModelInfo[])
     totalFields: 0,
     fieldsWithZodAnnotations: 0,
     totalErrors: 0,
-    uniqueImports: 0
+    uniqueImports: 0,
   };
 
   const allImports = new Set<string>();
@@ -299,17 +310,17 @@ export function getZodIntegrationStatistics(enhancedModels: EnhancedModelInfo[])
     if (enhancedModel.hasAnyZodAnnotations) {
       stats.modelsWithZodAnnotations++;
     }
-    
+
     stats.totalFields += enhancedModel.enhancedFields.length;
     stats.totalErrors += enhancedModel.zodProcessingErrors.length;
-    
+
     for (const enhancedField of enhancedModel.enhancedFields) {
       if (enhancedField.hasZodAnnotations) {
         stats.fieldsWithZodAnnotations++;
       }
-      
+
       stats.totalErrors += enhancedField.zodErrors.length;
-      enhancedField.zodImports.forEach(imp => allImports.add(imp));
+      enhancedField.zodImports.forEach((imp) => allImports.add(imp));
     }
   }
 
@@ -319,11 +330,11 @@ export function getZodIntegrationStatistics(enhancedModels: EnhancedModelInfo[])
 
 /**
  * Check if existing comment processing should be preserved
- * 
+ *
  * This function ensures backward compatibility by checking if a field
  * comment contains existing comment directives that should be processed
  * by the original comment processing system.
- * 
+ *
  * @param comment - Field comment string
  * @returns True if existing processing should be preserved
  */
@@ -334,18 +345,18 @@ export function shouldPreserveExistingCommentProcessing(comment: string): boolea
 
   // Check for existing comment directives that should be preserved
   const existingDirectives = [
-    /@Gen\./,  // Existing generator directives
-    /@@/,      // Model-level directives
-    /@map/,    // Mapping directives
+    /@Gen\./, // Existing generator directives
+    /@@/, // Model-level directives
+    /@map/, // Mapping directives
     /@ignore/, // Ignore directives
   ];
 
-  return existingDirectives.some(directive => directive.test(comment));
+  return existingDirectives.some((directive) => directive.test(comment));
 }
 
 /**
  * Extract non-Zod comment content for backward compatibility
- * 
+ *
  * @param comment - Original comment string
  * @returns Comment content with @zod annotations removed
  */
@@ -357,24 +368,24 @@ export function extractNonZodCommentContent(comment: string): string {
   // Remove @zod annotations while preserving other content
   const zodPattern = /@zod(\.[a-zA-Z_][a-zA-Z0-9_]*\s*(\([^)]*\))?)+/gi;
   const cleanedComment = comment.replace(zodPattern, '').trim();
-  
+
   // Clean up extra whitespace
   return cleanedComment.replace(/\s+/g, ' ').trim();
 }
 
 /**
  * Integration wrapper that maintains backward compatibility
- * 
+ *
  * This function provides a drop-in replacement for existing comment processing
  * while adding @zod annotation support.
- * 
+ *
  * @param models - Array of Prisma DMMF models
  * @param options - Integration options
  * @returns Models with both existing and Zod comment processing applied
  */
 export function integrateZodWithExistingComments(
   models: DMMF.Model[],
-  options: ZodIntegrationOptions = {}
+  options: ZodIntegrationOptions = {},
 ): {
   enhancedModels: EnhancedModelInfo[];
   backwardCompatibilityPreserved: boolean;
@@ -386,18 +397,18 @@ export function integrateZodWithExistingComments(
   try {
     // Process models with Zod integration
     const enhancedModels = processModelsWithZodIntegration(models, options);
-    
+
     // Check for backward compatibility concerns
     for (const enhancedModel of enhancedModels) {
       for (const enhancedField of enhancedModel.enhancedFields) {
         const originalComment = enhancedField.field.documentation || '';
-        
+
         if (shouldPreserveExistingCommentProcessing(originalComment)) {
           const nonZodContent = extractNonZodCommentContent(originalComment);
           if (nonZodContent.length > 0) {
             integrationWarnings.push(
               `Field ${enhancedModel.model.name}.${enhancedField.field.name} has both @zod annotations and existing comment directives. ` +
-              `Existing directives: "${nonZodContent}"`
+                `Existing directives: "${nonZodContent}"`,
             );
           }
         }
@@ -407,24 +418,25 @@ export function integrateZodWithExistingComments(
     return {
       enhancedModels,
       backwardCompatibilityPreserved,
-      integrationWarnings
+      integrationWarnings,
     };
-
   } catch (error) {
     backwardCompatibilityPreserved = false;
-    integrationWarnings.push(`Integration failed: ${error instanceof Error ? error.message : String(error)}`);
-    
+    integrationWarnings.push(
+      `Integration failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+
     // Return fallback data
     return {
-      enhancedModels: models.map(model => ({
+      enhancedModels: models.map((model) => ({
         model,
         enhancedFields: model.fields.map(createFallbackFieldInfo),
         allZodImports: new Set(),
         hasAnyZodAnnotations: false,
-        zodProcessingErrors: ['Integration fallback due to processing error']
+        zodProcessingErrors: ['Integration fallback due to processing error'],
       })),
       backwardCompatibilityPreserved,
-      integrationWarnings
+      integrationWarnings,
     };
   }
 }

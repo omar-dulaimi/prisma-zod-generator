@@ -25,27 +25,27 @@ export function addMissingInputObjectTypesForAggregate(
   inputObjectTypes: DMMF.InputType[],
   outputObjectTypes: DMMF.OutputType[],
 ) {
-  const aggregateOutputTypes = outputObjectTypes.filter(({ name }) =>
-    isAggregateOutputType(name),
-  );
-  
+  const aggregateOutputTypes = outputObjectTypes.filter(({ name }) => isAggregateOutputType(name));
+
   for (const aggregateOutputType of aggregateOutputTypes) {
     const name = aggregateOutputType.name.replace(/(?:OutputType|Output)$/, '');
-    
+
     // Extract model name from aggregate type name
     const modelName = extractModelNameFromAggregateType(name);
-    
+
     // Skip if model is disabled or aggregate operation is not enabled
-    if (!Transformer.isModelEnabled(modelName) || 
-        !isOperationEnabledForModel(modelName, 'aggregate')) {
+    if (
+      !Transformer.isModelEnabled(modelName) ||
+      !isOperationEnabledForModel(modelName, 'aggregate')
+    ) {
       continue;
     }
-    
+
     // Filter fields based on field-level filtering for result variant
-    const filteredFields = aggregateOutputType.fields.filter(field => {
+    const filteredFields = aggregateOutputType.fields.filter((field) => {
       return Transformer.isFieldEnabled(field.name, modelName, 'result');
     });
-    
+
     // Only add the input type if there are enabled fields
     if (filteredFields.length > 0) {
       inputObjectTypes.push({
@@ -68,16 +68,14 @@ export function addMissingInputObjectTypesForAggregate(
   }
 }
 
-export function resolveAggregateOperationSupport(
-  inputObjectTypes: DMMF.InputType[],
-) {
+export function resolveAggregateOperationSupport(inputObjectTypes: DMMF.InputType[]) {
   const aggregateOperationSupport: AggregateOperationSupport = {};
   for (const inputType of inputObjectTypes) {
     if (isAggregateInputType(inputType.name)) {
       const name = inputType.name.replace('AggregateInput', '');
       let model = '';
       let operation = '';
-      
+
       if (name.endsWith('Count')) {
         model = name.replace('Count', '');
         operation = 'count';
@@ -94,11 +92,14 @@ export function resolveAggregateOperationSupport(
         model = name.replace('Avg', '');
         operation = 'avg';
       }
-      
+
       // Only include support for enabled models and operations
-      if (model && operation && 
-          Transformer.isModelEnabled(model) && 
-          isOperationEnabledForModel(model, 'aggregate')) {
+      if (
+        model &&
+        operation &&
+        Transformer.isModelEnabled(model) &&
+        isOperationEnabledForModel(model, 'aggregate')
+      ) {
         aggregateOperationSupport[model] = {
           ...aggregateOperationSupport[model],
           [operation]: true,
@@ -113,19 +114,20 @@ export function resolveAggregateOperationSupport(
  * Check if aggregate operations should be generated for a model
  */
 export function shouldGenerateAggregateForModel(modelName: string): boolean {
-  return Transformer.isModelEnabled(modelName) && 
-         isOperationEnabledForModel(modelName, 'aggregate');
+  return (
+    Transformer.isModelEnabled(modelName) && isOperationEnabledForModel(modelName, 'aggregate')
+  );
 }
 
 /**
  * Filter aggregate input types based on model and operation filtering
  */
 export function filterAggregateInputTypes(inputTypes: DMMF.InputType[]): DMMF.InputType[] {
-  return inputTypes.filter(inputType => {
+  return inputTypes.filter((inputType) => {
     if (!isAggregateInputType(inputType.name)) {
       return true; // Keep non-aggregate input types
     }
-    
+
     const modelName = extractModelNameFromAggregateType(inputType.name);
     return shouldGenerateAggregateForModel(modelName);
   });

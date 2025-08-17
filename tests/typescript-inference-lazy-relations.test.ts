@@ -10,12 +10,12 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
     it('should generate schemas without explicit type annotations for complex relations', () => {
       // This test verifies that the fix prevents TypeScript errors like:
       // "Property 'user' is optional in type {...} but required in type ProfileCreateInput"
-      
+
       // The fix removes explicit type annotations from schemas with complex relations
       // to avoid TypeScript inference issues with z.lazy() fields
       expect(PostgreSQLProfileCreateInputObjectSchema).toBeDefined();
       expect(typeof PostgreSQLProfileCreateInputObjectSchema).toBe('object');
-      
+
       expect(PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema).toBeDefined();
       expect(typeof PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema).toBe('object');
     });
@@ -24,10 +24,10 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
       // Ensure that removing explicit type annotations doesn't break functionality
       const schemas = [
         PostgreSQLProfileCreateInputObjectSchema,
-        PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema
+        PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema,
       ];
 
-      schemas.forEach(schema => {
+      schemas.forEach((schema) => {
         expect(schema).toBeDefined();
         expect(typeof schema).toBe('object');
         expect(typeof schema.safeParse).toBe('function');
@@ -46,9 +46,9 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
             email: 'test@example.com',
             username: 'testuser',
             firstName: 'Test',
-            lastName: 'User'
-          }
-        }
+            lastName: 'User',
+          },
+        },
       };
 
       const result = PostgreSQLProfileCreateInputObjectSchema.safeParse(minimalValidData);
@@ -59,7 +59,7 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
       // Test that omitting the required 'user' field causes validation to fail
       const dataWithoutUser = {
         id: 'test-profile-id',
-        bio: 'Test bio'
+        bio: 'Test bio',
         // Missing required 'user' field
       };
 
@@ -67,7 +67,7 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
       expect(result.success).toBe(false);
 
       if (!result.success) {
-        const errorPaths = result.error.issues.map(issue => issue.path.join('.'));
+        const errorPaths = result.error.issues.map((issue) => issue.path.join('.'));
         expect(errorPaths).toContain('user');
       }
     });
@@ -76,14 +76,15 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
       const nestedCreateData = {
         create: {
           id: 'new-user-id',
-          email: 'new@example.com', 
+          email: 'new@example.com',
           username: 'newuser',
           firstName: 'New',
-          lastName: 'User'
-        }
+          lastName: 'User',
+        },
       };
 
-      const result = PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema.safeParse(nestedCreateData);
+      const result =
+        PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema.safeParse(nestedCreateData);
       expect(result.success).toBe(true);
     });
   });
@@ -98,13 +99,13 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
             email: 'user@example.com',
             username: 'username',
             firstName: 'First',
-            lastName: 'Last'
-          }
-        }
+            lastName: 'Last',
+          },
+        },
       };
 
       const invalidData = {
-        bio: 'Just a bio'
+        bio: 'Just a bio',
         // Missing required 'user' field
       };
 
@@ -117,7 +118,7 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
       expect(invalidResult.success).toBe(false);
 
       if (!invalidResult.success) {
-        const errorPaths = invalidResult.error.issues.map(issue => issue.path.join('.'));
+        const errorPaths = invalidResult.error.issues.map((issue) => issue.path.join('.'));
         expect(errorPaths).toContain('user');
       }
     });
@@ -131,9 +132,9 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
             email: 'test@example.com',
             username: 'test',
             firstName: 'Test',
-            lastName: 'User'
-          }
-        }
+            lastName: 'User',
+          },
+        },
       };
 
       expect(() => {
@@ -147,8 +148,8 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
             email: 'test@example.com',
             username: 'test',
             firstName: 'Test',
-            lastName: 'User'
-          }
+            lastName: 'User',
+          },
         });
       }).not.toThrow();
     });
