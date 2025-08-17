@@ -82,7 +82,7 @@ body:
       value: |
         ```
         # prisma -v
-        
+
         ```
     validations:
       required: true

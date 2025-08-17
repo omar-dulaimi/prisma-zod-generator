@@ -8,7 +8,7 @@ import { logger } from '../utils/logger';
 export interface GeneratorConfig {
   /** Generation mode: full (default), minimal, or custom */
   mode?: 'full' | 'minimal' | 'custom';
-  
+
   /** Output directory for generated schemas */
   output?: string;
 
@@ -24,13 +24,13 @@ export interface GeneratorConfig {
    * Default: "schemas.ts"
    */
   singleFileName?: string;
-  
+
   /**
    * When useMultipleFiles is false, place the single bundled file at the generator output root
    * instead of inside the schemas/ subdirectory. Default: true (root).
    */
   placeSingleFileAtRoot?: boolean;
-  
+
   /** Whether to generate pure model schemas */
   pureModels?: boolean;
   /** When generating pure model schemas, emit a lean version without JSDoc/stats/comments. Default: true */
@@ -40,27 +40,27 @@ export interface GeneratorConfig {
 
   /** Strategy for DateTime scalar mapping in pure models and variants. Default: 'date' */
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
-  
+
   /** How to handle optional fields in Zod schemas. Default: 'nullish' */
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
-  
+
   /** Global field exclusions */
   globalExclusions?: {
     input?: string[];
     result?: string[];
     pure?: string[];
   };
-  
+
   /** Variant configuration */
   variants?: {
     pure?: VariantConfig;
     input?: VariantConfig;
     result?: VariantConfig;
   };
-  
+
   /** Per-model configuration */
   models?: Record<string, ModelConfig>;
-  
+
   /** Legacy options for backward compatibility */
   addSelectType?: boolean;
   addIncludeType?: boolean;
@@ -144,10 +144,10 @@ export interface GeneratorConfig {
 export interface VariantConfig {
   /** Whether this variant is enabled */
   enabled?: boolean;
-  
+
   /** File suffix for this variant */
   suffix?: string;
-  
+
   /** Fields to exclude from this variant */
   excludeFields?: string[];
 }
@@ -158,10 +158,10 @@ export interface VariantConfig {
 export interface ModelConfig {
   /** Whether this model should be generated */
   enabled?: boolean;
-  
+
   /** Which operations to generate for this model */
   operations?: string[];
-  
+
   /** Variant-specific configuration for this model */
   variants?: {
     pure?: VariantConfig;
@@ -176,10 +176,10 @@ export interface ModelConfig {
 export interface ParseResult {
   /** The parsed configuration */
   config: GeneratorConfig;
-  
+
   /** Path to the configuration file that was loaded */
   configPath?: string;
-  
+
   /** Whether this is using default configuration */
   isDefault: boolean;
 }
@@ -206,9 +206,9 @@ export async function discoverConfigFile(baseDir: string = process.cwd()): Promi
     'zod-generator.config.json',
     'zod-generator.config.js',
     '.zod-generator.json',
-    '.zod-generator.js'
+    '.zod-generator.js',
   ];
-  
+
   for (const filename of configFiles) {
     const configPath = resolve(baseDir, filename);
     try {
@@ -218,7 +218,7 @@ export async function discoverConfigFile(baseDir: string = process.cwd()): Promi
       // File doesn't exist, continue searching
     }
   }
-  
+
   return null;
 }
 
@@ -264,24 +264,20 @@ export async function readConfigFile(filePath: string): Promise<string> {
 export function parseJsonConfig(content: string, filePath?: string): GeneratorConfig {
   try {
     const parsed = JSON.parse(content);
-    
+
     if (typeof parsed !== 'object' || parsed === null) {
-      throw new ConfigParseError(
-        'Configuration must be a JSON object',
-        undefined,
-        filePath,
-      );
+      throw new ConfigParseError('Configuration must be a JSON object', undefined, filePath);
     }
-    
+
     // Transform legacy format to new format
     const transformedConfig = transformLegacyConfig(parsed);
-    
+
     return transformedConfig as GeneratorConfig;
   } catch (error) {
     if (error instanceof ConfigParseError) {
       throw error;
     }
-    
+
     throw new ConfigParseError(
       `Invalid JSON in configuration file${filePath ? `: ${filePath}` : ''}`,
       error as Error,
@@ -300,62 +296,71 @@ type LegacyModelConfig = {
 };
 
 function transformLegacyConfig(config: unknown): GeneratorConfig {
-  const base = (typeof config === 'object' && config !== null ? config : {}) as Record<string, unknown> & {
+  const base = (typeof config === 'object' && config !== null ? config : {}) as Record<
+    string,
+    unknown
+  > & {
     addSelectType?: unknown;
     addIncludeType?: unknown;
     models?: Record<string, LegacyModelConfig>;
   };
-  const transformed: Record<string, unknown> & { models?: Record<string, LegacyModelConfig> } = { ...base };
-  
+  const transformed: Record<string, unknown> & { models?: Record<string, LegacyModelConfig> } = {
+    ...base,
+  };
+
   // Handle legacy Include/Select options
   if (base.addSelectType !== undefined) {
     logger.debug(`🔄 Preserving legacy addSelectType: ${String(base.addSelectType)}`);
     (transformed as GeneratorConfig).addSelectType = Boolean(base.addSelectType);
   }
-  
+
   if (base.addIncludeType !== undefined) {
     logger.debug(`🔄 Preserving legacy addIncludeType: ${String(base.addIncludeType)}`);
     (transformed as GeneratorConfig).addIncludeType = Boolean(base.addIncludeType);
   }
-  
+
   // Transform model-specific legacy fields.exclude to variants format
   if (transformed.models) {
     const models = transformed.models;
-    Object.keys(models).forEach(modelName => {
+    Object.keys(models).forEach((modelName) => {
       const modelConfig = models[modelName];
-      
-  if (modelConfig.fields?.exclude && modelConfig.fields.exclude.length > 0) {
-        logger.debug(`🔄 Transforming legacy fields.exclude for model ${modelName}:`, modelConfig.fields.exclude);
-        
+
+      if (modelConfig.fields?.exclude && modelConfig.fields.exclude.length > 0) {
+        logger.debug(
+          `🔄 Transforming legacy fields.exclude for model ${modelName}:`,
+          modelConfig.fields.exclude,
+        );
+
         // Ensure variants object exists and work with a local, typed reference
-        const variants = (
-          modelConfig.variants ?? {}
-        ) as NonNullable<LegacyModelConfig['variants']>;
+        const variants = (modelConfig.variants ?? {}) as NonNullable<LegacyModelConfig['variants']>;
         // ensure modelConfig keeps the same reference
         modelConfig.variants = variants;
-        
+
         // Apply fields.exclude to all variants
-        ['pure', 'input', 'result'].forEach(variant => {
+        ['pure', 'input', 'result'].forEach((variant) => {
           const vKey = variant as 'pure' | 'input' | 'result';
           if (!variants[vKey]) {
             variants[vKey] = {};
           }
-          
+
           // Merge with existing excludeFields if any
           const existingExcludes = variants[vKey]?.excludeFields || [];
           const legacyExcludes = modelConfig.fields?.exclude ?? [];
           variants[vKey].excludeFields = [
-            ...new Set<string>([...existingExcludes, ...legacyExcludes])
+            ...new Set<string>([...existingExcludes, ...legacyExcludes]),
           ];
         });
-        
+
         // Preserve legacy fields.exclude so it can apply to custom array-based variants too
         // (Do not delete here; generator will honor it for all variants.)
-        logger.debug(`✅ Transformed model ${modelName} variants (preserving fields.exclude for compatibility):`, modelConfig.variants);
+        logger.debug(
+          `✅ Transformed model ${modelName} variants (preserving fields.exclude for compatibility):`,
+          modelConfig.variants,
+        );
       }
     });
   }
-  
+
   return transformed as unknown as GeneratorConfig;
 }
 
@@ -372,18 +377,21 @@ export function resolveConfigPath(configPath: string, baseDir: string = process.
 /**
  * Parse configuration from file path
  */
-export async function parseConfigFromFile(configPath: string, baseDir?: string): Promise<ParseResult> {
+export async function parseConfigFromFile(
+  configPath: string,
+  baseDir?: string,
+): Promise<ParseResult> {
   const resolvedPath = resolveConfigPath(configPath, baseDir);
-  
+
   // Validate file exists
   await validateFileExists(resolvedPath);
-  
+
   // Read file content
   const content = await readConfigFile(resolvedPath);
-  
+
   // Parse JSON content
   const config = parseJsonConfig(content, resolvedPath);
-  
+
   return {
     config,
     configPath: resolvedPath,
@@ -396,20 +404,20 @@ export async function parseConfigFromFile(configPath: string, baseDir?: string):
  */
 export async function parseConfigFromDiscovery(baseDir?: string): Promise<ParseResult> {
   const discoveredPath = await discoverConfigFile(baseDir);
-  
+
   if (!discoveredPath) {
     return {
       config: {},
       isDefault: true,
     };
   }
-  
+
   return parseConfigFromFile(discoveredPath, baseDir);
 }
 
 /**
  * Main configuration parser function
- * 
+ *
  * @param configPath - Optional path to configuration file
  * @param baseDir - Base directory for resolving relative paths
  * @returns Parsed configuration result
@@ -430,7 +438,7 @@ export async function parseConfiguration(
     if (error instanceof ConfigParseError) {
       throw error;
     }
-    
+
     throw new ConfigParseError(
       'Unexpected error while parsing configuration',
       error as Error,
@@ -444,24 +452,24 @@ export async function parseConfiguration(
  */
 export function createConfigErrorMessage(error: ConfigParseError): string {
   let message = `Configuration Error: ${error.message}`;
-  
+
   if (error.filePath) {
     message += `\n  File: ${error.filePath}`;
   }
-  
+
   if (error.cause) {
     message += `\n  Cause: ${error.cause.message}`;
   }
-  
+
   // Add helpful suggestions
   message += '\n\nTroubleshooting:';
   message += '\n  - Ensure the configuration file exists and is readable';
   message += '\n  - Verify the JSON syntax is valid';
   message += '\n  - Check file permissions';
-  
+
   if (!error.filePath) {
     message += '\n  - Consider creating a zod-generator.config.json file';
   }
-  
+
   return message;
 }

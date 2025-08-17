@@ -2,76 +2,78 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
-    ConfigGenerator,
-    FileSystemUtils,
-    GENERATION_TIMEOUT,
-    PrismaSchemaGenerator,
-    SchemaValidationUtils,
-    TestEnvironment
+  ConfigGenerator,
+  FileSystemUtils,
+  GENERATION_TIMEOUT,
+  PrismaSchemaGenerator,
+  SchemaValidationUtils,
+  TestEnvironment,
 } from './helpers';
 
 describe('Integration Tests for Combined Features', () => {
   describe('Full Feature Integration', () => {
-    it('should generate schemas with all features enabled together', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('integration-full-features');
-      
-      try {
-        const config = {
-          ...ConfigGenerator.createBasicConfig(),
-          // Enable all features
-          useMultipleFiles: true,
-          addInputTypeValidation: true,
-          addIncludeType: true,
-          addSelectType: true,
-          validateWhereUniqueInput: true,
-          coerceDate: true,
-          writeNullishInModelTypes: true,
-          generateResultSchemas: true,
-          pureModels: true,
-          generateJSDoc: true,
-          // Add configuration filtering
-          models: {
-            User: {
-              enabled: true,
-              operations: ['findMany', 'create', 'update'],
-              fields: {
-                exclude: ['password']
-              }
-            },
-            Post: {
-              enabled: true,
-              operations: ['findMany', 'findUnique', 'create'],
-              fields: {
-                exclude: ['views']
-              }
-            }
-          },
-          // Add variants (new format)
-          variants: {
-            pure: {
-              enabled: true,
-              excludeFields: ['internalId', 'metadata']
-            },
-            input: {
-              enabled: true,
-              excludeFields: ['internalId']
-            },
-            result: {
-              enabled: true,
-              excludeFields: []
-            }
-          },
-          // Add minimal mode for some operations
-          minimalMode: {
-            enabled: true,
-            operations: ['create', 'update']
-          }
-        };
+    it(
+      'should generate schemas with all features enabled together',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('integration-full-features');
 
-        const configPath = join(testEnv.testDir, 'config.json');
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            // Enable all features
+            useMultipleFiles: true,
+            addInputTypeValidation: true,
+            addIncludeType: true,
+            addSelectType: true,
+            validateWhereUniqueInput: true,
+            coerceDate: true,
+            writeNullishInModelTypes: true,
+            generateResultSchemas: true,
+            pureModels: true,
+            generateJSDoc: true,
+            // Add configuration filtering
+            models: {
+              User: {
+                enabled: true,
+                operations: ['findMany', 'create', 'update'],
+                fields: {
+                  exclude: ['password'],
+                },
+              },
+              Post: {
+                enabled: true,
+                operations: ['findMany', 'findUnique', 'create'],
+                fields: {
+                  exclude: ['views'],
+                },
+              },
+            },
+            // Add variants (new format)
+            variants: {
+              pure: {
+                enabled: true,
+                excludeFields: ['internalId', 'metadata'],
+              },
+              input: {
+                enabled: true,
+                excludeFields: ['internalId'],
+              },
+              result: {
+                enabled: true,
+                excludeFields: [],
+              },
+            },
+            // Add minimal mode for some operations
+            minimalMode: {
+              enabled: true,
+              operations: ['create', 'update'],
+            },
+          };
 
-        const schema = `
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -134,166 +136,167 @@ model Post {
 }
 `;
 
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const schemasDir = join(testEnv.outputDir, 'schemas');
+          const schemasDir = join(testEnv.outputDir, 'schemas');
 
-        // Verify directory structure
-        expect(FileSystemUtils.validateDirectoryStructure(schemasDir, [
-          'enums',
-          'objects',
-          'models'
-        ])).toBe(true);
+          // Verify directory structure
+          expect(
+            FileSystemUtils.validateDirectoryStructure(schemasDir, ['enums', 'objects', 'models']),
+          ).toBe(true);
 
-        // Check enum generation
-        const enumsDir = join(schemasDir, 'enums');
-        const userRoleEnumPath = join(enumsDir, 'UserRole.schema.ts');
-        expect(existsSync(userRoleEnumPath)).toBe(true);
+          // Check enum generation
+          const enumsDir = join(schemasDir, 'enums');
+          const userRoleEnumPath = join(enumsDir, 'UserRole.schema.ts');
+          expect(existsSync(userRoleEnumPath)).toBe(true);
 
-        // Check filtered operations
-        const objectsDir = join(schemasDir, 'objects');
-        
-        // User should have findMany, create, update operations
-        expect(existsSync(join(objectsDir, 'UserCreateInput.schema.ts'))).toBe(true);
-        expect(existsSync(join(objectsDir, 'UserUpdateInput.schema.ts'))).toBe(true);
-        expect(existsSync(join(objectsDir, 'UserWhereInput.schema.ts'))).toBe(true);
-        
-        // User should NOT have delete operations
-        expect(existsSync(join(objectsDir, 'UserDeleteInput.schema.ts'))).toBe(false);
+          // Check filtered operations
+          const objectsDir = join(schemasDir, 'objects');
 
-        // Post should have findMany, findUnique, create operations
-        expect(existsSync(join(objectsDir, 'PostCreateInput.schema.ts'))).toBe(true);
-        expect(existsSync(join(objectsDir, 'PostWhereUniqueInput.schema.ts'))).toBe(true);
-        
-        // Post should NOT have update operations
-        expect(existsSync(join(objectsDir, 'PostUpdateInput.schema.ts'))).toBe(false);
+          // User should have findMany, create, update operations
+          expect(existsSync(join(objectsDir, 'UserCreateInput.schema.ts'))).toBe(true);
+          expect(existsSync(join(objectsDir, 'UserUpdateInput.schema.ts'))).toBe(true);
+          expect(existsSync(join(objectsDir, 'UserWhereInput.schema.ts'))).toBe(true);
 
-        // Check field exclusions with @zod validations
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
-        if (existsSync(userCreatePath)) {
-          SchemaValidationUtils.expectSchemaContent(userCreatePath, {
-            hasFields: ['email', 'name', 'age', 'role', 'isActive', 'internalId', 'metadata'],
-            excludesFields: ['password'], // Only password excluded at model level
-            hasValidations: ['.email()', '.toLowerCase()', '.min(2)', '.max(50)', '.trim()']
-          });
-        }
+          // User should NOT have delete operations
+          expect(existsSync(join(objectsDir, 'UserDeleteInput.schema.ts'))).toBe(false);
 
-        const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
-        if (existsSync(postCreatePath)) {
-          SchemaValidationUtils.expectSchemaContent(postCreatePath, {
-            hasFields: ['title', 'content', 'published', 'author'],
-            excludesFields: ['views'], // Excluded field
-            hasValidations: ['.min(1)', '.max(200)', '.min(10)']
-          });
-        }
+          // Post should have findMany, findUnique, create operations
+          expect(existsSync(join(objectsDir, 'PostCreateInput.schema.ts'))).toBe(true);
+          expect(existsSync(join(objectsDir, 'PostWhereUniqueInput.schema.ts'))).toBe(true);
 
-        // Check that foreign key is present in UncheckedCreateInput
-        const postUncheckedCreatePath = join(objectsDir, 'PostUncheckedCreateInput.schema.ts');
-        if (existsSync(postUncheckedCreatePath)) {
-          SchemaValidationUtils.expectSchemaContent(postUncheckedCreatePath, {
-            hasFields: ['title', 'content', 'published', 'authorId'],
-            excludesFields: ['views'], // Excluded field
-            hasValidations: ['.min(1)', '.max(200)', '.min(10)']
-          });
-        }
+          // Post should NOT have update operations
+          expect(existsSync(join(objectsDir, 'PostUpdateInput.schema.ts'))).toBe(false);
 
-        // Check variant generation (new structure)
-        const variantsDir = join(schemasDir, 'variants');
-        expect(existsSync(variantsDir)).toBe(true);
-        
-        // Check pure variant (excludes internalId and metadata)
-        const userPurePath = join(variantsDir, 'pure', 'User.pure.ts');
-        expect(existsSync(userPurePath)).toBe(true);
-        
-        if (existsSync(userPurePath)) {
-          SchemaValidationUtils.expectSchemaContent(userPurePath, {
-            hasFields: ['email', 'name', 'age', 'role', 'isActive'],
-            excludesFields: ['password', 'internalId', 'metadata']
-          });
-        }
-
-        // Check input variant (excludes only internalId)
-        const userInputPath = join(variantsDir, 'input', 'User.input.ts');
-        expect(existsSync(userInputPath)).toBe(true);
-        
-        if (existsSync(userInputPath)) {
-          SchemaValidationUtils.expectSchemaContent(userInputPath, {
-            hasFields: ['email', 'name', 'age', 'role', 'isActive', 'metadata'],
-            excludesFields: ['password', 'internalId']
-          });
-        }
-
-        // Check result variant (no additional exclusions)
-        const userResultPath = join(variantsDir, 'result', 'User.result.ts');
-        expect(existsSync(userResultPath)).toBe(true);
-
-        // Check pure models generation
-  const modelsDir = join(schemasDir, 'models');
-  const userModelPath = join(modelsDir, 'User.schema.ts');
-  const postModelPath = join(modelsDir, 'Post.schema.ts');
-        
-        expect(existsSync(userModelPath)).toBe(true);
-        expect(existsSync(postModelPath)).toBe(true);
-
-        // Check include/select types
-        expect(existsSync(join(objectsDir, 'UserInclude.schema.ts'))).toBe(true);
-        expect(existsSync(join(objectsDir, 'UserSelect.schema.ts'))).toBe(true);
-
-        // Check main index file
-        const mainIndexPath = join(schemasDir, 'index.ts');
-        expect(existsSync(mainIndexPath)).toBe(true);
-
-        if (existsSync(mainIndexPath)) {
-          const content = readFileSync(mainIndexPath, 'utf-8');
-          
-          // Should export from all directories
-          expect(content).toMatch(/export.*from.*enums/);
-          expect(content).toMatch(/export.*from.*objects/);
-          expect(content).toMatch(/export.*from.*models/);
-        }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
-
-    it('should handle complex relationships with all features enabled', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('integration-complex-relationships');
-      
-      try {
-        const config = {
-          ...ConfigGenerator.createBasicConfig(),
-          useMultipleFiles: true,
-          addIncludeType: true,
-          addSelectType: true,
-          generateResultSchemas: true,
-          pureModels: true,
-          models: {
-            User: {
-              enabled: true,
-              fields: {
-                exclude: ['posts'] // Exclude one-to-many relation
-              }
-            },
-            Post: {
-              enabled: true,
-              fields: {
-                exclude: ['author'] // Exclude many-to-one relation
-              }
-            },
-            Profile: {
-              enabled: true
-              // Keep all relations
-            }
+          // Check field exclusions with @zod validations
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          if (existsSync(userCreatePath)) {
+            SchemaValidationUtils.expectSchemaContent(userCreatePath, {
+              hasFields: ['email', 'name', 'age', 'role', 'isActive', 'internalId', 'metadata'],
+              excludesFields: ['password'], // Only password excluded at model level
+              hasValidations: ['.email()', '.toLowerCase()', '.min(2)', '.max(50)', '.trim()'],
+            });
           }
-        };
 
-        const configPath = join(testEnv.testDir, 'config.json');
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
+          const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
+          if (existsSync(postCreatePath)) {
+            SchemaValidationUtils.expectSchemaContent(postCreatePath, {
+              hasFields: ['title', 'content', 'published', 'author'],
+              excludesFields: ['views'], // Excluded field
+              hasValidations: ['.min(1)', '.max(200)', '.min(10)'],
+            });
+          }
 
-        const schema = `
+          // Check that foreign key is present in UncheckedCreateInput
+          const postUncheckedCreatePath = join(objectsDir, 'PostUncheckedCreateInput.schema.ts');
+          if (existsSync(postUncheckedCreatePath)) {
+            SchemaValidationUtils.expectSchemaContent(postUncheckedCreatePath, {
+              hasFields: ['title', 'content', 'published', 'authorId'],
+              excludesFields: ['views'], // Excluded field
+              hasValidations: ['.min(1)', '.max(200)', '.min(10)'],
+            });
+          }
+
+          // Check variant generation (new structure)
+          const variantsDir = join(schemasDir, 'variants');
+          expect(existsSync(variantsDir)).toBe(true);
+
+          // Check pure variant (excludes internalId and metadata)
+          const userPurePath = join(variantsDir, 'pure', 'User.pure.ts');
+          expect(existsSync(userPurePath)).toBe(true);
+
+          if (existsSync(userPurePath)) {
+            SchemaValidationUtils.expectSchemaContent(userPurePath, {
+              hasFields: ['email', 'name', 'age', 'role', 'isActive'],
+              excludesFields: ['password', 'internalId', 'metadata'],
+            });
+          }
+
+          // Check input variant (excludes only internalId)
+          const userInputPath = join(variantsDir, 'input', 'User.input.ts');
+          expect(existsSync(userInputPath)).toBe(true);
+
+          if (existsSync(userInputPath)) {
+            SchemaValidationUtils.expectSchemaContent(userInputPath, {
+              hasFields: ['email', 'name', 'age', 'role', 'isActive', 'metadata'],
+              excludesFields: ['password', 'internalId'],
+            });
+          }
+
+          // Check result variant (no additional exclusions)
+          const userResultPath = join(variantsDir, 'result', 'User.result.ts');
+          expect(existsSync(userResultPath)).toBe(true);
+
+          // Check pure models generation
+          const modelsDir = join(schemasDir, 'models');
+          const userModelPath = join(modelsDir, 'User.schema.ts');
+          const postModelPath = join(modelsDir, 'Post.schema.ts');
+
+          expect(existsSync(userModelPath)).toBe(true);
+          expect(existsSync(postModelPath)).toBe(true);
+
+          // Check include/select types
+          expect(existsSync(join(objectsDir, 'UserInclude.schema.ts'))).toBe(true);
+          expect(existsSync(join(objectsDir, 'UserSelect.schema.ts'))).toBe(true);
+
+          // Check main index file
+          const mainIndexPath = join(schemasDir, 'index.ts');
+          expect(existsSync(mainIndexPath)).toBe(true);
+
+          if (existsSync(mainIndexPath)) {
+            const content = readFileSync(mainIndexPath, 'utf-8');
+
+            // Should export from all directories
+            expect(content).toMatch(/export.*from.*enums/);
+            expect(content).toMatch(/export.*from.*objects/);
+            expect(content).toMatch(/export.*from.*models/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle complex relationships with all features enabled',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('integration-complex-relationships');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            useMultipleFiles: true,
+            addIncludeType: true,
+            addSelectType: true,
+            generateResultSchemas: true,
+            pureModels: true,
+            models: {
+              User: {
+                enabled: true,
+                fields: {
+                  exclude: ['posts'], // Exclude one-to-many relation
+                },
+              },
+              Post: {
+                enabled: true,
+                fields: {
+                  exclude: ['author'], // Exclude many-to-one relation
+                },
+              },
+              Profile: {
+                enabled: true,
+                // Keep all relations
+              },
+            },
+          };
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -352,129 +355,135 @@ model Tag {
 }
 `;
 
-        writeFileSync(testEnv.schemaPath, schema);
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
 
-        // User exclude tests - should not have posts relation
-        const userIncludePath = join(objectsDir, 'UserInclude.schema.ts');
-        if (existsSync(userIncludePath)) {
-          const content = readFileSync(userIncludePath, 'utf-8');
-          expect(content).not.toMatch(/posts:/);
-          expect(content).toMatch(/profile:/); // Should still have profile
-          expect(content).toMatch(/comments:/); // Should still have comments
+          // User exclude tests - should not have posts relation
+          const userIncludePath = join(objectsDir, 'UserInclude.schema.ts');
+          if (existsSync(userIncludePath)) {
+            const content = readFileSync(userIncludePath, 'utf-8');
+            expect(content).not.toMatch(/posts:/);
+            expect(content).toMatch(/profile:/); // Should still have profile
+            expect(content).toMatch(/comments:/); // Should still have comments
+          }
+
+          // Post exclude tests - should not have author relation
+          const postIncludePath = join(objectsDir, 'PostInclude.schema.ts');
+          if (existsSync(postIncludePath)) {
+            const content = readFileSync(postIncludePath, 'utf-8');
+            expect(content).not.toMatch(/author:/);
+            expect(content).toMatch(/comments:/); // Should still have comments
+            expect(content).toMatch(/tags:/); // Should still have tags
+          }
+
+          // Foreign keys should still be present
+          const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
+          if (existsSync(postCreatePath)) {
+            SchemaValidationUtils.expectSchemaContent(postCreatePath, {
+              hasFields: ['title', 'content', 'authorId'], // Foreign key preserved
+              excludesFields: ['author'], // Relation excluded
+            });
+          }
+
+          // Profile should include all relations (no exclusions)
+          const profileIncludePath = join(objectsDir, 'ProfileInclude.schema.ts');
+          if (existsSync(profileIncludePath)) {
+            const content = readFileSync(profileIncludePath, 'utf-8');
+            expect(content).toMatch(/user:/); // Should have user relation
+          }
+
+          // Many-to-many relationships should work correctly
+          const tagIncludePath = join(objectsDir, 'TagInclude.schema.ts');
+          if (existsSync(tagIncludePath)) {
+            const content = readFileSync(tagIncludePath, 'utf-8');
+            expect(content).toMatch(/posts:/); // Should have posts relation
+          }
+        } finally {
+          await testEnv.cleanup();
         }
-
-        // Post exclude tests - should not have author relation
-        const postIncludePath = join(objectsDir, 'PostInclude.schema.ts');
-        if (existsSync(postIncludePath)) {
-          const content = readFileSync(postIncludePath, 'utf-8');
-          expect(content).not.toMatch(/author:/);
-          expect(content).toMatch(/comments:/); // Should still have comments
-          expect(content).toMatch(/tags:/); // Should still have tags
-        }
-
-        // Foreign keys should still be present
-        const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
-        if (existsSync(postCreatePath)) {
-          SchemaValidationUtils.expectSchemaContent(postCreatePath, {
-            hasFields: ['title', 'content', 'authorId'], // Foreign key preserved
-            excludesFields: ['author'] // Relation excluded
-          });
-        }
-
-        // Profile should include all relations (no exclusions)
-        const profileIncludePath = join(objectsDir, 'ProfileInclude.schema.ts');
-        if (existsSync(profileIncludePath)) {
-          const content = readFileSync(profileIncludePath, 'utf-8');
-          expect(content).toMatch(/user:/); // Should have user relation
-        }
-
-        // Many-to-many relationships should work correctly
-        const tagIncludePath = join(objectsDir, 'TagInclude.schema.ts');
-        if (existsSync(tagIncludePath)) {
-          const content = readFileSync(tagIncludePath, 'utf-8');
-          expect(content).toMatch(/posts:/); // Should have posts relation
-        }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 
   describe('Error Handling and Edge Cases', () => {
-    it('should handle conflicting configuration gracefully', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('integration-conflicting-config');
-      
-      try {
-        const config = {
-          ...ConfigGenerator.createBasicConfig(),
-          // Conflicting settings
-          useMultipleFiles: false, // Single file mode
-          addIncludeType: true,    // But enable include types
-          addSelectType: true,     // And select types
-          models: {
-            User: {
-              enabled: false // Disable User model
+    it(
+      'should handle conflicting configuration gracefully',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('integration-conflicting-config');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            // Conflicting settings
+            useMultipleFiles: false, // Single file mode
+            addIncludeType: true, // But enable include types
+            addSelectType: true, // And select types
+            models: {
+              User: {
+                enabled: false, // Disable User model
+              },
+              Post: {
+                enabled: true,
+                operations: ['create'], // Only create operation
+              },
             },
-            Post: {
-              enabled: true,
-              operations: ['create'] // Only create operation
-            }
-          }
-        };
+          };
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          models: ['User', 'Post'],
-          generatorOptions: { config: './config.json' }
-        });
+          const schema = PrismaSchemaGenerator.createBasicSchema({
+            models: ['User', 'Post'],
+            generatorOptions: { config: './config.json' },
+          });
 
-        const configPath = join(testEnv.testDir, 'config.json');
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        // Should not throw error
-        await testEnv.runGeneration();
+          // Should not throw error
+          await testEnv.runGeneration();
 
-  const schemasDir = join(testEnv.outputDir, 'schemas');
-        
-  // In single-file mode, only the bundle should remain in schemasDir
-  const bundlePath = join(schemasDir, 'schemas.ts');
-  expect(existsSync(bundlePath)).toBe(true);
-  expect(existsSync(join(schemasDir, 'index.ts'))).toBe(false);
-  expect(existsSync(join(schemasDir, 'objects'))).toBe(false);
-        
-  // We can still do a light content check on the bundle
-  const bundleContent = readFileSync(bundlePath, 'utf-8');
-  expect(bundleContent).toMatch(/PostCreateInput/);
-  expect(bundleContent).not.toMatch(/UserCreateInput/);
+          const schemasDir = join(testEnv.outputDir, 'schemas');
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+          // In single-file mode, only the bundle should remain in schemasDir
+          const bundlePath = join(schemasDir, 'schemas.ts');
+          expect(existsSync(bundlePath)).toBe(true);
+          expect(existsSync(join(schemasDir, 'index.ts'))).toBe(false);
+          expect(existsSync(join(schemasDir, 'objects'))).toBe(false);
 
-    it('should handle invalid @zod annotations with other features', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('integration-invalid-zod');
-      
-      try {
-        const config = {
-          ...ConfigGenerator.createBasicConfig(),
-          useMultipleFiles: true,
-          pureModels: true,
-          variants: [
-            {
-              name: 'clean',
-              suffix: 'Clean',
-              exclude: ['badField']
-            }
-          ]
-        };
+          // We can still do a light content check on the bundle
+          const bundleContent = readFileSync(bundlePath, 'utf-8');
+          expect(bundleContent).toMatch(/PostCreateInput/);
+          expect(bundleContent).not.toMatch(/UserCreateInput/);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
 
-        const schema = `
+    it(
+      'should handle invalid @zod annotations with other features',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('integration-invalid-zod');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            useMultipleFiles: true,
+            pureModels: true,
+            variants: [
+              {
+                name: 'clean',
+                suffix: 'Clean',
+                exclude: ['badField'],
+              },
+            ],
+          };
+
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -503,46 +512,47 @@ model User {
 }
 `;
 
-        const configPath = join(testEnv.testDir, 'config.json');
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        // Should not throw error for invalid @zod syntax
-        await testEnv.runGeneration();
+          // Should not throw error for invalid @zod syntax
+          await testEnv.runGeneration();
 
-        const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-        const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-        if (existsSync(userCreatePath)) {
-          const content = readFileSync(userCreatePath, 'utf-8');
-          
-          // Should apply valid @zod annotation
-          expect(content).toMatch(/contact.*\.email\(\)/);
-          
-          // Should not include invalid syntax
-          expect(content).not.toMatch(/\.invalidMethod\(\)/);
-          expect(content).not.toMatch(/\.min\(\s*\)/);
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+
+            // Should apply valid @zod annotation
+            expect(content).toMatch(/contact.*\.email\(\)/);
+
+            // Should not include invalid syntax
+            expect(content).not.toMatch(/\.invalidMethod\(\)/);
+            expect(content).not.toMatch(/\.min\(\s*\)/);
+          }
+
+          // Variant should work despite invalid @zod annotations
+          const schemasDir = join(testEnv.outputDir, 'schemas');
+          const userCleanPath = join(schemasDir, 'UserClean.schema.ts');
+
+          if (existsSync(userCleanPath)) {
+            SchemaValidationUtils.expectSchemaContent(userCleanPath, {
+              hasFields: ['email', 'name', 'contact', 'goodField'],
+              excludesFields: ['badField'],
+            });
+          }
+        } finally {
+          await testEnv.cleanup();
         }
-
-        // Variant should work despite invalid @zod annotations
-        const schemasDir = join(testEnv.outputDir, 'schemas');
-        const userCleanPath = join(schemasDir, 'UserClean.schema.ts');
-        
-        if (existsSync(userCleanPath)) {
-          SchemaValidationUtils.expectSchemaContent(userCleanPath, {
-            hasFields: ['email', 'name', 'contact', 'goodField'],
-            excludesFields: ['badField']
-          });
-        }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+      },
+      GENERATION_TIMEOUT,
+    );
 
     it('should handle large schemas with all features efficiently', async () => {
       const testEnv = await TestEnvironment.createTestEnv('integration-large-schema');
-      
+
       try {
         const config = {
           ...ConfigGenerator.createBasicConfig(),
@@ -551,7 +561,7 @@ model User {
           addSelectType: true,
           generateResultSchemas: true,
           pureModels: true,
-          generateJSDoc: true
+          generateJSDoc: true,
         };
 
         // Create a large schema with many models and fields
@@ -744,13 +754,11 @@ model Notification {
         expect(endTime - startTime).toBeLessThan(30000);
 
         const schemasDir = join(testEnv.outputDir, 'schemas');
-        
+
         // Should generate all expected directories
-        expect(FileSystemUtils.validateDirectoryStructure(schemasDir, [
-          'enums',
-          'objects',
-          'models'
-        ])).toBe(true);
+        expect(
+          FileSystemUtils.validateDirectoryStructure(schemasDir, ['enums', 'objects', 'models']),
+        ).toBe(true);
 
         // Should generate enum files
         const enumsDir = join(schemasDir, 'enums');
@@ -759,13 +767,20 @@ model Notification {
 
         // Should generate object files for all models
         const objectsDir = join(schemasDir, 'objects');
-        
+
         const expectedModels = [
-          'User', 'Profile', 'Post', 'Comment', 'Like', 
-          'Follow', 'Tag', 'Category', 'Notification'
+          'User',
+          'Profile',
+          'Post',
+          'Comment',
+          'Like',
+          'Follow',
+          'Tag',
+          'Category',
+          'Notification',
         ];
 
-        expectedModels.forEach(model => {
+        expectedModels.forEach((model) => {
           expect(existsSync(join(objectsDir, `${model}CreateInput.schema.ts`))).toBe(true);
           expect(existsSync(join(objectsDir, `${model}WhereInput.schema.ts`))).toBe(true);
           expect(existsSync(join(objectsDir, `${model}Include.schema.ts`))).toBe(true);
@@ -774,7 +789,7 @@ model Notification {
 
         // Should generate pure model files
         const modelsDir = join(schemasDir, 'models');
-        expectedModels.forEach(model => {
+        expectedModels.forEach((model) => {
           expect(existsSync(join(modelsDir, `${model}.schema.ts`))).toBe(true);
         });
 
@@ -782,7 +797,6 @@ model Notification {
         expect(existsSync(join(schemasDir, 'index.ts'))).toBe(true);
         expect(existsSync(join(objectsDir, 'index.ts'))).toBe(true);
         expect(existsSync(join(modelsDir, 'index.ts'))).toBe(true);
-
       } finally {
         await testEnv.cleanup();
       }
@@ -790,107 +804,112 @@ model Notification {
   });
 
   describe('Configuration Edge Cases', () => {
-    it('should handle empty and minimal configurations', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('integration-minimal-config');
-      
-      try {
-        // Minimal configuration - just output directory
-        const config = {
-          output: `${testEnv.outputDir}/schemas`
-        };
+    it(
+      'should handle empty and minimal configurations',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('integration-minimal-config');
 
-        const schema = PrismaSchemaGenerator.createBasicSchema({
-          generatorOptions: { config: './config.json' }
-        });
+        try {
+          // Minimal configuration - just output directory
+          const config = {
+            output: `${testEnv.outputDir}/schemas`,
+          };
 
-        const configPath = join(testEnv.testDir, 'config.json');
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          const schema = PrismaSchemaGenerator.createBasicSchema({
+            generatorOptions: { config: './config.json' },
+          });
 
-        await testEnv.runGeneration();
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        const schemasDir = join(testEnv.outputDir, 'schemas');
-        
-        // Should still generate basic schemas with default settings
-        expect(existsSync(schemasDir)).toBe(true);
-        
-        // Should use single file mode by default
-        expect(existsSync(join(schemasDir, 'index.ts'))).toBe(true);
+          await testEnv.runGeneration();
 
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+          const schemasDir = join(testEnv.outputDir, 'schemas');
 
-    it('should handle maximum configuration complexity', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('integration-max-config');
-      
-      try {
-        // Maximum complexity configuration
-        const config = {
-          ...ConfigGenerator.createBasicConfig(),
-          useMultipleFiles: true,
-          createInputTypes: true,
-          createModelTypes: true,
-          addInputTypeValidation: true,
-          addIncludeType: true,
-          addSelectType: true,
-          validateWhereUniqueInput: true,
-          createOptionalDefaultValuesTypes: true,
-          createRelationValuesTypes: true,
-          createPartialTypes: true,
-          useDefaultValidators: true,
-          coerceDate: true,
-          writeNullishInModelTypes: true,
-          prismaClientPath: '@prisma/client',
-          generateResultSchemas: true,
-          pureModels: true,
-          generateJSDoc: true,
-          // Complex filtering
-          globalExclusions: ['password', 'secretKey'],
-          models: {
-            User: {
+          // Should still generate basic schemas with default settings
+          expect(existsSync(schemasDir)).toBe(true);
+
+          // Should use single file mode by default
+          expect(existsSync(join(schemasDir, 'index.ts'))).toBe(true);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle maximum configuration complexity',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('integration-max-config');
+
+        try {
+          // Maximum complexity configuration
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            useMultipleFiles: true,
+            createInputTypes: true,
+            createModelTypes: true,
+            addInputTypeValidation: true,
+            addIncludeType: true,
+            addSelectType: true,
+            validateWhereUniqueInput: true,
+            createOptionalDefaultValuesTypes: true,
+            createRelationValuesTypes: true,
+            createPartialTypes: true,
+            useDefaultValidators: true,
+            coerceDate: true,
+            writeNullishInModelTypes: true,
+            prismaClientPath: '@prisma/client',
+            generateResultSchemas: true,
+            pureModels: true,
+            generateJSDoc: true,
+            // Complex filtering
+            globalExclusions: ['password', 'secretKey'],
+            models: {
+              User: {
+                enabled: true,
+                operations: ['findMany', 'findUnique', 'create', 'update', 'upsert'],
+                fields: {
+                  exclude: ['internalId'],
+                  include: ['email', 'name'],
+                },
+              },
+              Post: {
+                enabled: true,
+                operations: ['findMany', 'create'],
+                fields: {
+                  exclude: ['views', 'metadata'],
+                },
+              },
+            },
+            // Multiple variants
+            variants: [
+              {
+                name: 'public',
+                suffix: 'Public',
+                exclude: ['email', 'phone', 'address'],
+              },
+              {
+                name: 'internal',
+                suffix: 'Internal',
+                exclude: ['phone'],
+              },
+              {
+                name: 'admin',
+                suffix: 'Admin',
+                exclude: [],
+              },
+            ],
+            // Minimal mode
+            minimalMode: {
               enabled: true,
-              operations: ['findMany', 'findUnique', 'create', 'update', 'upsert'],
-              fields: {
-                exclude: ['internalId'],
-                include: ['email', 'name']
-              }
+              operations: ['create', 'findUnique'],
             },
-            Post: {
-              enabled: true,
-              operations: ['findMany', 'create'],
-              fields: {
-                exclude: ['views', 'metadata']
-              }
-            }
-          },
-          // Multiple variants
-          variants: [
-            {
-              name: 'public',
-              suffix: 'Public',
-              exclude: ['email', 'phone', 'address']
-            },
-            {
-              name: 'internal',
-              suffix: 'Internal',
-              exclude: ['phone']
-            },
-            {
-              name: 'admin',
-              suffix: 'Admin',
-              exclude: []
-            }
-          ],
-          // Minimal mode
-          minimalMode: {
-            enabled: true,
-            operations: ['create', 'findUnique']
-          }
-        };
+          };
 
-        const schema = `
+          const schema = `
 generator client {
   provider = "prisma-client-js"
 }
@@ -950,107 +969,111 @@ model Post {
 }
 `;
 
-        const configPath = join(testEnv.testDir, 'config.json');
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, schema);
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
 
-        await testEnv.runGeneration();
+          await testEnv.runGeneration();
 
-        const schemasDir = join(testEnv.outputDir, 'schemas');
-        
-        // Should handle all configuration options without errors
-        expect(existsSync(schemasDir)).toBe(true);
+          const schemasDir = join(testEnv.outputDir, 'schemas');
 
-  // Check all variants are generated (stored under variants/ directory)
-  const variantsDir = join(schemasDir, 'variants');
-  expect(existsSync(variantsDir)).toBe(true);
-  expect(existsSync(join(variantsDir, 'UserPublic.schema.ts'))).toBe(true);
-  expect(existsSync(join(variantsDir, 'UserInternal.schema.ts'))).toBe(true);
-  expect(existsSync(join(variantsDir, 'UserAdmin.schema.ts'))).toBe(true);
+          // Should handle all configuration options without errors
+          expect(existsSync(schemasDir)).toBe(true);
 
-        // Check complex exclusion combinations
-        const userPublicPath = join(schemasDir, 'UserPublic.schema.ts');
-        if (existsSync(userPublicPath)) {
-          // Should exclude: global (password, secretKey) + model (internalId) + variant (email, phone, address)
-          SchemaValidationUtils.expectSchemaContent(userPublicPath, {
-            hasFields: ['name', 'role', 'isActive'],
-            excludesFields: ['password', 'secretKey', 'internalId', 'email', 'phone', 'address']
-          });
+          // Check all variants are generated (stored under variants/ directory)
+          const variantsDir = join(schemasDir, 'variants');
+          expect(existsSync(variantsDir)).toBe(true);
+          expect(existsSync(join(variantsDir, 'UserPublic.schema.ts'))).toBe(true);
+          expect(existsSync(join(variantsDir, 'UserInternal.schema.ts'))).toBe(true);
+          expect(existsSync(join(variantsDir, 'UserAdmin.schema.ts'))).toBe(true);
+
+          // Check complex exclusion combinations
+          const userPublicPath = join(schemasDir, 'UserPublic.schema.ts');
+          if (existsSync(userPublicPath)) {
+            // Should exclude: global (password, secretKey) + model (internalId) + variant (email, phone, address)
+            SchemaValidationUtils.expectSchemaContent(userPublicPath, {
+              hasFields: ['name', 'role', 'isActive'],
+              excludesFields: ['password', 'secretKey', 'internalId', 'email', 'phone', 'address'],
+            });
+          }
+
+          const userAdminPath = join(schemasDir, 'UserAdmin.schema.ts');
+          if (existsSync(userAdminPath)) {
+            // Should exclude: global (password, secretKey) + model (internalId) only
+            SchemaValidationUtils.expectSchemaContent(userAdminPath, {
+              hasFields: ['email', 'name', 'phone', 'address', 'role', 'isActive'],
+              excludesFields: ['password', 'secretKey', 'internalId'],
+            });
+          }
+        } finally {
+          await testEnv.cleanup();
         }
-
-        const userAdminPath = join(schemasDir, 'UserAdmin.schema.ts');
-        if (existsSync(userAdminPath)) {
-          // Should exclude: global (password, secretKey) + model (internalId) only
-          SchemaValidationUtils.expectSchemaContent(userAdminPath, {
-            hasFields: ['email', 'name', 'phone', 'address', 'role', 'isActive'],
-            excludesFields: ['password', 'secretKey', 'internalId']
-          });
-        }
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 
   describe('Performance and Memory Usage', () => {
-    it('should generate schemas efficiently with memory constraints', async () => {
-      const testEnv = await TestEnvironment.createTestEnv('integration-performance');
-      
-      try {
-        const config = {
-          ...ConfigGenerator.createBasicConfig(),
-          useMultipleFiles: true,
-          addIncludeType: true,
-          addSelectType: true,
-          generateResultSchemas: true,
-          pureModels: true
-        };
+    it(
+      'should generate schemas efficiently with memory constraints',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('integration-performance');
 
-        // Create schema with moderate complexity to test performance
-        const schema = PrismaSchemaGenerator.createComprehensiveSchema();
-        const updatedSchema = schema.replace(
-          'output   = "./generated/schemas"',
-          `output   = "${testEnv.outputDir}/schemas"\n  config   = "./config.json"`
-        );
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            useMultipleFiles: true,
+            addIncludeType: true,
+            addSelectType: true,
+            generateResultSchemas: true,
+            pureModels: true,
+          };
 
-        const configPath = join(testEnv.testDir, 'config.json');
-        writeFileSync(configPath, JSON.stringify(config, null, 2));
-        writeFileSync(testEnv.schemaPath, updatedSchema);
+          // Create schema with moderate complexity to test performance
+          const schema = PrismaSchemaGenerator.createComprehensiveSchema();
+          const updatedSchema = schema.replace(
+            'output   = "./generated/schemas"',
+            `output   = "${testEnv.outputDir}/schemas"\n  config   = "./config.json"`,
+          );
 
-        const startTime = Date.now();
-        const startMemory = process.memoryUsage();
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, updatedSchema);
 
-        await testEnv.runGeneration();
+          const startTime = Date.now();
+          const startMemory = process.memoryUsage();
 
-        const endTime = Date.now();
-        const endMemory = process.memoryUsage();
+          await testEnv.runGeneration();
 
-        // Performance checks
-        const executionTime = endTime - startTime;
-        const memoryIncrease = endMemory.heapUsed - startMemory.heapUsed;
+          const endTime = Date.now();
+          const endMemory = process.memoryUsage();
 
-  // Should complete within reasonable time (less than 45 seconds; relaxed due to environment variability)
-  expect(executionTime).toBeLessThan(45000);
+          // Performance checks
+          const executionTime = endTime - startTime;
+          const memoryIncrease = endMemory.heapUsed - startMemory.heapUsed;
 
-        // Memory increase should be reasonable (less than 100MB)
-        expect(memoryIncrease).toBeLessThan(100 * 1024 * 1024);
+          // Should complete within reasonable time (less than 45 seconds; relaxed due to environment variability)
+          expect(executionTime).toBeLessThan(45000);
 
-        console.log(`Performance metrics:
+          // Memory increase should be reasonable (less than 100MB)
+          expect(memoryIncrease).toBeLessThan(100 * 1024 * 1024);
+
+          console.log(`Performance metrics:
           Execution time: ${executionTime}ms
           Memory increase: ${Math.round(memoryIncrease / 1024 / 1024)}MB`);
 
-        // Verify output quality
-        const schemasDir = join(testEnv.outputDir, 'schemas');
-        expect(existsSync(schemasDir)).toBe(true);
+          // Verify output quality
+          const schemasDir = join(testEnv.outputDir, 'schemas');
+          expect(existsSync(schemasDir)).toBe(true);
 
-        // Should generate expected file count
-        const schemaFiles = FileSystemUtils.getSchemaFiles(schemasDir);
-        expect(schemaFiles.length).toBeGreaterThan(10);
-
-      } finally {
-        await testEnv.cleanup();
-      }
-    }, GENERATION_TIMEOUT);
+          // Should generate expected file count
+          const schemaFiles = FileSystemUtils.getSchemaFiles(schemasDir);
+          expect(schemaFiles.length).toBeGreaterThan(10);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 });

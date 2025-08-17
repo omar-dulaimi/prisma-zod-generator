@@ -23,7 +23,7 @@ describe('JSON config output precedence (no output in generator block)', () => {
       mode: 'custom',
       output: jsonOutputRel,
       useMultipleFiles: true,
-      pureModels: false
+      pureModels: false,
     };
     await fs.writeFile(jsonConfigPath, JSON.stringify(jsonConfig, null, 2));
 
@@ -39,7 +39,9 @@ describe('JSON config output precedence (no output in generator block)', () => {
     await execAsync('tsc', { cwd: path.join(__dirname, '..') });
 
     // Run generate (no output attribute in block)
-    await execAsync(`npx prisma generate --schema="${schemaPath}"`, { cwd: path.join(__dirname, '..') });
+    await execAsync(`npx prisma generate --schema="${schemaPath}"`, {
+      cwd: path.join(__dirname, '..'),
+    });
   });
 
   afterAll(async () => {
@@ -47,11 +49,17 @@ describe('JSON config output precedence (no output in generator block)', () => {
   });
 
   it('should use output path from JSON config when generator block omits output', async () => {
-    const exists = await fs.access(expectedOutputDir).then(() => true).catch(() => false);
+    const exists = await fs
+      .access(expectedOutputDir)
+      .then(() => true)
+      .catch(() => false);
     expect(exists).toBe(true);
 
     const indexFile = path.join(expectedOutputDir, 'schemas', 'index.ts');
-    const indexExists = await fs.access(indexFile).then(() => true).catch(() => false);
+    const indexExists = await fs
+      .access(indexFile)
+      .then(() => true)
+      .catch(() => false);
     expect(indexExists).toBe(true);
   });
 });

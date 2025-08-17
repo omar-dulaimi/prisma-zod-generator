@@ -42,11 +42,7 @@ export function addMissingInputObjectTypes(
     addMissingInputObjectTypesForAggregate(inputObjectTypes, outputObjectTypes);
   }
   if (!isMinimal && options.isGenerateSelect) {
-    addMissingInputObjectTypesForSelect(
-      inputObjectTypes,
-      outputObjectTypes,
-      models,
-    );
+    addMissingInputObjectTypesForSelect(inputObjectTypes, outputObjectTypes, models);
     Transformer.setIsGenerateSelect(true);
   }
   if (!isMinimal && (options.isGenerateSelect || options.isGenerateInclude)) {
@@ -58,11 +54,7 @@ export function addMissingInputObjectTypes(
     );
   }
   if (!isMinimal && options.isGenerateInclude) {
-    addMissingInputObjectTypesForInclude(
-      inputObjectTypes,
-      models,
-      options.isGenerateSelect,
-    );
+    addMissingInputObjectTypesForInclude(inputObjectTypes, models, options.isGenerateSelect);
     Transformer.setIsGenerateInclude(true);
   }
 
@@ -75,14 +67,12 @@ function filterFieldRefTypes(inputObjectTypes: DMMF.InputType[]): void {
   for (const inputType of inputObjectTypes) {
     const fields = inputType.fields as DMMF.SchemaArg[];
     for (const field of fields) {
-      if (
-        field.inputTypes.some(
-          (inputType) => inputType.location === 'fieldRefTypes',
-        )
-      ) {
+      if (field.inputTypes.some((inputType) => inputType.location === 'fieldRefTypes')) {
         // Replace the entire inputTypes array with just the first input type
         // This removes the fieldRefTypes reference while preserving functionality
-        (field as DMMF.SchemaArg & { inputTypes: DMMF.SchemaArg['inputTypes'] }).inputTypes = [field.inputTypes[0]];
+        (field as DMMF.SchemaArg & { inputTypes: DMMF.SchemaArg['inputTypes'] }).inputTypes = [
+          field.inputTypes[0],
+        ];
       }
     }
   }
@@ -94,9 +84,15 @@ export function resolveAddMissingInputObjectTypeOptions(
   return {
     isGenerateSelect: generatorConfigOptions.isGenerateSelect === 'true',
     isGenerateInclude: generatorConfigOptions.isGenerateInclude === 'true',
-    exportTypedSchemas: generatorConfigOptions.exportTypedSchemas === undefined ? true : generatorConfigOptions.exportTypedSchemas === 'true', // default true
-    exportZodSchemas: generatorConfigOptions.exportZodSchemas === undefined ? true : generatorConfigOptions.exportZodSchemas === 'true',     // default true
-    typedSchemaSuffix: generatorConfigOptions.typedSchemaSuffix || 'Schema',   // default 'Schema'
-    zodSchemaSuffix: generatorConfigOptions.zodSchemaSuffix || 'ZodSchema',    // default 'ZodSchema'
+    exportTypedSchemas:
+      generatorConfigOptions.exportTypedSchemas === undefined
+        ? true
+        : generatorConfigOptions.exportTypedSchemas === 'true', // default true
+    exportZodSchemas:
+      generatorConfigOptions.exportZodSchemas === undefined
+        ? true
+        : generatorConfigOptions.exportZodSchemas === 'true', // default true
+    typedSchemaSuffix: generatorConfigOptions.typedSchemaSuffix || 'Schema', // default 'Schema'
+    zodSchemaSuffix: generatorConfigOptions.zodSchemaSuffix || 'ZodSchema', // default 'ZodSchema'
   };
 }

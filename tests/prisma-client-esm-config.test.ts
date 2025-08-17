@@ -59,35 +59,40 @@ model Post {
 ${baseSchema}`;
 
       writeFileSync(schemaPath, schemaContent);
-      
+
       try {
-        execSync(`npx prisma generate --schema ${schemaPath}`, { 
+        execSync(`npx prisma generate --schema ${schemaPath}`, {
           cwd: process.cwd(),
-          stdio: 'pipe'
+          stdio: 'pipe',
         });
 
         // Check generated files don't have extensions in imports
-        const userWhereInputPath = join(outputDir, 'schemas', 'objects', 'UserWhereInput.schema.ts');
+        const userWhereInputPath = join(
+          outputDir,
+          'schemas',
+          'objects',
+          'UserWhereInput.schema.ts',
+        );
         const findManyUserPath = join(outputDir, 'schemas', 'findManyUser.schema.ts');
-        
+
         if (existsSync(userWhereInputPath)) {
           const content = readFileSync(userWhereInputPath, 'utf-8');
-          
+
           // Should not contain .js extensions
           expect(content).not.toMatch(/import.*\.js'/);
           expect(content).not.toMatch(/from.*\.js'/);
-          
+
           // Should contain imports without extensions
           expect(content).toMatch(/from '\.\//);
         }
-        
+
         if (existsSync(findManyUserPath)) {
           const content = readFileSync(findManyUserPath, 'utf-8');
-          
+
           // Should not contain .js extensions
           expect(content).not.toMatch(/import.*\.js'/);
           expect(content).not.toMatch(/from.*\.js'/);
-          
+
           // Should contain enum imports without extensions
           expect(content).toMatch(/from '\.\/enums\//);
         }
@@ -110,18 +115,23 @@ ${baseSchema}`;
 ${baseSchema}`;
 
         writeFileSync(schemaPath, schemaContent);
-        
+
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, { 
+          execSync(`npx prisma generate --schema ${schemaPath}`, {
             cwd: process.cwd(),
-            stdio: 'pipe'
+            stdio: 'pipe',
           });
 
           // Check generated files don't have extensions for CJS
-          const userWhereInputPath = join(outputDir, 'schemas', 'objects', 'UserWhereInput.schema.ts');
+          const userWhereInputPath = join(
+            outputDir,
+            'schemas',
+            'objects',
+            'UserWhereInput.schema.ts',
+          );
           if (existsSync(userWhereInputPath)) {
             const content = readFileSync(userWhereInputPath, 'utf-8');
-            
+
             expect(content).not.toMatch(/import.*\.js'/);
             expect(content).not.toMatch(/from.*\.js'/);
           }
@@ -145,11 +155,11 @@ ${baseSchema}`;
 ${baseSchema}`;
 
         writeFileSync(schemaPath, schemaContent);
-        
+
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, { 
+          execSync(`npx prisma generate --schema ${schemaPath}`, {
             cwd: process.cwd(),
-            stdio: 'pipe'
+            stdio: 'pipe',
           });
 
           // Check multiple generated files have .js extensions in imports
@@ -162,13 +172,13 @@ ${baseSchema}`;
           for (const filePath of testFiles) {
             if (existsSync(filePath)) {
               const content = readFileSync(filePath, 'utf-8');
-              
+
               // Should contain .js extensions in local import statements
-              if (content.includes('import {') && content.includes('from \'./')) {
+              if (content.includes('import {') && content.includes("from './")) {
                 expect(content).toMatch(/from '\.[^']*\.js'/);
               }
               // Should contain .js extensions in relative enum/object imports (not Prisma client imports)
-              if (content.includes('from \'./enums/') || content.includes('from \'./objects/')) {
+              if (content.includes("from './enums/") || content.includes("from './objects/")) {
                 expect(content).toMatch(/from '\.\/(enums|objects)\/[^']*\.js'/);
               }
             }
@@ -191,19 +201,24 @@ ${baseSchema}`;
 ${baseSchema}`;
 
         writeFileSync(schemaPath, schemaContent);
-        
+
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, { 
+          execSync(`npx prisma generate --schema ${schemaPath}`, {
             cwd: process.cwd(),
-            stdio: 'pipe'
+            stdio: 'pipe',
           });
 
-          const userWhereInputPath = join(outputDir, 'schemas', 'objects', 'UserWhereInput.schema.ts');
+          const userWhereInputPath = join(
+            outputDir,
+            'schemas',
+            'objects',
+            'UserWhereInput.schema.ts',
+          );
           if (existsSync(userWhereInputPath)) {
             const content = readFileSync(userWhereInputPath, 'utf-8');
-            
+
             // Should contain .mjs extensions
-            if (content.includes('import {') && content.includes('from \'./')) {
+            if (content.includes('import {') && content.includes("from './")) {
               expect(content).toMatch(/from '\.[^']*\.mjs'/);
             }
           }
@@ -215,7 +230,7 @@ ${baseSchema}`;
 
       it('should work with different runtime configurations', async () => {
         const runtimeConfigs = ['nodejs', 'edge-light'];
-        
+
         for (const runtime of runtimeConfigs) {
           const schemaContent = `generator client {
   provider              = "prisma-client"
@@ -228,19 +243,24 @@ ${baseSchema}`;
 ${baseSchema}`;
 
           writeFileSync(schemaPath, schemaContent);
-          
+
           try {
-            execSync(`npx prisma generate --schema ${schemaPath}`, { 
+            execSync(`npx prisma generate --schema ${schemaPath}`, {
               cwd: process.cwd(),
-              stdio: 'pipe'
+              stdio: 'pipe',
             });
 
-            const userWhereInputPath = join(outputDir, 'schemas', 'objects', 'UserWhereInput.schema.ts');
+            const userWhereInputPath = join(
+              outputDir,
+              'schemas',
+              'objects',
+              'UserWhereInput.schema.ts',
+            );
             if (existsSync(userWhereInputPath)) {
               const content = readFileSync(userWhereInputPath, 'utf-8');
-              
+
               // Should contain .js extensions regardless of runtime
-              if (content.includes('import {') && content.includes('from \'./')) {
+              if (content.includes('import {') && content.includes("from './")) {
                 expect(content).toMatch(/from '\.[^']*\.js'/);
               }
             }
@@ -262,17 +282,22 @@ ${baseSchema}`;
 ${baseSchema}`;
 
         writeFileSync(schemaPath, schemaContent);
-        
+
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, { 
+          execSync(`npx prisma generate --schema ${schemaPath}`, {
             cwd: process.cwd(),
-            stdio: 'pipe'
+            stdio: 'pipe',
           });
 
-          const userWhereInputPath = join(outputDir, 'schemas', 'objects', 'UserWhereInput.schema.ts');
+          const userWhereInputPath = join(
+            outputDir,
+            'schemas',
+            'objects',
+            'UserWhereInput.schema.ts',
+          );
           if (existsSync(userWhereInputPath)) {
             const content = readFileSync(userWhereInputPath, 'utf-8');
-            
+
             // Should not contain file extensions when not specified
             expect(content).not.toMatch(/import.*\.js'/);
             expect(content).not.toMatch(/import.*\.mjs'/);
@@ -293,17 +318,22 @@ ${baseSchema}`;
 ${baseSchema}`;
 
         writeFileSync(schemaPath, schemaContent);
-        
+
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, { 
+          execSync(`npx prisma generate --schema ${schemaPath}`, {
             cwd: process.cwd(),
-            stdio: 'pipe'
+            stdio: 'pipe',
           });
 
-          const userWhereInputPath = join(outputDir, 'schemas', 'objects', 'UserWhereInput.schema.ts');
+          const userWhereInputPath = join(
+            outputDir,
+            'schemas',
+            'objects',
+            'UserWhereInput.schema.ts',
+          );
           if (existsSync(userWhereInputPath)) {
             const content = readFileSync(userWhereInputPath, 'utf-8');
-            
+
             // Should not add extensions when moduleFormat is not esm
             expect(content).not.toMatch(/import.*\.js'/);
           }
@@ -321,17 +351,22 @@ ${baseSchema}`;
 ${baseSchema}`;
 
         writeFileSync(schemaPath, schemaContent);
-        
+
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, { 
+          execSync(`npx prisma generate --schema ${schemaPath}`, {
             cwd: process.cwd(),
-            stdio: 'pipe'
+            stdio: 'pipe',
           });
 
-          const userWhereInputPath = join(outputDir, 'schemas', 'objects', 'UserWhereInput.schema.ts');
+          const userWhereInputPath = join(
+            outputDir,
+            'schemas',
+            'objects',
+            'UserWhereInput.schema.ts',
+          );
           if (existsSync(userWhereInputPath)) {
             const content = readFileSync(userWhereInputPath, 'utf-8');
-            
+
             // Should not add extensions when importFileExtension is not specified
             expect(content).not.toMatch(/import.*\.js'/);
           }
@@ -348,14 +383,16 @@ ${baseSchema}`;
         // Mock static properties for legacy generator
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
-        
+
         try {
           Transformer.setPrismaClientProvider('prisma-client-js');
           Transformer.setPrismaClientConfig({});
-          
+
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
-          
+          const extension = (
+            transformer as unknown as { getImportFileExtension(): string }
+          ).getImportFileExtension();
+
           expect(extension).toBe('');
         } finally {
           Transformer.setPrismaClientProvider(originalProvider);
@@ -366,17 +403,19 @@ ${baseSchema}`;
       it('should return .js for new generator with ESM and js extension', () => {
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
-        
+
         try {
           Transformer.setPrismaClientProvider('prisma-client');
           Transformer.setPrismaClientConfig({
             moduleFormat: 'esm',
-            importFileExtension: 'js'
+            importFileExtension: 'js',
           });
-          
+
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
-          
+          const extension = (
+            transformer as unknown as { getImportFileExtension(): string }
+          ).getImportFileExtension();
+
           expect(extension).toBe('.js');
         } finally {
           Transformer.setPrismaClientProvider(originalProvider);
@@ -387,17 +426,19 @@ ${baseSchema}`;
       it('should return .mjs for new generator with ESM and mjs extension', () => {
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
-        
+
         try {
           Transformer.setPrismaClientProvider('prisma-client');
           Transformer.setPrismaClientConfig({
             moduleFormat: 'esm',
-            importFileExtension: 'mjs'
+            importFileExtension: 'mjs',
           });
-          
+
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
-          
+          const extension = (
+            transformer as unknown as { getImportFileExtension(): string }
+          ).getImportFileExtension();
+
           expect(extension).toBe('.mjs');
         } finally {
           Transformer.setPrismaClientProvider(originalProvider);
@@ -408,17 +449,19 @@ ${baseSchema}`;
       it('should return empty string for new generator with CJS', () => {
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
-        
+
         try {
           Transformer.setPrismaClientProvider('prisma-client');
           Transformer.setPrismaClientConfig({
             moduleFormat: 'cjs',
-            importFileExtension: 'js'
+            importFileExtension: 'js',
           });
-          
+
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
-          
+          const extension = (
+            transformer as unknown as { getImportFileExtension(): string }
+          ).getImportFileExtension();
+
           expect(extension).toBe('');
         } finally {
           Transformer.setPrismaClientProvider(originalProvider);
@@ -429,16 +472,18 @@ ${baseSchema}`;
       it('should return empty string when importFileExtension is not specified', () => {
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
-        
+
         try {
           Transformer.setPrismaClientProvider('prisma-client');
           Transformer.setPrismaClientConfig({
-            moduleFormat: 'esm'
+            moduleFormat: 'esm',
           });
-          
+
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
-          
+          const extension = (
+            transformer as unknown as { getImportFileExtension(): string }
+          ).getImportFileExtension();
+
           expect(extension).toBe('');
         } finally {
           Transformer.setPrismaClientProvider(originalProvider);
@@ -449,18 +494,20 @@ ${baseSchema}`;
       it('should detect new generator by runtime field', () => {
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
-        
+
         try {
           Transformer.setPrismaClientProvider('prisma-client-js');
           Transformer.setPrismaClientConfig({
             runtime: 'nodejs',
             moduleFormat: 'esm',
-            importFileExtension: 'js'
+            importFileExtension: 'js',
           });
-          
+
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
-          
+          const extension = (
+            transformer as unknown as { getImportFileExtension(): string }
+          ).getImportFileExtension();
+
           expect(extension).toBe('.js');
         } finally {
           Transformer.setPrismaClientProvider(originalProvider);
@@ -471,17 +518,19 @@ ${baseSchema}`;
       it('should detect new generator by moduleFormat field', () => {
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
-        
+
         try {
           Transformer.setPrismaClientProvider('prisma-client-js');
           Transformer.setPrismaClientConfig({
             moduleFormat: 'esm',
-            importFileExtension: 'js'
+            importFileExtension: 'js',
           });
-          
+
           const transformer = new Transformer({ name: 'Test' });
-          const extension = (transformer as unknown as { getImportFileExtension(): string }).getImportFileExtension();
-          
+          const extension = (
+            transformer as unknown as { getImportFileExtension(): string }
+          ).getImportFileExtension();
+
           expect(extension).toBe('.js');
         } finally {
           Transformer.setPrismaClientProvider(originalProvider);
@@ -494,20 +543,21 @@ ${baseSchema}`;
       it('should generate import statement with extension', () => {
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
-        
+
         try {
           Transformer.setPrismaClientProvider('prisma-client');
           Transformer.setPrismaClientConfig({
             moduleFormat: 'esm',
-            importFileExtension: 'js'
+            importFileExtension: 'js',
           });
-          
+
           const transformer = new Transformer({ name: 'Test' });
-          const statement = (transformer as unknown as { generateImportStatement(name: string, path: string): string }).generateImportStatement(
-            'TestSchema',
-            './test.schema'
-          );
-          
+          const statement = (
+            transformer as unknown as {
+              generateImportStatement(name: string, path: string): string;
+            }
+          ).generateImportStatement('TestSchema', './test.schema');
+
           expect(statement).toBe("import { TestSchema } from './test.schema.js'");
         } finally {
           Transformer.setPrismaClientProvider(originalProvider);
@@ -518,17 +568,18 @@ ${baseSchema}`;
       it('should generate import statement without extension for legacy', () => {
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
-        
+
         try {
           Transformer.setPrismaClientProvider('prisma-client-js');
           Transformer.setPrismaClientConfig({});
-          
+
           const transformer = new Transformer({ name: 'Test' });
-          const statement = (transformer as unknown as { generateImportStatement(name: string, path: string): string }).generateImportStatement(
-            'TestSchema',
-            './test.schema'
-          );
-          
+          const statement = (
+            transformer as unknown as {
+              generateImportStatement(name: string, path: string): string;
+            }
+          ).generateImportStatement('TestSchema', './test.schema');
+
           expect(statement).toBe("import { TestSchema } from './test.schema'");
         } finally {
           Transformer.setPrismaClientProvider(originalProvider);
@@ -551,11 +602,11 @@ ${baseSchema}`;
 ${baseSchema}`;
 
       writeFileSync(schemaPath, schemaContent);
-      
+
       try {
-        execSync(`npx prisma generate --schema ${schemaPath}`, { 
+        execSync(`npx prisma generate --schema ${schemaPath}`, {
           cwd: process.cwd(),
-          stdio: 'pipe'
+          stdio: 'pipe',
         });
 
         // Test different types of imports
@@ -564,21 +615,21 @@ ${baseSchema}`;
             file: join(outputDir, 'schemas', 'objects', 'UserWhereInput.schema.ts'),
             shouldContain: [
               /from '\.[^']*\.js'/, // Object imports
-            ]
+            ],
           },
           {
             file: join(outputDir, 'schemas', 'findManyUser.schema.ts'),
             shouldContain: [
               /from '\.\/objects\/[^']*\.schema\.js'/, // Object imports
               /from '\.\/enums\/[^']*\.schema\.js'/, // Enum imports
-            ]
-          }
+            ],
+          },
         ];
 
         for (const testCase of testCases) {
           if (existsSync(testCase.file)) {
             const content = readFileSync(testCase.file, 'utf-8');
-            
+
             for (const pattern of testCase.shouldContain) {
               if (content.includes('import {')) {
                 expect(content).toMatch(pattern);

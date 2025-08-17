@@ -30,10 +30,10 @@ export class MockDMMFGenerator {
           type: 'Int',
           default: {
             name: 'autoincrement',
-            args: []
+            args: [],
           },
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'email',
@@ -46,7 +46,7 @@ export class MockDMMFGenerator {
           hasDefaultValue: false,
           type: 'String',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'name',
@@ -59,13 +59,13 @@ export class MockDMMFGenerator {
           hasDefaultValue: false,
           type: 'String',
           isGenerated: false,
-          isUpdatedAt: false
-        }
+          isUpdatedAt: false,
+        },
       ],
       primaryKey: null,
       uniqueFields: [],
       uniqueIndexes: [],
-      isGenerated: false
+      isGenerated: false,
     };
   }
 
@@ -74,7 +74,7 @@ export class MockDMMFGenerator {
    */
   static createModelWithRelations(
     modelName: string = 'User',
-    relatedModel: string = 'Post'
+    relatedModel: string = 'Post',
   ): DMMF.Model {
     return {
       name: modelName,
@@ -92,10 +92,10 @@ export class MockDMMFGenerator {
           type: 'Int',
           default: {
             name: 'autoincrement',
-            args: []
+            args: [],
           },
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'email',
@@ -108,7 +108,7 @@ export class MockDMMFGenerator {
           hasDefaultValue: false,
           type: 'String',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'posts',
@@ -124,13 +124,13 @@ export class MockDMMFGenerator {
           relationFromFields: [],
           relationToFields: [],
           isGenerated: false,
-          isUpdatedAt: false
-        }
+          isUpdatedAt: false,
+        },
       ],
       primaryKey: null,
       uniqueFields: [],
       uniqueIndexes: [],
-      isGenerated: false
+      isGenerated: false,
     };
   }
 
@@ -154,7 +154,7 @@ export class MockDMMFGenerator {
           type: 'Int',
           default: { name: 'autoincrement', args: [] },
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'stringField',
@@ -167,7 +167,7 @@ export class MockDMMFGenerator {
           hasDefaultValue: false,
           type: 'String',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'intField',
@@ -180,7 +180,7 @@ export class MockDMMFGenerator {
           hasDefaultValue: false,
           type: 'Int',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'booleanField',
@@ -193,7 +193,7 @@ export class MockDMMFGenerator {
           hasDefaultValue: false,
           type: 'Boolean',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'dateTimeField',
@@ -206,7 +206,7 @@ export class MockDMMFGenerator {
           hasDefaultValue: false,
           type: 'DateTime',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'optionalString',
@@ -219,7 +219,7 @@ export class MockDMMFGenerator {
           hasDefaultValue: false,
           type: 'String',
           isGenerated: false,
-          isUpdatedAt: false
+          isUpdatedAt: false,
         },
         {
           name: 'jsonField',
@@ -232,13 +232,13 @@ export class MockDMMFGenerator {
           hasDefaultValue: false,
           type: 'Json',
           isGenerated: false,
-          isUpdatedAt: false
-        }
+          isUpdatedAt: false,
+        },
       ],
       primaryKey: null,
       uniqueFields: [],
       uniqueIndexes: [],
-      isGenerated: false
+      isGenerated: false,
     };
   }
 
@@ -257,12 +257,12 @@ export class MockDMMFGenerator {
           name: 'TestEnum',
           values: [
             { name: 'VALUE_ONE', dbName: null },
-            { name: 'VALUE_TWO', dbName: null }
+            { name: 'VALUE_TWO', dbName: null },
           ],
-          dbName: null
-        }
+          dbName: null,
+        },
       ],
-      types: []
+      types: [],
     };
   }
 }
@@ -286,7 +286,7 @@ export class ConfigTestUtils {
       addSelectType: false,
       validateWhereUniqueInput: true,
       prismaClientPath: '@prisma/client',
-      ...overrides
+      ...overrides,
     };
   }
 
@@ -299,18 +299,18 @@ export class ConfigTestUtils {
         User: {
           enabled: true,
           operations: ['findMany', 'create', 'update'],
-          fields: { exclude: ['password'] }
+          fields: { exclude: ['password'] },
         },
         Post: {
-          enabled: false
-        }
+          enabled: false,
+        },
       },
       minimal: false,
       variants: [
         { name: 'input', suffix: 'Input' },
-        { name: 'result', suffix: 'Result' }
+        { name: 'result', suffix: 'Result' },
       ],
-      ...overrides
+      ...overrides,
     });
   }
 
@@ -323,7 +323,7 @@ export class ConfigTestUtils {
       createInputTypes: false,
       addIncludeType: false,
       addSelectType: false,
-      ...overrides
+      ...overrides,
     });
   }
 }
@@ -341,11 +341,12 @@ export class SchemaValidationUtils {
     }
 
     const content = readFileSync(filePath, 'utf-8');
-    
+
     // Check for basic Zod schema patterns
     const hasZodImport = content.includes("import { z } from 'zod'");
     const hasSchemaExport = content.includes('export const') && content.includes('Schema');
-    const hasZodSchema = content.includes('.object(') || content.includes('.string(') || content.includes('.number(');
+    const hasZodSchema =
+      content.includes('.object(') || content.includes('.string(') || content.includes('.number(');
 
     return hasZodImport && hasSchemaExport && hasZodSchema;
   }
@@ -359,9 +360,9 @@ export class SchemaValidationUtils {
     }
 
     const content = readFileSync(filePath, 'utf-8');
-    
-    return expectedFields.every(field => 
-      content.includes(`${field}:`) || content.includes(`"${field}":`)
+
+    return expectedFields.every(
+      (field) => content.includes(`${field}:`) || content.includes(`"${field}":`),
     );
   }
 
@@ -374,31 +375,34 @@ export class SchemaValidationUtils {
     }
 
     const content = readFileSync(filePath, 'utf-8');
-    
-    return excludedFields.every(field => 
-      !content.includes(`${field}:`) && !content.includes(`"${field}":`)
+
+    return excludedFields.every(
+      (field) => !content.includes(`${field}:`) && !content.includes(`"${field}":`),
     );
   }
 
   /**
    * Expect schema content with specific validations
    */
-  static expectSchemaContent(filePath: string, expectations: {
-    hasFields?: string[];
-    excludesFields?: string[];
-    hasValidations?: string[];
-    hasImports?: string[];
-    hasExports?: string[];
-  }): void {
+  static expectSchemaContent(
+    filePath: string,
+    expectations: {
+      hasFields?: string[];
+      excludesFields?: string[];
+      hasValidations?: string[];
+      hasImports?: string[];
+      hasExports?: string[];
+    },
+  ): void {
     if (!existsSync(filePath)) {
       throw new Error(`Schema file does not exist: ${filePath}`);
     }
 
     const content = readFileSync(filePath, 'utf-8');
-    
+
     // Check for expected fields
     if (expectations.hasFields) {
-      expectations.hasFields.forEach(field => {
+      expectations.hasFields.forEach((field) => {
         if (!content.includes(`${field}:`) && !content.includes(`"${field}":`)) {
           throw new Error(`Expected field '${field}' not found in ${filePath}`);
         }
@@ -407,7 +411,7 @@ export class SchemaValidationUtils {
 
     // Check for excluded fields
     if (expectations.excludesFields) {
-      expectations.excludesFields.forEach(field => {
+      expectations.excludesFields.forEach((field) => {
         if (content.includes(`${field}:`) || content.includes(`"${field}":`)) {
           throw new Error(`Field '${field}' should be excluded from ${filePath}`);
         }
@@ -416,7 +420,7 @@ export class SchemaValidationUtils {
 
     // Check for expected validations
     if (expectations.hasValidations) {
-      expectations.hasValidations.forEach(validation => {
+      expectations.hasValidations.forEach((validation) => {
         if (!content.includes(validation)) {
           throw new Error(`Expected validation '${validation}' not found in ${filePath}`);
         }
@@ -425,7 +429,7 @@ export class SchemaValidationUtils {
 
     // Check for expected imports
     if (expectations.hasImports) {
-      expectations.hasImports.forEach(importStatement => {
+      expectations.hasImports.forEach((importStatement) => {
         if (!content.includes(importStatement)) {
           throw new Error(`Expected import '${importStatement}' not found in ${filePath}`);
         }
@@ -434,7 +438,7 @@ export class SchemaValidationUtils {
 
     // Check for expected exports
     if (expectations.hasExports) {
-      expectations.hasExports.forEach(exportStatement => {
+      expectations.hasExports.forEach((exportStatement) => {
         if (!content.includes(exportStatement)) {
           throw new Error(`Expected export '${exportStatement}' not found in ${filePath}`);
         }
@@ -451,8 +455,8 @@ export class SchemaValidationUtils {
     }
 
     const content = readFileSync(filePath, 'utf-8');
-    
-    return expectedValidations.every(validation => content.includes(validation));
+
+    return expectedValidations.every((validation) => content.includes(validation));
   }
 }
 
@@ -469,7 +473,7 @@ export class FileSystemUtils {
     }
 
     const files = readdirSync(dir, { recursive: true });
-    
+
     return files
       .filter((file: string) => file.endsWith('.schema.ts'))
       .map((file: string) => join(dir, file));
@@ -484,7 +488,7 @@ export class FileSystemUtils {
     }
 
     const files = readdirSync(dir, { recursive: true });
-    
+
     return files.filter((file: string) => pattern.test(file)).length;
   }
 
@@ -492,7 +496,7 @@ export class FileSystemUtils {
    * Check if directory structure matches expected pattern
    */
   static validateDirectoryStructure(baseDir: string, expectedDirs: string[]): boolean {
-    return expectedDirs.every(dir => existsSync(join(baseDir, dir)));
+    return expectedDirs.every((dir) => existsSync(join(baseDir, dir)));
   }
 }
 
@@ -504,7 +508,7 @@ export class TestAssertions {
    * Assert that all expected files exist
    */
   static expectFilesToExist(files: string[], message?: string): void {
-    files.forEach(file => {
+    files.forEach((file) => {
       if (!existsSync(file)) {
         throw new Error(`${message || 'Expected file to exist'}: ${file}`);
       }
@@ -515,7 +519,7 @@ export class TestAssertions {
    * Assert that files do not exist
    */
   static expectFilesNotToExist(files: string[], message?: string): void {
-    files.forEach(file => {
+    files.forEach((file) => {
       if (existsSync(file)) {
         throw new Error(`${message || 'Expected file not to exist'}: ${file}`);
       }
@@ -526,13 +530,13 @@ export class TestAssertions {
    * Assert schema file content matches expectations
    */
   static expectSchemaContent(
-    filePath: string, 
+    filePath: string,
     expectations: {
       hasFields?: string[];
       excludesFields?: string[];
       hasValidations?: string[];
       hasImports?: string[];
-    }
+    },
   ): void {
     if (!existsSync(filePath)) {
       throw new Error(`Schema file does not exist: ${filePath}`);
@@ -541,7 +545,7 @@ export class TestAssertions {
     const content = readFileSync(filePath, 'utf-8');
 
     if (expectations.hasFields) {
-      expectations.hasFields.forEach(field => {
+      expectations.hasFields.forEach((field) => {
         if (!content.includes(`${field}:`) && !content.includes(`"${field}":`)) {
           throw new Error(`Expected field '${field}' not found in ${filePath}`);
         }
@@ -549,7 +553,7 @@ export class TestAssertions {
     }
 
     if (expectations.excludesFields) {
-      expectations.excludesFields.forEach(field => {
+      expectations.excludesFields.forEach((field) => {
         if (content.includes(`${field}:`) || content.includes(`"${field}":`)) {
           throw new Error(`Field '${field}' should be excluded from ${filePath}`);
         }
@@ -557,7 +561,7 @@ export class TestAssertions {
     }
 
     if (expectations.hasValidations) {
-      expectations.hasValidations.forEach(validation => {
+      expectations.hasValidations.forEach((validation) => {
         if (!content.includes(validation)) {
           throw new Error(`Expected validation '${validation}' not found in ${filePath}`);
         }
@@ -565,7 +569,7 @@ export class TestAssertions {
     }
 
     if (expectations.hasImports) {
-      expectations.hasImports.forEach(importStmt => {
+      expectations.hasImports.forEach((importStmt) => {
         if (!content.includes(importStmt)) {
           throw new Error(`Expected import '${importStmt}' not found in ${filePath}`);
         }

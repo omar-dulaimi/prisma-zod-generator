@@ -1,60 +1,60 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
     open-pull-requests-limit: 10
     assignees:
-      - "omar-dulaimi"
+      - 'omar-dulaimi'
     commit-message:
-      prefix: "chore"
-      prefix-development: "chore"
-      include: "scope"
+      prefix: 'chore'
+      prefix-development: 'chore'
+      include: 'scope'
     labels:
-      - "dependencies"
-      - "automated"
+      - 'dependencies'
+      - 'automated'
     ignore:
       # Ignore major version updates for critical dependencies
-      - dependency-name: "@prisma/*"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "zod"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: '@prisma/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'zod'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
     groups:
       prisma:
         patterns:
-          - "@prisma/*"
-          - "prisma"
+          - '@prisma/*'
+          - 'prisma'
       testing:
         patterns:
-          - "vitest"
-          - "@vitest/*"
-          - "expect-type"
+          - 'vitest'
+          - '@vitest/*'
+          - 'expect-type'
       eslint:
         patterns:
-          - "eslint*"
-          - "@typescript-eslint/*"
+          - 'eslint*'
+          - '@typescript-eslint/*'
       build-tools:
         patterns:
-          - "typescript"
-          - "prettier"
-          - "tslib"
-          - "tsx"
+          - 'typescript'
+          - 'prettier'
+          - 'tslib'
+          - 'tsx'
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
     open-pull-requests-limit: 5
     commit-message:
-      prefix: "ci"
-      include: "scope"
+      prefix: 'ci'
+      include: 'scope'
     labels:
-      - "github-actions"
-      - "automated"
+      - 'github-actions'
+      - 'automated'

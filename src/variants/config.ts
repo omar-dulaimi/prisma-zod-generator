@@ -3,14 +3,14 @@
  * Manages per-variant configuration including field exclusions and validation rules
  */
 
-import { 
-  VariantType, 
+import {
+  VariantType,
   VariantConfig,
   VariantManagerConfig,
   DEFAULT_NAMING_CONFIGS,
   DEFAULT_FIELD_EXCLUSIONS,
   DEFAULT_VALIDATION_CUSTOMIZATIONS,
-  DEFAULT_SCHEMA_OPTIONS
+  DEFAULT_SCHEMA_OPTIONS,
 } from '../types/variants';
 
 /**
@@ -20,7 +20,7 @@ export enum ConfigInheritanceLevel {
   DEFAULT = 'default',
   GLOBAL = 'global',
   VARIANT = 'variant',
-  MODEL = 'model'
+  MODEL = 'model',
 }
 
 /**
@@ -74,10 +74,10 @@ export class VariantConfigurationManager implements ConfigMerger {
   getVariantConfig(
     modelName: string,
     variantType: VariantType,
-    overrides?: Partial<VariantConfig>
+    overrides?: Partial<VariantConfig>,
   ): VariantConfig {
     const cacheKey = this.generateCacheKey(modelName, variantType, overrides);
-    
+
     // Check cache first
     const cached = this.getCachedConfig(cacheKey);
     if (cached) {
@@ -86,10 +86,10 @@ export class VariantConfigurationManager implements ConfigMerger {
 
     // Build configuration hierarchy
     const config = this.buildConfigurationHierarchy(modelName, variantType, overrides);
-    
+
     // Cache the result
     this.cacheConfig(cacheKey, config, this.getInheritanceChain(modelName, variantType));
-    
+
     return config;
   }
 
@@ -99,7 +99,7 @@ export class VariantConfigurationManager implements ConfigMerger {
   private buildConfigurationHierarchy(
     modelName: string,
     variantType: VariantType,
-    overrides?: Partial<VariantConfig>
+    overrides?: Partial<VariantConfig>,
   ): VariantConfig {
     // Start with defaults
     let config = this.getDefaultVariantConfig(variantType);
@@ -135,7 +135,7 @@ export class VariantConfigurationManager implements ConfigMerger {
       fieldExclusions: DEFAULT_FIELD_EXCLUSIONS[variantType],
       validationCustomizations: DEFAULT_VALIDATION_CUSTOMIZATIONS[variantType],
       schemaOptions: DEFAULT_SCHEMA_OPTIONS[variantType],
-      priority: this.getDefaultPriority(variantType)
+      priority: this.getDefaultPriority(variantType),
     };
   }
 
@@ -191,8 +191,8 @@ export class VariantConfigurationManager implements ConfigMerger {
 
     // Validate field exclusions
     if (config.fieldExclusions.excludeFields) {
-      const invalidFields = config.fieldExclusions.excludeFields.filter(field => 
-        typeof field !== 'string' || field.trim() === ''
+      const invalidFields = config.fieldExclusions.excludeFields.filter(
+        (field) => typeof field !== 'string' || field.trim() === '',
       );
       if (invalidFields.length > 0) {
         errors.push(`Invalid field exclusion names: ${invalidFields.join(', ')}`);
@@ -201,7 +201,9 @@ export class VariantConfigurationManager implements ConfigMerger {
 
     // Validate validation customizations
     if (config.validationCustomizations.fieldValidations) {
-      for (const [field, validation] of Object.entries(config.validationCustomizations.fieldValidations)) {
+      for (const [field, validation] of Object.entries(
+        config.validationCustomizations.fieldValidations,
+      )) {
         if (typeof validation !== 'string' || validation.trim() === '') {
           errors.push(`Invalid validation for field '${field}': must be non-empty string`);
         }
@@ -209,9 +211,11 @@ export class VariantConfigurationManager implements ConfigMerger {
     }
 
     // Check for conflicting configurations
-    if (config.fieldExclusions.excludeRelations && 
-        config.schemaOptions.generateTypes &&
-        config.type === VariantType.RESULT) {
+    if (
+      config.fieldExclusions.excludeRelations &&
+      config.schemaOptions.generateTypes &&
+      config.type === VariantType.RESULT
+    ) {
       warnings.push('Excluding relations in result schemas may cause type issues');
     }
 
@@ -225,7 +229,7 @@ export class VariantConfigurationManager implements ConfigMerger {
       errors,
       warnings,
       level: ConfigInheritanceLevel.VARIANT,
-      appliedConfig: config
+      appliedConfig: config,
     };
   }
 
@@ -243,15 +247,17 @@ export class VariantConfigurationManager implements ConfigMerger {
   addModelOverride(
     modelName: string,
     variantType: VariantType,
-    override: Partial<VariantConfig>
+    override: Partial<VariantConfig>,
   ): void {
     if (!this.globalConfig.modelOverrides[modelName]) {
       this.globalConfig.modelOverrides[modelName] = {};
     }
 
     const existing = this.globalConfig.modelOverrides[modelName][variantType] || {};
-    this.globalConfig.modelOverrides[modelName][variantType] = 
-      this.mergeConfigs(existing, override);
+    this.globalConfig.modelOverrides[modelName][variantType] = this.mergeConfigs(
+      existing,
+      override,
+    );
 
     // Clear affected cache entries
     this.clearModelCache(modelName, variantType);
@@ -278,7 +284,7 @@ export class VariantConfigurationManager implements ConfigMerger {
   getEffectiveFieldExclusions(
     modelName: string,
     variantType: VariantType,
-    fieldNames: string[]
+    fieldNames: string[],
   ): {
     excludedFields: string[];
     includedFields: string[];
@@ -289,7 +295,7 @@ export class VariantConfigurationManager implements ConfigMerger {
     const excludedFields: string[] = [];
     const exclusionReasons: Record<string, string[]> = {};
 
-    fieldNames.forEach(fieldName => {
+    fieldNames.forEach((fieldName) => {
       const reasons: string[] = [];
 
       // Check direct field exclusions
@@ -312,8 +318,8 @@ export class VariantConfigurationManager implements ConfigMerger {
 
     return {
       excludedFields,
-      includedFields: fieldNames.filter(name => !excludedFields.includes(name)),
-      exclusionReasons
+      includedFields: fieldNames.filter((name) => !excludedFields.includes(name)),
+      exclusionReasons,
     };
   }
 
@@ -323,7 +329,7 @@ export class VariantConfigurationManager implements ConfigMerger {
   getEffectiveValidationCustomizations(
     modelName: string,
     variantType: VariantType,
-    fieldName: string
+    fieldName: string,
   ): {
     validations: string[];
     isInlineDisabled: boolean;
@@ -346,7 +352,7 @@ export class VariantConfigurationManager implements ConfigMerger {
     return {
       validations,
       isInlineDisabled: customizations.disableInlineValidations || false,
-      customTemplate: customizations.validationTemplates?.[fieldName]
+      customTemplate: customizations.validationTemplates?.[fieldName],
     };
   }
 
@@ -366,7 +372,9 @@ export class VariantConfigurationManager implements ConfigMerger {
       this.globalConfig = this.mergeConfigs(this.buildDefaultGlobalConfig(), imported);
       this.clearCache();
     } catch (error) {
-      throw new Error(`Failed to import configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to import configuration: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -381,29 +389,33 @@ export class VariantConfigurationManager implements ConfigMerger {
       variantDefaults: {
         [VariantType.PURE]: {},
         [VariantType.INPUT]: {},
-        [VariantType.RESULT]: {}
+        [VariantType.RESULT]: {},
       },
       modelOverrides: {},
       globalNaming: {
         useModelPrefix: true,
-        usePascalCase: true
-      }
+        usePascalCase: true,
+      },
     };
   }
 
   private getDefaultPriority(variantType: VariantType): number {
     switch (variantType) {
-      case VariantType.PURE: return 10;
-      case VariantType.INPUT: return 20;
-      case VariantType.RESULT: return 30;
-      default: return 50;
+      case VariantType.PURE:
+        return 10;
+      case VariantType.INPUT:
+        return 20;
+      case VariantType.RESULT:
+        return 30;
+      default:
+        return 50;
     }
   }
 
   private generateCacheKey(
     modelName: string,
     variantType: VariantType,
-    overrides?: Partial<VariantConfig>
+    overrides?: Partial<VariantConfig>,
   ): string {
     const overrideHash = overrides ? this.hashObject(overrides) : '';
     return `${modelName}:${variantType}:${overrideHash}`;
@@ -411,7 +423,7 @@ export class VariantConfigurationManager implements ConfigMerger {
 
   private getCachedConfig(cacheKey: string): ConfigCacheEntry | null {
     const entry = this.configCache.get(cacheKey);
-    if (entry && (Date.now() - entry.timestamp) < this.cacheTimeout) {
+    if (entry && Date.now() - entry.timestamp < this.cacheTimeout) {
       return entry;
     }
     return null;
@@ -420,13 +432,13 @@ export class VariantConfigurationManager implements ConfigMerger {
   private cacheConfig(
     cacheKey: string,
     config: VariantConfig,
-    inheritanceChain: ConfigInheritanceLevel[]
+    inheritanceChain: ConfigInheritanceLevel[],
   ): void {
     this.configCache.set(cacheKey, {
       config,
       hash: this.hashObject(config as unknown as Record<string, unknown>),
       timestamp: Date.now(),
-      inheritanceChain
+      inheritanceChain,
     });
   }
 
@@ -435,36 +447,41 @@ export class VariantConfigurationManager implements ConfigMerger {
   }
 
   private clearModelCache(modelName: string, variantType?: VariantType): void {
-    const keysToDelete = Array.from(this.configCache.keys()).filter(key => {
+    const keysToDelete = Array.from(this.configCache.keys()).filter((key) => {
       const parts = key.split(':');
       return parts[0] === modelName && (!variantType || parts[1] === variantType);
     });
-    
-    keysToDelete.forEach(key => this.configCache.delete(key));
+
+    keysToDelete.forEach((key) => this.configCache.delete(key));
   }
 
-  private getInheritanceChain(modelName: string, variantType: VariantType): ConfigInheritanceLevel[] {
+  private getInheritanceChain(
+    modelName: string,
+    variantType: VariantType,
+  ): ConfigInheritanceLevel[] {
     const chain = [ConfigInheritanceLevel.DEFAULT];
-    
+
     if (this.globalConfig.variantDefaults[variantType]) {
       chain.push(ConfigInheritanceLevel.GLOBAL);
     }
-    
+
     chain.push(ConfigInheritanceLevel.VARIANT);
-    
+
     if (this.globalConfig.modelOverrides[modelName]?.[variantType]) {
       chain.push(ConfigInheritanceLevel.MODEL);
     }
-    
+
     return chain;
   }
 
   private isPlainObject(value: unknown): boolean {
-    return value !== null && 
-           typeof value === 'object' && 
-           !Array.isArray(value) && 
-           !(value instanceof Date) && 
-           !(value instanceof RegExp);
+    return (
+      value !== null &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      !(value instanceof Date) &&
+      !(value instanceof RegExp)
+    );
   }
 
   private isAutoGeneratedField(fieldName: string): boolean {
@@ -486,7 +503,7 @@ export class ConfigurationUtils {
    */
   static compareConfigs(
     config1: VariantConfig,
-    config2: VariantConfig
+    config2: VariantConfig,
   ): {
     areSame: boolean;
     differences: Array<{
@@ -497,10 +514,10 @@ export class ConfigurationUtils {
   } {
     const differences: Array<{ path: string; value1: unknown; value2: unknown }> = [];
     this.deepCompare(config1, config2, '', differences);
-    
+
     return {
       areSame: differences.length === 0,
-      differences
+      differences,
     };
   }
 
@@ -516,12 +533,14 @@ export class ConfigurationUtils {
   } {
     return {
       type: config.type,
-      excludedFieldsCount: (config.fieldExclusions.excludeFields?.length || 0) +
-                          (config.fieldExclusions.excludeFieldTypes?.length || 0),
-      customValidationsCount: Object.keys(config.validationCustomizations.fieldValidations || {}).length +
-                             Object.keys(config.validationCustomizations.additionalValidations || {}).length,
+      excludedFieldsCount:
+        (config.fieldExclusions.excludeFields?.length || 0) +
+        (config.fieldExclusions.excludeFieldTypes?.length || 0),
+      customValidationsCount:
+        Object.keys(config.validationCustomizations.fieldValidations || {}).length +
+        Object.keys(config.validationCustomizations.additionalValidations || {}).length,
       hasDocumentation: config.schemaOptions.includeDocumentation || false,
-      priority: config.priority
+      priority: config.priority,
     };
   }
 
@@ -548,7 +567,7 @@ export class ConfigurationUtils {
           conflicts.push({
             config1: config1.type,
             config2: config2.type,
-            issue: `Same priority (${config1.priority})`
+            issue: `Same priority (${config1.priority})`,
           });
         }
 
@@ -557,7 +576,7 @@ export class ConfigurationUtils {
           conflicts.push({
             config1: config1.type,
             config2: config2.type,
-            issue: `Same schema name suffix: ${config1.naming.schemaNameSuffix}`
+            issue: `Same schema name suffix: ${config1.naming.schemaNameSuffix}`,
           });
         }
       }
@@ -565,7 +584,7 @@ export class ConfigurationUtils {
 
     return {
       isCompatible: conflicts.length === 0,
-      conflicts
+      conflicts,
     };
   }
 
@@ -573,7 +592,7 @@ export class ConfigurationUtils {
     obj1: unknown,
     obj2: unknown,
     path: string,
-    differences: Array<{ path: string; value1: unknown; value2: unknown }>
+    differences: Array<{ path: string; value1: unknown; value2: unknown }>,
   ): void {
     if (obj1 === obj2) return;
 
@@ -592,10 +611,10 @@ export class ConfigurationUtils {
       for (const key of keys) {
         const newPath = path ? `${path}.${key}` : key;
         this.deepCompare(
-          (obj1 as Record<string, unknown>)?.[key], 
-          (obj2 as Record<string, unknown>)?.[key], 
-          newPath, 
-          differences
+          (obj1 as Record<string, unknown>)?.[key],
+          (obj2 as Record<string, unknown>)?.[key],
+          newPath,
+          differences,
         );
       }
     } else if (obj1 !== obj2) {

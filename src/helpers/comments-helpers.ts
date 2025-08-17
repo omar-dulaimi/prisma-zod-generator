@@ -22,13 +22,9 @@ function collectHiddenModels(models: DMMF.Model[], hiddenModels: string[]) {
     .map((model) => {
       if (model.documentation) {
         const attribute = model.documentation?.match(modelAttributeRegex)?.[0];
-        const attributeName = attribute
-          ?.match(attributeNameRegex)?.[0]
-          ?.slice(1, -1);
+        const attributeName = attribute?.match(attributeNameRegex)?.[0]?.slice(1, -1);
         if (attributeName !== 'model') return model;
-        const rawAttributeArgs = attribute
-          ?.match(attributeArgsRegex)?.[0]
-          ?.slice(1, -1);
+        const rawAttributeArgs = attribute?.match(attributeArgsRegex)?.[0]?.slice(1, -1);
 
         const parsedAttributeArgs: Record<string, unknown> = {};
         if (rawAttributeArgs) {
@@ -55,11 +51,7 @@ function collectHiddenModels(models: DMMF.Model[], hiddenModels: string[]) {
     .filter(Boolean);
 }
 
-function collectHiddenFields(
-  models: DMMF.Model[],
-  hiddenModels: string[],
-  hiddenFields: string[],
-) {
+function collectHiddenFields(models: DMMF.Model[], hiddenModels: string[], hiddenFields: string[]) {
   models.forEach((model) => {
     model.fields.forEach((field) => {
       if (hiddenModels.includes(field.type)) {
@@ -80,10 +72,7 @@ function hideEnums(
   );
 }
 
-function hideModelOperations(
-  models: DMMF.Model[],
-  modelOperations: DMMF.ModelMapping[],
-) {
+function hideModelOperations(models: DMMF.Model[], modelOperations: DMMF.ModelMapping[]) {
   let i = modelOperations.length;
   while (i >= 0) {
     --i;
@@ -120,7 +109,10 @@ export function hideInputObjectTypesAndRelatedFields(
         --k;
         const field = inputType?.fields?.[k];
         if (field && hiddenFields.includes(field.name)) {
-          (inputObjectTypes[j] as DMMF.InputType & { fields: DMMF.SchemaArg[] }).fields.splice(k, 1);
+          (inputObjectTypes[j] as DMMF.InputType & { fields: DMMF.SchemaArg[] }).fields.splice(
+            k,
+            1,
+          );
         }
       }
     }

@@ -7,21 +7,21 @@ const path = require('path');
 function syncChangelog() {
   const rootChangelogPath = path.join(__dirname, '../../CHANGELOG.md');
   const docsChangelogPath = path.join(__dirname, '../docs/changelog.md');
-  
+
   console.log('📝 Syncing CHANGELOG.md to docs...');
-  
+
   // Read the root CHANGELOG.md
   if (!fs.existsSync(rootChangelogPath)) {
     console.error('❌ CHANGELOG.md not found at root');
     process.exit(1);
   }
-  
+
   const changelogContent = fs.readFileSync(rootChangelogPath, 'utf8');
-  
+
   // Parse the changelog to get the latest version
   const versionMatch = changelogContent.match(/^## \[(\d+\.\d+\.\d+)\]/m);
   const latestVersion = versionMatch ? versionMatch[1] : 'Unknown';
-  
+
   // Create the docs version with frontmatter
   const frontmatter = `---
 title: Changelog
@@ -75,10 +75,10 @@ This project follows semantic versioning and uses automated releases via [semant
 
   // Combine everything
   const finalContent = frontmatter + changelogContent + footer;
-  
+
   // Write to docs
   fs.writeFileSync(docsChangelogPath, finalContent);
-  
+
   console.log(`✅ Changelog synced successfully! Latest version: v${latestVersion}`);
 }
 

@@ -8,7 +8,10 @@ import { z } from 'zod';
 // a structural JSON type and lightweight sentinel transformation without touching Prisma namespace values.
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };
-export type InputJsonValue = JsonPrimitive | InputJsonValue[] | { [k: string]: InputJsonValue | null };
+export type InputJsonValue =
+  | JsonPrimitive
+  | InputJsonValue[]
+  | { [k: string]: InputJsonValue | null };
 export type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;
 
 export const transformJsonNull = (v?: NullableJsonInput) => {
@@ -25,9 +28,12 @@ export const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
     z.number(),
     z.boolean(),
     z.literal(null),
-  z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),
+    z.record(
+      z.string(),
+      z.lazy(() => JsonValueSchema.optional()),
+    ),
     z.array(z.lazy(() => JsonValueSchema)),
-  ])
+  ]),
 ) as z.ZodType<JsonValue>;
 
 export type JsonValueType = z.infer<typeof JsonValueSchema>;
@@ -38,9 +44,12 @@ export const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>
     z.string(),
     z.number(),
     z.boolean(),
-  z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),
-  z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),
-  ])
+    z.record(
+      z.string(),
+      z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)])),
+    ),
+    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),
+  ]),
 ) as z.ZodType<InputJsonValue>;
 
 export type InputJsonValueType = z.infer<typeof InputJsonValueSchema>;

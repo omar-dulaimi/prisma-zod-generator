@@ -9,15 +9,15 @@ export {
   ConfigTestUtils,
   SchemaValidationUtils,
   FileSystemUtils,
-  TestAssertions
+  TestAssertions,
 } from './test-utils';
 
-// Mock data generators  
+// Mock data generators
 export {
   PrismaSchemaGenerator,
   ConfigGenerator,
   TestEnvironment,
-  MockDMMF
+  MockDMMF,
 } from './mock-generators';
 
 // Common test patterns and constants
@@ -34,23 +34,23 @@ export const DEFAULT_TEST_CONFIG = {
   addIncludeType: false,
   addSelectType: false,
   validateWhereUniqueInput: true,
-  prismaClientPath: '@prisma/client'
+  prismaClientPath: '@prisma/client',
 };
 
 export const COMMON_FIELD_TYPES = [
   'String',
-  'Int', 
+  'Int',
   'Boolean',
   'DateTime',
   'Json',
   'Bytes',
   'Decimal',
-  'BigInt'
+  'BigInt',
 ];
 
 export const CRUD_OPERATIONS = [
   'findMany',
-  'findUnique', 
+  'findUnique',
   'findFirst',
   'create',
   'createMany',
@@ -60,30 +60,29 @@ export const CRUD_OPERATIONS = [
   'deleteMany',
   'upsert',
   'aggregate',
-  'groupBy'
+  'groupBy',
 ];
 
-export const MINIMAL_OPERATIONS = [
-  'findMany',
-  'findUnique',
-  'create', 
-  'update',
-  'delete'
-];
+export const MINIMAL_OPERATIONS = ['findMany', 'findUnique', 'create', 'update', 'delete'];
 
 /**
  * Common test setup function
  */
-export async function setupTest(testName: string, options: {
-  schema?: string;
-  config?: Record<string, unknown>;
-  timeout?: number;
-} = {}) {
-  const { TestEnvironment, PrismaSchemaGenerator, ConfigGenerator } = await import('./mock-generators');
-  
+export async function setupTest(
+  testName: string,
+  options: {
+    schema?: string;
+    config?: Record<string, unknown>;
+    timeout?: number;
+  } = {},
+) {
+  const { TestEnvironment, PrismaSchemaGenerator, ConfigGenerator } = await import(
+    './mock-generators'
+  );
+
   const schema = options.schema || PrismaSchemaGenerator.createBasicSchema();
   const config = options.config || ConfigGenerator.createBasicConfig();
-  
+
   return TestEnvironment.setupWithConfig(testName, schema, config);
 }
 

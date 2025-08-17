@@ -70,28 +70,33 @@ model TestPost {
 
     // Run prisma generate with our test schema
     await execAsync(`npx prisma generate --schema="${tempSchemaPath}"`, {
-      cwd: path.join(__dirname, '..')
+      cwd: path.join(__dirname, '..'),
     });
 
     // Verify the directory structure
-    const schemasExists = await fs.access(schemasSubdir).then(() => true).catch(() => false);
+    const schemasExists = await fs
+      .access(schemasSubdir)
+      .then(() => true)
+      .catch(() => false);
     expect(schemasExists, 'Schemas directory should exist').toBe(true);
 
     // The problematic behavior: schemas should NOT be nested in another schemas/ folder
     const nestedSchemasPath = path.join(schemasSubdir, 'schemas');
-    const nestedSchemasExists = await fs.access(nestedSchemasPath).then(() => true).catch(() => false);
+    const nestedSchemasExists = await fs
+      .access(nestedSchemasPath)
+      .then(() => true)
+      .catch(() => false);
     expect(nestedSchemasExists, 'Should NOT create nested schemas/schemas/ directory').toBe(false);
 
     // Verify schemas are directly in the specified output directory
-    const expectedFiles = [
-      'index.ts',
-      'enums',
-      'objects'
-    ];
+    const expectedFiles = ['index.ts', 'enums', 'objects'];
 
     for (const expectedItem of expectedFiles) {
       const itemPath = path.join(schemasSubdir, expectedItem);
-      const exists = await fs.access(itemPath).then(() => true).catch(() => false);
+      const exists = await fs
+        .access(itemPath)
+        .then(() => true)
+        .catch(() => false);
       expect(exists, `${expectedItem} should exist directly in the output directory`).toBe(true);
     }
 
@@ -99,27 +104,38 @@ model TestPost {
     const enumsDir = path.join(schemasSubdir, 'enums');
     const objectsDir = path.join(schemasSubdir, 'objects');
 
-    const enumsExists = await fs.access(enumsDir).then(() => true).catch(() => false);
-    const objectsExists = await fs.access(objectsDir).then(() => true).catch(() => false);
-    
+    const enumsExists = await fs
+      .access(enumsDir)
+      .then(() => true)
+      .catch(() => false);
+    const objectsExists = await fs
+      .access(objectsDir)
+      .then(() => true)
+      .catch(() => false);
+
     expect(enumsExists, 'enums directory should exist').toBe(true);
     expect(objectsExists, 'objects directory should exist').toBe(true);
 
     // Check for some generated schema files
     const sampleFiles = [
       path.join(schemasSubdir, 'findManyTestUser.schema.ts'),
-      path.join(schemasSubdir, 'createOneTestPost.schema.ts')
+      path.join(schemasSubdir, 'createOneTestPost.schema.ts'),
     ];
 
     for (const sampleFile of sampleFiles) {
-      const exists = await fs.access(sampleFile).then(() => true).catch(() => false);
-      expect(exists, `${path.basename(sampleFile)} should exist in the output directory`).toBe(true);
+      const exists = await fs
+        .access(sampleFile)
+        .then(() => true)
+        .catch(() => false);
+      expect(exists, `${path.basename(sampleFile)} should exist in the output directory`).toBe(
+        true,
+      );
     }
   });
 
   it('should work correctly when output directory does not end with "schemas"', async () => {
     const regularOutputDir = path.join(testOutputDir, 'regular-output');
-    
+
     const testSchema = `
 generator client {
   provider = "prisma-client-js"
@@ -147,19 +163,27 @@ model TestUser {
     try {
       // Run prisma generate with regular output directory
       await execAsync(`npx prisma generate --schema="${tempSchemaPath2}"`, {
-        cwd: path.join(__dirname, '..')
+        cwd: path.join(__dirname, '..'),
       });
 
       // For regular output (not ending with 'schemas'), it should create a schemas subdirectory
       const schemasPath = path.join(regularOutputDir, 'schemas');
-      const schemasExists = await fs.access(schemasPath).then(() => true).catch(() => false);
-      expect(schemasExists, 'schemas subdirectory should exist when output does not end with "schemas"').toBe(true);
+      const schemasExists = await fs
+        .access(schemasPath)
+        .then(() => true)
+        .catch(() => false);
+      expect(
+        schemasExists,
+        'schemas subdirectory should exist when output does not end with "schemas"',
+      ).toBe(true);
 
       // Verify files are in the schemas subdirectory
       const indexFile = path.join(schemasPath, 'index.ts');
-      const indexExists = await fs.access(indexFile).then(() => true).catch(() => false);
+      const indexExists = await fs
+        .access(indexFile)
+        .then(() => true)
+        .catch(() => false);
       expect(indexExists, 'index.ts should exist in schemas subdirectory').toBe(true);
-
     } finally {
       await fs.rm(tempSchemaPath2, { force: true });
     }

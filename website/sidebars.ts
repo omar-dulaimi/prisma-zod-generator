@@ -6,11 +6,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Introduction',
       collapsed: false,
-      items: [
-        'intro/what-is',
-        'intro/quick-start',
-        'intro/concepts'
-      ]
+      items: ['intro/what-is', 'intro/quick-start', 'intro/concepts'],
     },
     {
       type: 'category',
@@ -23,8 +19,8 @@ const sidebars: SidebarsConfig = {
         'config/optional-fields',
         'config/filtering',
         'config/emission-controls',
-        'config/file-layout'
-      ]
+        'config/file-layout',
+      ],
     },
     {
       type: 'category',
@@ -34,8 +30,8 @@ const sidebars: SidebarsConfig = {
         'pipeline/pure-models',
         'pipeline/single-file',
         'pipeline/special-types',
-        'pipeline/zod-comments'
-      ]
+        'pipeline/zod-comments',
+      ],
     },
     {
       type: 'category',
@@ -51,8 +47,8 @@ const sidebars: SidebarsConfig = {
         'recipes/single-file',
         'recipes/granular-per-model',
         'recipes/hide-fields',
-        'recipes/optional-field-control'
-      ]
+        'recipes/optional-field-control',
+      ],
     },
     {
       type: 'category',
@@ -61,16 +57,16 @@ const sidebars: SidebarsConfig = {
         'reference/bytes-json',
         'reference/naming-preset-map',
         'reference/faq',
-        'reference/troubleshooting'
-      ]
+        'reference/troubleshooting',
+      ],
     },
-  'usage-patterns',
-  'performance',
-  'upgrade-guide',
+    'usage-patterns',
+    'performance',
+    'upgrade-guide',
     'contributing',
     'release-and-versioning',
-    'changelog'
-  ]
+    'changelog',
+  ],
 };
 
 export default sidebars;

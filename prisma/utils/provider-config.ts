@@ -15,7 +15,7 @@ export interface ProviderConfig {
 export interface ProviderFeatures {
   // Native data types
   nativeTypes: string[];
-  
+
   // Advanced features
   arrays: boolean;
   json: boolean;
@@ -23,7 +23,7 @@ export interface ProviderFeatures {
   spatial: boolean;
   enums: boolean;
   composite: boolean;
-  
+
   // Database-specific features
   specificFeatures: string[];
 }
@@ -34,10 +34,10 @@ export interface ProviderLimitations {
   maxArraySize?: number;
   maxIndexes?: number;
   maxRelations?: number;
-  
+
   // Unsupported features
   unsupportedFeatures: string[];
-  
+
   // Workarounds
   workarounds: Record<string, string>;
 }
@@ -71,13 +71,42 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     provider: 'postgresql',
     schemaPath: 'prisma/schemas/postgresql/schema.prisma',
     generatedPath: 'prisma/schemas/postgresql/generated',
-    connectionString: process.env.POSTGRESQL_URL || 'postgresql://user:password@localhost:5432/test',
+    connectionString:
+      process.env.POSTGRESQL_URL || 'postgresql://user:password@localhost:5432/test',
     features: {
       nativeTypes: [
-        'VarChar', 'Char', 'Text', 'Json', 'JsonB', 'Uuid', 'Inet', 'Cidr', 'Macaddr',
-        'Date', 'Time', 'Timestamp', 'Timestamptz', 'Timetz', 'Interval',
-        'SmallInt', 'Integer', 'BigInt', 'Real', 'DoublePrecision', 'Decimal', 'Numeric', 'Money',
-        'Serial', 'BigSerial', 'SmallSerial', 'Bit', 'VarBit', 'ByteA', 'Boolean', 'Xml', 'Oid'
+        'VarChar',
+        'Char',
+        'Text',
+        'Json',
+        'JsonB',
+        'Uuid',
+        'Inet',
+        'Cidr',
+        'Macaddr',
+        'Date',
+        'Time',
+        'Timestamp',
+        'Timestamptz',
+        'Timetz',
+        'Interval',
+        'SmallInt',
+        'Integer',
+        'BigInt',
+        'Real',
+        'DoublePrecision',
+        'Decimal',
+        'Numeric',
+        'Money',
+        'Serial',
+        'BigSerial',
+        'SmallSerial',
+        'Bit',
+        'VarBit',
+        'ByteA',
+        'Boolean',
+        'Xml',
+        'Oid',
       ],
       arrays: true,
       json: true,
@@ -86,9 +115,18 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       enums: true,
       composite: true,
       specificFeatures: [
-        'arrays', 'jsonb', 'uuid', 'network_types', 'full_text_search', 'inheritance',
-        'custom_types', 'range_types', 'geometric_types', 'extensions', 'multi_schema'
-      ]
+        'arrays',
+        'jsonb',
+        'uuid',
+        'network_types',
+        'full_text_search',
+        'inheritance',
+        'custom_types',
+        'range_types',
+        'geometric_types',
+        'extensions',
+        'multi_schema',
+      ],
     },
     limitations: {
       maxStringLength: 1073741824, // 1GB
@@ -96,7 +134,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       maxIndexes: 64,
       maxRelations: undefined,
       unsupportedFeatures: [],
-      workarounds: {}
+      workarounds: {},
     },
     testCategories: [
       {
@@ -107,19 +145,23 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
           {
             name: 'Text Types',
             description: 'Test VarChar, Char, Text types',
-            schemaElements: ['PostgreSQLAllTypes.varcharField', 'PostgreSQLAllTypes.charField', 'PostgreSQLAllTypes.textField'],
+            schemaElements: [
+              'PostgreSQLAllTypes.varcharField',
+              'PostgreSQLAllTypes.charField',
+              'PostgreSQLAllTypes.textField',
+            ],
             expectedSchemas: ['z.string()', 'z.string()', 'z.string()'],
             validationRules: [
               { field: 'varcharField', rule: 'maxLength', expectedResult: 'pass' },
               { field: 'charField', rule: 'exactLength', expectedResult: 'pass' },
-              { field: 'textField', rule: 'string', expectedResult: 'pass' }
-            ]
-          }
-        ]
-      }
-    ]
+              { field: 'textField', rule: 'string', expectedResult: 'pass' },
+            ],
+          },
+        ],
+      },
+    ],
   },
-  
+
   mysql: {
     name: 'MySQL',
     provider: 'mysql',
@@ -128,12 +170,46 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     connectionString: process.env.MYSQL_URL || 'mysql://user:password@localhost:3306/test',
     features: {
       nativeTypes: [
-        'TinyInt', 'SmallInt', 'MediumInt', 'Int', 'BigInt',
-        'UnsignedTinyInt', 'UnsignedSmallInt', 'UnsignedMediumInt', 'UnsignedInt', 'UnsignedBigInt',
-        'Float', 'Double', 'Decimal', 'Char', 'VarChar', 'TinyText', 'Text', 'MediumText', 'LongText',
-        'Binary', 'VarBinary', 'TinyBlob', 'Blob', 'MediumBlob', 'LongBlob',
-        'Date', 'Time', 'DateTime', 'Timestamp', 'Year', 'Json', 'Bit',
-        'Geometry', 'Point', 'LineString', 'Polygon', 'MultiPoint', 'MultiLineString', 'MultiPolygon', 'GeometryCollection'
+        'TinyInt',
+        'SmallInt',
+        'MediumInt',
+        'Int',
+        'BigInt',
+        'UnsignedTinyInt',
+        'UnsignedSmallInt',
+        'UnsignedMediumInt',
+        'UnsignedInt',
+        'UnsignedBigInt',
+        'Float',
+        'Double',
+        'Decimal',
+        'Char',
+        'VarChar',
+        'TinyText',
+        'Text',
+        'MediumText',
+        'LongText',
+        'Binary',
+        'VarBinary',
+        'TinyBlob',
+        'Blob',
+        'MediumBlob',
+        'LongBlob',
+        'Date',
+        'Time',
+        'DateTime',
+        'Timestamp',
+        'Year',
+        'Json',
+        'Bit',
+        'Geometry',
+        'Point',
+        'LineString',
+        'Polygon',
+        'MultiPoint',
+        'MultiLineString',
+        'MultiPolygon',
+        'GeometryCollection',
       ],
       arrays: false,
       json: true,
@@ -142,9 +218,16 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       enums: true,
       composite: false,
       specificFeatures: [
-        'unsigned_integers', 'auto_increment', 'zerofill', 'spatial_types', 'json_functions',
-        'generated_columns', 'partitioning', 'fulltext_indexes', 'spatial_indexes'
-      ]
+        'unsigned_integers',
+        'auto_increment',
+        'zerofill',
+        'spatial_types',
+        'json_functions',
+        'generated_columns',
+        'partitioning',
+        'fulltext_indexes',
+        'spatial_indexes',
+      ],
     },
     limitations: {
       maxStringLength: 4294967295, // 4GB
@@ -153,9 +236,9 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       maxRelations: undefined,
       unsupportedFeatures: ['arrays', 'composite_types'],
       workarounds: {
-        'arrays': 'Use JSON or separate junction tables',
-        'composite_types': 'Use JSON or separate related tables'
-      }
+        arrays: 'Use JSON or separate junction tables',
+        composite_types: 'Use JSON or separate related tables',
+      },
     },
     testCategories: [
       {
@@ -166,19 +249,23 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
           {
             name: 'Signed Integers',
             description: 'Test TinyInt, SmallInt, MediumInt, Int, BigInt',
-            schemaElements: ['MySQLAllTypes.tinyintField', 'MySQLAllTypes.smallintField', 'MySQLAllTypes.intField'],
+            schemaElements: [
+              'MySQLAllTypes.tinyintField',
+              'MySQLAllTypes.smallintField',
+              'MySQLAllTypes.intField',
+            ],
             expectedSchemas: ['z.number().int()', 'z.number().int()', 'z.number().int()'],
             validationRules: [
               { field: 'tinyintField', rule: 'int', expectedResult: 'pass' },
               { field: 'smallintField', rule: 'int', expectedResult: 'pass' },
-              { field: 'intField', rule: 'int', expectedResult: 'pass' }
-            ]
-          }
-        ]
-      }
-    ]
+              { field: 'intField', rule: 'int', expectedResult: 'pass' },
+            ],
+          },
+        ],
+      },
+    ],
   },
-  
+
   mongodb: {
     name: 'MongoDB',
     provider: 'mongodb',
@@ -194,9 +281,15 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       enums: true,
       composite: true,
       specificFeatures: [
-        'document_modeling', 'embedded_documents', 'arrays_of_documents', 'geojson',
-        'aggregation_pipelines', 'raw_operations', 'text_search', 'gridfs'
-      ]
+        'document_modeling',
+        'embedded_documents',
+        'arrays_of_documents',
+        'geojson',
+        'aggregation_pipelines',
+        'raw_operations',
+        'text_search',
+        'gridfs',
+      ],
     },
     limitations: {
       maxStringLength: 16777216, // 16MB
@@ -205,10 +298,10 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       maxRelations: undefined,
       unsupportedFeatures: ['joins', 'foreign_keys', 'transactions_across_collections'],
       workarounds: {
-        'joins': 'Use $lookup aggregation or embed documents',
-        'foreign_keys': 'Use application-level references',
-        'transactions': 'Use single-document transactions or replica sets'
-      }
+        joins: 'Use $lookup aggregation or embed documents',
+        foreign_keys: 'Use application-level references',
+        transactions: 'Use single-document transactions or replica sets',
+      },
     },
     testCategories: [
       {
@@ -224,14 +317,14 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
             validationRules: [
               { field: 'profile', rule: 'object', expectedResult: 'pass' },
               { field: 'settings', rule: 'object', expectedResult: 'pass' },
-              { field: 'addresses', rule: 'array', expectedResult: 'pass' }
-            ]
-          }
-        ]
-      }
-    ]
+              { field: 'addresses', rule: 'array', expectedResult: 'pass' },
+            ],
+          },
+        ],
+      },
+    ],
   },
-  
+
   sqlite: {
     name: 'SQLite',
     provider: 'sqlite',
@@ -247,8 +340,13 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       enums: true,
       composite: false,
       specificFeatures: [
-        'type_affinity', 'json1_extension', 'fts', 'rtree', 'pragmas', 'attached_databases'
-      ]
+        'type_affinity',
+        'json1_extension',
+        'fts',
+        'rtree',
+        'pragmas',
+        'attached_databases',
+      ],
     },
     limitations: {
       maxStringLength: 1000000000, // 1GB
@@ -256,16 +354,22 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       maxIndexes: undefined,
       maxRelations: undefined,
       unsupportedFeatures: [
-        'arrays', 'composite_types', 'native_boolean', 'native_datetime', 'stored_procedures',
-        'user_defined_functions', 'triggers_on_system_tables', 'alter_table_limitations'
+        'arrays',
+        'composite_types',
+        'native_boolean',
+        'native_datetime',
+        'stored_procedures',
+        'user_defined_functions',
+        'triggers_on_system_tables',
+        'alter_table_limitations',
       ],
       workarounds: {
-        'arrays': 'Use JSON or separate tables',
-        'composite_types': 'Use JSON or separate tables',
-        'native_boolean': 'Use INTEGER (0/1)',
-        'native_datetime': 'Use TEXT, REAL, or INTEGER',
-        'stored_procedures': 'Use application logic'
-      }
+        arrays: 'Use JSON or separate tables',
+        composite_types: 'Use JSON or separate tables',
+        native_boolean: 'Use INTEGER (0/1)',
+        native_datetime: 'Use TEXT, REAL, or INTEGER',
+        stored_procedures: 'Use application logic',
+      },
     },
     testCategories: [
       {
@@ -276,33 +380,71 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
           {
             name: 'Affinity Types',
             description: 'Test INTEGER, REAL, TEXT, BLOB affinities',
-            schemaElements: ['SQLiteAllTypes.integerField', 'SQLiteAllTypes.realField', 'SQLiteAllTypes.textField', 'SQLiteAllTypes.blobField'],
-            expectedSchemas: ['z.number().int()', 'z.number()', 'z.string()', 'z.instanceof(Uint8Array)'],
+            schemaElements: [
+              'SQLiteAllTypes.integerField',
+              'SQLiteAllTypes.realField',
+              'SQLiteAllTypes.textField',
+              'SQLiteAllTypes.blobField',
+            ],
+            expectedSchemas: [
+              'z.number().int()',
+              'z.number()',
+              'z.string()',
+              'z.instanceof(Uint8Array)',
+            ],
             validationRules: [
               { field: 'integerField', rule: 'int', expectedResult: 'pass' },
               { field: 'realField', rule: 'number', expectedResult: 'pass' },
               { field: 'textField', rule: 'string', expectedResult: 'pass' },
-              { field: 'blobField', rule: 'bytes', expectedResult: 'pass' }
-            ]
-          }
-        ]
-      }
-    ]
+              { field: 'blobField', rule: 'bytes', expectedResult: 'pass' },
+            ],
+          },
+        ],
+      },
+    ],
   },
-  
+
   sqlserver: {
     name: 'SQL Server',
     provider: 'sqlserver',
     schemaPath: 'prisma/schemas/sqlserver/schema.prisma',
     generatedPath: 'prisma/schemas/sqlserver/generated',
-    connectionString: process.env.SQLSERVER_URL || 'sqlserver://localhost:1433;database=test;user=sa;password=password;encrypt=true;trustServerCertificate=true',
+    connectionString:
+      process.env.SQLSERVER_URL ||
+      'sqlserver://localhost:1433;database=test;user=sa;password=password;encrypt=true;trustServerCertificate=true',
     features: {
       nativeTypes: [
-        'TinyInt', 'SmallInt', 'Int', 'BigInt', 'Decimal', 'Numeric', 'SmallMoney', 'Money',
-        'Float', 'Real', 'Char', 'VarChar', 'Text', 'NChar', 'NVarChar', 'NText',
-        'Binary', 'VarBinary', 'Image', 'Date', 'Time', 'DateTime2', 'DateTime',
-        'SmallDateTime', 'DateTimeOffset', 'Timestamp', 'Bit', 'UniqueIdentifier',
-        'Xml', 'Geometry', 'Geography'
+        'TinyInt',
+        'SmallInt',
+        'Int',
+        'BigInt',
+        'Decimal',
+        'Numeric',
+        'SmallMoney',
+        'Money',
+        'Float',
+        'Real',
+        'Char',
+        'VarChar',
+        'Text',
+        'NChar',
+        'NVarChar',
+        'NText',
+        'Binary',
+        'VarBinary',
+        'Image',
+        'Date',
+        'Time',
+        'DateTime2',
+        'DateTime',
+        'SmallDateTime',
+        'DateTimeOffset',
+        'Timestamp',
+        'Bit',
+        'UniqueIdentifier',
+        'Xml',
+        'Geometry',
+        'Geography',
       ],
       arrays: false,
       json: true,
@@ -311,10 +453,19 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       enums: true,
       composite: false,
       specificFeatures: [
-        'identity_columns', 'computed_columns', 'spatial_types', 'hierarchyid',
-        'sequences', 'synonyms', 'cte', 'window_functions', 'json_functions',
-        'columnstore_indexes', 'partitioning', 'schemas'
-      ]
+        'identity_columns',
+        'computed_columns',
+        'spatial_types',
+        'hierarchyid',
+        'sequences',
+        'synonyms',
+        'cte',
+        'window_functions',
+        'json_functions',
+        'columnstore_indexes',
+        'partitioning',
+        'schemas',
+      ],
     },
     limitations: {
       maxStringLength: 2147483647, // 2GB
@@ -323,9 +474,9 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       maxRelations: undefined,
       unsupportedFeatures: ['arrays', 'composite_types'],
       workarounds: {
-        'arrays': 'Use JSON or separate tables',
-        'composite_types': 'Use JSON or separate tables'
-      }
+        arrays: 'Use JSON or separate tables',
+        composite_types: 'Use JSON or separate tables',
+      },
     },
     testCategories: [
       {
@@ -336,18 +487,22 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
           {
             name: 'Character Types',
             description: 'Test Char, VarChar, NChar, NVarChar, Text, NText',
-            schemaElements: ['SQLServerAllTypes.charField', 'SQLServerAllTypes.varcharField', 'SQLServerAllTypes.ncharField'],
+            schemaElements: [
+              'SQLServerAllTypes.charField',
+              'SQLServerAllTypes.varcharField',
+              'SQLServerAllTypes.ncharField',
+            ],
             expectedSchemas: ['z.string()', 'z.string()', 'z.string()'],
             validationRules: [
               { field: 'charField', rule: 'string', expectedResult: 'pass' },
               { field: 'varcharField', rule: 'string', expectedResult: 'pass' },
-              { field: 'ncharField', rule: 'string', expectedResult: 'pass' }
-            ]
-          }
-        ]
-      }
-    ]
-  }
+              { field: 'ncharField', rule: 'string', expectedResult: 'pass' },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 };
 
 // Utility functions
@@ -374,15 +529,15 @@ export function getProvidersWithLimitation(limitation: string): string[] {
 export function getTestCasesForProvider(providerName: string): TestCase[] {
   const config = getProviderConfig(providerName);
   if (!config) return [];
-  
-  return config.testCategories.flatMap(category => category.testCases);
+
+  return config.testCategories.flatMap((category) => category.testCases);
 }
 
 export function getHighPriorityTestsForProvider(providerName: string): TestCase[] {
   const config = getProviderConfig(providerName);
   if (!config) return [];
-  
+
   return config.testCategories
-    .filter(category => category.priority === 'high')
-    .flatMap(category => category.testCases);
+    .filter((category) => category.priority === 'high')
+    .flatMap((category) => category.testCases);
 }

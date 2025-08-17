@@ -45,8 +45,10 @@ function transformContentForSingleFile(filePath: string, source: string): string
   let inJsonSkip = false;
   const relImportRe = /^\s*import\s+[^'";]+from\s+['"](\.\.?\/)[^'"]+['"];?\s*$/;
   const zodImportRe = /^\s*import\s+\{\s*z\s*\}\s+from\s+['"]zod['"];?\s*$/;
-  const prismaTypeImportRe = /^\s*import\s+type\s+\{\s*Prisma\s*\}\s+from\s+['"]@prisma\/client['"];?\s*$/;
-  const prismaValueImportRe = /^\s*import\s+\{\s*([^}]+)\s*\}\s+from\s+['"]@prisma\/client['"];?\s*$/;
+  const prismaTypeImportRe =
+    /^\s*import\s+type\s+\{\s*Prisma\s*\}\s+from\s+['"]@prisma\/client['"];?\s*$/;
+  const prismaValueImportRe =
+    /^\s*import\s+\{\s*([^}]+)\s*\}\s+from\s+['"]@prisma\/client['"];?\s*$/;
   const prismaAliasTypeRe = /^\s*type\s+__PrismaAlias\s*=\s*Prisma\./;
   // Relative re-exports don't make sense in a single bundled file
   const relExportStarRe = /^\s*export\s+\*\s+from\s+['"](\.\.?\/)[^'"]+['"];?\s*$/;
@@ -68,18 +70,44 @@ function transformContentForSingleFile(filePath: string, source: string): string
       }
       continue; // skip all lines within block
     }
-    if (/import\s+\{\s*JsonValueSchema\s+as\s+jsonSchema\s*\}\s+from\s+['"]\.\/helpers\/json-helpers['"];?/.test(line)) { needsJsonHelpers = true; continue; }
-    if (zodImportRe.test(line)) { needsZodImport = true; continue; }
-    if (prismaTypeImportRe.test(line)) { needsPrismaTypeImport = true; continue; }
-    const m = line.match(prismaValueImportRe);
-    if (m) {
-      m[1].split(',').map((s) => s.trim()).filter(Boolean).forEach((name) => prismaValueImports.add(name));
+    if (
+      /import\s+\{\s*JsonValueSchema\s+as\s+jsonSchema\s*\}\s+from\s+['"]\.\/helpers\/json-helpers['"];?/.test(
+        line,
+      )
+    ) {
+      needsJsonHelpers = true;
       continue;
     }
-    if (relImportRe.test(line)) { continue; }
-    if (relExportStarRe.test(line)) { continue; }
-    if (relExportNamesRe.test(line)) { continue; }
-    if (prismaAliasTypeRe.test(line)) { sawPrismaAlias = true; continue; }
+    if (zodImportRe.test(line)) {
+      needsZodImport = true;
+      continue;
+    }
+    if (prismaTypeImportRe.test(line)) {
+      needsPrismaTypeImport = true;
+      continue;
+    }
+    const m = line.match(prismaValueImportRe);
+    if (m) {
+      m[1]
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((name) => prismaValueImports.add(name));
+      continue;
+    }
+    if (relImportRe.test(line)) {
+      continue;
+    }
+    if (relExportStarRe.test(line)) {
+      continue;
+    }
+    if (relExportNamesRe.test(line)) {
+      continue;
+    }
+    if (prismaAliasTypeRe.test(line)) {
+      sawPrismaAlias = true;
+      continue;
+    }
     kept.push(line);
   }
 
@@ -87,11 +115,20 @@ function transformContentForSingleFile(filePath: string, source: string): string
 
   // If file uses the pattern: const Schema = ... ; export const XObjectSchema = Schema
   // rename local Schema to a unique identifier, and reference it in the export line
-  const base = path.basename(filePath).replace(/\.[jt]s$/, '').replace(/[^a-zA-Z0-9_]/g, '_');
+  const base = path
+    .basename(filePath)
+    .replace(/\.[jt]s$/, '')
+    .replace(/[^a-zA-Z0-9_]/g, '_');
   const unique = `__Schema_${base}`;
   // Replace only the first "const Schema[ :type]? =" per file, preserving any type annotation
-  text = text.replace(/(^|\n)\s*const\s+Schema(\s*:\s*[^=]+)?\s*=\s*/m, (_m, p1, typeAnn = '') => `${p1}const ${unique}${typeAnn} = `);
-  text = text.replace(/export\s+const\s+(\w+)ObjectSchema\s*=\s*Schema/g, `export const $1ObjectSchema = ${unique}`);
+  text = text.replace(
+    /(^|\n)\s*const\s+Schema(\s*:\s*[^=]+)?\s*=\s*/m,
+    (_m, p1, typeAnn = '') => `${p1}const ${unique}${typeAnn} = `,
+  );
+  text = text.replace(
+    /export\s+const\s+(\w+)ObjectSchema\s*=\s*Schema/g,
+    `export const $1ObjectSchema = ${unique}`,
+  );
 
   // Uniquify duplicate SelectSchema identifiers that appear across different files
   const selectDeclRe = /export\s+const\s+([A-Za-z0-9_]+SelectSchema)\b/g;
@@ -112,7 +149,6 @@ function transformContentForSingleFile(filePath: string, source: string): string
       text = text.replace(idRe, renamed);
     }
   }
-
 
   // Heuristic: if native enums are referenced (e.g., z.enum(Role) or z.nativeEnum(Role)),
   // hoist those enum names as value imports from @prisma/client
@@ -140,7 +176,10 @@ export async function flushSingleFile(): Promise<void> {
   ];
   if (needsZodImport) header.push(`import { z } from 'zod';`);
   if (needsPrismaTypeImport) header.push(`import type { Prisma } from '${prismaImportBase}';`);
-  if (prismaValueImports.size > 0) header.push(`import { ${Array.from(prismaValueImports).sort().join(', ')} } from '${prismaImportBase}';`);
+  if (prismaValueImports.size > 0)
+    header.push(
+      `import { ${Array.from(prismaValueImports).sort().join(', ')} } from '${prismaImportBase}';`,
+    );
   if (needsJsonHelpers) {
     header.push(`// JSON helper schemas (hoisted)`);
     header.push(`const jsonSchema = (() => {`);
@@ -159,7 +198,7 @@ export async function flushSingleFile(): Promise<void> {
     header.push(`type __PrismaAlias = Prisma.JsonValue | Prisma.InputJsonValue;`);
     // Ensure Prisma type import is present
     if (!needsPrismaTypeImport) {
-  header.unshift(`import type { Prisma } from '${prismaImportBase}';`);
+      header.unshift(`import type { Prisma } from '${prismaImportBase}';`);
       needsPrismaTypeImport = true;
     }
   }
@@ -167,7 +206,7 @@ export async function flushSingleFile(): Promise<void> {
 
   const dir = path.dirname(bundlePath);
   await fs.mkdir(dir, { recursive: true });
-  const body = chunks.map(c => c.content).join('\n');
+  const body = chunks.map((c) => c.content).join('\n');
   await fs.writeFile(bundlePath, header.join('\n') + body, 'utf8');
 
   // Reset state after writing

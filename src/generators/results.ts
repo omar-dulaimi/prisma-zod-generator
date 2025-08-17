@@ -21,7 +21,7 @@ export enum OperationType {
   DELETE_MANY = 'deleteMany',
   AGGREGATE = 'aggregate',
   GROUP_BY = 'groupBy',
-  COUNT = 'count'
+  COUNT = 'count',
 }
 
 /**
@@ -100,10 +100,7 @@ export class ResultSchemaGenerator {
   /**
    * Generate result schema for a specific operation
    */
-  generateResultSchema(
-    model: DMMF.Model,
-    options: ResultSchemaOptions
-  ): GeneratedResultSchema {
+  generateResultSchema(model: DMMF.Model, options: ResultSchemaOptions): GeneratedResultSchema {
     const context = this.buildGenerationContext(model, options);
     const cacheKey = this.generateCacheKey(options);
 
@@ -163,16 +160,16 @@ export class ResultSchemaGenerator {
    */
   generateAllResultSchemas(
     model: DMMF.Model,
-    operationTypes: OperationType[] = Object.values(OperationType)
+    operationTypes: OperationType[] = Object.values(OperationType),
   ): GeneratedResultSchema[] {
     const results: GeneratedResultSchema[] = [];
 
-    operationTypes.forEach(operationType => {
+    operationTypes.forEach((operationType) => {
       const options: ResultSchemaOptions = {
         modelName: model.name,
         operationType,
         paginationSupport: operationType === OperationType.FIND_MANY,
-        nullableResult: this.isNullableOperation(operationType)
+        nullableResult: this.isNullableOperation(operationType),
       };
 
       try {
@@ -191,13 +188,13 @@ export class ResultSchemaGenerator {
    */
   private buildGenerationContext(
     model: DMMF.Model,
-    options: ResultSchemaOptions
+    options: ResultSchemaOptions,
   ): ResultGenerationContext {
     const relatedModels = new Map<string, DMMF.Model>();
     const fieldTypeMap = new Map<string, string>();
 
     // Build field type mapping
-    model.fields.forEach(field => {
+    model.fields.forEach((field) => {
       fieldTypeMap.set(field.name, this.mapPrismaTypeToZod(field));
 
       // Collect related models for relation fields
@@ -212,7 +209,7 @@ export class ResultSchemaGenerator {
           primaryKey: null,
           uniqueFields: [],
           uniqueIndexes: [],
-          isGenerated: false
+          isGenerated: false,
         } as DMMF.Model);
       }
     });
@@ -222,7 +219,7 @@ export class ResultSchemaGenerator {
       options,
       baseModelSchema: this.getBaseModelSchema(model),
       relatedModels,
-      fieldTypeMap
+      fieldTypeMap,
     };
   }
 
@@ -257,7 +254,7 @@ export class ResultSchemaGenerator {
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: this.extractDependencies(context),
       documentation,
-      examples
+      examples,
     };
   }
 
@@ -296,7 +293,7 @@ export class ResultSchemaGenerator {
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: this.extractDependencies(context),
       documentation,
-      examples
+      examples,
     };
   }
 
@@ -323,7 +320,7 @@ export class ResultSchemaGenerator {
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
       documentation,
-      examples
+      examples,
     };
   }
 
@@ -349,7 +346,7 @@ export class ResultSchemaGenerator {
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
       documentation,
-      examples
+      examples,
     };
   }
 
@@ -362,8 +359,8 @@ export class ResultSchemaGenerator {
 
     const groupByFields = this.buildGroupByFields(model);
     const aggregateFields = this.buildAggregateFields(model);
-    
-    const allFields = [groupByFields, aggregateFields].filter(fields => fields.trim().length > 0);
+
+    const allFields = [groupByFields, aggregateFields].filter((fields) => fields.trim().length > 0);
     const zodSchema = `z.array(z.object({
 ${allFields.join(',\n')}
 }))`;
@@ -380,7 +377,7 @@ ${allFields.join(',\n')}
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
       documentation,
-      examples
+      examples,
     };
   }
 
@@ -388,11 +385,11 @@ ${allFields.join(',\n')}
    * Generate count result schema
    */
   private generateCountResultSchema(context: ResultGenerationContext): GeneratedResultSchema {
-  const { options } = context;
+    const { options } = context;
     const schemaName = this.generateSchemaName(options);
 
-  // Simple count should be a number schema
-  const zodSchema: string = 'z.number()';
+    // Simple count should be a number schema
+    const zodSchema: string = 'z.number()';
 
     const documentation = this.generateDocumentation(options, 'Count operation result');
     const examples = this.generateExamples(context, 'count');
@@ -404,9 +401,9 @@ ${allFields.join(',\n')}
       typeDefinition: `export type ${schemaName}Type = z.infer<typeof ${schemaName}>;`,
       imports: new Set(['z']),
       exports: new Set([schemaName, `${schemaName}Type`]),
-  dependencies: [],
+      dependencies: [],
       documentation,
-      examples
+      examples,
     };
   }
 
@@ -433,7 +430,7 @@ ${allFields.join(',\n')}
       [OperationType.DELETE_MANY]: 'DeleteMany',
       [OperationType.AGGREGATE]: 'Aggregate',
       [OperationType.GROUP_BY]: 'GroupBy',
-      [OperationType.COUNT]: 'Count'
+      [OperationType.COUNT]: 'Count',
     };
     return suffixMap[operationType];
   }
@@ -443,20 +440,20 @@ ${allFields.join(',\n')}
       OperationType.FIND_UNIQUE,
       OperationType.FIND_FIRST,
       OperationType.UPDATE,
-      OperationType.DELETE
+      OperationType.DELETE,
     ].includes(operationType);
   }
 
   private buildBaseResultSchema(context: ResultGenerationContext): string {
     const { model, options } = context;
-    
+
     // Start with base model schema
-    const fields = model.fields.filter(field => {
+    const fields = model.fields.filter((field) => {
       if (options.excludeFields?.includes(field.name)) return false;
       return true;
     });
 
-    const fieldSchemas = fields.map(field => {
+    const fieldSchemas = fields.map((field) => {
       const zodType = this.mapPrismaTypeToZod(field);
       const optionalMarker = !field.isRequired ? '.optional()' : '';
       return `  ${field.name}: ${zodType}${optionalMarker}`;
@@ -464,8 +461,8 @@ ${allFields.join(',\n')}
 
     // Add included relations
     if (options.includeRelations) {
-      options.includeRelations.forEach(relationName => {
-        const relationField = model.fields.find(f => f.name === relationName);
+      options.includeRelations.forEach((relationName) => {
+        const relationField = model.fields.find((f) => f.name === relationName);
         if (relationField) {
           const relationSchema = this.buildRelationSchema(relationField);
           fieldSchemas.push(`  ${relationName}: ${relationSchema}`);
@@ -484,42 +481,49 @@ ${allFields.join(',\n')}
   }
 
   private buildAggregateFields(model: DMMF.Model): string {
-    const numericFields = model.fields.filter(f => 
-      ['Int', 'Float', 'Decimal', 'BigInt'].includes(f.type)
+    const numericFields = model.fields.filter((f) =>
+      ['Int', 'Float', 'Decimal', 'BigInt'].includes(f.type),
     );
 
     // _count: object with per-field counts (including booleans and relations), optional
-    const countObjectFields = model.fields.map(field => `    ${field.name}: z.number()`);
+    const countObjectFields = model.fields.map((field) => `    ${field.name}: z.number()`);
     const aggregateFields: string[] = [
       `  _count: z.object({\n${countObjectFields.join(',\n')}\n  }).optional()`,
     ];
 
     if (numericFields.length > 0) {
       // Sum: numbers for numeric fields; BigInt as bigint
-      const sumFields = numericFields.map(field => 
-        `    ${field.name}: ${field.type === 'BigInt' ? 'z.bigint()' : 'z.number()'}.nullable()`
+      const sumFields = numericFields.map(
+        (field) =>
+          `    ${field.name}: ${field.type === 'BigInt' ? 'z.bigint()' : 'z.number()'}.nullable()`,
       );
-      aggregateFields.push(`  _sum: z.object({\n${sumFields.join(',\n')}\n  }).nullable().optional()`);
+      aggregateFields.push(
+        `  _sum: z.object({\n${sumFields.join(',\n')}\n  }).nullable().optional()`,
+      );
 
       // Avg: average results are numbers
-      const avgFields = numericFields.map(field => 
-        `    ${field.name}: z.number().nullable()`
+      const avgFields = numericFields.map((field) => `    ${field.name}: z.number().nullable()`);
+      aggregateFields.push(
+        `  _avg: z.object({\n${avgFields.join(',\n')}\n  }).nullable().optional()`,
       );
-      aggregateFields.push(`  _avg: z.object({\n${avgFields.join(',\n')}\n  }).nullable().optional()`);
     }
 
     // Min/max for comparable fields (include BigInt)
-    const comparableFields = model.fields.filter(field => 
-      ['Int', 'Float', 'Decimal', 'DateTime', 'String', 'BigInt'].includes(field.type)
+    const comparableFields = model.fields.filter((field) =>
+      ['Int', 'Float', 'Decimal', 'DateTime', 'String', 'BigInt'].includes(field.type),
     );
-    
+
     if (comparableFields.length > 0) {
-      const minMaxFields = comparableFields.map(field => {
+      const minMaxFields = comparableFields.map((field) => {
         const zodType = this.mapPrismaTypeToZod(field);
         return `    ${field.name}: ${zodType}.nullable()`;
       });
-      aggregateFields.push(`  _min: z.object({\n${minMaxFields.join(',\n')}\n  }).nullable().optional()`);
-      aggregateFields.push(`  _max: z.object({\n${minMaxFields.join(',\n')}\n  }).nullable().optional()`);
+      aggregateFields.push(
+        `  _min: z.object({\n${minMaxFields.join(',\n')}\n  }).nullable().optional()`,
+      );
+      aggregateFields.push(
+        `  _max: z.object({\n${minMaxFields.join(',\n')}\n  }).nullable().optional()`,
+      );
     }
 
     return aggregateFields.join(',\n');
@@ -528,14 +532,14 @@ ${allFields.join(',\n')}
   private buildGroupByFields(model: DMMF.Model): string {
     // For groupBy, we include the actual field values that can be grouped by
     // Arrays can be grouped by in databases like PostgreSQL, so include them
-    const groupableFields = model.fields.filter(f => 
-      f.kind === 'scalar'
-    );
+    const groupableFields = model.fields.filter((f) => f.kind === 'scalar');
 
-    return groupableFields.map(field => {
-      const zodType = this.mapPrismaTypeToZod(field);
-      return `  ${field.name}: ${zodType}`;
-    }).join(',\n');
+    return groupableFields
+      .map((field) => {
+        const zodType = this.mapPrismaTypeToZod(field);
+        return `  ${field.name}: ${zodType}`;
+      })
+      .join(',\n');
   }
 
   private generatePaginationSchema(): string {
@@ -551,24 +555,24 @@ ${allFields.join(',\n')}
 
   private mapPrismaTypeToZod(field: DMMF.Field): string {
     const typeMap: Record<string, string> = {
-      'String': 'z.string()',
-      'Int': 'z.number().int()',
-      'Float': 'z.number()',
-      'Boolean': 'z.boolean()',
-      'DateTime': 'z.date()',
-      'Json': 'z.unknown()',
-      'Bytes': 'z.instanceof(Uint8Array)',
-      'Decimal': 'z.number()', // or z.string() depending on configuration
-      'BigInt': 'z.bigint()'
+      String: 'z.string()',
+      Int: 'z.number().int()',
+      Float: 'z.number()',
+      Boolean: 'z.boolean()',
+      DateTime: 'z.date()',
+      Json: 'z.unknown()',
+      Bytes: 'z.instanceof(Uint8Array)',
+      Decimal: 'z.number()', // or z.string() depending on configuration
+      BigInt: 'z.bigint()',
     };
 
     const baseType = typeMap[field.type] || 'z.unknown()';
-    
+
     // Handle arrays
     if (field.isList) {
       return `z.array(${baseType})`;
     }
-    
+
     return baseType;
   }
 
@@ -579,10 +583,10 @@ ${allFields.join(',\n')}
 
   private extractDependencies(context: ResultGenerationContext): string[] {
     const dependencies: string[] = [];
-    
+
     if (context.options.includeRelations) {
-      context.options.includeRelations.forEach(relation => {
-        const relationField = context.model.fields.find(f => f.name === relation);
+      context.options.includeRelations.forEach((relation) => {
+        const relationField = context.model.fields.find((f) => f.name === relation);
         if (relationField && relationField.type !== context.model.name) {
           dependencies.push(`${relationField.type}Schema`);
         }
@@ -624,7 +628,7 @@ ${allFields.join(',\n')}
       includeRelations: options.includeRelations?.sort(),
       excludeFields: options.excludeFields?.sort(),
       paginationSupport: options.paginationSupport,
-      nullableResult: options.nullableResult
+      nullableResult: options.nullableResult,
     })}`;
   }
 

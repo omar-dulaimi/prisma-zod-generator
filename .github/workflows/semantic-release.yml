@@ -2,7 +2,7 @@ name: Semantic Release
 
 on:
   push:
-    branches: [ master, upgrade/prisma-and-dependencies ]
+    branches: [master, upgrade/prisma-and-dependencies]
   workflow_dispatch:
 
 jobs:
@@ -11,67 +11,66 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     permissions:
       contents: write
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-    
-        
-    - name: Build and test
-      run: |
-        npm run gen-example
-        npm run test:type-check
-        npm run lint
-        npm run test:basic
-        
-    - name: Build package
-      run: ./package.sh
-      
-    - name: Semantic Release (with npm lifecycle)
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: npm run release
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Version docs for new release
-      env:
-        DOCS_VERSION_ON_PATCH: '1'
-      run: node scripts/auto-docs-version.mjs
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
 
-    - name: Commit and push workflow mutations (if any)
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        # Stage docs and common release-mutation files to avoid failing on dirty tree
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git add -A \
-          website/versioned_docs \
-          website/versioned_sidebars \
-          website/versions.json \
-          package.json \
-          package-lock.json \
-          package/package.json \
-          CHANGELOG.md || true
-        # If nothing is staged, skip committing to avoid exit 1 from git commit
-        if git diff --cached --quiet; then
-          echo "No docs changes to commit"
-          exit 0
-        fi
-        LAST_TAG=$(git describe --tags --abbrev=0 || echo "latest")
-        git commit -m "chore(ci): commit workflow mutations (version bumps, lockfile, docs) for ${LAST_TAG} [skip ci]"
-        git push origin HEAD:${GITHUB_REF_NAME}
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and test
+        run: |
+          npm run gen-example
+          npm run test:type-check
+          npm run lint
+          npm run test:basic
+
+      - name: Build package
+        run: ./package.sh
+
+      - name: Semantic Release (with npm lifecycle)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm run release
+
+      - name: Version docs for new release
+        env:
+          DOCS_VERSION_ON_PATCH: '1'
+        run: node scripts/auto-docs-version.mjs
+
+      - name: Commit and push workflow mutations (if any)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Stage docs and common release-mutation files to avoid failing on dirty tree
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A \
+            website/versioned_docs \
+            website/versioned_sidebars \
+            website/versions.json \
+            package.json \
+            package-lock.json \
+            package/package.json \
+            CHANGELOG.md || true
+          # If nothing is staged, skip committing to avoid exit 1 from git commit
+          if git diff --cached --quiet; then
+            echo "No docs changes to commit"
+            exit 0
+          fi
+          LAST_TAG=$(git describe --tags --abbrev=0 || echo "latest")
+          git commit -m "chore(ci): commit workflow mutations (version bumps, lockfile, docs) for ${LAST_TAG} [skip ci]"
+          git push origin HEAD:${GITHUB_REF_NAME}

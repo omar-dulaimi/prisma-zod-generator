@@ -42,7 +42,7 @@ describe('prisma-client preview generator option matrix', () => {
       writeFileSync(schemaPath, schema);
       try {
         execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
-  } catch {
+      } catch {
         // If the preview generator isn't available, skip the scenario gracefully
         continue;
       }
@@ -68,7 +68,9 @@ describe('prisma-client preview generator option matrix', () => {
       writeFileSync(schemaPath, schema);
       try {
         execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
-      } catch { continue; }
+      } catch {
+        continue;
+      }
       const zodIndex = join(zodOut, 'index.ts');
       if (!existsSync(zodIndex)) continue;
       const content = readFileSync(zodIndex, 'utf8');
@@ -82,7 +84,9 @@ describe('prisma-client preview generator option matrix', () => {
     writeFileSync(schemaPath, schema);
     try {
       execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
-    } catch { return; }
+    } catch {
+      return;
+    }
     const zodIndex = join(zodOut, 'index.ts');
     if (!existsSync(zodIndex)) return;
     const content = readFileSync(zodIndex, 'utf8');
@@ -97,7 +101,9 @@ describe('prisma-client preview generator option matrix', () => {
     writeFileSync(schemaPath, schema);
     try {
       execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
-    } catch { return; }
+    } catch {
+      return;
+    }
     const zodIndex = join(zodOut, 'index.ts');
     if (!existsSync(zodIndex)) return;
     const content = readFileSync(zodIndex, 'utf8');

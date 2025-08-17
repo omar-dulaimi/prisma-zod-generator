@@ -15,9 +15,9 @@ describe('Variant Pure Enum Handling', () => {
         variants: {
           pure: { enabled: true },
           input: { enabled: false },
-          result: { enabled: false }
+          result: { enabled: false },
         },
-        pureModels: false
+        pureModels: false,
       };
       const configPath = join(testEnv.testDir, 'config.json');
       writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -26,12 +26,20 @@ describe('Variant Pure Enum Handling', () => {
       writeFileSync(testEnv.schemaPath, schema);
       await testEnv.runGeneration();
 
-      const pureVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'User.pure.ts');
+      const pureVariantPath = join(
+        testEnv.outputDir,
+        'schemas',
+        'variants',
+        'pure',
+        'User.pure.ts',
+      );
       expect(existsSync(pureVariantPath)).toBe(true);
       const content = readFileSync(pureVariantPath, 'utf8');
       expect(content).toMatch(/role:\s*RoleSchema/);
-  // Import path from variants/pure/ to enums directory is ../../enums
-  expect(content).toMatch(/import\s*\{\s*RoleSchema\s*\}\s*from\s*'\.\.\.\/\.\.\/enums\/Role\.schema'|import\s*\{\s*RoleSchema\s*\}\s*from\s*'\.\.\/\.\.\/enums\/Role\.schema'/);
+      // Import path from variants/pure/ to enums directory is ../../enums
+      expect(content).toMatch(
+        /import\s*\{\s*RoleSchema\s*\}\s*from\s*'\.\.\.\/\.\.\/enums\/Role\.schema'|import\s*\{\s*RoleSchema\s*\}\s*from\s*'\.\.\/\.\.\/enums\/Role\.schema'/,
+      );
       expect(content).not.toMatch(/from '@prisma\/client'/);
     } finally {
       await testEnv.cleanup();

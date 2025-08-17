@@ -80,10 +80,10 @@ export function checkModelHasEnabledManyModelRelation(model: DMMF.Model): boolea
  * Get filtered model fields based on field exclusion configuration
  */
 export function getFilteredModelFields(
-  model: DMMF.Model, 
-  variant: 'pure' | 'input' | 'result'
+  model: DMMF.Model,
+  variant: 'pure' | 'input' | 'result',
 ): DMMF.Field[] {
-  return model.fields.filter(field => {
+  return model.fields.filter((field) => {
     return Transformer.isFieldEnabled(field.name, model.name, variant);
   });
 }
@@ -92,14 +92,14 @@ export function getFilteredModelFields(
  * Get enabled models from a list of models
  */
 export function getEnabledModels(models: DMMF.Model[]): DMMF.Model[] {
-  return models.filter(model => Transformer.isModelEnabled(model.name));
+  return models.filter((model) => Transformer.isModelEnabled(model.name));
 }
 
 /**
  * Get enabled relation fields from a model
  */
 export function getEnabledRelationFields(model: DMMF.Model): DMMF.Field[] {
-  return model.fields.filter(field => {
+  return model.fields.filter((field) => {
     if (!checkIsModelRelationField(field)) {
       return false;
     }
@@ -121,10 +121,10 @@ export function getEnabledRelationFields(model: DMMF.Model): DMMF.Field[] {
 export function modelHasEnabledOperations(modelName: string): boolean {
   const config = Transformer.getGeneratorConfig();
   if (!config) return true;
-  
+
   const modelConfig = config.models?.[modelName];
   if (!modelConfig?.operations) return true;
-  
+
   return modelConfig.operations.length > 0;
 }
 
@@ -134,10 +134,10 @@ export function modelHasEnabledOperations(modelName: string): boolean {
 export function getEnabledOperationsForModel(modelName: string): string[] {
   const config = Transformer.getGeneratorConfig();
   if (!config) return [];
-  
+
   const modelConfig = config.models?.[modelName];
   if (!modelConfig?.operations) return [];
-  
+
   return modelConfig.operations;
 }
 
@@ -147,6 +147,6 @@ export function getEnabledOperationsForModel(modelName: string): string[] {
 export function isOperationEnabledForModel(modelName: string, operation: string): boolean {
   const enabledOperations = getEnabledOperationsForModel(modelName);
   if (enabledOperations.length === 0) return true; // Default to enabled if no restrictions
-  
+
   return enabledOperations.includes(operation);
 }

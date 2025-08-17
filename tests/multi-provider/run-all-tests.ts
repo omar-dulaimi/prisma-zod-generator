@@ -34,14 +34,14 @@ class ComprehensiveTestRunner {
       testOnly: options.testOnly || false,
       verbose: options.verbose || false,
       parallel: options.parallel || false,
-      output: options.output || 'console'
+      output: options.output || 'console',
     };
   }
 
   async run(): Promise<void> {
     console.log('🚀 Starting comprehensive multi-provider tests...');
     console.log(`📋 Providers to test: ${(this.options.providers as string[]).join(', ')}`);
-    
+
     try {
       // Setup phase
       if (!this.options.skipSetup && !this.options.testOnly) {
@@ -64,7 +64,6 @@ class ComprehensiveTestRunner {
       }
 
       console.log('✅ All tests completed successfully!');
-      
     } catch (error) {
       console.error('❌ Test run failed:', error);
       process.exit(1);
@@ -91,12 +90,12 @@ class ComprehensiveTestRunner {
     console.log('\n⚙️  Generation Phase');
     console.log('='.repeat(50));
 
-    for (const provider of (this.options.providers as string[])) {
+    for (const provider of this.options.providers as string[]) {
       console.log(`\n📄 Generating schemas for ${provider}...`);
-      
+
       try {
         const schemaPath = `./prisma/schemas/${provider}/schema.prisma`;
-        
+
         if (!existsSync(schemaPath)) {
           console.warn(`⚠️  Schema file not found: ${schemaPath}`);
           continue;
@@ -104,14 +103,13 @@ class ComprehensiveTestRunner {
 
         // Generate schemas
         const generateCommand = `npx prisma generate --schema="${schemaPath}"`;
-        execSync(generateCommand, { 
+        execSync(generateCommand, {
           cwd: this.basePath,
           stdio: this.options.verbose ? 'inherit' : 'pipe',
-          env: { ...process.env, PRISMA_SCHEMA_PATH: schemaPath }
+          env: { ...process.env, PRISMA_SCHEMA_PATH: schemaPath },
         });
 
         console.log(`✅ ${provider} schema generation completed`);
-        
       } catch (error) {
         console.error(`❌ ${provider} schema generation failed:`, error);
         throw error;
@@ -185,35 +183,35 @@ class ComprehensiveTestRunner {
     // For now, we'll use in-memory/file-based databases for testing
     // In a real scenario, you might want to start Docker containers
 
-    for (const provider of (this.options.providers as string[])) {
+    for (const provider of this.options.providers as string[]) {
       console.log(`  📊 Setting up ${provider}...`);
-      
+
       switch (provider) {
         case 'sqlite':
           // SQLite uses file-based databases, no setup needed
           console.log('    ✅ SQLite: Using file-based database');
           break;
-          
+
         case 'postgresql':
           // In a real scenario, you'd start a PostgreSQL container
           console.log('    ⚠️  PostgreSQL: Using environment connection string');
           break;
-          
+
         case 'mysql':
           // In a real scenario, you'd start a MySQL container
           console.log('    ⚠️  MySQL: Using environment connection string');
           break;
-          
+
         case 'mongodb':
           // In a real scenario, you'd start a MongoDB container
           console.log('    ⚠️  MongoDB: Using environment connection string');
           break;
-          
+
         case 'sqlserver':
           // In a real scenario, you'd start a SQL Server container
           console.log('    ⚠️  SQL Server: Using environment connection string');
           break;
-          
+
         default:
           console.log(`    ⚠️  Unknown provider: ${provider}`);
       }
@@ -226,9 +224,9 @@ class ComprehensiveTestRunner {
     // Check if node_modules exists
     if (!existsSync('node_modules')) {
       console.log('Installing npm dependencies...');
-      execSync('npm install', { 
+      execSync('npm install', {
         cwd: process.cwd(),
-        stdio: this.options.verbose ? 'inherit' : 'pipe'
+        stdio: this.options.verbose ? 'inherit' : 'pipe',
       });
     }
 
@@ -238,22 +236,23 @@ class ComprehensiveTestRunner {
   private async runTestsInParallel(): Promise<void> {
     console.log('🏃‍♂️ Running tests in parallel...');
 
-    const testPromises = (this.options.providers as string[]).map(provider => 
-      this.testRunner.runProviderTests(provider)
+    const testPromises = (this.options.providers as string[]).map((provider) =>
+      this.testRunner.runProviderTests(provider),
     );
 
     try {
       const results = await Promise.allSettled(testPromises);
-      
+
       results.forEach((result, index) => {
         const provider = (this.options.providers as string[])[index];
         if (result.status === 'fulfilled') {
-          console.log(`✅ ${provider}: ${result.value.summary.passedTests}/${result.value.summary.totalTests} tests passed`);
+          console.log(
+            `✅ ${provider}: ${result.value.summary.passedTests}/${result.value.summary.totalTests} tests passed`,
+          );
         } else {
           console.log(`❌ ${provider}: Tests failed - ${result.reason}`);
         }
       });
-
     } catch (error) {
       console.error('❌ Parallel test execution failed:', error);
       throw error;
@@ -264,7 +263,7 @@ class ComprehensiveTestRunner {
     console.log('🚶‍♂️ Running tests sequentially...');
 
     const report = await this.testRunner.runAllTests();
-    
+
     if (this.options.output === 'json') {
       console.log(JSON.stringify(report, null, 2));
     } else {
@@ -290,7 +289,7 @@ function parseArgs(): TestOptions {
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    
+
     switch (arg) {
       case '--providers':
         options.providers = args[++i]?.split(',') || [];
@@ -364,7 +363,7 @@ async function main(): Promise<void> {
 
 // Run if called directly
 if (require.main === module) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error('Fatal error:', error);
     process.exit(1);
   });

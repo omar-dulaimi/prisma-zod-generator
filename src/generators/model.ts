@@ -458,10 +458,7 @@ export class PrismaTypeMapper {
    * @param model - Parent model for context
    * @returns Field type mapping result
    */
-  mapFieldToZodSchema(
-    field: DMMF.Field,
-    model: DMMF.Model,
-  ): FieldTypeMappingResult {
+  mapFieldToZodSchema(field: DMMF.Field, model: DMMF.Model): FieldTypeMappingResult {
     const result: FieldTypeMappingResult = {
       zodSchema: '',
       imports: new Set(['z']),
@@ -502,12 +499,7 @@ export class PrismaTypeMapper {
       }
 
       // Generate comprehensive JSDoc documentation
-      this.generateJSDocumentation(
-        field,
-        result,
-        model.name,
-        optionalityResult,
-      );
+      this.generateJSDocumentation(field, result, model.name, optionalityResult);
 
       // Add database-specific validations
       if (this.config.includeDatabaseValidations) {
@@ -515,10 +507,7 @@ export class PrismaTypeMapper {
       }
     } catch (error) {
       // Fallback to string type on mapping error
-      console.warn(
-        `Failed to map field ${field.name} of type ${field.type}:`,
-        error,
-      );
+      console.warn(`Failed to map field ${field.name} of type ${field.type}:`, error);
       result.zodSchema = 'z.unknown()';
       result.additionalValidations.push(
         `// Warning: Failed to map type ${field.type}, using unknown`,
@@ -531,10 +520,7 @@ export class PrismaTypeMapper {
   /**
    * Map scalar types to Zod schemas
    */
-  private mapScalarType(
-    field: DMMF.Field,
-    result: FieldTypeMappingResult,
-  ): void {
+  private mapScalarType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const scalarType = field.type;
 
     switch (scalarType) {
@@ -597,10 +583,7 @@ export class PrismaTypeMapper {
   /**
    * Map Decimal type with enhanced validation based on configuration
    */
-  private mapDecimalType(
-    field: DMMF.Field,
-    result: FieldTypeMappingResult,
-  ): void {
+  private mapDecimalType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const decimalConfig = this.config.complexTypes.decimal;
 
     switch (this.config.decimalMode) {
@@ -614,8 +597,7 @@ export class PrismaTypeMapper {
         }
 
         if (decimalConfig.validatePrecision && decimalConfig.maxPrecision) {
-          const maxIntegerDigits =
-            decimalConfig.maxPrecision - (decimalConfig.maxScale || 0);
+          const maxIntegerDigits = decimalConfig.maxPrecision - (decimalConfig.maxScale || 0);
           const maxScaleDigits = decimalConfig.maxScale || 0;
 
           if (maxScaleDigits > 0) {
@@ -628,9 +610,7 @@ export class PrismaTypeMapper {
         }
         regexPattern += '$';
 
-        result.additionalValidations.push(
-          `.regex(/${regexPattern}/, "Invalid decimal format")`,
-        );
+        result.additionalValidations.push(`.regex(/${regexPattern}/, "Invalid decimal format")`);
 
         // Add precision validation documentation
         if (decimalConfig.validatePrecision) {
@@ -648,9 +628,7 @@ export class PrismaTypeMapper {
 
         // Add number-specific validations
         if (!decimalConfig.allowNegative) {
-          result.additionalValidations.push(
-            '.min(0, "Negative values not allowed")',
-          );
+          result.additionalValidations.push('.min(0, "Negative values not allowed")');
         }
 
         // Add precision warnings for number mode
@@ -685,10 +663,7 @@ export class PrismaTypeMapper {
   /**
    * Map DateTime type with enhanced validation and timezone handling
    */
-  private mapDateTimeType(
-    field: DMMF.Field,
-    result: FieldTypeMappingResult,
-  ): void {
+  private mapDateTimeType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const dateTimeConfig = this.config.complexTypes.dateTime;
     // Respect global generator dateTimeStrategy if available
     let strategy: 'date' | 'coerce' | 'isoString' = 'date';
@@ -716,9 +691,7 @@ export class PrismaTypeMapper {
         result.additionalValidations.push('// Strict date validation enabled');
       } else {
         result.zodSchema = 'z.union([z.date(), z.string().datetime()])';
-        result.additionalValidations.push(
-          '// Flexible date/string input with ISO 8601 validation',
-        );
+        result.additionalValidations.push('// Flexible date/string input with ISO 8601 validation');
       }
     }
 
@@ -731,9 +704,7 @@ export class PrismaTypeMapper {
         validations.push(
           `.min(new Date("${dateTimeConfig.minDate}"), "Date must be after ${minDate.toLocaleDateString()}")`,
         );
-        result.additionalValidations.push(
-          `// Minimum date: ${dateTimeConfig.minDate}`,
-        );
+        result.additionalValidations.push(`// Minimum date: ${dateTimeConfig.minDate}`);
       } catch {
         result.additionalValidations.push(
           `// Warning: Invalid minDate format: ${dateTimeConfig.minDate}`,
@@ -747,9 +718,7 @@ export class PrismaTypeMapper {
         validations.push(
           `.max(new Date("${dateTimeConfig.maxDate}"), "Date must be before ${maxDate.toLocaleDateString()}")`,
         );
-        result.additionalValidations.push(
-          `// Maximum date: ${dateTimeConfig.maxDate}`,
-        );
+        result.additionalValidations.push(`// Maximum date: ${dateTimeConfig.maxDate}`);
       } catch {
         result.additionalValidations.push(
           `// Warning: Invalid maxDate format: ${dateTimeConfig.maxDate}`,
@@ -776,28 +745,20 @@ export class PrismaTypeMapper {
         );
       } else {
         // For flexible validation, need to handle both date and string
-        result.additionalValidations.push(
-          '// Date range validations applied to Date objects only',
-        );
+        result.additionalValidations.push('// Date range validations applied to Date objects only');
       }
     }
 
     // Add timezone handling documentation
     switch (dateTimeConfig.timezoneMode) {
       case 'utc':
-        result.additionalValidations.push(
-          '// Timezone: All dates normalized to UTC',
-        );
+        result.additionalValidations.push('// Timezone: All dates normalized to UTC');
         break;
       case 'local':
-        result.additionalValidations.push(
-          '// Timezone: All dates converted to local timezone',
-        );
+        result.additionalValidations.push('// Timezone: All dates converted to local timezone');
         break;
       case 'preserve':
-        result.additionalValidations.push(
-          '// Timezone: Original timezone information preserved',
-        );
+        result.additionalValidations.push('// Timezone: Original timezone information preserved');
         break;
     }
 
@@ -845,9 +806,7 @@ export class PrismaTypeMapper {
       const depthValidation = `.refine((val) => { const getDepth = (obj: unknown, depth: number = 0): number => { if (depth > ${jsonConfig.maxDepth}) return depth; if (obj === null || typeof obj !== 'object') return depth; const values = Object.values(obj as Record<string, unknown>); if (values.length === 0) return depth; return Math.max(...values.map(v => getDepth(v, depth + 1))); }; return getDepth(val) <= ${jsonConfig.maxDepth}; }, "JSON nesting depth exceeds maximum of ${jsonConfig.maxDepth}")`;
 
       validations.push(depthValidation);
-      result.additionalValidations.push(
-        `// Maximum nesting depth: ${jsonConfig.maxDepth}`,
-      );
+      result.additionalValidations.push(`// Maximum nesting depth: ${jsonConfig.maxDepth}`);
     }
 
     if (jsonConfig.maxLength !== undefined && jsonConfig.maxLength > 0) {
@@ -867,13 +826,9 @@ export class PrismaTypeMapper {
 
     // Add null handling information
     if (!jsonConfig.allowNull && this.config.jsonMode === 'record') {
-      result.additionalValidations.push(
-        '// Null values not allowed in JSON structure',
-      );
+      result.additionalValidations.push('// Null values not allowed in JSON structure');
     } else if (jsonConfig.allowNull) {
-      result.additionalValidations.push(
-        '// Null values allowed in JSON structure',
-      );
+      result.additionalValidations.push('// Null values allowed in JSON structure');
     }
 
     result.requiresSpecialHandling = true;
@@ -885,10 +840,7 @@ export class PrismaTypeMapper {
   /**
    * Map Bytes type with enhanced validation for binary data and file handling
    */
-  private mapBytesType(
-    field: DMMF.Field,
-    result: FieldTypeMappingResult,
-  ): void {
+  private mapBytesType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const bytesConfig = this.config.complexTypes.bytes;
 
     // For better compatibility with consumers and tests, prefer base64 string mapping by default
@@ -905,28 +857,20 @@ export class PrismaTypeMapper {
       if (bytesConfig.minSize !== undefined && bytesConfig.minSize > 0) {
         // Base64 encoding: 4 chars for every 3 bytes, so minSize * 4/3
         const minBase64Length = Math.ceil((bytesConfig.minSize * 4) / 3);
-        result.additionalValidations.push(
-          `.min(${minBase64Length}, "Base64 string too short")`,
-        );
-        result.additionalValidations.push(
-          `// Minimum size: ${bytesConfig.minSize} bytes`,
-        );
+        result.additionalValidations.push(`.min(${minBase64Length}, "Base64 string too short")`);
+        result.additionalValidations.push(`// Minimum size: ${bytesConfig.minSize} bytes`);
       }
 
       if (bytesConfig.maxSize !== undefined && bytesConfig.maxSize > 0) {
         // Base64 encoding: 4 chars for every 3 bytes, so maxSize * 4/3
         const maxBase64Length = Math.ceil((bytesConfig.maxSize * 4) / 3);
-        result.additionalValidations.push(
-          `.max(${maxBase64Length}, "Base64 string too long")`,
-        );
+        result.additionalValidations.push(`.max(${maxBase64Length}, "Base64 string too long")`);
         result.additionalValidations.push(
           `// Maximum size: ${bytesConfig.maxSize} bytes (${this.formatFileSize(bytesConfig.maxSize)})`,
         );
       }
 
-      result.additionalValidations.push(
-        '// Bytes field mapped to base64 string',
-      );
+      result.additionalValidations.push('// Bytes field mapped to base64 string');
     } else {
       // Use Uint8Array (compatible with Prisma Bytes type)
       if (this.config.provider === 'mongodb') {
@@ -942,9 +886,7 @@ export class PrismaTypeMapper {
         validations.push(
           `.refine((buffer) => buffer.length >= ${bytesConfig.minSize}, "File too small")`,
         );
-        result.additionalValidations.push(
-          `// Minimum size: ${bytesConfig.minSize} bytes`,
-        );
+        result.additionalValidations.push(`// Minimum size: ${bytesConfig.minSize} bytes`);
       }
 
       if (bytesConfig.maxSize !== undefined && bytesConfig.maxSize > 0) {
@@ -965,10 +907,7 @@ export class PrismaTypeMapper {
     }
 
     // Add MIME type validation if specified
-    if (
-      bytesConfig.allowedMimeTypes &&
-      bytesConfig.allowedMimeTypes.length > 0
-    ) {
+    if (bytesConfig.allowedMimeTypes && bytesConfig.allowedMimeTypes.length > 0) {
       result.additionalValidations.push(
         `// Allowed MIME types: ${bytesConfig.allowedMimeTypes.join(', ')}`,
       );
@@ -1037,33 +976,22 @@ export class PrismaTypeMapper {
         result.zodSchema = `z.lazy(() => ${relatedModelName}Schema)`;
         result.imports.add(`${relatedModelName}Schema`);
         result.requiresSpecialHandling = true;
-        result.additionalValidations.push(
-          `// Back-relation to ${relatedModelName}`,
-        );
+        result.additionalValidations.push(`// Back-relation to ${relatedModelName}`);
       }
     } else {
       // Non-relation object type (shouldn't happen in normal Prisma schemas)
       result.zodSchema = 'z.unknown()';
-      result.additionalValidations.push(
-        `// Unknown object type: ${relatedModelName}`,
-      );
+      result.additionalValidations.push(`// Unknown object type: ${relatedModelName}`);
     }
   }
 
   /**
    * Handle unsupported field types
    */
-  private mapUnsupportedType(
-    field: DMMF.Field,
-    result: FieldTypeMappingResult,
-  ): void {
+  private mapUnsupportedType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     result.zodSchema = 'z.unknown()';
-    result.additionalValidations.push(
-      `// Unsupported field kind: ${field.kind}`,
-    );
-    console.warn(
-      `Unsupported field kind: ${field.kind} for field ${field.name}`,
-    );
+    result.additionalValidations.push(`// Unsupported field kind: ${field.kind}`);
+    console.warn(`Unsupported field kind: ${field.kind} for field ${field.name}`);
   }
 
   /**
@@ -1094,10 +1022,7 @@ export class PrismaTypeMapper {
       const hasExistingDefault = /\.default\(/.test(result.zodSchema);
       if (hasExistingDefault) {
         // Strip .default(...) from the modifier if present
-        const cleanedModifier = optionalityResult.zodModifier.replace(
-          /\.default\([^)]*\)/g,
-          '',
-        );
+        const cleanedModifier = optionalityResult.zodModifier.replace(/\.default\([^)]*\)/g, '');
         result.zodSchema = `${result.zodSchema}${cleanedModifier}`;
       } else {
         result.zodSchema = `${result.zodSchema}${optionalityResult.zodModifier}`;
@@ -1117,9 +1042,7 @@ export class PrismaTypeMapper {
     // Handle special cases
     if (optionalityResult.isAutoGenerated) {
       result.requiresSpecialHandling = true;
-      result.additionalValidations.push(
-        '// Auto-generated field - handle with care in mutations',
-      );
+      result.additionalValidations.push('// Auto-generated field - handle with care in mutations');
     }
   }
 
@@ -1130,10 +1053,7 @@ export class PrismaTypeMapper {
    * @param model - Parent model for context
    * @returns Optionality information
    */
-  determineFieldOptionality(
-    field: DMMF.Field,
-    model: DMMF.Model,
-  ): FieldOptionalityResult {
+  determineFieldOptionality(field: DMMF.Field, model: DMMF.Model): FieldOptionalityResult {
     const result: FieldOptionalityResult = {
       isOptional: false,
       isNullable: false,
@@ -1161,9 +1081,7 @@ export class PrismaTypeMapper {
         result.isOptional = true;
         result.optionalityReason = 'has_default';
         result.zodModifier = '.optional()';
-        result.additionalNotes.push(
-          'Field has default value, making it optional for input',
-        );
+        result.additionalNotes.push('Field has default value, making it optional for input');
       }
 
       // Add default value information
@@ -1208,11 +1126,7 @@ export class PrismaTypeMapper {
     }
 
     // Integer fields with autoincrement should be optional
-    if (
-      (field.type === 'Int' || field.type === 'BigInt') &&
-      field.isId &&
-      field.hasDefaultValue
-    ) {
+    if ((field.type === 'Int' || field.type === 'BigInt') && field.isId && field.hasDefaultValue) {
       return true;
     }
 
@@ -1223,10 +1137,7 @@ export class PrismaTypeMapper {
   /**
    * Add default value information to optionality result
    */
-  private addDefaultValueInfo(
-    field: DMMF.Field,
-    result: FieldOptionalityResult,
-  ): void {
+  private addDefaultValueInfo(field: DMMF.Field, result: FieldOptionalityResult): void {
     if (field.default) {
       const defaultValue = field.default;
 
@@ -1241,9 +1152,7 @@ export class PrismaTypeMapper {
             result.zodModifier += '.default(() => new Date())';
           } else if (functionName === 'uuid' && field.type === 'String') {
             result.zodModifier += '.default(() => crypto.randomUUID())';
-            result.additionalNotes.push(
-              'Requires crypto import for UUID generation',
-            );
+            result.additionalNotes.push('Requires crypto import for UUID generation');
           } else if (functionName === 'cuid' && field.type === 'String') {
             result.zodModifier += '.default(() => generateCuid())';
             result.additionalNotes.push('Requires custom CUID generator');
@@ -1286,11 +1195,7 @@ export class PrismaTypeMapper {
     // createdAt fields with default now() are auto-generated
     if (field.type === 'DateTime' && field.hasDefaultValue) {
       const defaultValue = field.default;
-      if (
-        typeof defaultValue === 'object' &&
-        defaultValue !== null &&
-        'name' in defaultValue
-      ) {
+      if (typeof defaultValue === 'object' && defaultValue !== null && 'name' in defaultValue) {
         return (defaultValue as { name: string }).name === 'now';
       }
     }
@@ -1310,24 +1215,17 @@ export class PrismaTypeMapper {
     if (field.kind === 'object') {
       if (field.relationName) {
         // Back-relations are typically optional
-        if (
-          !field.relationFromFields ||
-          field.relationFromFields.length === 0
-        ) {
+        if (!field.relationFromFields || field.relationFromFields.length === 0) {
           result.isOptional = true;
           result.optionalityReason = 'back_relation';
           result.zodModifier = '.optional()';
-          result.additionalNotes.push(
-            'Back-relation field, typically optional',
-          );
+          result.additionalNotes.push('Back-relation field, typically optional');
         }
         // Forward relations depend on foreign key nullability
         else {
           const foreignKeyFields = field.relationFromFields;
           const allForeignKeysOptional = foreignKeyFields.every((fkField) => {
-            const referencedField = model.fields.find(
-              (f) => f.name === fkField,
-            );
+            const referencedField = model.fields.find((f) => f.name === fkField);
             return referencedField && !referencedField.isRequired;
           });
 
@@ -1345,16 +1243,12 @@ export class PrismaTypeMapper {
 
     // Handle JSON fields - often optional due to complexity
     if (field.type === 'Json' && field.isRequired) {
-      result.additionalNotes.push(
-        'JSON field is required - consider validation complexity',
-      );
+      result.additionalNotes.push('JSON field is required - consider validation complexity');
     }
 
     // Handle Bytes fields - often optional for file uploads
     if (field.type === 'Bytes') {
-      result.additionalNotes.push(
-        'Bytes field - consider file upload requirements',
-      );
+      result.additionalNotes.push('Bytes field - consider file upload requirements');
     }
   }
 
@@ -1386,23 +1280,14 @@ export class PrismaTypeMapper {
   /**
    * PostgreSQL-specific optionality rules
    */
-  private applyPostgreSQLOptionalityRules(
-    field: DMMF.Field,
-    result: FieldOptionalityResult,
-  ): void {
+  private applyPostgreSQLOptionalityRules(field: DMMF.Field, result: FieldOptionalityResult): void {
     // PostgreSQL UUID fields with gen_random_uuid() default
     if (field.type === 'String' && field.isId && field.hasDefaultValue) {
-      result.additionalNotes.push(
-        'PostgreSQL UUID primary key with default generation',
-      );
+      result.additionalNotes.push('PostgreSQL UUID primary key with default generation');
     }
 
     // PostgreSQL serial fields
-    if (
-      (field.type === 'Int' || field.type === 'BigInt') &&
-      field.isId &&
-      field.hasDefaultValue
-    ) {
+    if ((field.type === 'Int' || field.type === 'BigInt') && field.isId && field.hasDefaultValue) {
       result.additionalNotes.push('PostgreSQL serial/bigserial primary key');
     }
   }
@@ -1410,16 +1295,9 @@ export class PrismaTypeMapper {
   /**
    * MySQL-specific optionality rules
    */
-  private applyMySQLOptionalityRules(
-    field: DMMF.Field,
-    result: FieldOptionalityResult,
-  ): void {
+  private applyMySQLOptionalityRules(field: DMMF.Field, result: FieldOptionalityResult): void {
     // MySQL AUTO_INCREMENT fields
-    if (
-      (field.type === 'Int' || field.type === 'BigInt') &&
-      field.isId &&
-      field.hasDefaultValue
-    ) {
+    if ((field.type === 'Int' || field.type === 'BigInt') && field.isId && field.hasDefaultValue) {
       result.additionalNotes.push('MySQL AUTO_INCREMENT primary key');
     }
 
@@ -1432,10 +1310,7 @@ export class PrismaTypeMapper {
   /**
    * SQLite-specific optionality rules
    */
-  private applySQLiteOptionalityRules(
-    field: DMMF.Field,
-    result: FieldOptionalityResult,
-  ): void {
+  private applySQLiteOptionalityRules(field: DMMF.Field, result: FieldOptionalityResult): void {
     // SQLite INTEGER PRIMARY KEY is always auto-generated
     if (field.type === 'Int' && field.isId) {
       result.additionalNotes.push('SQLite INTEGER PRIMARY KEY (ROWID alias)');
@@ -1445,10 +1320,7 @@ export class PrismaTypeMapper {
   /**
    * MongoDB-specific optionality rules
    */
-  private applyMongoDBOptionalityRules(
-    field: DMMF.Field,
-    result: FieldOptionalityResult,
-  ): void {
+  private applyMongoDBOptionalityRules(field: DMMF.Field, result: FieldOptionalityResult): void {
     // MongoDB _id fields
     if (field.isId && field.name === 'id') {
       result.additionalNotes.push('MongoDB _id field (ObjectId)');
@@ -1497,9 +1369,7 @@ export class PrismaTypeMapper {
             const expression = field.documentation.slice(start + 1, end).trim();
             if (expression) {
               result.zodSchema = expression;
-              result.additionalValidations.push(
-                '// Replaced base schema via @zod.custom.use',
-              );
+              result.additionalValidations.push('// Replaced base schema via @zod.custom.use');
               result.requiresSpecialHandling = true;
               return; // Skip standard parsing; full override applied
             }
@@ -1530,10 +1400,7 @@ export class PrismaTypeMapper {
       }
 
       // Parse @zod annotations
-      const parseResult = parseZodAnnotations(
-        extractedComment.normalizedComment,
-        context,
-      );
+      const parseResult = parseZodAnnotations(extractedComment.normalizedComment, context);
       if (!parseResult.isValid || parseResult.annotations.length === 0) {
         if (!parseResult.isValid && parseResult.parseErrors.length > 0) {
           result.additionalValidations.push(
@@ -1544,10 +1411,7 @@ export class PrismaTypeMapper {
       }
 
       // Map annotations to Zod schema
-      const zodSchemaResult = mapAnnotationsToZodSchema(
-        parseResult.annotations,
-        context,
-      );
+      const zodSchemaResult = mapAnnotationsToZodSchema(parseResult.annotations, context);
       if (!zodSchemaResult.isValid) {
         result.additionalValidations.push(
           `// @zod mapping errors: ${zodSchemaResult.errors.join(', ')}`,
@@ -1558,10 +1422,7 @@ export class PrismaTypeMapper {
       // Apply the validations to the schema
       if (zodSchemaResult.schemaChain) {
         // Remove redundant optional() calls from inline validations; optionality handled later
-        const chainNoOptional = zodSchemaResult.schemaChain.replace(
-          /\.optional\(\)/g,
-          '',
-        );
+        const chainNoOptional = zodSchemaResult.schemaChain.replace(/\.optional\(\)/g, '');
         // Combine base schema with validation chain
         // The validation chain contains just the validation methods (e.g., '.min(3).max(20)')
         // We need to combine it with the existing base schema
@@ -1572,10 +1433,7 @@ export class PrismaTypeMapper {
           if (recordMatch) {
             const recordParam = recordMatch[1] || 'z.unknown()';
             // Build a base z.record(...) and append the remaining chain without the .record(...) segment
-            const remainingChain = chainNoOptional.replace(
-              /\.record\([^)]*\)/,
-              '',
-            );
+            const remainingChain = chainNoOptional.replace(/\.record\([^)]*\)/, '');
             result.zodSchema = `z.record(${recordParam})${remainingChain}`;
           } else {
             result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
@@ -1587,9 +1445,7 @@ export class PrismaTypeMapper {
             result.zodSchema = chainNoOptional;
           }
         }
-        result.additionalValidations.push(
-          '// Enhanced with @zod inline validations',
-        );
+        result.additionalValidations.push('// Enhanced with @zod inline validations');
 
         // Add any additional imports needed
         zodSchemaResult.imports.forEach((imp) => {
@@ -1608,13 +1464,8 @@ export class PrismaTypeMapper {
       }
     } catch (error) {
       // Don't fail the entire field mapping on validation error
-      console.warn(
-        `Failed to apply inline validations for field ${field.name}:`,
-        error,
-      );
-      result.additionalValidations.push(
-        `// Warning: Failed to apply @zod validations`,
-      );
+      console.warn(`Failed to apply inline validations for field ${field.name}:`, error);
+      result.additionalValidations.push(`// Warning: Failed to apply @zod validations`);
     }
   }
 
@@ -1628,12 +1479,7 @@ export class PrismaTypeMapper {
     optionalityResult: FieldOptionalityResult,
   ): void {
     // Collect JSDoc metadata
-    const metadata = this.collectJSDocMetadata(
-      field,
-      result,
-      modelName,
-      optionalityResult,
-    );
+    const metadata = this.collectJSDocMetadata(field, result, modelName, optionalityResult);
 
     // Generate JSDoc string
     const jsDocString = this.buildJSDocString(metadata);
@@ -1959,10 +1805,7 @@ export class PrismaTypeMapper {
   /**
    * Add database-specific validations
    */
-  private addDatabaseValidations(
-    field: DMMF.Field,
-    result: FieldTypeMappingResult,
-  ): void {
+  private addDatabaseValidations(field: DMMF.Field, result: FieldTypeMappingResult): void {
     if (!result.databaseSpecific) {
       result.databaseSpecific = { constraints: [], optimizations: [] };
     }
@@ -1997,14 +1840,9 @@ export class PrismaTypeMapper {
   /**
    * Add PostgreSQL-specific optimizations
    */
-  private addPostgreSQLOptimizations(
-    field: DMMF.Field,
-    result: FieldTypeMappingResult,
-  ): void {
+  private addPostgreSQLOptimizations(field: DMMF.Field, result: FieldTypeMappingResult): void {
     if (field.type === 'String' && field.isId) {
-      result.databaseSpecific?.optimizations.push(
-        'Consider UUID type for PostgreSQL primary keys',
-      );
+      result.databaseSpecific?.optimizations.push('Consider UUID type for PostgreSQL primary keys');
     }
 
     if (field.type === 'Json') {
@@ -2017,10 +1855,7 @@ export class PrismaTypeMapper {
   /**
    * Add MySQL-specific optimizations
    */
-  private addMySQLOptimizations(
-    field: DMMF.Field,
-    result: FieldTypeMappingResult,
-  ): void {
+  private addMySQLOptimizations(field: DMMF.Field, result: FieldTypeMappingResult): void {
     if (field.type === 'String' && field.isList) {
       result.databaseSpecific?.optimizations.push(
         'Consider using separate table for array data in MySQL',
@@ -2031,20 +1866,13 @@ export class PrismaTypeMapper {
   /**
    * Add MongoDB-specific optimizations
    */
-  private addMongoDBOptimizations(
-    field: DMMF.Field,
-    result: FieldTypeMappingResult,
-  ): void {
+  private addMongoDBOptimizations(field: DMMF.Field, result: FieldTypeMappingResult): void {
     if (field.type === 'String' && field.isId) {
-      result.databaseSpecific?.optimizations.push(
-        'MongoDB uses ObjectId for _id fields',
-      );
+      result.databaseSpecific?.optimizations.push('MongoDB uses ObjectId for _id fields');
     }
 
     if (field.isList) {
-      result.databaseSpecific?.optimizations.push(
-        'MongoDB natively supports arrays',
-      );
+      result.databaseSpecific?.optimizations.push('MongoDB natively supports arrays');
     }
   }
 
@@ -2052,17 +1880,7 @@ export class PrismaTypeMapper {
    * Get all available Prisma types for validation
    */
   static getSupportedPrismaTypes(): string[] {
-    return [
-      'String',
-      'Int',
-      'BigInt',
-      'Float',
-      'Decimal',
-      'Boolean',
-      'DateTime',
-      'Json',
-      'Bytes',
-    ];
+    return ['String', 'Int', 'BigInt', 'Float', 'Decimal', 'Boolean', 'DateTime', 'Json', 'Bytes'];
   }
 
   /**
@@ -2071,29 +1889,19 @@ export class PrismaTypeMapper {
   static validateTypeMapping(config: Partial<TypeMappingConfig>): string[] {
     const errors: string[] = [];
 
-    if (
-      config.decimalMode &&
-      !['string', 'number'].includes(config.decimalMode)
-    ) {
+    if (config.decimalMode && !['string', 'number'].includes(config.decimalMode)) {
       errors.push('decimalMode must be "string" or "number"');
     }
 
-    if (
-      config.jsonMode &&
-      !['unknown', 'record', 'any'].includes(config.jsonMode)
-    ) {
+    if (config.jsonMode && !['unknown', 'record', 'any'].includes(config.jsonMode)) {
       errors.push('jsonMode must be "unknown", "record", or "any"');
     }
 
     if (
       config.provider &&
-      !['postgresql', 'mysql', 'sqlite', 'sqlserver', 'mongodb'].includes(
-        config.provider,
-      )
+      !['postgresql', 'mysql', 'sqlite', 'sqlserver', 'mongodb'].includes(config.provider)
     ) {
-      errors.push(
-        'provider must be one of: postgresql, mysql, sqlite, sqlserver, mongodb',
-      );
+      errors.push('provider must be one of: postgresql, mysql, sqlite, sqlserver, mongodb');
     }
 
     return errors;
@@ -2130,8 +1938,10 @@ export class PrismaTypeMapper {
     // Apply field exclusions if provided via generator config models[Model].variants.pure.excludeFields
     // Allow runtime config-driven filtering of relation fields when pureModels enabled
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy access to config avoiding circular import
-    const cfg = (require('../transformer').default.getGeneratorConfig?.() ||
-      {}) as { pureModels?: boolean; pureModelsIncludeRelations?: boolean };
+    const cfg = (require('../transformer').default.getGeneratorConfig?.() || {}) as {
+      pureModels?: boolean;
+      pureModelsIncludeRelations?: boolean;
+    };
     let fieldsToProcess = model.fields;
     if (cfg.pureModels && cfg.pureModelsIncludeRelations !== true) {
       // Omit relation (object kind) fields for slimmer pure model output
@@ -2181,10 +1991,7 @@ export class PrismaTypeMapper {
           composition.statistics.complexTypeFields++;
         }
       } catch (error) {
-        console.error(
-          `Failed to process field ${field.name} in model ${model.name}:`,
-          error,
-        );
+        console.error(`Failed to process field ${field.name} in model ${model.name}:`, error);
         // Add error field with fallback
         composition.fields.push({
           fieldName: field.name,
@@ -2213,9 +2020,7 @@ export class PrismaTypeMapper {
   /**
    * Generate TypeScript schema file content from model composition
    */
-  generateSchemaFileContent(
-    composition: ModelSchemaComposition,
-  ): SchemaFileContent {
+  generateSchemaFileContent(composition: ModelSchemaComposition): SchemaFileContent {
     const lines: string[] = [];
     // Access global configuration (set by prisma-generator) cautiously; fall back to transformer if absent.
     interface GlobalWithGeneratorConfig {
@@ -2225,8 +2030,7 @@ export class PrismaTypeMapper {
     const lean =
       g.PRISMA_ZOD_GENERATOR_CONFIG?.pureModelsLean === true ||
       // Lazy require to avoid circular dependency and multiple calls
-       
-       
+
       (() => {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const transformer = require('../transformer').default;
@@ -2302,9 +2106,7 @@ export class PrismaTypeMapper {
 
     // Add field summary
     const scalarFields = model.fields.filter((f) => f.kind === 'scalar').length;
-    const relationFields = model.fields.filter(
-      (f) => f.kind === 'object',
-    ).length;
+    const relationFields = model.fields.filter((f) => f.kind === 'object').length;
     const enumFields = model.fields.filter((f) => f.kind === 'enum').length;
 
     if (scalarFields > 0) lines.push(` * @scalars ${scalarFields}`);
@@ -2312,9 +2114,7 @@ export class PrismaTypeMapper {
     if (enumFields > 0) lines.push(` * @enums ${enumFields}`);
 
     lines.push(' *');
-    lines.push(
-      ' * Generated with enhanced type mapping, validation, and documentation.',
-    );
+    lines.push(' * Generated with enhanced type mapping, validation, and documentation.');
     lines.push(' */');
 
     return lines.join('\n');
@@ -2323,9 +2123,7 @@ export class PrismaTypeMapper {
   /**
    * Generate imports section
    */
-  private generateImportsSection(
-    composition: ModelSchemaComposition,
-  ): string[] {
+  private generateImportsSection(composition: ModelSchemaComposition): string[] {
     const lines: string[] = [];
     const imports = Array.from(composition.imports).sort();
 
@@ -2346,9 +2144,7 @@ export class PrismaTypeMapper {
     );
     enumSchemaImports.forEach((imp) => {
       const enumBase = imp.replace(/Schema$/, '');
-      lines.push(
-        `import { ${imp} } from '../schemas/enums/${enumBase}.schema';`,
-      );
+      lines.push(`import { ${imp} } from '../schemas/enums/${enumBase}.schema';`);
     });
 
     // Related model schema imports (exclude current schema + enums)
@@ -2369,15 +2165,13 @@ export class PrismaTypeMapper {
   /**
    * Generate schema definition
    */
-  private generateSchemaDefinition(
-    composition: ModelSchemaComposition,
-  ): string[] {
+  private generateSchemaDefinition(composition: ModelSchemaComposition): string[] {
     const lines: string[] = [];
-  // Lazy require to avoid circular import at module scope
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const cfg = require('../transformer').default.getGeneratorConfig?.();
+    // Lazy require to avoid circular import at module scope
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const cfg = require('../transformer').default.getGeneratorConfig?.();
     const lean = cfg?.pureModelsLean === true;
-  // Variants config removed (not used in current logic)
+    // Variants config removed (not used in current logic)
     // Optional field behavior parser (avoid any)
     const optBehavior = ((): 'optional' | 'nullable' | 'nullish' => {
       const v = (cfg as { optionalFieldBehavior?: string } | null)?.optionalFieldBehavior;
@@ -2388,18 +2182,12 @@ export class PrismaTypeMapper {
 
     for (const field of composition.fields) {
       if (!lean && field.documentation) {
-        const docLines = field.documentation
-          .split('\n')
-          .map((line) => `  ${line}`);
+        const docLines = field.documentation.split('\n').map((line) => `  ${line}`);
         lines.push(...docLines);
       }
 
-      const dotValidations = field.validations.filter((v) =>
-        v.trim().startsWith('.'),
-      );
-      const commentValidations = field.validations.filter((v) =>
-        v.trim().startsWith('//'),
-      );
+      const dotValidations = field.validations.filter((v) => v.trim().startsWith('.'));
+      const commentValidations = field.validations.filter((v) => v.trim().startsWith('//'));
 
       // Start from base without any optional/nullable modifiers, we'll re-apply per config
       const base = field.zodSchema
@@ -2439,9 +2227,7 @@ export class PrismaTypeMapper {
   /**
    * Generate TypeScript type definition
    */
-  private generateTypeDefinition(
-    composition: ModelSchemaComposition,
-  ): string[] {
+  private generateTypeDefinition(composition: ModelSchemaComposition): string[] {
     const lines: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require for runtime config
     const cfg = require('../transformer').default.getGeneratorConfig?.();
@@ -2459,9 +2245,7 @@ export class PrismaTypeMapper {
     // the *Schema export into *Model directly and an alias would cause a duplicate export
     // and reference to a non-existent *Schema symbol after transformation.
     if (emitLegacyAlias && !cfg?.pureModels) {
-      lines.push(
-        `export const ${composition.modelName}Model = ${composition.schemaName};`,
-      );
+      lines.push(`export const ${composition.modelName}Model = ${composition.schemaName};`);
     }
     return lines;
   }
@@ -2469,9 +2253,7 @@ export class PrismaTypeMapper {
   /**
    * Extract schema dependencies for import resolution
    */
-  private extractSchemaDependencies(
-    composition: ModelSchemaComposition,
-  ): string[] {
+  private extractSchemaDependencies(composition: ModelSchemaComposition): string[] {
     const dependencies: string[] = [];
 
     composition.fields.forEach((field) => {
@@ -2479,10 +2261,7 @@ export class PrismaTypeMapper {
         const matches = field.zodSchema.match(/(\w+Schema)/g);
         if (matches) {
           matches.forEach((match) => {
-            if (
-              match !== composition.schemaName &&
-              !dependencies.includes(match)
-            ) {
+            if (match !== composition.schemaName && !dependencies.includes(match)) {
               dependencies.push(match);
             }
           });
@@ -2546,12 +2325,9 @@ export class PrismaTypeMapper {
 
         // Update collection metadata
         collection.generationSummary.processedModels++;
-        collection.generationSummary.totalFields +=
-          composition.statistics.totalFields;
-        collection.generationSummary.processedFields +=
-          composition.statistics.processedFields;
-        collection.generationSummary.enhancedFields +=
-          composition.statistics.enhancedFields;
+        collection.generationSummary.totalFields += composition.statistics.totalFields;
+        collection.generationSummary.processedFields += composition.statistics.processedFields;
+        collection.generationSummary.enhancedFields += composition.statistics.enhancedFields;
 
         // Collect global imports
         composition.imports.forEach((imp) => collection.globalImports.add(imp));
@@ -2577,9 +2353,7 @@ export class PrismaTypeMapper {
     // Validate dependencies
     const dependencyValidation = this.validateSchemaDependencies(collection);
     if (dependencyValidation.errors.length > 0) {
-      collection.generationSummary.warnings.push(
-        ...dependencyValidation.errors,
-      );
+      collection.generationSummary.warnings.push(...dependencyValidation.errors);
     }
 
     return collection;
@@ -2610,9 +2384,7 @@ export class PrismaTypeMapper {
     return {
       content: lines.join('\n'),
       imports: new Set(),
-      exports: new Set(
-        schemaNames.flatMap((name) => [`${name}Schema`, `${name}Type`]),
-      ),
+      exports: new Set(schemaNames.flatMap((name) => [`${name}Schema`, `${name}Type`])),
       filename: 'index.ts',
       dependencies: [],
     };
@@ -2635,9 +2407,7 @@ export class PrismaTypeMapper {
       for (const dependency of dependencies) {
         const dependencyModel = dependency.replace('Schema', '');
         if (!availableSchemas.has(dependencyModel)) {
-          errors.push(
-            `Model ${modelName} depends on missing schema: ${dependencyModel}`,
-          );
+          errors.push(`Model ${modelName} depends on missing schema: ${dependencyModel}`);
         }
       }
     }
@@ -2694,9 +2464,7 @@ export class PrismaTypeMapper {
   /**
    * Generate schema validation report
    */
-  generateValidationReport(
-    collection: SchemaCollection,
-  ): SchemaValidationReport {
+  generateValidationReport(collection: SchemaCollection): SchemaValidationReport {
     const report: SchemaValidationReport = {
       isValid: true,
       summary: collection.generationSummary,
@@ -2731,13 +2499,9 @@ export class PrismaTypeMapper {
       }
 
       // Check for missing documentation
-      const undocumentedFields = schemaData.composition.fields.filter(
-        (f) => !f.documentation,
-      );
+      const undocumentedFields = schemaData.composition.fields.filter((f) => !f.documentation);
       if (undocumentedFields.length > 0) {
-        modelReport.warnings.push(
-          `${undocumentedFields.length} fields lack documentation`,
-        );
+        modelReport.warnings.push(`${undocumentedFields.length} fields lack documentation`);
       }
 
       report.modelReports.push(modelReport);

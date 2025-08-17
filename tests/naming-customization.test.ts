@@ -51,14 +51,16 @@ describe('Naming Customization (experimental)', () => {
             filePattern: '{model}.zod.ts',
             schemaSuffix: 'Zod',
             typeSuffix: 'Shape',
-            exportNamePattern: '{Model}{SchemaSuffix}'
-          }
-        }
+            exportNamePattern: '{Model}{SchemaSuffix}',
+          },
+        },
       };
       const configName = 'config.json';
       const schema = prismaSchema(env.outputDir, configName);
       await (await import('fs')).promises.writeFile(env.schemaPath, schema);
-      await (await import('fs')).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
+      await (
+        await import('fs')
+      ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
 
       await env.runGeneration();
       const modelsDir = join(env.outputDir, 'schemas', 'models');
@@ -83,14 +85,16 @@ describe('Naming Customization (experimental)', () => {
             schemaSuffix: '',
             typeSuffix: '',
             exportNamePattern: '{Model}',
-            legacyAliases: true
-          }
-        }
+            legacyAliases: true,
+          },
+        },
       };
       const configName = 'config.json';
       const schema = prismaSchema(env.outputDir, configName);
       await (await import('fs')).promises.writeFile(env.schemaPath, schema);
-      await (await import('fs')).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
+      await (
+        await import('fs')
+      ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
 
       await env.runGeneration();
       const modelsDir = join(env.outputDir, 'schemas', 'models');
@@ -107,65 +111,71 @@ describe('Naming Customization (experimental)', () => {
   });
 
   it('applies preset zod-prisma-types (empty suffix with legacy aliases)', async () => {
-      const env = await TestEnvironment.createTestEnv('naming-preset-zpt');
-      try {
-        const config = {
-          pureModels: true,
-          naming: {
-            preset: 'zod-prisma-types'
-          }
-        };
-        const configName = 'config.json';
-        const schema = prismaSchema(env.outputDir, configName);
-        await (await import('fs')).promises.writeFile(env.schemaPath, schema);
-        await (await import('fs')).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
+    const env = await TestEnvironment.createTestEnv('naming-preset-zpt');
+    try {
+      const config = {
+        pureModels: true,
+        naming: {
+          preset: 'zod-prisma-types',
+        },
+      };
+      const configName = 'config.json';
+      const schema = prismaSchema(env.outputDir, configName);
+      await (await import('fs')).promises.writeFile(env.schemaPath, schema);
+      await (
+        await import('fs')
+      ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
 
-  await env.runGeneration();
-        const modelsDir = join(env.outputDir, 'schemas', 'models');
-        const userFile = join(modelsDir, 'User.schema.ts');
-        expect(existsSync(userFile)).toBe(true);
-        const content = readFileSync(userFile, 'utf-8');
-    // Should have at least a schema export const
-    expect(/export const User(Schema)? = z\.object/.test(content)).toBe(true);
-      } finally {
-  await env.cleanup();
-      }
-    });
+      await env.runGeneration();
+      const modelsDir = join(env.outputDir, 'schemas', 'models');
+      const userFile = join(modelsDir, 'User.schema.ts');
+      expect(existsSync(userFile)).toBe(true);
+      const content = readFileSync(userFile, 'utf-8');
+      // Should have at least a schema export const
+      expect(/export const User(Schema)? = z\.object/.test(content)).toBe(true);
+    } finally {
+      await env.cleanup();
+    }
+  });
 
-    it('applies preset zod-prisma (Schema suffix + legacy alias)', async () => {
-      const env = await TestEnvironment.createTestEnv('naming-preset-zp');
-      try {
-        const config = { pureModels: true, naming: { preset: 'zod-prisma' } };
-        const configName = 'config.json';
-        const schema = prismaSchema(env.outputDir, configName);
-        await (await import('fs')).promises.writeFile(env.schemaPath, schema);
-        await (await import('fs')).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
-        await env.runGeneration();
-        const modelsDir = join(env.outputDir, 'schemas', 'models');
-        const userFile = join(modelsDir, 'User.schema.ts');
-        const content = readFileSync(userFile, 'utf-8');
-        expect(content).toMatch(/export const UserSchema/);
-      } finally {
-        await env.cleanup();
-      }
-    });
+  it('applies preset zod-prisma (Schema suffix + legacy alias)', async () => {
+    const env = await TestEnvironment.createTestEnv('naming-preset-zp');
+    try {
+      const config = { pureModels: true, naming: { preset: 'zod-prisma' } };
+      const configName = 'config.json';
+      const schema = prismaSchema(env.outputDir, configName);
+      await (await import('fs')).promises.writeFile(env.schemaPath, schema);
+      await (
+        await import('fs')
+      ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
+      await env.runGeneration();
+      const modelsDir = join(env.outputDir, 'schemas', 'models');
+      const userFile = join(modelsDir, 'User.schema.ts');
+      const content = readFileSync(userFile, 'utf-8');
+      expect(content).toMatch(/export const UserSchema/);
+    } finally {
+      await env.cleanup();
+    }
+  });
 
   it('applies preset legacy-model-suffix (Model suffix, .model.ts)', async () => {
-      const env = await TestEnvironment.createTestEnv('naming-preset-legacy-model');
-      try {
-        const config = { pureModels: true, naming: { preset: 'legacy-model-suffix' } };
-        const configName = 'config.json';
-        const schema = prismaSchema(env.outputDir, configName);
-        await (await import('fs')).promises.writeFile(env.schemaPath, schema);
-        await (await import('fs')).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
-    await env.runGeneration();
-        const modelsDir = join(env.outputDir, 'schemas', 'models');
-        const userFile = join(modelsDir, 'User.model.ts');
-        expect(existsSync(userFile)).toBe(true);
-        const content = readFileSync(userFile, 'utf-8');
-        expect(content).toMatch(/export const UserModel = z\.object/);
-      } finally {
-        await env.cleanup();
-      }
-    });
+    const env = await TestEnvironment.createTestEnv('naming-preset-legacy-model');
+    try {
+      const config = { pureModels: true, naming: { preset: 'legacy-model-suffix' } };
+      const configName = 'config.json';
+      const schema = prismaSchema(env.outputDir, configName);
+      await (await import('fs')).promises.writeFile(env.schemaPath, schema);
+      await (
+        await import('fs')
+      ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
+      await env.runGeneration();
+      const modelsDir = join(env.outputDir, 'schemas', 'models');
+      const userFile = join(modelsDir, 'User.model.ts');
+      expect(existsSync(userFile)).toBe(true);
+      const content = readFileSync(userFile, 'utf-8');
+      expect(content).toMatch(/export const UserModel = z\.object/);
+    } finally {
+      await env.cleanup();
+    }
+  });
 });

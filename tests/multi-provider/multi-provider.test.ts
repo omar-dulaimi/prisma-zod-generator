@@ -20,7 +20,7 @@ describe('Multi-Provider Integration Tests', () => {
   describe('Provider Availability Tests', () => {
     const providers = getAllProviders();
 
-    providers.forEach(provider => {
+    providers.forEach((provider) => {
       it(`should have configuration for ${provider}`, () => {
         const config = getProviderConfig(provider);
         expect(config).toBeDefined();
@@ -35,17 +35,17 @@ describe('Multi-Provider Integration Tests', () => {
   describe('Schema Generation Tests', () => {
     const providers = getAllProviders();
 
-    providers.forEach(provider => {
+    providers.forEach((provider) => {
       it(`should generate schemas for ${provider}`, async () => {
         const result = await testRunner.runProviderTests(provider);
-        
+
         expect(result).toBeDefined();
         expect(result.name).toBe(provider);
         expect(result.results).toBeDefined();
         expect(result.results.length).toBeGreaterThan(0);
-        
+
         // Check that at least some tests passed
-        const passedTests = result.results.filter(r => r.status === 'passed');
+        const passedTests = result.results.filter((r) => r.status === 'passed');
         expect(passedTests.length).toBeGreaterThan(0);
       });
     });
@@ -55,7 +55,7 @@ describe('Multi-Provider Integration Tests', () => {
     it('should generate consistent schemas across providers', async () => {
       const providers = getAllProviders();
       const results = await Promise.all(
-        providers.map(provider => testRunner.runProviderTests(provider))
+        providers.map((provider) => testRunner.runProviderTests(provider)),
       );
 
       // Check that all providers generated schemas
@@ -67,10 +67,10 @@ describe('Multi-Provider Integration Tests', () => {
 
       // Check consistency - all providers should have similar operation schemas
       const commonOperations = ['Basic Types', 'CRUD Operations', 'Relationships'];
-      
+
       for (const operation of commonOperations) {
-        const operationResults = results.map(result => 
-          result.results.find(r => r.testCase === operation)
+        const operationResults = results.map((result) =>
+          result.results.find((r) => r.testCase === operation),
         );
 
         // All providers should have this operation
@@ -92,9 +92,9 @@ describe('Multi-Provider Integration Tests', () => {
         const startTime = Date.now();
         await testRunner.runProviderTests(provider);
         const duration = Date.now() - startTime;
-        
+
         performanceResults[provider] = duration;
-        
+
         // Each provider should complete tests within reasonable time
         expect(duration).toBeLessThan(60000); // 1 minute max
       }
@@ -109,7 +109,7 @@ describe('Multi-Provider Integration Tests', () => {
       const times = Object.values(performanceResults);
       const fastest = Math.min(...times);
       const slowest = Math.max(...times);
-      
+
       // Slowest should not be more than 10x slower than fastest
       expect(slowest / fastest).toBeLessThan(10);
     });
@@ -131,22 +131,21 @@ describe('Multi-Provider Integration Tests', () => {
   describe('Feature Coverage Tests', () => {
     it('should test all declared features for each provider', async () => {
       const providers = getAllProviders();
-      
+
       for (const provider of providers) {
         const config = getProviderConfig(provider);
         const result = await testRunner.runProviderTests(provider);
-        
+
         // Check that features are actually tested
-        const featureTests = result.results.filter(r => 
-          r.testCase.includes('Type') || 
-          r.testCase.includes('Feature')
+        const featureTests = result.results.filter(
+          (r) => r.testCase.includes('Type') || r.testCase.includes('Feature'),
         );
-        
+
         expect(featureTests.length).toBeGreaterThan(0);
-        
+
         // Check that native types are tested
         if (config?.features?.nativeTypes?.length > 0) {
-          const typeTests = featureTests.filter(r => r.testCase.includes('Type'));
+          const typeTests = featureTests.filter((r) => r.testCase.includes('Type'));
           expect(typeTests.length).toBeGreaterThan(0);
         }
       }
@@ -156,18 +155,17 @@ describe('Multi-Provider Integration Tests', () => {
   describe('Limitation Handling Tests', () => {
     it('should handle provider limitations correctly', async () => {
       const providers = getAllProviders();
-      
+
       for (const provider of providers) {
         const config = getProviderConfig(provider);
         const result = await testRunner.runProviderTests(provider);
-        
+
         // If provider has limitations, they should be tested
         if (config?.limitations?.unsupportedFeatures?.length > 0) {
-          const limitationTests = result.results.filter(r => 
-            r.testCase.includes('limitation') || 
-            r.testCase.includes('Limitation')
+          const limitationTests = result.results.filter(
+            (r) => r.testCase.includes('limitation') || r.testCase.includes('Limitation'),
           );
-          
+
           // Either limitation tests exist, or they're skipped gracefully
           expect(limitationTests.length >= 0).toBe(true);
         }
@@ -180,7 +178,7 @@ describe('Multi-Provider Integration Tests', () => {
       // Use parallel execution for better performance
       const useParallel = process.env.VITEST_PARALLEL !== 'false';
       const report = await testRunner.runAllTests(useParallel);
-      
+
       // Basic report structure
       expect(report.timestamp).toBeDefined();
       expect(report.version).toBeDefined();
@@ -188,20 +186,23 @@ describe('Multi-Provider Integration Tests', () => {
       expect(report.testSuites).toBeDefined();
       expect(report.overallSummary).toBeDefined();
       expect(report.performanceMetrics).toBeDefined();
-      
+
       // Each provider should have results
       expect(report.testSuites.length).toBe(report.providers.length);
-      
+
       // Overall summary should be accurate
-      const totalTests = report.testSuites.reduce((sum, suite) => sum + suite.summary.totalTests, 0);
+      const totalTests = report.testSuites.reduce(
+        (sum, suite) => sum + suite.summary.totalTests,
+        0,
+      );
       expect(report.overallSummary.totalTests).toBe(totalTests);
-      
+
       // At least some tests should pass
       expect(report.overallSummary.passedTests).toBeGreaterThan(0);
-      
+
       // Coverage should be reasonable
       expect(report.overallSummary.coverage).toBeGreaterThan(50);
-      
+
       // Performance metrics should exist
       expect(Object.keys(report.performanceMetrics.generationTime).length).toBeGreaterThan(0);
     });
