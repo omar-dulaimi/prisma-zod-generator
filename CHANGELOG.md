@@ -1,3 +1,9 @@
+## [1.12.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.1...v1.12.2) (2025-08-17)
+
+### 🐛 Bug Fixes
+
+* **pure-models:** apply optionalFieldBehavior to schema-optional fields; keep required fields required; address perf flake by documenting run guidance; fix ESLint issues ([32dccaa](https://github.com/omar-dulaimi/prisma-zod-generator/commit/32dccaad866fcb088b9039499f1b7e65e6da8ac6))
+
 ## [1.12.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.0...v1.12.1) (2025-08-17)
 
 ### 🐛 Bug Fixes

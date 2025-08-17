@@ -1,6 +1,6 @@
 {
   "name": "prisma-zod-generator",
-  "version": "1.12.1",
+  "version": "1.12.2",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
@@ -63,7 +63,9 @@
     "test:legacy:multi-provider:parallel": "tsx tests/multi-provider/run-all-tests.ts --parallel",
     "test:legacy:multi-provider:generate": "tsx tests/multi-provider/run-all-tests.ts --generate-only",
     "lint": "eslint src/ tests/ --fix",
-    "format": "prettier --write src/ tests/",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky",
     "prerelease": "npm run gen-example && npm run test:type-check && npm run lint",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run",
@@ -120,6 +122,7 @@
     "docusaurus-plugin-search-local": "^2.1.2",
     "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.0.11",
     "expect-type": "^1.2.2",
     "prisma": "^6.13.0",
     "semantic-release": "^24.2.7",
