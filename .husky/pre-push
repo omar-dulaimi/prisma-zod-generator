@@ -1,7 +1,7 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+# Fail on first error
+set -e
 
 # Run type check, lint and prettier check before pushing
-npm run test:type-check || exit 1
-npm run lint || exit 1
-npm run format:check || exit 1
+npm run test:type-check
+npm run lint
+npm run format:check
