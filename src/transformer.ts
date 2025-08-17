@@ -1,13 +1,13 @@
 import type {
-  ConnectorType,
-  DMMF as PrismaDMMF,
+    ConnectorType,
+    DMMF as PrismaDMMF,
 } from '@prisma/generator-helper';
 import path from 'path';
 import { GeneratorConfig } from './config/parser';
 import ResultSchemaGenerator from './generators/results';
 import {
-  findModelByName,
-  isMongodbRawOp,
+    findModelByName,
+    isMongodbRawOp,
 } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -1052,37 +1052,41 @@ export default class Transformer {
 
     const fieldName = allAlternativesHaveFieldName ? '' : fieldNamePattern;
 
-    const opt = !field.isRequired ? '.optional()' : '';
+  // Base optional marker; will be normalized below based on config/nullable
+  const opt = !field.isRequired ? '.optional()' : '';
 
     let resString =
       alternatives.length === 1
         ? alternatives.join(', ')
         : `z.union([${alternatives.join(', ')}])${opt}`;
 
-    if (field.isNullable) {
-      // Handle optional/nullable based on configuration
-      const config = Transformer.getGeneratorConfig();
-      const optionalFieldBehavior = config?.optionalFieldBehavior || 'nullish';
-      
-      if (field.isNullable && !field.isRequired) {
-        // Field is both nullable and optional
-        if (optionalFieldBehavior === 'nullish') {
-          // Remove any existing .optional() and use .nullish()
-          resString = resString.replace('.optional()', '');
-          resString += '.nullish()';
-        } else if (optionalFieldBehavior === 'optional') {
-          // Use .optional() only (remove .optional() if already there, then add it)
-          resString = resString.replace('.optional()', '');
-          resString += '.optional()';
-        } else if (optionalFieldBehavior === 'nullable') {
-          // Use .nullable() only (remove any existing .optional())
-          resString = resString.replace('.optional()', '');
-          resString += '.nullable()';
-        }
+    // Normalize optional/nullable behavior based on configuration
+    const config = Transformer.getGeneratorConfig();
+    const optionalFieldBehavior = config?.optionalFieldBehavior || 'nullish';
+    if (!field.isRequired) {
+      // Field is optional
+      // First, strip any existing .optional() added earlier; we'll re-apply below
+      resString = resString.replace('.optional()', '');
+      if (field.isNullable) {
+        // Optional + nullable → follow configured behavior
+        if (optionalFieldBehavior === 'nullish') resString += '.nullish()';
+        else if (optionalFieldBehavior === 'optional') resString += '.optional()';
+        else resString += '.nullable()';
       } else {
-        // Field is nullable but required
-        resString += '.nullable()';
+        // Optional only (not nullable)
+        if (optionalFieldBehavior === 'nullable') {
+          // For non-nullable optional fields, .nullable() would change type; keep .optional()
+          resString += '.optional()';
+        } else if (optionalFieldBehavior === 'nullish') {
+          // Non-nullable optional → nullish would accept null; avoid widening; keep .optional()
+          resString += '.optional()';
+        } else {
+          resString += '.optional()';
+        }
       }
+    } else if (field.isNullable) {
+      // Required but nullable
+      resString += '.nullable()';
     }
 
     return [[`  ${fieldName} ${resString} `, field, true]];

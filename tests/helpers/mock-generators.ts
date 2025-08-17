@@ -248,6 +248,7 @@ export class ConfigGenerator {
     return {
       mode: 'full',
       output: './generated/schemas',
+  optionalFieldBehavior: 'optional',
       relationModel: true,
       modelCase: 'PascalCase',
       modelSuffix: 'Schema',
