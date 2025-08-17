@@ -923,6 +923,7 @@ model User {
       try {
         const config = {
           ...ConfigGenerator.createBasicConfig(),
+          optionalFieldBehavior: 'optional',
           models: {
             User: {
               enabled: true,
