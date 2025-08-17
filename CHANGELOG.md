@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.0...v1.12.1) (2025-08-17)
+
+### 🐛 Bug Fixes
+
+* correct array field handling in Zod schema generation ([4043b64](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4043b64d180b6f336bdadb990ba9d102d6c52f00)), closes [#174](https://github.com/omar-dulaimi/prisma-zod-generator/issues/174)
+* remove unused imports in array-fields test ([1b85c6e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1b85c6e9234e7863fb761d70f6bcace33f137937))
+
 ## [1.12.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.11.0...v1.12.0) (2025-08-16)
 
 ### 🚀 Features
