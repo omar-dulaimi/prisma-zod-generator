@@ -527,8 +527,9 @@ ${allFields.join(',\n')}
 
   private buildGroupByFields(model: DMMF.Model): string {
     // For groupBy, we include the actual field values that can be grouped by
+    // Arrays can be grouped by in databases like PostgreSQL, so include them
     const groupableFields = model.fields.filter(f => 
-      f.kind === 'scalar' && !f.isList
+      f.kind === 'scalar'
     );
 
     return groupableFields.map(field => {
@@ -556,12 +557,19 @@ ${allFields.join(',\n')}
       'Boolean': 'z.boolean()',
       'DateTime': 'z.date()',
       'Json': 'z.unknown()',
-  'Bytes': 'z.instanceof(Uint8Array)',
+      'Bytes': 'z.instanceof(Uint8Array)',
       'Decimal': 'z.number()', // or z.string() depending on configuration
       'BigInt': 'z.bigint()'
     };
 
-    return typeMap[field.type] || 'z.unknown()';
+    let baseType = typeMap[field.type] || 'z.unknown()';
+    
+    // Handle arrays
+    if (field.isList) {
+      return `z.array(${baseType})`;
+    }
+    
+    return baseType;
   }
 
   private getBaseModelSchema(model: DMMF.Model): string {
