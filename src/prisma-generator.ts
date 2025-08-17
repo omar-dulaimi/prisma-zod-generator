@@ -1380,23 +1380,52 @@ export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaNam
  * Get Zod type for a Prisma field
  */
 function getZodTypeForField(field: DMMF.Field): string {
+  let baseType: string;
+  
   switch (field.type) {
-    case 'String': return 'string()';
-    case 'Int': return 'number().int()';
-    case 'Float': return 'number()';
-    case 'Boolean': return 'boolean()';
-    case 'DateTime': return 'date()';
-    case 'Json': return 'unknown()';
-    case 'Bytes': return 'instanceof(Uint8Array)';
-    case 'BigInt': return 'bigint()';
-    case 'Decimal': return 'number()'; // Simplified
+    case 'String': 
+      baseType = 'string()'; 
+      break;
+    case 'Int': 
+      baseType = 'number().int()'; 
+      break;
+    case 'Float': 
+      baseType = 'number()'; 
+      break;
+    case 'Boolean': 
+      baseType = 'boolean()'; 
+      break;
+    case 'DateTime': 
+      baseType = 'date()'; 
+      break;
+    case 'Json': 
+      baseType = 'unknown()'; 
+      break;
+    case 'Bytes': 
+      baseType = 'instanceof(Uint8Array)'; 
+      break;
+    case 'BigInt': 
+      baseType = 'bigint()'; 
+      break;
+    case 'Decimal': 
+      baseType = 'number()'; // Simplified
+      break;
     default:
       // Handle enums and other custom types
       if (field.kind === 'enum') {
-        return `enum(${field.type})`;
+        baseType = `enum(${field.type})`;
+      } else {
+        baseType = 'unknown()';
       }
-      return 'unknown()';
+      break;
   }
+  
+  // Handle arrays
+  if (field.isList) {
+    return `array(z.${baseType})`;
+  }
+  
+  return baseType;
 }
 
 /**

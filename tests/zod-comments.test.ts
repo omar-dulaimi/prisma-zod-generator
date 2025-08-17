@@ -317,7 +317,10 @@ model TestTypes {
       const testEnv = await TestEnvironment.createTestEnv('zod-validation-optional-fields');
       
       try {
-        const config = ConfigGenerator.createBasicConfig();
+        const config = {
+          ...ConfigGenerator.createBasicConfig(),
+          optionalFieldBehavior: 'optional'
+        };
         const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
@@ -714,7 +717,10 @@ model User {
       const testEnv = await TestEnvironment.createTestEnv('zod-comments-complex-regex');
       
       try {
-        const config = ConfigGenerator.createBasicConfig();
+        const config = {
+          ...ConfigGenerator.createBasicConfig(),
+          optionalFieldBehavior: 'optional'
+        };
         const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
@@ -767,7 +773,7 @@ model Validation {
           expect(content).toMatch(/password[\s\S]*?\.regex\(/);
           expect(content).toMatch(/phone[\s\S]*?\.regex\(/);
           expect(content).toMatch(/productCode[\s\S]*?\.regex\(/);
-          expect(content).toMatch(/website[\s\S]*?nullable/);
+          expect(content).toMatch(/website[\s\S]*?optional/);
           
           // Should include custom error message
           expect(content).toMatch(/'Invalid product code format'/);
@@ -939,7 +945,10 @@ model Post {
       const testEnv = await TestEnvironment.createTestEnv('native-varchar-basic');
       
       try {
-        const config = ConfigGenerator.createBasicConfig();
+        const config = {
+          ...ConfigGenerator.createBasicConfig(),
+          optionalFieldBehavior: 'optional'
+        };
         const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
@@ -1193,7 +1202,10 @@ model ArrayTest {
       const testEnv = await TestEnvironment.createTestEnv('native-varchar-complex');
       
       try {
-        const config = ConfigGenerator.createBasicConfig();
+        const config = {
+          ...ConfigGenerator.createBasicConfig(),
+          optionalFieldBehavior: 'optional'
+        };
         const configPath = join(testEnv.testDir, 'config.json');
         const schema = `
 generator client {
