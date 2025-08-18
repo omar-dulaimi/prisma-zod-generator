@@ -25,7 +25,9 @@ describe('groupBy _count typing', () => {
       const content = readFileSync(groupByPath, 'utf-8');
 
       // Ensure no z.boolean() in _count and literal(true) is present
-      expect(content).toContain('_count: z.union([ z.literal(true), UserCountAggregateInputObjectSchema ])');
+      expect(content).toContain(
+        '_count: z.union([ z.literal(true), UserCountAggregateInputObjectSchema ])',
+      );
       expect(content).not.toContain('_count: z.union([z.boolean()');
 
       // quick runtime smoke via dynamic import of compiled JS is heavy here; rely on content assertion
