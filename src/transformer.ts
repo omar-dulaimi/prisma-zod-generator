@@ -2152,7 +2152,7 @@ export default class Transformer {
         // Add Prisma type import for explicit type binding
         const crudDirCount = Transformer.getSchemasPath();
         const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
-        let schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
+        const schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
 
         const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${modelName}CountAggregateInputObjectSchema ]).optional() }).strict()`;
 
@@ -2563,7 +2563,7 @@ export default class Transformer {
           path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`),
           `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
             `${modelName}GroupBy`,
-            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: z.union([${modelName}OrderByWithAggregationInputObjectSchema, ${modelName}OrderByWithAggregationInputObjectSchema.array()]).optional(), having: ${modelName}ScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${modelName}ScalarFieldEnumSchema), _count: z.union([z.boolean(), ${modelName}CountAggregateInputObjectSchema]).optional(), _min: ${modelName}MinAggregateInputObjectSchema.optional(), _max: ${modelName}MaxAggregateInputObjectSchema.optional() })`,
+            `z.object({ where: ${modelName}WhereInputObjectSchema.optional(), orderBy: z.union([${modelName}OrderByWithAggregationInputObjectSchema, ${modelName}OrderByWithAggregationInputObjectSchema.array()]).optional(), having: ${modelName}ScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${modelName}ScalarFieldEnumSchema), _count: z.union([ z.literal(true), ${modelName}CountAggregateInputObjectSchema ]).optional(), _min: ${modelName}MinAggregateInputObjectSchema.optional(), _max: ${modelName}MaxAggregateInputObjectSchema.optional() })`,
           )}`,
         );
       }
