@@ -1,3 +1,10 @@
+## [1.12.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.3...v1.12.4) (2025-08-18)
+
+### 🐛 Bug Fixes
+
+* **groupBy:** restrict _count to literal true or CountAggregateInput (align with Prisma Client) ([c5eaec0](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c5eaec077a8aace9c8b23126549c2fb38bcf3705))
+* **groupBy:** use z.literal(true) for _count in groupBy args (disallow false) ([4f4fc68](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4f4fc68c0539de8034abf1b45a69d58cefec97b9))
+
 ## [1.12.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.2...v1.12.3) (2025-08-18)
 
 ### ⚠ BREAKING CHANGES
