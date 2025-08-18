@@ -175,6 +175,7 @@ export default class Transformer {
         upsertOne: ['upsert', 'upsertOne'],
         aggregate: ['aggregate'],
         groupBy: ['groupBy'],
+        count: ['count'],
       };
 
       const allowedOperationNames = operationMapping[operationName] || [operationName];
@@ -1880,6 +1881,7 @@ export default class Transformer {
         upsertOne,
         aggregate,
         groupBy,
+        'count',
       ].filter(Boolean); // Remove undefined operations
 
       Transformer.logOperationFiltering(modelName, allOperations);
@@ -2128,6 +2130,45 @@ export default class Transformer {
         );
       }
 
+      // Generate count schema aligned with Prisma <Model>CountArgs
+      if (Transformer.isOperationEnabled(modelName, 'count')) {
+        // Build imports
+        const imports = [
+          orderByImport,
+          this.generateImportStatement(
+            `${modelName}WhereInputObjectSchema`,
+            `./objects/${modelName}WhereInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}WhereUniqueInputObjectSchema`,
+            `./objects/${modelName}WhereUniqueInput.schema`,
+          ),
+          this.generateImportStatement(
+            `${modelName}CountAggregateInputObjectSchema`,
+            `./objects/${modelName}CountAggregateInput.schema`,
+          ),
+        ];
+
+        // Add Prisma type import for explicit type binding
+        const crudDirCount = Transformer.getSchemasPath();
+        const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
+        let schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
+
+        const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${modelName}CountAggregateInputObjectSchema ]).optional() }).strict()`;
+
+        const dualExports = this.generateDualSchemaExports(
+          modelName,
+          'Count',
+          countSchemaObject,
+          `Prisma.${modelName}CountArgs`,
+        );
+
+        await writeFileSafely(
+          path.join(Transformer.getSchemasPath(), `count${modelName}.schema.ts`),
+          schemaContent + dualExports,
+        );
+      }
+
       if (createOne && Transformer.isOperationEnabled(modelName, 'createOne')) {
         const imports = [
           selectImport,
@@ -2183,7 +2224,6 @@ export default class Transformer {
         } else {
           const imports = [
             selectImport,
-            includeImport,
             this.generateImportStatement(
               `${modelName}CreateManyInputObjectSchema`,
               `./objects/${modelName}CreateManyInput.schema`,
@@ -2193,11 +2233,11 @@ export default class Transformer {
             path.join(Transformer.getSchemasPath(), `createManyAndReturn${modelName}.schema.ts`),
             `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
               `${modelName}CreateManyAndReturn`,
-              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]), ${
+              `z.object({ ${selectZodSchemaLine} data: z.union([ ${modelName}CreateManyInputObjectSchema, z.array(${modelName}CreateManyInputObjectSchema) ]), ${
                 Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
                   ? 'skipDuplicates: z.boolean().optional()'
                   : ''
-              } })`,
+              } }).strict()`,
             )}`,
           );
         }
@@ -2358,7 +2398,6 @@ export default class Transformer {
         } else {
           const imports = [
             selectImport,
-            includeImport,
             this.generateImportStatement(
               `${modelName}UpdateManyMutationInputObjectSchema`,
               `./objects/${modelName}UpdateManyMutationInput.schema`,
@@ -2372,7 +2411,7 @@ export default class Transformer {
             path.join(Transformer.getSchemasPath(), `updateManyAndReturn${modelName}.schema.ts`),
             `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
               `${modelName}UpdateManyAndReturn`,
-              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${modelName}UpdateManyMutationInputObjectSchema, where: ${modelName}WhereInputObjectSchema.optional()  })`,
+              `z.object({ ${selectZodSchemaLine} data: ${modelName}UpdateManyMutationInputObjectSchema, where: ${modelName}WhereInputObjectSchema.optional()  }).strict()`,
             )}`,
           );
         }
