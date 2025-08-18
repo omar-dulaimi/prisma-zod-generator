@@ -1,3 +1,13 @@
+## [1.12.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.2...v1.12.3) (2025-08-18)
+
+### ⚠ BREAKING CHANGES
+
+* **args:** align CountArgs and ...AndReturn schemas with Prisma Client
+
+### 🐛 Bug Fixes
+
+* **args:** align CountArgs and ...AndReturn schemas with Prisma Client ([82e5534](https://github.com/omar-dulaimi/prisma-zod-generator/commit/82e5534ce33cc4383815e06e599e6f6812d73ddb))
+
 ## [1.12.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.1...v1.12.2) (2025-08-17)
 
 ### 🐛 Bug Fixes
