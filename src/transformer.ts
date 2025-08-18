@@ -2152,7 +2152,7 @@ export default class Transformer {
         // Add Prisma type import for explicit type binding
         const crudDirCount = Transformer.getSchemasPath();
         const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
-        let schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
+        const schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
 
         const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${modelName}WhereInputObjectSchema.optional(), cursor: ${modelName}WhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${modelName}CountAggregateInputObjectSchema ]).optional() }).strict()`;
 
