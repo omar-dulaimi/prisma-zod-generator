@@ -1,3 +1,14 @@
+## [1.13.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.4...v1.13.0) (2025-08-20)
+
+### 🚀 Features
+
+* add pureModelsExcludeCircularRelations option to resolve issue [#183](https://github.com/omar-dulaimi/prisma-zod-generator/issues/183) ([2627051](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2627051fc581c195058a559f810a3c4168a33cf2))
+
+### 🐛 Bug Fixes
+
+* **linting:** remove non-null assertions from circular dependency detector ([80ab27b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/80ab27bad0958ce4251b4707aa64600999969402))
+* **naming:** respect custom filePattern in import statements for pure models ([ac3b338](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ac3b3384011d84a0d362015c84e50d0e849e114a)), closes [#183](https://github.com/omar-dulaimi/prisma-zod-generator/issues/183) [#183](https://github.com/omar-dulaimi/prisma-zod-generator/issues/183)
+
 ## [1.12.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.3...v1.12.4) (2025-08-18)
 
 ### 🐛 Bug Fixes
