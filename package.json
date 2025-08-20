@@ -79,7 +79,7 @@
     "docs:build": "node website/scripts/sync-changelog.js && node website/scripts/build-metrics.js && cd website && docusaurus build",
     "docs:serve": "cd website && docusaurus serve",
     "docs:version": "cd website && docusaurus docs:version",
-    "postrelease": "node scripts/auto-docs-version.mjs"
+    "postrelease": "node scripts/auto-docs-version.mjs && cd website && node scripts/sync-changelog.js"
   },
   "author": {
     "name": "Omar Dulaimi",

@@ -49,6 +49,9 @@ jobs:
           DOCS_VERSION_ON_PATCH: '1'
         run: node scripts/auto-docs-version.mjs
 
+      - name: Sync changelog to docs
+        run: cd website && node scripts/sync-changelog.js
+
       - name: Commit and push workflow mutations (if any)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -62,6 +65,7 @@ jobs:
             website/versioned_docs \
             website/versioned_sidebars \
             website/versions.json \
+            website/docs/changelog.md \
             package.json \
             package-lock.json \
             package/package.json \
