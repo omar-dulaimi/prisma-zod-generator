@@ -47,6 +47,7 @@ const sidebars: SidebarsConfig = {
         'recipes/single-file',
         'recipes/granular-per-model',
         'recipes/hide-fields',
+        'recipes/circular-dependency-exclusion',
         'recipes/optional-field-control',
       ],
     },
