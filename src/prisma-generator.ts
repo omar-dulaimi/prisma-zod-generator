@@ -1769,12 +1769,8 @@ async function generatePureModelSchemas(
         const filePath = `${modelsOutputPath}/${fileName}`;
         let content = schemaData.fileContent.content;
         logger.debug(`[pure-models] Preparing ${modelName} -> file ${fileName}`);
-        // Adjust relation imports when legacy .model pattern encountered
-        if (filePattern.includes('.model.ts')) {
-          content = content.replace(/from '\.\/(\w+)\.schema';/g, "from './$1.model';");
-        } else {
-          content = content.replace(/from '\.\/(\w+)\.model';/g, "from './$1.schema';");
-        }
+        // Import paths are now generated correctly by the model generator
+        // No need for post-processing import path adjustments
         // Adjust enum import to correct relative path from models/ -> ../schemas/enums when present
         content = content.replace(/from '\.\/enums\//g, "from '../schemas/enums/");
         // Remove accidental duplicate enum imports (defensive clean-up)
