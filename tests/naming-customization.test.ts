@@ -178,4 +178,49 @@ describe('Naming Customization (experimental)', () => {
       await env.cleanup();
     }
   });
+
+  it('generates correct import paths for custom filePattern with relations', async () => {
+    const env = await TestEnvironment.createTestEnv('naming-import-paths');
+    try {
+      const config = {
+        pureModels: true,
+        pureModelsIncludeRelations: true,
+        pureModelsExcludeCircularRelations: true,
+        naming: {
+          pureModel: {
+            filePattern: '{model}.ts',
+            schemaSuffix: 'Schema',
+            typeSuffix: 'Type',
+          },
+        },
+      };
+      const configName = 'config.json';
+      const schema = prismaSchema(env.outputDir, configName);
+      await (await import('fs')).promises.writeFile(env.schemaPath, schema);
+      await (
+        await import('fs')
+      ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
+
+      await env.runGeneration();
+      const modelsDir = join(env.outputDir, 'schemas', 'models');
+
+      // Check that files are generated with correct names
+      const userFile = join(modelsDir, 'user.ts');
+      const postFile = join(modelsDir, 'post.ts');
+      expect(existsSync(userFile)).toBe(true);
+      expect(existsSync(postFile)).toBe(true);
+
+      // Check that Post imports from User using the correct path pattern
+      const postContent = readFileSync(postFile, 'utf-8');
+      expect(postContent).toMatch(/import { UserSchema } from '\.\/user'/);
+      expect(postContent).not.toMatch(/User\.schema/); // Should not use default naming
+
+      // Check that User has correct export name pattern
+      const userContent = readFileSync(userFile, 'utf-8');
+      expect(userContent).toMatch(/export const UserSchema/);
+      expect(userContent).toMatch(/export type UserType/);
+    } finally {
+      await env.cleanup();
+    }
+  });
 });

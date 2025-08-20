@@ -1679,8 +1679,9 @@ async function generatePureModelSchemas(
       await fs.mkdir(modelsOutputPath, { recursive: true });
     }
 
-    // Import the model generator
+    // Import the model generator and circular dependency detector
     const { PrismaTypeMapper } = await import('./generators/model');
+    const { detectCircularDependencies } = await import('./utils/circular-dependency-detector');
     const provider =
       (
         Transformer as unknown as {
@@ -1688,6 +1689,22 @@ async function generatePureModelSchemas(
         }
       ).config?.provider || 'postgresql';
     const typeMapper = new PrismaTypeMapper({ provider });
+
+    // Detect circular dependencies if the option is enabled
+    let circularDependencyResult: ReturnType<typeof detectCircularDependencies> | null = null;
+    if (config.pureModelsIncludeRelations && config.pureModelsExcludeCircularRelations) {
+      circularDependencyResult = detectCircularDependencies(enabledModels);
+
+      if (circularDependencyResult.cycles.length > 0) {
+        logger.debug(
+          `🔄 Detected ${circularDependencyResult.cycles.length} circular dependencies in model relations`,
+        );
+        logger.debug(
+          'Cycles found:',
+          circularDependencyResult.cycles.map((cycle) => cycle.join(' -> ')),
+        );
+      }
+    }
 
     // Compute per-model field exclusions for pure models
     const getPureExclusions = (modelName: string): Set<string> => {
@@ -1702,6 +1719,18 @@ async function generatePureModelSchemas(
       // New variants.pure.excludeFields
       const variantPure = config.models?.[modelName]?.variants?.pure?.excludeFields || [];
       variantPure.forEach((f: string) => excludes.add(f));
+
+      // Add circular relation exclusions if detected
+      if (circularDependencyResult) {
+        const circularExclusions = circularDependencyResult.excludedRelations.get(modelName);
+        if (circularExclusions) {
+          circularExclusions.forEach((fieldName: string) => {
+            excludes.add(fieldName);
+            logger.debug(`🚫 Excluding circular relation '${fieldName}' from model '${modelName}'`);
+          });
+        }
+      }
+
       return excludes;
     };
 
@@ -1745,12 +1774,8 @@ async function generatePureModelSchemas(
         const filePath = `${modelsOutputPath}/${fileName}`;
         let content = schemaData.fileContent.content;
         logger.debug(`[pure-models] Preparing ${modelName} -> file ${fileName}`);
-        // Adjust relation imports when legacy .model pattern encountered
-        if (filePattern.includes('.model.ts')) {
-          content = content.replace(/from '\.\/(\w+)\.schema';/g, "from './$1.model';");
-        } else {
-          content = content.replace(/from '\.\/(\w+)\.model';/g, "from './$1.schema';");
-        }
+        // Import paths are now generated correctly by the model generator
+        // No need for post-processing import path adjustments
         // Adjust enum import to correct relative path from models/ -> ../schemas/enums when present
         content = content.replace(/from '\.\/enums\//g, "from '../schemas/enums/");
         // Remove accidental duplicate enum imports (defensive clean-up)

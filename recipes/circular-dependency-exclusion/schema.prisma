@@ -1,0 +1,95 @@
+// Example schema demonstrating circular dependency exclusion
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated/schemas"
+  config   = "./zod-generator.config.json"
+}
+
+// Bidirectional one-to-one relationship (Deal ↔ Opportunity)
+model Deal {
+  id          String  @id @default(uuid())
+  name        String?
+  status      String  @default("DRAFT")
+  amount      Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Optional back-reference - this will be excluded to break circular dependency
+  opportunity Opportunity?
+}
+
+model Opportunity {
+  id             String   @id @default(uuid()) 
+  name           String
+  amount         Float?
+  description    String?
+  closeDate      DateTime?
+  probability    Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Required foreign key relationship - this will be preserved
+  dealId         String?  @unique
+  deal           Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+}
+
+// One-to-many with potential circular issues
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // These will be excluded to prevent circular dependencies
+  profile   Profile?
+  posts     Post[]
+  
+  // Self-referencing relationships - one will be excluded
+  managerId String?
+  manager   User?     @relation("UserManager", fields: [managerId], references: [id])
+  reports   User[]    @relation("UserManager")
+}
+
+model Profile {
+  id     String @id @default(uuid())
+  bio    String?
+  avatar String?
+  
+  // Required FK relationship - this will be preserved
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  // Required FK relationship - this will be preserved  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+// Self-referencing hierarchy
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  
+  // Self-referencing - one direction will be excluded
+  parentId    String?
+  parent      Category?  @relation("CategoryParent", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryParent")
+}

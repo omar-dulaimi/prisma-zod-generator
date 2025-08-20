@@ -2131,6 +2131,15 @@ export class PrismaTypeMapper {
     if (imports.includes('z')) {
       lines.push("import { z } from 'zod';");
     }
+
+    // Get naming configuration for proper import path generation
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { resolvePureModelNaming, applyPattern } = require('../utils/namingResolver');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const transformer = require('../transformer').default;
+    const config = transformer.getGeneratorConfig?.();
+    const namingResolved = resolvePureModelNaming(config);
+
     // Identify enum fields by validation marker added in mapEnumType ("// Enum type:")
     const enumNames = new Set(
       composition.fields
@@ -2156,7 +2165,19 @@ export class PrismaTypeMapper {
     );
     relatedSchemaImports.forEach((schemaImport) => {
       const base = schemaImport.replace(/Schema$/, '');
-      lines.push(`import { ${schemaImport} } from './${base}.schema';`);
+
+      // Generate the correct file path using the naming pattern
+      const fileName = applyPattern(
+        namingResolved.filePattern,
+        base,
+        namingResolved.schemaSuffix,
+        namingResolved.typeSuffix,
+      );
+
+      // Remove file extension for import path
+      const importPath = fileName.replace(/\.(ts|js)$/, '');
+
+      lines.push(`import { ${schemaImport} } from './${importPath}';`);
     });
 
     return lines;
