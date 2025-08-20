@@ -38,6 +38,9 @@ export interface GeneratorConfig {
   /** When pureModels are enabled, include relation fields in generated model objects. Default: false (relations omitted). */
   pureModelsIncludeRelations?: boolean;
 
+  /** When pureModelsIncludeRelations is true, exclude relation fields that would create circular references. Default: false */
+  pureModelsExcludeCircularRelations?: boolean;
+
   /** Strategy for DateTime scalar mapping in pure models and variants. Default: 'date' */
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
 

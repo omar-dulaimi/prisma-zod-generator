@@ -46,6 +46,7 @@ Quick navigation:
 | `inferCreateArgsFromSchemas` | `boolean` | `false` | `false` | Build create args from generated schemas instead of Prisma types. |
 | `pureModelsLean` | `boolean` | `true` | `true` | When `pureModels` are enabled, emit a lean form (no JSDoc header blocks, statistics, or field doc comments). Set `false` to restore rich docs. |
 | `pureModelsIncludeRelations` | `boolean` | `false` | `false` | When `pureModels` are enabled, include relation fields (lazy refs). Default omits relations for slimmer pure models. |
+| `pureModelsExcludeCircularRelations` | `boolean` | `false` | `false` | When `pureModelsIncludeRelations` is true, exclude relation fields that would create circular references. Keeps foreign key fields but omits relation object fields to avoid TypeScript circular dependency errors. |
 | `dateTimeStrategy` | `"date" | "coerce" | "isoString"` | `"date"` | `"date"` | Maps Prisma `DateTime` scalars in generated schemas. See DateTime Strategies section. |
 | `optionalFieldBehavior` | `"nullish" | "optional" | "nullable"` | `"nullish"` | `"nullish"` | Controls how optional Prisma fields are mapped to Zod validations. See Optional Field Strategies section. |
 

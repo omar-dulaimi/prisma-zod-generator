@@ -31,4 +31,6 @@ You can also define **array-based custom variants** with suffix, exclusions, and
 - `pureModelsOnlyMode`: pureModels + all variants disabled (custom mode) ⇒ only pure models emitted.
 - `pureVariantOnlyMode`: pureModels + only pure variant enabled ⇒ skip CRUD/input/result scaffolding.
 
+**Circular Dependency Resolution**: When `pureModelsIncludeRelations` is enabled, `pureModelsExcludeCircularRelations` can intelligently exclude problematic bidirectional relations to avoid TypeScript circular dependency errors while preserving foreign keys.
+
 **Naming Presets** drive file & export shapes for pure models (`naming.preset` + overrides). See reference page.

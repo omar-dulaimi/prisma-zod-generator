@@ -49,6 +49,7 @@ export class DefaultConfigurationManager {
       pureModels: false, // Default to false, can be overridden by user config
       pureModelsLean: true,
       pureModelsIncludeRelations: false,
+      pureModelsExcludeCircularRelations: false,
       dateTimeStrategy: 'date',
       optionalFieldBehavior: 'nullish',
       naming: {

@@ -20,6 +20,7 @@ export interface ExtendedGeneratorOptions {
   placeSingleFileAtRoot?: boolean; // When single file, place it at output root (default true)
   pureModelsLean?: boolean; // Lean pure models (suppress docs)
   pureModelsIncludeRelations?: boolean; // Include relation fields when generating pure models (default false)
+  pureModelsExcludeCircularRelations?: boolean; // When pureModelsIncludeRelations is true, exclude circular relations (default false)
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString'; // DateTime scalar strategy
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish'; // How to handle optional fields
 
@@ -76,6 +77,12 @@ export function parseGeneratorOptions(
     options.pureModelsIncludeRelations = parseBoolean(
       generatorConfig.pureModelsIncludeRelations,
       'pureModelsIncludeRelations',
+    );
+  }
+  if (generatorConfig.pureModelsExcludeCircularRelations !== undefined) {
+    options.pureModelsExcludeCircularRelations = parseBoolean(
+      generatorConfig.pureModelsExcludeCircularRelations,
+      'pureModelsExcludeCircularRelations',
     );
   }
   if (generatorConfig.dateTimeStrategy !== undefined) {
@@ -328,6 +335,9 @@ export function generatorOptionsToConfigOverrides(
   if (options.pureModelsIncludeRelations !== undefined) {
     overrides.pureModelsIncludeRelations = options.pureModelsIncludeRelations;
   }
+  if (options.pureModelsExcludeCircularRelations !== undefined) {
+    overrides.pureModelsExcludeCircularRelations = options.pureModelsExcludeCircularRelations;
+  }
   if (options.dateTimeStrategy) {
     overrides.dateTimeStrategy = options.dateTimeStrategy;
   }
@@ -352,6 +362,7 @@ export interface GeneratorConfigOverrides {
   placeSingleFileAtRoot?: boolean;
   pureModelsLean?: boolean;
   pureModelsIncludeRelations?: boolean;
+  pureModelsExcludeCircularRelations?: boolean;
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
   variants?: {

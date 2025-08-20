@@ -15,5 +15,6 @@ Flow:
 Lean vs relations:
 - `pureModelsLean` keeps scalar + enum fields (default true).
 - `pureModelsIncludeRelations` can include relation lazy refs.
+- `pureModelsExcludeCircularRelations` excludes problematic circular relations when `pureModelsIncludeRelations` is true.
 
 Bytes default: base64 string; set `complexTypes.bytes.useBase64=false` (in config) for Uint8Array.

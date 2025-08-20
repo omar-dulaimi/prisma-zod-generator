@@ -1,0 +1,28 @@
+{
+  "mode": "custom",
+  "pureModels": true,
+  "pureModelsIncludeRelations": true,
+  "pureModelsExcludeCircularRelations": true,
+  "variants": {
+    "pure": { 
+      "enabled": true,
+      "suffix": ".model"
+    },
+    "input": { 
+      "enabled": false 
+    },
+    "result": { 
+      "enabled": false 
+    }
+  },
+  "emit": {
+    "objects": false,
+    "crud": false,
+    "variants": false
+  },
+  "naming": {
+    "pureModel": { 
+      "filePattern": "{Model}.model.ts" 
+    }
+  }
+}

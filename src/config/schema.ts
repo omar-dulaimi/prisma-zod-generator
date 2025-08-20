@@ -72,6 +72,12 @@ export const ConfigurationSchema: JSONSchema7 = {
       description:
         'When pureModels is true, include relation fields. Default false (omit relation fields for slimmer models)',
     },
+    pureModelsExcludeCircularRelations: {
+      type: 'boolean',
+      default: false,
+      description:
+        'When pureModelsIncludeRelations is true, exclude relation fields that would create circular references. Keeps foreign key fields but omits relation object fields to avoid TypeScript circular dependency errors.',
+    },
     naming: {
       type: 'object',
       additionalProperties: false,

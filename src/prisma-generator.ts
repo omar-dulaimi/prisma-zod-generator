@@ -1679,8 +1679,9 @@ async function generatePureModelSchemas(
       await fs.mkdir(modelsOutputPath, { recursive: true });
     }
 
-    // Import the model generator
+    // Import the model generator and circular dependency detector
     const { PrismaTypeMapper } = await import('./generators/model');
+    const { detectCircularDependencies } = await import('./utils/circular-dependency-detector');
     const provider =
       (
         Transformer as unknown as {
@@ -1688,6 +1689,17 @@ async function generatePureModelSchemas(
         }
       ).config?.provider || 'postgresql';
     const typeMapper = new PrismaTypeMapper({ provider });
+
+    // Detect circular dependencies if the option is enabled
+    let circularDependencyResult: ReturnType<typeof detectCircularDependencies> | null = null;
+    if (config.pureModelsIncludeRelations && config.pureModelsExcludeCircularRelations) {
+      circularDependencyResult = detectCircularDependencies(enabledModels);
+      
+      if (circularDependencyResult.cycles.length > 0) {
+        logger.debug(`🔄 Detected ${circularDependencyResult.cycles.length} circular dependencies in model relations`);
+        logger.debug('Cycles found:', circularDependencyResult.cycles.map(cycle => cycle.join(' -> ')));
+      }
+    }
 
     // Compute per-model field exclusions for pure models
     const getPureExclusions = (modelName: string): Set<string> => {
@@ -1702,6 +1714,18 @@ async function generatePureModelSchemas(
       // New variants.pure.excludeFields
       const variantPure = config.models?.[modelName]?.variants?.pure?.excludeFields || [];
       variantPure.forEach((f: string) => excludes.add(f));
+      
+      // Add circular relation exclusions if detected
+      if (circularDependencyResult) {
+        const circularExclusions = circularDependencyResult.excludedRelations.get(modelName);
+        if (circularExclusions) {
+          circularExclusions.forEach((fieldName: string) => {
+            excludes.add(fieldName);
+            logger.debug(`🚫 Excluding circular relation '${fieldName}' from model '${modelName}'`);
+          });
+        }
+      }
+      
       return excludes;
     };
 
