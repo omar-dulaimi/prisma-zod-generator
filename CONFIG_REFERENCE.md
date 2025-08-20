@@ -16,6 +16,7 @@ Quick navigation:
 - [Variants](#variants)
 - [Per‑model overrides](#models)
 - [Single-file mode specifics](#single-file-mode)
+- [Zod import target](#zod-import-target)
 - [Field exclusion precedence](#field-exclusion-logic-summary)
 - [Patterns & examples](#recommended-config-patterns)
 - [Troubleshooting / FAQ](#troubleshooting)
@@ -177,6 +178,22 @@ Additional keys:
 Behavioral differences:
 - Index barrels ignored (content is concatenated).
 - Pure models can be inlined exclusively if variants disabled (optimization).
+
+## Zod import target
+
+Control how the generator imports Zod to support consumers on Zod v3 or Zod v4.
+
+| Option | Type | Default | Effect |
+|--------|------|---------|--------|
+| `zodImportTarget` | `"auto" | "v3" | "v4"` | `"auto"` | Chooses the import statement emitted in generated files. |
+
+Mapping:
+- `auto` (and `v3`): `import { z } from 'zod'` (works with Zod v3 and v4)
+- `v4`: `import * as z from 'zod/v4'`
+
+Notes:
+- The package now declares a peerDependency on Zod: `>=3.25.0 <5`. Install your preferred Zod version in your app.
+- Single-file bundles hoist a single Zod import at the top using the same strategy.
 
 ## Field Exclusion Logic Summary
 Order of application:

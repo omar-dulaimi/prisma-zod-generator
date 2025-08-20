@@ -2129,7 +2129,13 @@ export class PrismaTypeMapper {
 
     // Zod import
     if (imports.includes('z')) {
-      lines.push("import { z } from 'zod';");
+      // Defer to Transformer import strategy to honor zodImportTarget
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const transformer = require('../transformer').default;
+      const importLine = transformer.prototype.generateImportZodStatement
+        ? transformer.prototype.generateImportZodStatement.call(transformer)
+        : "import { z } from 'zod';\n";
+      lines.push(importLine.trimEnd());
     }
 
     // Get naming configuration for proper import path generation
@@ -2153,7 +2159,7 @@ export class PrismaTypeMapper {
     );
     enumSchemaImports.forEach((imp) => {
       const enumBase = imp.replace(/Schema$/, '');
-      lines.push(`import { ${imp} } from '../schemas/enums/${enumBase}.schema';`);
+      lines.push(`import { ${imp} } from '../enums/${enumBase}.schema';`);
     });
 
     // Related model schema imports (exclude current schema + enums)

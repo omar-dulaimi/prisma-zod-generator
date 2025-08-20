@@ -44,7 +44,9 @@ function transformContentForSingleFile(filePath: string, source: string): string
   const kept: string[] = [];
   let inJsonSkip = false;
   const relImportRe = /^\s*import\s+[^'";]+from\s+['"](\.\.?\/)[^'"]+['"];?\s*$/;
-  const zodImportRe = /^\s*import\s+\{\s*z\s*\}\s+from\s+['"]zod['"];?\s*$/;
+  // Detect Zod import variant (zod or zod/v4) importing z
+  const zodImportRe =
+    /^\s*import\s+(?:\{\s*z\s*\}|\*\s+as\s+z)\s+from\s+['"](?:zod(?:\/v4)?)['"];?\s*$/;
   const prismaTypeImportRe =
     /^\s*import\s+type\s+\{\s*Prisma\s*\}\s+from\s+['"]@prisma\/client['"];?\s*$/;
   const prismaValueImportRe =
@@ -174,7 +176,19 @@ export async function flushSingleFile(): Promise<void> {
     ' */',
     '',
   ];
-  if (needsZodImport) header.push(`import { z } from 'zod';`);
+  if (needsZodImport) {
+    // Dynamically resolve Zod import based on generator config
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const transformer = require('../transformer').default;
+      const zImport = transformer?.prototype?.generateImportZodStatement
+        ? transformer.prototype.generateImportZodStatement.call(transformer)
+        : "import { z } from 'zod';\n";
+      header.push(zImport.trim());
+    } catch {
+      header.push(`import { z } from 'zod';`);
+    }
+  }
   if (needsPrismaTypeImport) header.push(`import type { Prisma } from '${prismaImportBase}';`);
   if (prismaValueImports.size > 0)
     header.push(

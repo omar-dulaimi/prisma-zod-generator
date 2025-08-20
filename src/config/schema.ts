@@ -240,6 +240,14 @@ export const ConfigurationSchema: JSONSchema7 = {
         },
       },
     },
+
+    zodImportTarget: {
+      type: 'string',
+      enum: ['auto', 'v3', 'v4'],
+      default: 'auto',
+      description:
+        "How to import Zod in generated code: 'auto'|'v3' uses import { z } from 'zod'; 'v4' uses import * as z from 'zod/v4'",
+    },
   },
 
   definitions: {
