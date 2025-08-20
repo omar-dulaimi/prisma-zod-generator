@@ -1,32 +1,28 @@
 /**
  * Feature test suite for pureModelsExcludeCircularRelations option
- * 
+ *
  * This feature solves issue #183: Self Referenced Schema Models
- * 
+ *
  * When pureModelsIncludeRelations=true, bidirectional relationships can create
  * TypeScript circular dependency errors like:
- * "'DealSchema' implicitly has type 'any' because it does not have a type 
+ * "'DealSchema' implicitly has type 'any' because it does not have a type
  * annotation and is referenced directly or indirectly in its own initializer"
- * 
- * The pureModelsExcludeCircularRelations option intelligently excludes 
+ *
+ * The pureModelsExcludeCircularRelations option intelligently excludes
  * specific relation fields to break cycles while preserving:
  * - Foreign key fields (dealId, userId, etc.)
  * - Required relations over optional ones
  * - Single relations over list relations
  * - Forward references over back-references
- * 
- * This allows users to migrate from zod-prisma which "would have just used 
+ *
+ * This allows users to migrate from zod-prisma which "would have just used
  * dealId and not included the self reference to the DealSchema."
  */
 
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
-import {
-  TestEnvironment,
-  ConfigGenerator,
-  GENERATION_TIMEOUT,
-} from './helpers';
+import { TestEnvironment, ConfigGenerator, GENERATION_TIMEOUT } from './helpers';
 import { execSync } from 'child_process';
 
 describe('Circular Dependency Exclusion Feature', () => {
@@ -104,24 +100,24 @@ model Opportunity {
           await testEnv.runGeneration();
 
           const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
-          
+
           // Check Deal model - should include opportunity relation
           const dealModelPath = join(modelsDir, 'Deal.model.ts');
           expect(existsSync(dealModelPath)).toBe(true);
-          
+
           const dealContent = readFileSync(dealModelPath, 'utf-8');
           expect(dealContent).toMatch(/opportunity:/);
           expect(dealContent).toMatch(/z\.lazy\(\(\) => OpportunitySchema\)/);
-          
+
           // Check Opportunity model - should exclude circular 'deal' relation but keep 'dealId'
           const opportunityModelPath = join(modelsDir, 'Opportunity.model.ts');
           expect(existsSync(opportunityModelPath)).toBe(true);
-          
+
           const opportunityContent = readFileSync(opportunityModelPath, 'utf-8');
           expect(opportunityContent).toMatch(/dealId:/); // Foreign key preserved
           expect(opportunityContent).not.toMatch(/deal:/); // Circular relation excluded
           expect(opportunityContent).not.toMatch(/z\.lazy\(\(\) => DealSchema\)/); // No circular import
-          
+
           // Verify no circular import in Opportunity
           expect(opportunityContent).not.toMatch(/import.*DealSchema/);
         } finally {
@@ -209,12 +205,12 @@ model Project {
           await testEnv.runGeneration();
 
           const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
-          
+
           // All models should be generated
           const userModelPath = join(modelsDir, 'User.model.ts');
           const companyModelPath = join(modelsDir, 'Company.model.ts');
           const projectModelPath = join(modelsDir, 'Project.model.ts');
-          
+
           expect(existsSync(userModelPath)).toBe(true);
           expect(existsSync(companyModelPath)).toBe(true);
           expect(existsSync(projectModelPath)).toBe(true);
@@ -230,7 +226,7 @@ model Project {
           expect(projectContent).toMatch(/ownerId:/);
 
           // At least some relations should be preserved
-          const hasRelations = 
+          const hasRelations =
             (userContent.includes('company:') ? 1 : 0) +
             (userContent.includes('projects:') ? 1 : 0) +
             (companyContent.includes('users:') ? 1 : 0) +
@@ -307,21 +303,21 @@ model Category {
 
           const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
           const categoryModelPath = join(modelsDir, 'Category.model.ts');
-          
+
           expect(existsSync(categoryModelPath)).toBe(true);
-          
+
           const categoryContent = readFileSync(categoryModelPath, 'utf-8');
-          
+
           // Foreign key should be preserved
           expect(categoryContent).toMatch(/parentId:/);
-          
+
           // Should have either parent OR children relation (not both to avoid self-circular)
           const hasParent = categoryContent.includes('parent:');
           const hasChildren = categoryContent.includes('children:');
-          
+
           // Can't have both due to self-referencing circular dependency
           expect(hasParent && hasChildren).toBe(false);
-          
+
           // Should have at least one
           expect(hasParent || hasChildren).toBe(true);
         } finally {
@@ -392,22 +388,22 @@ model Opportunity {
           await testEnv.runGeneration();
 
           const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
-          
+
           // Both models should include ALL relations (including circular ones)
           const dealModelPath = join(modelsDir, 'Deal.model.ts');
           const opportunityModelPath = join(modelsDir, 'Opportunity.model.ts');
-          
+
           expect(existsSync(dealModelPath)).toBe(true);
           expect(existsSync(opportunityModelPath)).toBe(true);
-          
+
           const dealContent = readFileSync(dealModelPath, 'utf-8');
           const opportunityContent = readFileSync(opportunityModelPath, 'utf-8');
-          
+
           // Both should have their relation fields (creating circular dependency)
           expect(dealContent).toMatch(/opportunity:/);
           expect(opportunityContent).toMatch(/deal:/);
           expect(opportunityContent).toMatch(/dealId:/);
-          
+
           // Both should have circular imports
           expect(dealContent).toMatch(/import.*OpportunitySchema/);
           expect(opportunityContent).toMatch(/import.*DealSchema/);
@@ -479,20 +475,20 @@ model Opportunity {
           await testEnv.runGeneration();
 
           const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
-          
+
           const dealModelPath = join(modelsDir, 'Deal.model.ts');
           const opportunityModelPath = join(modelsDir, 'Opportunity.model.ts');
-          
+
           expect(existsSync(dealModelPath)).toBe(true);
           expect(existsSync(opportunityModelPath)).toBe(true);
-          
+
           const dealContent = readFileSync(dealModelPath, 'utf-8');
           const opportunityContent = readFileSync(opportunityModelPath, 'utf-8');
-          
+
           // No relations should be included at all (since pureModelsIncludeRelations=false)
           expect(dealContent).not.toMatch(/opportunity:/);
           expect(opportunityContent).not.toMatch(/deal:/);
-          
+
           // But foreign keys should still be present
           expect(opportunityContent).toMatch(/dealId:/);
         } finally {
@@ -580,39 +576,39 @@ model Post {
           await testEnv.runGeneration();
 
           const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
-          
+
           const userModelPath = join(modelsDir, 'User.model.ts');
           const profileModelPath = join(modelsDir, 'Profile.model.ts');
           const postModelPath = join(modelsDir, 'Post.model.ts');
-          
+
           expect(existsSync(userModelPath)).toBe(true);
           expect(existsSync(profileModelPath)).toBe(true);
           expect(existsSync(postModelPath)).toBe(true);
-          
+
           const userContent = readFileSync(userModelPath, 'utf-8');
           const profileContent = readFileSync(profileModelPath, 'utf-8');
           const postContent = readFileSync(postModelPath, 'utf-8');
-          
+
           // Smart exclusions should preserve FK-side relations and exclude back-references
           expect(profileContent).toMatch(/user:/); // FK side preserved
           expect(postContent).toMatch(/author:/); // FK side preserved
-          
+
           // Back-references should be excluded to prevent circular dependencies
           expect(userContent).not.toMatch(/profile:/); // Back-reference excluded
           expect(userContent).not.toMatch(/posts:/); // Back-reference excluded
-          
+
           // Foreign keys should always be preserved
           expect(userContent).toMatch(/managerId:/);
           expect(profileContent).toMatch(/userId:/);
           expect(postContent).toMatch(/authorId:/);
-          
+
           // Self-referencing circular relations should be partially excluded
           const hasManager = userContent.includes('manager:');
           const hasReports = userContent.includes('reports:');
-          
+
           // Should not have both (to avoid circular dependency on self)
           expect(hasManager && hasReports).toBe(false);
-          
+
           // Should have at least one self-reference preserved
           expect(hasManager || hasReports).toBe(true);
         } finally {
@@ -687,7 +683,7 @@ model Opportunity {
           await testEnv.runGeneration();
 
           const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
-          
+
           // Verify files exist
           const dealModelPath = join(modelsDir, 'Deal.model.ts');
           const opportunityModelPath = join(modelsDir, 'Opportunity.model.ts');
@@ -699,27 +695,36 @@ model Opportunity {
             // Use npx tsc to check if the files compile without errors
             // We use --noEmit to just check compilation without generating JS files
             const tscCommand = `cd "${modelsDir}" && npx tsc --noEmit --strict --skipLibCheck Deal.model.ts Opportunity.model.ts`;
-            execSync(tscCommand, { 
+            execSync(tscCommand, {
               stdio: 'pipe',
               cwd: testEnv.testDir,
               timeout: 30000,
             });
-            
+
             // If we reach here, compilation succeeded
             expect(true).toBe(true);
           } catch (error) {
             // Check if the error is specifically about circular dependencies
             const errorOutput = error.toString();
-            const hasCircularError = 
-              errorOutput.includes('implicitly has type \'any\' because it does not have a type annotation and is referenced directly or indirectly in its own initializer') ||
-              errorOutput.includes('Function implicitly has return type \'any\' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions');
-            
+            const hasCircularError =
+              errorOutput.includes(
+                "implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer",
+              ) ||
+              errorOutput.includes(
+                "Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions",
+              );
+
             if (hasCircularError) {
-              throw new Error(`TypeScript compilation failed with circular dependency errors: ${errorOutput}`);
+              throw new Error(
+                `TypeScript compilation failed with circular dependency errors: ${errorOutput}`,
+              );
             }
-            
+
             // Allow other TypeScript errors (like missing dependencies) but log them
-            console.warn('TypeScript compilation had non-circular errors (expected in test environment):', errorOutput);
+            console.warn(
+              'TypeScript compilation had non-circular errors (expected in test environment):',
+              errorOutput,
+            );
           }
         } finally {
           await testEnv.cleanup();

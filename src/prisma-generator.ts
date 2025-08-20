@@ -1694,10 +1694,15 @@ async function generatePureModelSchemas(
     let circularDependencyResult: ReturnType<typeof detectCircularDependencies> | null = null;
     if (config.pureModelsIncludeRelations && config.pureModelsExcludeCircularRelations) {
       circularDependencyResult = detectCircularDependencies(enabledModels);
-      
+
       if (circularDependencyResult.cycles.length > 0) {
-        logger.debug(`🔄 Detected ${circularDependencyResult.cycles.length} circular dependencies in model relations`);
-        logger.debug('Cycles found:', circularDependencyResult.cycles.map(cycle => cycle.join(' -> ')));
+        logger.debug(
+          `🔄 Detected ${circularDependencyResult.cycles.length} circular dependencies in model relations`,
+        );
+        logger.debug(
+          'Cycles found:',
+          circularDependencyResult.cycles.map((cycle) => cycle.join(' -> ')),
+        );
       }
     }
 
@@ -1714,7 +1719,7 @@ async function generatePureModelSchemas(
       // New variants.pure.excludeFields
       const variantPure = config.models?.[modelName]?.variants?.pure?.excludeFields || [];
       variantPure.forEach((f: string) => excludes.add(f));
-      
+
       // Add circular relation exclusions if detected
       if (circularDependencyResult) {
         const circularExclusions = circularDependencyResult.excludedRelations.get(modelName);
@@ -1725,7 +1730,7 @@ async function generatePureModelSchemas(
           });
         }
       }
-      
+
       return excludes;
     };
 

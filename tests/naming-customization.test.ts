@@ -203,7 +203,7 @@ describe('Naming Customization (experimental)', () => {
 
       await env.runGeneration();
       const modelsDir = join(env.outputDir, 'schemas', 'models');
-      
+
       // Check that files are generated with correct names
       const userFile = join(modelsDir, 'user.ts');
       const postFile = join(modelsDir, 'post.ts');

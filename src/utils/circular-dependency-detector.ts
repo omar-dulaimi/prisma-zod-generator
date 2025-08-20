@@ -41,7 +41,7 @@ export class CircularDependencyDetector {
   private buildRelationGraph(): void {
     for (const model of this.models) {
       const relations: ModelRelation[] = [];
-      
+
       for (const field of model.fields) {
         // Only process relation fields (kind === 'object')
         if (field.kind === 'object') {
@@ -55,7 +55,7 @@ export class CircularDependencyDetector {
           });
         }
       }
-      
+
       this.relationGraph.set(model.name, relations);
     }
   }
@@ -66,49 +66,50 @@ export class CircularDependencyDetector {
    */
   private detectProblematicCycles(): string[][] {
     const problematicCycles: string[][] = [];
-    
+
     // Find direct bidirectional relationships (A -> B and B -> A)
     for (const model of this.models) {
       const modelRelations = this.relationGraph.get(model.name) || [];
-      
+
       for (const relation of modelRelations) {
         const targetModel = relation.toModel;
-        
+
         // Skip self-references for now (handle separately)
         if (targetModel === model.name) continue;
-        
+
         // Check if target model has a relation back to this model
         const targetRelations = this.relationGraph.get(targetModel) || [];
-        const backReference = targetRelations.find(r => r.toModel === model.name);
-        
+        const backReference = targetRelations.find((r) => r.toModel === model.name);
+
         if (backReference) {
           // Found bidirectional relationship - this is potentially problematic
           // Only add if we haven't already added the reverse
-          const cycleExists = problematicCycles.some(cycle => 
-            cycle.length === 3 && 
-            cycle[0] === targetModel && 
-            cycle[1] === model.name && 
-            cycle[2] === targetModel
+          const cycleExists = problematicCycles.some(
+            (cycle) =>
+              cycle.length === 3 &&
+              cycle[0] === targetModel &&
+              cycle[1] === model.name &&
+              cycle[2] === targetModel,
           );
-          
+
           if (!cycleExists) {
             problematicCycles.push([model.name, targetModel, model.name]);
           }
         }
       }
     }
-    
+
     // Handle self-referencing models
     for (const model of this.models) {
       const modelRelations = this.relationGraph.get(model.name) || [];
-      const selfReferences = modelRelations.filter(r => r.toModel === model.name);
-      
+      const selfReferences = modelRelations.filter((r) => r.toModel === model.name);
+
       if (selfReferences.length > 1) {
         // Multiple self-references create circular dependencies
         problematicCycles.push([model.name, model.name]);
       }
     }
-    
+
     return problematicCycles;
   }
 
@@ -125,8 +126,8 @@ export class CircularDependencyDetector {
       if (cycle.length === 2 && cycle[0] === cycle[1]) {
         const modelName = cycle[0];
         const relations = this.relationGraph.get(modelName) || [];
-        const selfReferences = relations.filter(r => r.toModel === modelName);
-        
+        const selfReferences = relations.filter((r) => r.toModel === modelName);
+
         if (selfReferences.length > 1) {
           // For multiple self-references, exclude all but one
           // Keep the first one, exclude the rest
@@ -134,7 +135,7 @@ export class CircularDependencyDetector {
             if (!exclusions.has(modelName)) {
               exclusions.set(modelName, new Set());
             }
-            exclusions.get(modelName)!.add(selfReferences[i].fieldName);
+            exclusions.get(modelName)?.add(selfReferences[i].fieldName);
           }
         }
         continue;
@@ -144,21 +145,21 @@ export class CircularDependencyDetector {
       if (cycle.length === 3 && cycle[0] === cycle[2]) {
         const modelA = cycle[0];
         const modelB = cycle[1];
-        
+
         const relationsA = this.relationGraph.get(modelA) || [];
         const relationsB = this.relationGraph.get(modelB) || [];
-        
-        const relationAtoB = relationsA.find(r => r.toModel === modelB);
-        const relationBtoA = relationsB.find(r => r.toModel === modelA);
-        
+
+        const relationAtoB = relationsA.find((r) => r.toModel === modelB);
+        const relationBtoA = relationsB.find((r) => r.toModel === modelA);
+
         if (relationAtoB && relationBtoA) {
           // Decide which relation to exclude based on priority:
           // 1. Prefer to keep required relations over optional ones
           // 2. Prefer to keep non-list relations over list relations
           // 3. If equal, exclude the "back-reference" (second relation found)
-          
+
           let excludeRelation: { model: string; field: string } | null = null;
-          
+
           if (relationAtoB.isOptional && !relationBtoA.isOptional) {
             // A->B is optional, B->A is required: exclude A->B
             excludeRelation = { model: modelA, field: relationAtoB.fieldName };
@@ -180,12 +181,12 @@ export class CircularDependencyDetector {
               excludeRelation = { model: modelB, field: relationBtoA.fieldName };
             }
           }
-          
+
           if (excludeRelation) {
             if (!exclusions.has(excludeRelation.model)) {
               exclusions.set(excludeRelation.model, new Set());
             }
-            exclusions.get(excludeRelation.model)!.add(excludeRelation.field);
+            exclusions.get(excludeRelation.model)?.add(excludeRelation.field);
           }
         }
       }
