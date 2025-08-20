@@ -8,6 +8,7 @@ Model enable check: `isModelEnabled` (minimal mode defaults to disabled unless c
 Operation filtering: `isOperationEnabled` with alias mapping (createOne→create, etc.). Minimal mode reduces allowed ops unless overridden.
 
 Field filtering precedence (stop at first include win):
+
 1. `model.fields.include`
 2. Model variant `excludeFields`
 3. Legacy `model.fields.exclude`

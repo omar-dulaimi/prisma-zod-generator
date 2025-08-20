@@ -6,17 +6,19 @@ title: Usage Patterns
 Common integration scenarios.
 
 ## tRPC Procedures
+
 ```ts
 import { UserInputSchema, UserResultSchema } from './prisma/generated/schemas';
 
 export const userRouter = t.router({
   create: t.procedure
     .input(UserInputSchema)
-    .mutation(({ ctx, input }) => ctx.prisma.user.create({ data: input }))
+    .mutation(({ ctx, input }) => ctx.prisma.user.create({ data: input })),
 });
 ```
 
 ## Express / Fastify
+
 ```ts
 app.post('/users', (req, res) => {
   const parsed = UserInputSchema.parse(req.body);
@@ -25,6 +27,7 @@ app.post('/users', (req, res) => {
 ```
 
 ## Next.js Route Handler
+
 ```ts
 export async function POST(req: Request) {
   const body = await req.json();
@@ -34,4 +37,5 @@ export async function POST(req: Request) {
 ```
 
 ## Form Validation
+
 Use `safeParse` for user-facing error messaging.

@@ -1,6 +1,6 @@
 ---
 id: zod-comments
-title: "@zod Comment Annotations"
+title: '@zod Comment Annotations'
 ---
 
 Use triple-slash Prisma doc comments with `@zod` to append validations.
@@ -14,11 +14,14 @@ model User {
 ```
 
 Result:
+
 ```ts
-export const UserSchema = z.object({
-  email: z.string().email().min(5),
-  // ...
-}).strict();
+export const UserSchema = z
+  .object({
+    email: z.string().email().min(5),
+    // ...
+  })
+  .strict();
 ```
 
 Annotations are concatenated after base type; unsafe expressions are not executed (string append model). Keep rules pure.
@@ -36,13 +39,20 @@ model AiChat {
 ```
 
 Result (excerpt):
+
 ```ts
-messages: z.array(z.object({ role: z.enum(['user','assistant','system']), parts: z.array(z.object({ type: z.enum(['text','image']), text: z.string() })) })).default("[]")
+messages: z.array(
+  z.object({
+    role: z.enum(['user', 'assistant', 'system']),
+    parts: z.array(z.object({ type: z.enum(['text', 'image']), text: z.string() })),
+  }),
+).default('[]');
 ```
 
 This short-circuits other annotations for that field.
 
 Optional helper for deep JSON arrays:
+
 ```ts
 import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
 const ChatMessagesSchema = z.array(MessageSchema)${'${jsonMaxDepthRefinement(10)}'};

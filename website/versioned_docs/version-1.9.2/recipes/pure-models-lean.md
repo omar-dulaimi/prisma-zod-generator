@@ -10,7 +10,8 @@ Remove heavy relation fields globally:
   "pureModels": true,
   "pureModelsLean": true,
   "pureModelsIncludeRelations": false,
-  "globalExclusions": { "pure": ["*Relation", "posts", "comments"] }
+  "globalExclusions": { "pure": ["*Relation", "posts", "comments"] },
 }
 ```
+
 Generates scalar-centric schemas for simpler validation surfaces.

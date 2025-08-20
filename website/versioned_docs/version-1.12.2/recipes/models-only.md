@@ -9,8 +9,13 @@ Emit only pure model schemas (no CRUD/object scaffolding):
 {
   "mode": "custom",
   "pureModels": true,
-  "variants": { "pure": {"enabled": true}, "input": {"enabled": false}, "result": {"enabled": false} },
-  "emit": { "objects": false, "crud": false, "variants": false }
+  "variants": {
+    "pure": { "enabled": true },
+    "input": { "enabled": false },
+    "result": { "enabled": false },
+  },
+  "emit": { "objects": false, "crud": false, "variants": false },
 }
 ```
+
 Triggers "pureModelsOnly" heuristic; keeps output minimal.

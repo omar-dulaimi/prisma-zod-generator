@@ -1,6 +1,6 @@
 ---
 id: zod-comments
-title: "@zod Comment Annotations"
+title: '@zod Comment Annotations'
 ---
 
 Use triple-slash Prisma doc comments with `@zod` to append validations.
@@ -14,11 +14,14 @@ model User {
 ```
 
 Result:
+
 ```ts
-export const UserSchema = z.object({
-  email: z.string().email().min(5),
-  // ...
-}).strict();
+export const UserSchema = z
+  .object({
+    email: z.string().email().min(5),
+    // ...
+  })
+  .strict();
 ```
 
 Annotations are concatenated after base type; unsafe expressions are not executed (string append model). Keep rules pure.

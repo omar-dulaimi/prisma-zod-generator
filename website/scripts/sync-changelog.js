@@ -79,6 +79,16 @@ This project follows semantic versioning and uses automated releases via [semant
   // Write to docs
   fs.writeFileSync(docsChangelogPath, finalContent);
 
+  // Also sync to the latest versioned docs if they exist
+  const versionedDocsPath = path.join(
+    __dirname,
+    `../versioned_docs/version-${latestVersion}/changelog.md`,
+  );
+  if (fs.existsSync(path.dirname(versionedDocsPath))) {
+    fs.writeFileSync(versionedDocsPath, finalContent);
+    console.log(`✅ Also synced to versioned docs: version-${latestVersion}`);
+  }
+
   console.log(`✅ Changelog synced successfully! Latest version: v${latestVersion}`);
 }
 

@@ -14,18 +14,21 @@ import TabItem from '@theme/TabItem';
 ```bash
 npm install prisma-zod-generator zod @prisma/client
 ```
+
 </TabItem>
 <TabItem value="yarn" label="yarn">
 
 ```bash
 yarn add prisma-zod-generator zod @prisma/client
 ```
+
 </TabItem>
 <TabItem value="pnpm" label="pnpm">
 
 ```bash
 pnpm add prisma-zod-generator zod @prisma/client
 ```
+
 </TabItem>
 </Tabs>
 
@@ -51,8 +54,8 @@ generator zod {
   "variants": {
     "pure": { "enabled": true },
     "input": { "enabled": true },
-    "result": { "enabled": true }
-  }
+    "result": { "enabled": true },
+  },
 }
 ```
 

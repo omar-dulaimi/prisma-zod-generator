@@ -7,9 +7,16 @@ title: Granular Per Model
 {
   "mode": "custom",
   "models": {
-    "User": { "operations": ["findMany", "create"], "variants": { "input": {"excludeFields": ["role"] } } },
-    "Post": { "operations": ["findMany", "findUnique"], "variants": { "result": {"excludeFields": ["internalFlag"] } } }
-  }
+    "User": {
+      "operations": ["findMany", "create"],
+      "variants": { "input": { "excludeFields": ["role"] } },
+    },
+    "Post": {
+      "operations": ["findMany", "findUnique"],
+      "variants": { "result": { "excludeFields": ["internalFlag"] } },
+    },
+  },
 }
 ```
+
 Enables partial surface per model.

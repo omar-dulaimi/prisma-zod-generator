@@ -8,11 +8,13 @@ npm run docs:dev
 ```
 
 Build:
+
 ```bash
 npm run docs:build
 ```
 
 Version snapshot:
+
 ```bash
 npm run docs:version 1.0.5
 ```

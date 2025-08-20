@@ -9,12 +9,13 @@ import TabItem from '@theme/TabItem';
 ## 1. Install
 
 ### Requirements
-| Component | Minimum |
-|----------|---------|
-| Node.js  | 18.x |
-| Prisma   | 6.12.0 |
-| Zod      | 4.0.5 |
-| TypeScript (recommended) | 5.2+ |
+
+| Component                | Minimum |
+| ------------------------ | ------- |
+| Node.js                  | 18.x    |
+| Prisma                   | 6.12.0  |
+| Zod                      | 4.0.5   |
+| TypeScript (recommended) | 5.2+    |
 
 <Tabs>
 <TabItem value="npm" label="npm">
@@ -22,18 +23,21 @@ import TabItem from '@theme/TabItem';
 ```bash
 npm install prisma-zod-generator zod @prisma/client
 ```
+
 </TabItem>
 <TabItem value="yarn" label="yarn">
 
 ```bash
 yarn add prisma-zod-generator zod @prisma/client
 ```
+
 </TabItem>
 <TabItem value="pnpm" label="pnpm">
 
 ```bash
 pnpm add prisma-zod-generator zod @prisma/client
 ```
+
 </TabItem>
 </Tabs>
 
@@ -59,8 +63,8 @@ generator zod {
   "variants": {
     "pure": { "enabled": true },
     "input": { "enabled": true },
-    "result": { "enabled": true }
-  }
+    "result": { "enabled": true },
+  },
 }
 ```
 

@@ -4,11 +4,7 @@
       "type": "category",
       "label": "Introduction",
       "collapsed": false,
-      "items": [
-        "intro/what-is",
-        "intro/quick-start",
-        "intro/concepts"
-      ]
+      "items": ["intro/what-is", "intro/quick-start", "intro/concepts"]
     },
     {
       "type": "category",

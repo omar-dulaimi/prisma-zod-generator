@@ -7,11 +7,11 @@ The `optionalFieldBehavior` configuration option controls how optional Prisma fi
 
 ## Configuration Options
 
-| Value | Zod Output | TypeScript Type | Description |
-|-------|------------|-----------------|-------------|
-| `nullish` (default) | `.nullish()` | `T \| null \| undefined` | Field can be omitted, explicitly null, or have a value |
-| `optional` | `.optional()` | `T \| undefined` | Field can be omitted or have a value, but not null |
-| `nullable` | `.nullable()` | `T \| null` | Field must be present but can be null or have a value |
+| Value               | Zod Output    | TypeScript Type          | Description                                            |
+| ------------------- | ------------- | ------------------------ | ------------------------------------------------------ |
+| `nullish` (default) | `.nullish()`  | `T \| null \| undefined` | Field can be omitted, explicitly null, or have a value |
+| `optional`          | `.optional()` | `T \| undefined`         | Field can be omitted or have a value, but not null     |
+| `nullable`          | `.nullable()` | `T \| null`              | Field must be present but can be null or have a value  |
 
 ## Usage
 
@@ -111,8 +111,8 @@ import { User } from '@prisma/client';
 
 // All generated schemas are compatible with Prisma types
 const prismaUser: Prisma.UserCreateInput = {
-  email: "test@example.com",
-  name: null // Prisma allows null for optional fields
+  email: 'test@example.com',
+  name: null, // Prisma allows null for optional fields
 };
 
 // Works with any optionalFieldBehavior setting
@@ -124,6 +124,7 @@ UserCreateInputSchema.parse(prismaUser); // ✅ Always valid
 ### API Validation
 
 **Nullish** (default) is recommended for most API scenarios where clients can:
+
 - Omit fields entirely
 - Explicitly send null values
 - Send actual values
@@ -131,6 +132,7 @@ UserCreateInputSchema.parse(prismaUser); // ✅ Always valid
 ### Strict Input Validation
 
 **Optional** is useful when you want to:
+
 - Allow fields to be omitted
 - Reject explicit null values
 - Maintain clean undefined-only semantics
@@ -138,6 +140,7 @@ UserCreateInputSchema.parse(prismaUser); // ✅ Always valid
 ### Always-Present Fields
 
 **Nullable** is suitable when:
+
 - Fields must always be included in requests
 - Null is a meaningful value
 - You want to distinguish between "not set" and "explicitly null"

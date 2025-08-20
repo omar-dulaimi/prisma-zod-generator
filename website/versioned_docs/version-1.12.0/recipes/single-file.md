@@ -8,7 +8,12 @@ title: Single File Bundle
   "useMultipleFiles": false,
   "singleFileName": "schemas.ts",
   "pureModels": true,
-  "variants": { "pure": {"enabled": true}, "input": {"enabled": true}, "result": {"enabled": false} }
+  "variants": {
+    "pure": { "enabled": true },
+    "input": { "enabled": true },
+    "result": { "enabled": false },
+  },
 }
 ```
+
 Produces one portable file; variants directory suppressed.

@@ -12,6 +12,7 @@ When using `pureModelsIncludeRelations: true` with bidirectional relationships, 
 ```
 
 This happens with relationships like:
+
 - `Deal` ↔ `Opportunity` (one-to-one bidirectional)
 - `User` ↔ `Profile` (one-to-one with FK)
 - `Category` → `Category` (self-referencing hierarchies)
@@ -43,7 +44,7 @@ model Deal {
   id          String  @id @default(uuid())
   name        String?
   status      String  @default("DRAFT")
-  
+
   // This back-reference will be excluded
   opportunity Opportunity?
 }
@@ -51,7 +52,7 @@ model Deal {
 model Opportunity {
   id     String @id @default(uuid())
   name   String
-  
+
   // Foreign key preserved, relation preserved
   dealId String? @unique
   deal   Deal?   @relation(fields: [dealId], references: [id])
@@ -63,13 +64,14 @@ model Opportunity {
 The feature uses smart heuristics to determine which relations to exclude:
 
 1. **Preserves required relations** over optional ones
-2. **Preserves single relations** over list relations  
+2. **Preserves single relations** over list relations
 3. **Preserves FK-side relations** over back-references
 4. **Handles self-references** by excluding one of multiple self-referencing fields
 
 ## Generated Output
 
 **Before (with circular dependency):**
+
 ```typescript
 // Deal.model.ts
 import { OpportunitySchema } from './Opportunity.model'; // ❌ Circular import
@@ -77,7 +79,7 @@ export const DealSchema = z.object({
   opportunity: z.lazy(() => OpportunitySchema).nullish(),
 });
 
-// Opportunity.model.ts  
+// Opportunity.model.ts
 import { DealSchema } from './Deal.model'; // ❌ Circular import
 export const OpportunitySchema = z.object({
   dealId: z.string().nullish(),
@@ -86,6 +88,7 @@ export const OpportunitySchema = z.object({
 ```
 
 **After (circular dependency resolved):**
+
 ```typescript
 // Deal.model.ts
 import { OpportunitySchema } from './Opportunity.model'; // ✅ One-way import
@@ -122,7 +125,7 @@ generator zod {
 ## Use Cases
 
 - **API validation** - Clean schemas without circular dependencies
-- **Form validation** - Include relations but avoid TypeScript errors  
+- **Form validation** - Include relations but avoid TypeScript errors
 - **Data transformation** - Preserve essential relationships while maintaining type safety
 - **Legacy migration** - Smooth transition from other schema generators like `zod-prisma`
 

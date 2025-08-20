@@ -25,6 +25,7 @@ model User {
 ```
 
 Generated schema accepts all these patterns:
+
 ```typescript
 // All valid
 { id: 1, name: "John", bio: "Developer" }
@@ -44,6 +45,7 @@ generator zod {
 ```
 
 Generated validation:
+
 ```typescript
 // Valid
 { id: 1, name: "John" }
@@ -65,6 +67,7 @@ generator zod {
 ```
 
 Generated validation:
+
 ```typescript
 // Valid
 { id: 1, name: "John", bio: "Developer" }
@@ -95,32 +98,34 @@ generator zod {
 
 ## Comparison Table
 
-| Behavior | Zod Output | Accepts `undefined` | Accepts `null` | Allows Omitted |
-|----------|------------|-------------------|----------------|----------------|
-| `nullish` | `.nullish()` | ✅ | ✅ | ✅ |
-| `optional` | `.optional()` | ✅ | ❌ | ✅ |
-| `nullable` | `.nullable()` | ❌ | ✅ | ❌ |
+| Behavior   | Zod Output    | Accepts `undefined` | Accepts `null` | Allows Omitted |
+| ---------- | ------------- | ------------------- | -------------- | -------------- |
+| `nullish`  | `.nullish()`  | ✅                  | ✅             | ✅             |
+| `optional` | `.optional()` | ✅                  | ❌             | ✅             |
+| `nullable` | `.nullable()` | ❌                  | ✅             | ❌             |
 
 ## Migration Example
 
 Changing from the legacy `.optional().nullable()` pattern:
 
 **Before:**
+
 ```typescript
 // Legacy behavior (equivalent to nullish)
-name: z.string().optional().nullable()
+name: z.string().optional().nullable();
 ```
 
 **After with explicit configuration:**
+
 ```typescript
 // With optionalFieldBehavior = "nullish"
-name: z.string().nullish()
+name: z.string().nullish();
 
-// With optionalFieldBehavior = "optional"  
-name: z.string().optional()
+// With optionalFieldBehavior = "optional"
+name: z.string().optional();
 
 // With optionalFieldBehavior = "nullable"
-name: z.string().nullable()
+name: z.string().nullable();
 ```
 
 ## Type Safety
@@ -133,7 +138,7 @@ import { Prisma } from '@prisma/client';
 // Prisma type: { name?: string | null }
 const data: Prisma.UserCreateInput = {
   id: 1,
-  name: null // Prisma allows null
+  name: null, // Prisma allows null
 };
 
 // All optionalFieldBehavior settings accept this

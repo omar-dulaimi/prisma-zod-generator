@@ -7,7 +7,12 @@ title: Minimal CRUD
 {
   "mode": "minimal",
   "pureModels": true,
-  "variants": { "pure": {"enabled": true}, "input": {"enabled": true}, "result": {"enabled": false} }
+  "variants": {
+    "pure": { "enabled": true },
+    "input": { "enabled": true },
+    "result": { "enabled": false },
+  },
 }
 ```
+
 Produces lean create/update/find schemas, prunes deep nested inputs, disables select/include.

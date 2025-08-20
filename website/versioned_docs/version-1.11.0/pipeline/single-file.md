@@ -6,6 +6,7 @@ title: Single File Mode
 Enable with `useMultipleFiles: false`.
 
 Mechanics:
+
 - Initializes aggregator with resolved bundle path.
 - Writes all schema content through in-memory collection.
 - After generation, flushes aggregator and deletes sibling entries (keeps bundle only).
