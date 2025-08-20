@@ -121,6 +121,14 @@ export interface GeneratorConfig {
   };
 
   /**
+   * Controls how Zod is imported in generated files.
+   * - auto (default): import from 'zod' (compatible with Zod v3 and v4)
+   * - v3: force import from 'zod'
+   * - v4: import from 'zod/v4'
+   */
+  zodImportTarget?: 'auto' | 'v3' | 'v4';
+
+  /**
    * Explicit emission controls. When provided, these booleans override heuristic
    * behaviors (minimal mode, pure-variant-only, etc.) for the respective groups.
    * Omitting a key preserves legacy behavior for that group.

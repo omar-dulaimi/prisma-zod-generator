@@ -43,6 +43,7 @@ const sidebars: SidebarsConfig = {
         'recipes/crud-only',
         'recipes/result-only',
         'recipes/input-only',
+        'recipes/zod-import-targets',
         'recipes/trpc-optimized',
         'recipes/single-file',
         'recipes/granular-per-model',

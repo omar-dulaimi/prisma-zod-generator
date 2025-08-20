@@ -1368,7 +1368,9 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
             })
             .join(',\n');
 
-          const content = `import { z } from 'zod';\n\n// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
+          // Use Transformer import strategy to match zodImportTarget
+          const zImport = new Transformer({}).generateImportZodStatement();
+          const content = `${zImport}\n// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
           exportLines.push(`export { ${schemaName} } from './${fileBase}';`);
         }
@@ -1566,7 +1568,8 @@ function generateVariantSchemaContent(
     })
     .join(',\n');
 
-  return `import { z } from 'zod';\n${enumImportLines}// prettier-ignore
+  const zImport = new Transformer({}).generateImportZodStatement();
+  return `${zImport}\n${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
 }).strict();
@@ -1774,10 +1777,7 @@ async function generatePureModelSchemas(
         const filePath = `${modelsOutputPath}/${fileName}`;
         let content = schemaData.fileContent.content;
         logger.debug(`[pure-models] Preparing ${modelName} -> file ${fileName}`);
-        // Import paths are now generated correctly by the model generator
-        // No need for post-processing import path adjustments
-        // Adjust enum import to correct relative path from models/ -> ../schemas/enums when present
-        content = content.replace(/from '\.\/enums\//g, "from '../schemas/enums/");
+        // Import paths are generated correctly by the model generator; no enum path rewrite needed
         // Remove accidental duplicate enum imports (defensive clean-up)
         content = content.replace(
           /^(import { (\w+)Schema } from '..\/enums\/\2\.schema';)\n\1/gm,

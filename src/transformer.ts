@@ -961,7 +961,17 @@ export default class Transformer {
   }
 
   generateImportZodStatement() {
-    return "import { z } from 'zod';\n";
+    // Determine import target based on configuration
+    const config = Transformer.getGeneratorConfig();
+    const target = (config?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
+    switch (target) {
+      case 'v4':
+        return "import * as z from 'zod/v4';\n";
+      case 'auto':
+      case 'v3':
+      default:
+        return "import { z } from 'zod';\n";
+    }
   }
 
   generateExportSchemaStatement(name: string, schema: string) {
@@ -1609,7 +1619,10 @@ export default class Transformer {
     await fs.promises.mkdir(helpersDir, { recursive: true });
     const filePath = pathMod.join(helpersDir, 'json-helpers.ts');
     // Source content mirrors src/helpers/json-helpers.ts (keep in sync manually)
-    const content = `import { z } from 'zod';\n\nexport type JsonPrimitive = string | number | boolean | null;\nexport type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };\nexport type InputJsonValue = JsonPrimitive | InputJsonValue[] | { [k: string]: InputJsonValue | null };\nexport type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return null;\n  if (v === 'JsonNull') return null;\n  return v as JsonValue;\n};\nexport const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n) as z.ZodType<JsonValue>;\nexport const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n) as z.ZodType<InputJsonValue>;\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull'), z.literal(null)])\n  .transform((v) => transformJsonNull(v as NullableJsonInput));\n`;
+    const zImport = new (this as unknown as typeof Transformer)(
+      {} as TransformerParams,
+    ).generateImportZodStatement();
+    const content = `${zImport}\nexport type JsonPrimitive = string | number | boolean | null;\nexport type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };\nexport type InputJsonValue = JsonPrimitive | InputJsonValue[] | { [k: string]: InputJsonValue | null };\nexport type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return null;\n  if (v === 'JsonNull') return null;\n  return v as JsonValue;\n};\nexport const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n) as z.ZodType<JsonValue>;\nexport const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n) as z.ZodType<InputJsonValue>;\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull'), z.literal(null)])\n  .transform((v) => transformJsonNull(v as NullableJsonInput));\n`;
     await fs.promises.writeFile(filePath, content, 'utf8');
   }
 
@@ -1624,7 +1637,15 @@ export default class Transformer {
       const helpersDir = pathMod.join(this.outputPath, 'helpers');
       fs.mkdirSync(helpersDir, { recursive: true });
       const filePath = pathMod.join(helpersDir, 'json-helpers.ts');
-      const content = `import { z } from 'zod';\n\nexport type JsonPrimitive = string | number | boolean | null;\nexport type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };\nexport type InputJsonValue = JsonPrimitive | InputJsonValue[] | { [k: string]: InputJsonValue | null };\nexport type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return null;\n  if (v === 'JsonNull') return null;\n  return v as JsonValue;\n};\nexport const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n) as z.ZodType<JsonValue>;\nexport const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n) as z.ZodType<InputJsonValue>;\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull'), z.literal(null)])\n  .transform((v) => transformJsonNull(v as NullableJsonInput));\n`;
+      const zImport2 = new Transformer({
+        name: '',
+        fields: [],
+        models: [],
+        modelOperations: [],
+        aggregateOperationSupport: {},
+        enumTypes: [],
+      }).generateImportZodStatement();
+      const content = `${zImport2}\nexport type JsonPrimitive = string | number | boolean | null;\nexport type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };\nexport type InputJsonValue = JsonPrimitive | InputJsonValue[] | { [k: string]: InputJsonValue | null };\nexport type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return null;\n  if (v === 'JsonNull') return null;\n  return v as JsonValue;\n};\nexport const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n) as z.ZodType<JsonValue>;\nexport const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n) as z.ZodType<InputJsonValue>;\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull'), z.literal(null)])\n  .transform((v) => transformJsonNull(v as NullableJsonInput));\n`;
       fs.writeFileSync(filePath, content, 'utf8');
     } catch (e) {
       logger.warn(`Failed to write json helpers: ${e}`);
