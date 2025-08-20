@@ -9,8 +9,72 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.10.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.13.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.13.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.4...v1.13.0) (2025-08-20)
+
+### 🚀 Features
+
+* add pureModelsExcludeCircularRelations option to resolve issue [#183](https://github.com/omar-dulaimi/prisma-zod-generator/issues/183) ([2627051](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2627051fc581c195058a559f810a3c4168a33cf2))
+
+### 🐛 Bug Fixes
+
+* **linting:** remove non-null assertions from circular dependency detector ([80ab27b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/80ab27bad0958ce4251b4707aa64600999969402))
+* **naming:** respect custom filePattern in import statements for pure models ([ac3b338](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ac3b3384011d84a0d362015c84e50d0e849e114a)), closes [#183](https://github.com/omar-dulaimi/prisma-zod-generator/issues/183) [#183](https://github.com/omar-dulaimi/prisma-zod-generator/issues/183)
+
+## [1.12.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.3...v1.12.4) (2025-08-18)
+
+### 🐛 Bug Fixes
+
+* **groupBy:** restrict _count to literal true or CountAggregateInput (align with Prisma Client) ([c5eaec0](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c5eaec077a8aace9c8b23126549c2fb38bcf3705))
+* **groupBy:** use z.literal(true) for _count in groupBy args (disallow false) ([4f4fc68](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4f4fc68c0539de8034abf1b45a69d58cefec97b9))
+
+## [1.12.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.2...v1.12.3) (2025-08-18)
+
+### ⚠ BREAKING CHANGES
+
+* **args:** align CountArgs and ...AndReturn schemas with Prisma Client
+
+### 🐛 Bug Fixes
+
+* **args:** align CountArgs and ...AndReturn schemas with Prisma Client ([82e5534](https://github.com/omar-dulaimi/prisma-zod-generator/commit/82e5534ce33cc4383815e06e599e6f6812d73ddb))
+
+## [1.12.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.1...v1.12.2) (2025-08-17)
+
+### 🐛 Bug Fixes
+
+* **pure-models:** apply optionalFieldBehavior to schema-optional fields; keep required fields required; address perf flake by documenting run guidance; fix ESLint issues ([32dccaa](https://github.com/omar-dulaimi/prisma-zod-generator/commit/32dccaad866fcb088b9039499f1b7e65e6da8ac6))
+
+## [1.12.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.0...v1.12.1) (2025-08-17)
+
+### 🐛 Bug Fixes
+
+* correct array field handling in Zod schema generation ([4043b64](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4043b64d180b6f336bdadb990ba9d102d6c52f00)), closes [#174](https://github.com/omar-dulaimi/prisma-zod-generator/issues/174)
+* remove unused imports in array-fields test ([1b85c6e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1b85c6e9234e7863fb761d70f6bcace33f137937))
+
+## [1.12.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.11.0...v1.12.0) (2025-08-16)
+
+### 🚀 Features
+
+* add optionalFieldBehavior configuration option ([6bdfc11](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6bdfc1134e10edac2153db064f040f3516e75cd8))
+
+### 📚 Documentation
+
+* add comprehensive documentation for optionalFieldBehavior ([127fa84](https://github.com/omar-dulaimi/prisma-zod-generator/commit/127fa84c818a1be8ad74dacdd7ea7ef4beef2112))
+
+## [1.11.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.10.1...v1.11.0) (2025-08-16)
+
+### 🚀 Features
+
+* add complete CRUD operation support and fix GroupBy aggregation fields ([2bd0cf8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2bd0cf860aab75ea1a253a78225747b95c1629b5))
+
+### 📚 Documentation
+
+* **changelog:** remove Twitter/X follow line from Stay Updated section ([e63b800](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e63b800db4882832ae855a1f3028fc18a4e72c19))
+* fix MDX parsing in changelog by escaping angle brackets; point navbar Changelog to stable next route ([d1ab1ff](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d1ab1ff3843bcda094fb4e3e33fdd7f76c3c1c2b))
+* snapshot docs for v1.10.1 [skip ci] ([846f4bc](https://github.com/omar-dulaimi/prisma-zod-generator/commit/846f4bc1aaee83260e2af28d427ef0201672a9e7))
+* versioning script supports patch releases via DOCS_VERSION_ON_PATCH and normalizes tags ([59a6683](https://github.com/omar-dulaimi/prisma-zod-generator/commit/59a668388a8d928864bb2a757f6828fabc117917))
 
 ## [1.10.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.10.0...v1.10.1) (2025-08-15)
 
@@ -438,7 +502,7 @@ For the complete version history including older releases, please see the [full 
 
 ## Version Support
 
-- **Current:** v1.10.x - Full support with new features and bug fixes
+- **Current:** v1.13.x - Full support with new features and bug fixes
 - **Previous:** Previous minor versions - Security and critical bug fixes only
 - **Legacy:** Older versions - Community support only
 
