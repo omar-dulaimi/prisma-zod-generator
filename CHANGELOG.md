@@ -1,3 +1,13 @@
+## [1.14.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.13.0...v1.14.0) (2025-08-20)
+
+### 🚀 Features
+
+* **ci:** automate changelog sync in release workflow ([560c806](https://github.com/omar-dulaimi/prisma-zod-generator/commit/560c8060c59b890a3a2defe54a26ca857459f21e))
+
+### 📚 Documentation
+
+* sync changelog to show v1.13.0 as latest version ([04169b7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/04169b74cf45b3c6e678c89f2ea29c13cc403ac1))
+
 ## [1.13.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.12.4...v1.13.0) (2025-08-20)
 
 ### 🚀 Features
