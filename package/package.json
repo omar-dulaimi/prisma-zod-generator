@@ -1,6 +1,6 @@
 {
   "name": "prisma-zod-generator",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
@@ -50,6 +50,7 @@
     "test:features:pure": "vitest run tests/pure-models.test.ts",
     "test:features:variants": "vitest run tests/schema-variants.test.ts",
     "test:features:results": "vitest run tests/result-schemas.test.ts",
+    "test:features:zodImports": "vitest run tests/zod-imports.test.ts",
     "test:features:circular-dependency-exclusion": "vitest run tests/circular-dependency-exclusion.test.ts --reporter=default",
     "test:features:naming-customization": "vitest run tests/naming-customization.test.ts --reporter=default",
     "test:features:prisma-client-preview": "vitest run tests/prisma-client-preview-options.test.ts",
@@ -102,8 +103,10 @@
     "ajv-formats": "^3.0.1",
     "node-fetch": "^3.3.2",
     "prettier": "^3.6.2",
-    "tslib": "^2.8.1",
-    "zod": "^4.0.17"
+    "tslib": "^2.8.1"
+  },
+  "peerDependencies": {
+    "zod": ">=3.25.0 <5"
   },
   "devDependencies": {
     "@docusaurus/core": "^3.8.1",
@@ -131,7 +134,8 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.20.4",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "zod": "^4.0.17"
   },
   "resolutions": {
     "postcss": "^8.4.38"

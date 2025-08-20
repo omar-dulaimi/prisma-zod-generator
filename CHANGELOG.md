@@ -1,3 +1,19 @@
+## [1.15.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.14.0...v1.15.0) (2025-08-20)
+
+### ⚠ BREAKING CHANGES
+
+* **config,zod:** add zodImportTarget to control Zod import (v3/v4/auto); update generator, single-file bundler, docs, recipes, and tests
+
+### 🚀 Features
+
+* **config,zod:** add zodImportTarget to control Zod import (v3/v4/auto); update generator, single-file bundler, docs, recipes, and tests ([1a720e6](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1a720e6055dbbdd3f859ba6d6611d80ff86c5c61))
+
+### 📚 Documentation
+
+* fix v1.13.0 versioned changelog to show correct latest version ([e0e0fa1](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e0e0fa1865a1c7c152e3cd16252c069594874abc))
+* **website:** add circular-dependency-exclusion recipe to sidebars (next, v1.13, v1.14) ([6bfc711](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6bfc711ea7bcb5b81fdf13defc61e74dc017621d))
+* **website:** sync changelog and metrics after docs build ([dd83756](https://github.com/omar-dulaimi/prisma-zod-generator/commit/dd837565f16ccae4dd050b1d65f4a9fae0521ade))
+
 ## [1.14.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.13.0...v1.14.0) (2025-08-20)
 
 ### 🚀 Features
