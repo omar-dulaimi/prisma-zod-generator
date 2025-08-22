@@ -7,10 +7,10 @@ import { DMMF } from '@prisma/generator-helper';
 import { promises as fs } from 'fs';
 import { PrismaTypeMapper } from '../generators/model';
 import {
-  ModelVariantCollection,
-  VariantConfig,
-  VariantGenerationResult,
-  VariantType,
+    ModelVariantCollection,
+    VariantConfig,
+    VariantGenerationResult,
+    VariantType,
 } from '../types/variants';
 import { formatFile } from '../utils/formatFile';
 import { NamingResult, VariantNamingSystem } from '../utils/naming';
