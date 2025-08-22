@@ -14,6 +14,8 @@ Minimal mode specifics:
 - Forces `select/include` disabled even if flags set.
 - Applies `MINIMAL_OPERATIONS` (or `minimalOperations` override) for unspecified models.
 - Skips many heavy nested input object schemas (allow-list basics).
+- **Create operations use `UncheckedCreateInput` only**: Blocks regular `*CreateInput` schemas that require complex nested relations, favoring simple foreign key-based `*UncheckedCreateInput` schemas.
+- **Update operations support both variants**: Allows both `*UpdateInput` and `*UncheckedUpdateInput` for flexibility.
 
 ## Emission Heuristics
 
