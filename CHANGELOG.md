@@ -1,3 +1,27 @@
+## [1.16.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.15.0...v1.16.0) (2025-08-22)
+
+### ⚠ BREAKING CHANGES
+
+* **minimal:** suppress object and CRUD schema generation in minimal mode with clear logs
+
+### 🚀 Features
+
+* **minimal:** suppress object and CRUD schema generation in minimal mode with clear logs ([78e6fe3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/78e6fe34cf6efe4dac5a4e36b6721ffad6854d26))
+
+### 🐛 Bug Fixes
+
+* **config:** improve Zod version detection for datetime validation ([81893d5](https://github.com/omar-dulaimi/prisma-zod-generator/commit/81893d5161012290988f065c99eb3aae5f89876a))
+* **generator:** block problematic CreateInput object schemas in minimal mode ([aee979b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/aee979b60a8872a5628be76697aae1e0f72e1714))
+* **imports:** correct enum import path in model generator and normalize variant file imports formatting ([8f5ab41](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8f5ab41ee9bacb25dc7d222264b799c48156ea78))
+* **transformer:** prefer UncheckedCreateInput in minimal mode create operations ([0b5a982](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0b5a9825cebd77c7de8e6fb19a31edc8fa73e9cf))
+* **types,zod:** correct ZodType generics, import formatting, and Unchecked pattern precedence ([8496299](https://github.com/omar-dulaimi/prisma-zod-generator/commit/849629911e3e3d2c4bec42b03ca53045787e4f4d))
+
+### 📚 Documentation
+
+* add troubleshooting guide for CreateInput TypeScript errors ([294402e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/294402e144cea751666c070bda22bae0b6dac7e2))
+* document minimal mode CreateInput behavior and schema filtering ([f65c837](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f65c8370d1bf2d515a4457a39623d79c699b68e8))
+* **recipes:** escape inline Zod import snippets to fix Docusaurus SSG error (z is not defined) ([195d112](https://github.com/omar-dulaimi/prisma-zod-generator/commit/195d112085f4d44d694817bd9a7af1377059059b))
+
 ## [1.15.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.14.0...v1.15.0) (2025-08-20)
 
 ### ⚠ BREAKING CHANGES
