@@ -4,22 +4,22 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-  generatorOptionsToConfigOverrides,
-  getLegacyMigrationSuggestions,
-  isLegacyUsage,
-  parseGeneratorOptions,
-  validateGeneratorOptions,
+    generatorOptionsToConfigOverrides,
+    getLegacyMigrationSuggestions,
+    isLegacyUsage,
+    parseGeneratorOptions,
+    validateGeneratorOptions,
 } from './config/generator-options';
 import {
-  GeneratorConfig as CustomGeneratorConfig,
-  VariantConfig,
-  parseConfiguration,
+    GeneratorConfig as CustomGeneratorConfig,
+    VariantConfig,
+    parseConfiguration,
 } from './config/parser';
 import {
-  addMissingInputObjectTypes,
-  hideInputObjectTypesAndRelatedFields,
-  resolveAddMissingInputObjectTypeOptions,
-  resolveModelsComments,
+    addMissingInputObjectTypes,
+    hideInputObjectTypesAndRelatedFields,
+    resolveAddMissingInputObjectTypeOptions,
+    resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -28,10 +28,10 @@ import { logger } from './utils/logger';
 import removeDir from './utils/removeDir';
 
 import {
-  flushSingleFile,
-  initSingleFile,
-  isSingleFileEnabled,
-  setSingleFilePrismaImportPath,
+    flushSingleFile,
+    initSingleFile,
+    isSingleFileEnabled,
+    setSingleFilePrismaImportPath,
 } from './utils/singleFileAggregator';
 import { writeFileSafely } from './utils/writeFileSafely';
 
@@ -456,19 +456,13 @@ export async function generate(options: GeneratorOptions) {
 
     const shouldSkipCrudAndObjectsDueToHeuristics = pureModelsOnlyMode || pureVariantOnlyMode;
 
-    // In minimal mode, suppress all object/input schemas and CRUD arg schemas to avoid
-    // emitting deep input trees and cross-file imports that increase surface area.
+    // Minimal mode: keep objects/CRUD enabled, but generation is constrained elsewhere:
+    //  - object schemas gated by isObjectSchemaEnabled (only basic Where*/Create*/Update*/OrderBy*Relation)
+    //  - operations gated by Transformer.isOperationEnabled (only find/create/update by default)
     if (minimalMode) {
-      if (emitObjects) {
-        logger.info('[prisma-zod-generator] ⚠️  Minimal mode: skipping all object/input schemas');
-      }
-      if (emitCrud) {
-        logger.info(
-          '[prisma-zod-generator] ⚠️  Minimal mode: skipping all CRUD operation schemas (depends on objects)',
-        );
-      }
-      emitObjects = false;
-      emitCrud = false;
+      logger.debug(
+        '[prisma-zod-generator] ⚡ Minimal mode: emitting limited objects and CRUD (findUnique/findFirst/findMany + create/update/delete only)',
+      );
     }
 
     if (emitObjects && !shouldSkipCrudAndObjectsDueToHeuristics) {
@@ -646,19 +640,33 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
   // In minimal mode, suppress complex/nested input schemas proactively
   const cfg = Transformer.getGeneratorConfig();
   if (cfg?.mode === 'minimal') {
-    // Allow-list of basic inputs still needed in minimal mode
-    const allowedBasics = [
+    // Allow-list of basic inputs still needed in minimal mode (covers find/create/update/delete)
+  const allowedBasics = [
       /WhereInput$/,
       /WhereUniqueInput$/,
-      /CreateInput$/,
-      /UpdateInput$/,
+      /UncheckedCreateInput$/,  // Prefer UncheckedCreateInput over CreateInput in minimal mode
+      /UpdateInput$/,  // Allow UpdateInput for update operations
+      /UncheckedUpdateInput$/,  // Also allow UncheckedUpdateInput variants
+      /UpdateManyMutationInput$/,  // Allow UpdateMany mutation inputs
       /OrderByWithRelationInput$/,
     ];
     if (allowedBasics.some((p) => p.test(objectSchemaName))) {
+      // Special case: CreateMany inputs are heavier; only allow when explicitly requested
+      if (/CreateManyInput$/.test(objectSchemaName)) {
+        const ops = (cfg as unknown as { minimalOperations?: string[] }).minimalOperations;
+        const allowCreateMany = Array.isArray(ops)
+          ? ops.includes('createMany') || ops.includes('create')
+          : false; // default off in pure minimal mode
+        if (!allowCreateMany) {
+          logger.debug(`⏭️  Minimal mode: skipping heavy ${objectSchemaName} (no createMany in ops)`);
+          return false;
+        }
+      }
       // continue to further checks below (model/ops) but do not block by minimal-mode rules
     } else {
       const disallowedPatterns = [
         // Block Include/Select helper schemas entirely in minimal mode
+        /Args$/,
         /Include$/,
         /Select$/,
         /OrderByWithAggregationInput$/,
@@ -668,6 +676,8 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
         /SumAggregateInput$/,
         /MinAggregateInput$/,
         /MaxAggregateInput$/,
+        // Block regular CreateInput in favor of Unchecked variants in minimal mode
+        /(?<!Unchecked)CreateInput$/,
         // Deep or relation-heavy object inputs
         /CreateNested\w+Input$/,
         /UpdateNested\w+Input$/,
@@ -683,6 +693,14 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
         /ListRelationFilter$/,
         /RelationFilter$/,
         /ScalarRelationFilter$/,
+        // Block schemas that depend on blocked Without schemas
+        /CreateOrConnectWithout\w+Input$/,
+        /CreateManyWithout\w+Input$/,
+        /UpdateToOneWithWhereWithout\w+Input$/,
+        /UpdateOneWithout\w+NestedInput$/,
+        /UpdateOneRequiredWithout\w+NestedInput$/,
+        /UpdateManyWithWhereWithout\w+Input$/,
+        /UpdateWithWhereUniqueWithout\w+Input$/,
       ];
       if (disallowedPatterns.some((p) => p.test(objectSchemaName))) {
         logger.debug(`⏭️  Minimal mode: skipping object schema ${objectSchemaName}`);
