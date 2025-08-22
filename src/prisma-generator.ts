@@ -441,8 +441,8 @@ export async function generate(options: GeneratorOptions) {
     hideInputObjectTypesAndRelatedFields(mutableInputObjectTypes, hiddenModels, hiddenFields);
 
     // Determine explicit emission flags with fallbacks
-    const emitObjects = generatorConfig.emit?.objects !== false;
-    const emitCrud = generatorConfig.emit?.crud !== false;
+    let emitObjects = generatorConfig.emit?.objects !== false;
+    let emitCrud = generatorConfig.emit?.crud !== false;
     const emitResultsExplicit = generatorConfig.emit?.results;
     const emitPureModels = generatorConfig.emit?.pureModels ?? !!generatorConfig.pureModels;
     const emitVariants = generatorConfig.emit?.variants !== false; // variants wrapper/index
@@ -455,6 +455,21 @@ export async function generate(options: GeneratorOptions) {
     }
 
     const shouldSkipCrudAndObjectsDueToHeuristics = pureModelsOnlyMode || pureVariantOnlyMode;
+
+    // In minimal mode, suppress all object/input schemas and CRUD arg schemas to avoid
+    // emitting deep input trees and cross-file imports that increase surface area.
+    if (minimalMode) {
+      if (emitObjects) {
+        logger.info('[prisma-zod-generator] ⚠️  Minimal mode: skipping all object/input schemas');
+      }
+      if (emitCrud) {
+        logger.info(
+          '[prisma-zod-generator] ⚠️  Minimal mode: skipping all CRUD operation schemas (depends on objects)',
+        );
+      }
+      emitObjects = false;
+      emitCrud = false;
+    }
 
     if (emitObjects && !shouldSkipCrudAndObjectsDueToHeuristics) {
       await generateObjectSchemas(mutableInputObjectTypes, models);
@@ -653,9 +668,15 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
         /SumAggregateInput$/,
         /MinAggregateInput$/,
         /MaxAggregateInput$/,
+        // Deep or relation-heavy object inputs
         /CreateNested\w+Input$/,
         /UpdateNested\w+Input$/,
         /UpsertNested\w+Input$/,
+        /CreateWithout\w+Input$/,
+        /UncheckedCreateWithout\w+Input$/,
+        /UpdateWithout\w+Input$/,
+        /UncheckedUpdateWithout\w+Input$/,
+        /UpsertWithout\w+Input$/,
         /UpdateManyWithout\w+NestedInput$/,
         /UncheckedUpdateManyWithout\w+NestedInput$/,
         /CreateMany\w+InputEnvelope$/,
