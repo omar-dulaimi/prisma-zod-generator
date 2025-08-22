@@ -1558,7 +1558,7 @@ export default class Transformer {
         }
         if (prismaType) {
           lines.push(
-            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}, ${prismaType}> = ${schema};`,
+            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}, z.ZodTypeDef, ${prismaType}> = ${schema};`,
           );
         } else {
           // Fallback to untyped if we cannot resolve a safe Prisma type
@@ -1737,13 +1737,14 @@ export default class Transformer {
    */
   static extractModelFromImportName(importName: string): string | null {
     // Common patterns for import names
+    // NOTE: More specific patterns (with "Unchecked") must come BEFORE general patterns
     const patterns = [
+      /^(\w+?)UncheckedCreateInputObjectSchema$/,
+      /^(\w+?)UncheckedUpdateInputObjectSchema$/,
       /^(\w+)WhereInputObjectSchema$/,
       /^(\w+)WhereUniqueInputObjectSchema$/,
       /^(\w+)CreateInputObjectSchema$/,
       /^(\w+)UpdateInputObjectSchema$/,
-      /^(\w+)UncheckedCreateInputObjectSchema$/,
-      /^(\w+)UncheckedUpdateInputObjectSchema$/,
       /^(\w+)SelectObjectSchema$/,
       /^(\w+)IncludeObjectSchema$/,
       /^(\w+)ScalarFieldEnumSchema$/,
@@ -2731,7 +2732,9 @@ export default class Transformer {
     // Log import management if any filtering occurred
     Transformer.logImportManagement(imports, validImports, this.name);
 
-    generatedImports += validImports.join(';\r\n') ?? '';
+    // Ensure each import has a semicolon and join with newlines
+    const formattedImports = validImports.map(imp => imp.endsWith(';') ? imp : imp + ';');
+    generatedImports += formattedImports.join('\n') ?? '';
     generatedImports += '\n\n';
     return generatedImports;
   }
@@ -3174,7 +3177,7 @@ export default class Transformer {
       selectFields.push(`  _count: z.boolean().optional()`);
     }
 
-    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = z.object({
+    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select, z.ZodTypeDef, Prisma.${modelName}Select> = z.object({
 ${selectFields.join(',\n')}
 }).strict()`;
   }
@@ -3220,7 +3223,7 @@ ${selectFields.join(',\n')}
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
       exports.push(
-        `export const ${typedName}: z.ZodType<${prismaType}, ${prismaType}> = ${schemaDefinition};`,
+        `export const ${typedName}: z.ZodType<${prismaType}, z.ZodTypeDef, ${prismaType}> = ${schemaDefinition};`,
       );
     }
 
@@ -3248,7 +3251,7 @@ ${selectFields.join(',\n')}
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operation ? operation : ''}Select${Transformer.typedSchemaSuffix}`;
       exports.push(
-        `export const ${typedName}: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = ${schemaDefinition};`,
+        `export const ${typedName}: z.ZodType<Prisma.${modelName}Select, z.ZodTypeDef, Prisma.${modelName}Select> = ${schemaDefinition};`,
       );
     }
 
