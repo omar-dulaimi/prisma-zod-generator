@@ -7,6 +7,25 @@ Model enable check: `isModelEnabled` (minimal mode defaults to disabled unless c
 
 Operation filtering: `isOperationEnabled` with alias mapping (createOne→create, etc.). Minimal mode reduces allowed ops unless overridden.
 
+## Schema-Level Filtering
+
+In minimal mode, entire schema types are filtered out to reduce complexity:
+
+**Blocked in minimal mode:**
+- `*CreateInput` schemas (use `*UncheckedCreateInput` instead)
+- Nested relation inputs (`*CreateNestedInput`, `*UpdateNestedInput`)
+- Complex relation patterns (`*CreateWithoutInput`, `*CreateOrConnectWithoutInput`)
+- Aggregation inputs (`*AggregateInput`, etc.)
+- Select/Include helper schemas
+
+**Always allowed:**
+- `*UncheckedCreateInput` (simple foreign key-based creation)
+- `*UpdateInput` and `*UncheckedUpdateInput` (update flexibility)
+- `*WhereInput` and `*WhereUniqueInput` (query filtering)
+- `*OrderByWithRelationInput` (sorting)
+
+## Field-Level Filtering
+
 Field filtering precedence (stop at first include win):
 
 1. `model.fields.include`
