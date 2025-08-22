@@ -2,11 +2,11 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
-    ConfigGenerator,
-    FileSystemUtils,
-    GENERATION_TIMEOUT,
-    PrismaSchemaGenerator,
-    TestEnvironment,
+  ConfigGenerator,
+  FileSystemUtils,
+  GENERATION_TIMEOUT,
+  PrismaSchemaGenerator,
+  TestEnvironment,
 } from './helpers';
 
 describe('Minimal Mode Tests', () => {
@@ -118,7 +118,7 @@ describe('Minimal Mode Tests', () => {
 
           // Basic input types should exist in minimal mode
           const basicInputTypes = [
-            'UserUncheckedCreateInput.schema.ts',  // Uses UncheckedCreateInput in minimal mode
+            'UserUncheckedCreateInput.schema.ts', // Uses UncheckedCreateInput in minimal mode
             'UserUpdateInput.schema.ts',
             'UserWhereInput.schema.ts',
             'UserWhereUniqueInput.schema.ts',
@@ -157,7 +157,14 @@ describe('Minimal Mode Tests', () => {
 
           // Each model should have only minimal CRUD operations in minimal mode
           const models = ['User', 'Post', 'Profile'];
-          const allowedOps = ['findMany', 'findUnique', 'findFirst', 'createOne', 'updateOne', 'deleteOne'];
+          const allowedOps = [
+            'findMany',
+            'findUnique',
+            'findFirst',
+            'createOne',
+            'updateOne',
+            'deleteOne',
+          ];
 
           models.forEach((model) => {
             allowedOps.forEach((op) => {
@@ -187,7 +194,13 @@ describe('Minimal Mode Tests', () => {
             });
 
             // Pure models should exist for each
-            const userPure = join(testEnv.outputDir, 'schemas', 'variants', 'pure', `${model}.pure.ts`);
+            const userPure = join(
+              testEnv.outputDir,
+              'schemas',
+              'variants',
+              'pure',
+              `${model}.pure.ts`,
+            );
             expect(existsSync(userPure), `Pure model should exist: ${model}.pure.ts`).toBe(true);
           });
         } finally {
@@ -457,10 +470,10 @@ model Tag {
 
           // Basic inputs should exist
           const basicInputs = [
-            'UserUncheckedCreateInput.schema.ts',    // Uses UncheckedCreateInput in minimal mode
-            'PostUncheckedCreateInput.schema.ts',    // Uses UncheckedCreateInput in minimal mode
+            'UserUncheckedCreateInput.schema.ts', // Uses UncheckedCreateInput in minimal mode
+            'PostUncheckedCreateInput.schema.ts', // Uses UncheckedCreateInput in minimal mode
             'ProfileUncheckedCreateInput.schema.ts', // Uses UncheckedCreateInput in minimal mode
-            'TagUncheckedCreateInput.schema.ts',     // Uses UncheckedCreateInput in minimal mode
+            'TagUncheckedCreateInput.schema.ts', // Uses UncheckedCreateInput in minimal mode
           ];
 
           basicInputs.forEach((inputType) => {
@@ -471,17 +484,16 @@ model Tag {
           // Should NOT have regular CreateInput files (blocked in minimal mode)
           const blockedCreateInputs = [
             'UserCreateInput.schema.ts',
-            'PostCreateInput.schema.ts', 
+            'PostCreateInput.schema.ts',
             'ProfileCreateInput.schema.ts',
             'TagCreateInput.schema.ts',
           ];
 
           blockedCreateInputs.forEach((inputType) => {
             const filePath = join(objectsDir, inputType);
-            expect(
-              existsSync(filePath),
-              `Regular CreateInput should NOT exist: ${inputType}`,
-            ).toBe(false);
+            expect(existsSync(filePath), `Regular CreateInput should NOT exist: ${inputType}`).toBe(
+              false,
+            );
           });
 
           // Should NOT have complex nested relation inputs

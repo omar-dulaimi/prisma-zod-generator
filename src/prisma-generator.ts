@@ -4,22 +4,22 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-    generatorOptionsToConfigOverrides,
-    getLegacyMigrationSuggestions,
-    isLegacyUsage,
-    parseGeneratorOptions,
-    validateGeneratorOptions,
+  generatorOptionsToConfigOverrides,
+  getLegacyMigrationSuggestions,
+  isLegacyUsage,
+  parseGeneratorOptions,
+  validateGeneratorOptions,
 } from './config/generator-options';
 import {
-    GeneratorConfig as CustomGeneratorConfig,
-    VariantConfig,
-    parseConfiguration,
+  GeneratorConfig as CustomGeneratorConfig,
+  VariantConfig,
+  parseConfiguration,
 } from './config/parser';
 import {
-    addMissingInputObjectTypes,
-    hideInputObjectTypesAndRelatedFields,
-    resolveAddMissingInputObjectTypeOptions,
-    resolveModelsComments,
+  addMissingInputObjectTypes,
+  hideInputObjectTypesAndRelatedFields,
+  resolveAddMissingInputObjectTypeOptions,
+  resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -28,10 +28,10 @@ import { logger } from './utils/logger';
 import removeDir from './utils/removeDir';
 
 import {
-    flushSingleFile,
-    initSingleFile,
-    isSingleFileEnabled,
-    setSingleFilePrismaImportPath,
+  flushSingleFile,
+  initSingleFile,
+  isSingleFileEnabled,
+  setSingleFilePrismaImportPath,
 } from './utils/singleFileAggregator';
 import { writeFileSafely } from './utils/writeFileSafely';
 
@@ -441,8 +441,8 @@ export async function generate(options: GeneratorOptions) {
     hideInputObjectTypesAndRelatedFields(mutableInputObjectTypes, hiddenModels, hiddenFields);
 
     // Determine explicit emission flags with fallbacks
-    let emitObjects = generatorConfig.emit?.objects !== false;
-    let emitCrud = generatorConfig.emit?.crud !== false;
+    const emitObjects = generatorConfig.emit?.objects !== false;
+    const emitCrud = generatorConfig.emit?.crud !== false;
     const emitResultsExplicit = generatorConfig.emit?.results;
     const emitPureModels = generatorConfig.emit?.pureModels ?? !!generatorConfig.pureModels;
     const emitVariants = generatorConfig.emit?.variants !== false; // variants wrapper/index
@@ -641,13 +641,13 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
   const cfg = Transformer.getGeneratorConfig();
   if (cfg?.mode === 'minimal') {
     // Allow-list of basic inputs still needed in minimal mode (covers find/create/update/delete)
-  const allowedBasics = [
+    const allowedBasics = [
       /WhereInput$/,
       /WhereUniqueInput$/,
-      /UncheckedCreateInput$/,  // Prefer UncheckedCreateInput over CreateInput in minimal mode
-      /UpdateInput$/,  // Allow UpdateInput for update operations
-      /UncheckedUpdateInput$/,  // Also allow UncheckedUpdateInput variants
-      /UpdateManyMutationInput$/,  // Allow UpdateMany mutation inputs
+      /UncheckedCreateInput$/, // Prefer UncheckedCreateInput over CreateInput in minimal mode
+      /UpdateInput$/, // Allow UpdateInput for update operations
+      /UncheckedUpdateInput$/, // Also allow UncheckedUpdateInput variants
+      /UpdateManyMutationInput$/, // Allow UpdateMany mutation inputs
       /OrderByWithRelationInput$/,
     ];
     if (allowedBasics.some((p) => p.test(objectSchemaName))) {
@@ -658,7 +658,9 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
           ? ops.includes('createMany') || ops.includes('create')
           : false; // default off in pure minimal mode
         if (!allowCreateMany) {
-          logger.debug(`⏭️  Minimal mode: skipping heavy ${objectSchemaName} (no createMany in ops)`);
+          logger.debug(
+            `⏭️  Minimal mode: skipping heavy ${objectSchemaName} (no createMany in ops)`,
+          );
           return false;
         }
       }

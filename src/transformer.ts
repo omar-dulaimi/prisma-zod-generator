@@ -1078,7 +1078,7 @@ export default class Transformer {
         const cfg = Transformer.getGeneratorConfig();
         const target = (cfg?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
         let dateExpr = 'z.date()';
-        
+
         if (cfg?.dateTimeStrategy === 'coerce') {
           dateExpr = 'z.coerce.date()';
         } else if (cfg?.dateTimeStrategy === 'isoString') {
@@ -2277,19 +2277,18 @@ export default class Transformer {
       if (createOne && Transformer.isOperationEnabled(modelName, 'createOne')) {
         const cfg = Transformer.getGeneratorConfig();
         const isMinimalMode = cfg?.mode === 'minimal';
-        
-        const imports = [
-          selectImport,
-          includeImport,
-        ];
-        
+
+        const imports = [selectImport, includeImport];
+
         let dataUnion;
         if (isMinimalMode) {
           // In minimal mode, prefer UncheckedCreateInput to avoid relation field issues
-          imports.push(this.generateImportStatement(
-            `${modelName}UncheckedCreateInputObjectSchema`,
-            `./objects/${modelName}UncheckedCreateInput.schema`,
-          ));
+          imports.push(
+            this.generateImportStatement(
+              `${modelName}UncheckedCreateInputObjectSchema`,
+              `./objects/${modelName}UncheckedCreateInput.schema`,
+            ),
+          );
           dataUnion = `${modelName}UncheckedCreateInputObjectSchema`;
         } else {
           // In full mode, use both CreateInput and UncheckedCreateInput
@@ -2305,7 +2304,7 @@ export default class Transformer {
           );
           dataUnion = `z.union([${modelName}CreateInputObjectSchema, ${modelName}UncheckedCreateInputObjectSchema])`;
         }
-        
+
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${createOne}.schema.ts`),
           `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(

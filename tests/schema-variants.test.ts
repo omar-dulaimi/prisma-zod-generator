@@ -2,12 +2,12 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
-    ConfigGenerator,
-    FileSystemUtils,
-    GENERATION_TIMEOUT,
-    PrismaSchemaGenerator,
-    SchemaValidationUtils,
-    TestEnvironment,
+  ConfigGenerator,
+  FileSystemUtils,
+  GENERATION_TIMEOUT,
+  PrismaSchemaGenerator,
+  SchemaValidationUtils,
+  TestEnvironment,
 } from './helpers';
 
 describe('Schema Variant Management System Tests', () => {

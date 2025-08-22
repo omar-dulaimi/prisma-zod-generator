@@ -7,10 +7,10 @@
 
 import { DMMF } from '@prisma/generator-helper';
 import {
-    extractFieldComment,
-    mapAnnotationsToZodSchema,
-    parseZodAnnotations,
-    type FieldCommentContext,
+  extractFieldComment,
+  mapAnnotationsToZodSchema,
+  parseZodAnnotations,
+  type FieldCommentContext,
 } from '../parsers/zodComments';
 import { logger } from '../utils/logger';
 
@@ -2153,7 +2153,7 @@ export class PrismaTypeMapper {
         .map((f) => f.prismaType),
     );
 
-  // Enum schema imports – ensure correct relative path from models/ -> ../schemas/enums/
+    // Enum schema imports – ensure correct relative path from models/ -> ../schemas/enums/
     const enumSchemaImports = imports.filter(
       (imp) => /Schema$/.test(imp) && enumNames.has(imp.replace(/Schema$/, '')),
     );
