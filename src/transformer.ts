@@ -402,13 +402,21 @@ export default class Transformer {
     const isBasePrismaCreateInput = isBasePrismaCreateInputName && strictCreateInputs;
 
     const filtered = fields.filter((field) => {
-      // Check basic field inclusion rules
+      // Check basic field inclusion rules first
       if (
         !isWhereUniqueInput &&
         !isBasePrismaCreateInput &&
         !this.isFieldEnabled(field.name, modelName, variant)
       ) {
         return false;
+      }
+
+      // In minimal mode, suppress relation and nested object fields in input variants
+      // BUT preserve them for base Prisma create inputs to maintain type compatibility
+      if (config.mode === 'minimal' && variant === 'input' && !isBasePrismaCreateInput) {
+        if (this.isRelationFieldArg(field)) {
+          return false;
+        }
       }
 
       // For relation fields, also check if the related model is enabled
@@ -1046,6 +1054,13 @@ export default class Transformer {
     }
 
     let alternatives = lines.reduce<string[]>((result, inputType) => {
+      // Skip inputTypes that reference blocked schemas in minimal mode
+      if (inputType.location === 'inputObjectTypes' && typeof inputType.type === 'string') {
+        if (!this.isSchemaImportEnabled(inputType.type)) {
+          return result; // Skip this inputType
+        }
+      }
+
       if (inputType.type === 'String') {
         result.push(this.wrapWithZodValidators('z.string()', field, inputType));
       } else if (inputType.type === 'Boolean') {
@@ -1061,13 +1076,20 @@ export default class Transformer {
       } else if (inputType.type === 'DateTime') {
         // Apply configurable DateTime strategy
         const cfg = Transformer.getGeneratorConfig();
+        const target = (cfg?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
         let dateExpr = 'z.date()';
+
         if (cfg?.dateTimeStrategy === 'coerce') {
           dateExpr = 'z.coerce.date()';
         } else if (cfg?.dateTimeStrategy === 'isoString') {
-          // ISO string validated then transformed to Date
-          dateExpr =
-            'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime").transform(v => new Date(v))';
+          // For v4, use the modern z.iso.datetime() API, otherwise use regex validation
+          if (target === 'v4') {
+            dateExpr = 'z.iso.datetime().transform(v => new Date(v))';
+          } else {
+            // ISO string validated then transformed to Date
+            dateExpr =
+              'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime").transform(v => new Date(v))';
+          }
         }
         result.push(this.wrapWithZodValidators(dateExpr, field, inputType));
       } else if (inputType.type === 'Json') {
@@ -1215,7 +1237,10 @@ export default class Transformer {
     if (inputType.isList) {
       if (inputType.type === 'DateTime') {
         // For DateTime lists, support both Date and ISO datetime arrays
-        line = 'z.union([z.date().array(), z.iso.datetime().array()])';
+        const config = Transformer.getGeneratorConfig();
+        const target = (config?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
+        const datetimeValidator = target === 'v4' ? 'z.iso.datetime()' : 'z.string().datetime()';
+        line = `z.union([z.date().array(), ${datetimeValidator}.array()])`;
       } else {
         // Append array() only once to avoid duplication
         if (!line.includes('.array()')) {
@@ -1253,7 +1278,64 @@ export default class Transformer {
   }
 
   addSchemaImport(name: string) {
-    this.schemaImports.add(name);
+    // Only add import if the schema is enabled
+    if (this.isSchemaImportEnabled(name)) {
+      this.schemaImports.add(name);
+    }
+  }
+
+  /**
+   * Check if a schema import should be included based on minimal mode configuration
+   */
+  private isSchemaImportEnabled(schemaName: string): boolean {
+    const config = Transformer.getGeneratorConfig();
+    if (config?.mode !== 'minimal') {
+      return true; // Allow all imports in non-minimal mode
+    }
+
+    // In minimal mode, check against the same patterns used in isObjectSchemaEnabled
+    const disallowedPatterns = [
+      // Block Include/Select helper schemas entirely in minimal mode
+      /Args$/,
+      /Include$/,
+      /Select$/,
+      /OrderByWithAggregationInput$/,
+      /ScalarWhereWithAggregatesInput$/,
+      /CountAggregateInput$/,
+      /AvgAggregateInput$/,
+      /SumAggregateInput$/,
+      /MinAggregateInput$/,
+      /MaxAggregateInput$/,
+      // Deep or relation-heavy object inputs
+      /CreateNested\w+Input$/,
+      /UpdateNested\w+Input$/,
+      /UpsertNested\w+Input$/,
+      /CreateWithout\w+Input$/,
+      /UncheckedCreateWithout\w+Input$/,
+      /UpdateWithout\w+Input$/,
+      /UncheckedUpdateWithout\w+Input$/,
+      /UpsertWithout\w+Input$/,
+      /UpdateManyWithout\w+NestedInput$/,
+      /UncheckedUpdateManyWithout\w+NestedInput$/,
+      /CreateMany\w+InputEnvelope$/,
+      /ListRelationFilter$/,
+      /RelationFilter$/,
+      /ScalarRelationFilter$/,
+      // Block schemas that depend on blocked Without schemas
+      /CreateOrConnectWithout\w+Input$/,
+      /CreateManyWithout\w+Input$/,
+      /UpdateToOneWithWhereWithout\w+Input$/,
+      /UpdateOneWithout\w+NestedInput$/,
+      /UpdateOneRequiredWithout\w+NestedInput$/,
+      /UpdateManyWithWhereWithout\w+Input$/,
+      /UpdateWithWhereUniqueWithout\w+Input$/,
+    ];
+
+    if (disallowedPatterns.some((p) => p.test(schemaName))) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -1558,7 +1640,7 @@ export default class Transformer {
         }
         if (prismaType) {
           lines.push(
-            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}, ${prismaType}> = ${schema};`,
+            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}, z.ZodTypeDef, ${prismaType}> = ${schema};`,
           );
         } else {
           // Fallback to untyped if we cannot resolve a safe Prisma type
@@ -1737,13 +1819,14 @@ export default class Transformer {
    */
   static extractModelFromImportName(importName: string): string | null {
     // Common patterns for import names
+    // NOTE: More specific patterns (with "Unchecked") must come BEFORE general patterns
     const patterns = [
+      /^(\w+?)UncheckedCreateInputObjectSchema$/,
+      /^(\w+?)UncheckedUpdateInputObjectSchema$/,
       /^(\w+)WhereInputObjectSchema$/,
       /^(\w+)WhereUniqueInputObjectSchema$/,
       /^(\w+)CreateInputObjectSchema$/,
       /^(\w+)UpdateInputObjectSchema$/,
-      /^(\w+)UncheckedCreateInputObjectSchema$/,
-      /^(\w+)UncheckedUpdateInputObjectSchema$/,
       /^(\w+)SelectObjectSchema$/,
       /^(\w+)IncludeObjectSchema$/,
       /^(\w+)ScalarFieldEnumSchema$/,
@@ -1958,7 +2041,8 @@ export default class Transformer {
         );
       }
 
-      if (findFirst && Transformer.isOperationEnabled(modelName, 'findFirst')) {
+      if (Transformer.isOperationEnabled(modelName, 'findFirst')) {
+        const fileBase = findFirst ?? `findFirst${modelName}`;
         const shouldInline = this.shouldInlineSelectSchema(model);
 
         // Build imports based on aggressive inlining strategy
@@ -2018,7 +2102,7 @@ export default class Transformer {
         );
 
         await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${findFirst}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `${fileBase}.schema.ts`),
           schemaContent + dualExports,
         );
       }
@@ -2191,23 +2275,41 @@ export default class Transformer {
       }
 
       if (createOne && Transformer.isOperationEnabled(modelName, 'createOne')) {
-        const imports = [
-          selectImport,
-          includeImport,
-          this.generateImportStatement(
-            `${modelName}CreateInputObjectSchema`,
-            `./objects/${modelName}CreateInput.schema`,
-          ),
-          this.generateImportStatement(
-            `${modelName}UncheckedCreateInputObjectSchema`,
-            `./objects/${modelName}UncheckedCreateInput.schema`,
-          ),
-        ];
+        const cfg = Transformer.getGeneratorConfig();
+        const isMinimalMode = cfg?.mode === 'minimal';
+
+        const imports = [selectImport, includeImport];
+
+        let dataUnion;
+        if (isMinimalMode) {
+          // In minimal mode, prefer UncheckedCreateInput to avoid relation field issues
+          imports.push(
+            this.generateImportStatement(
+              `${modelName}UncheckedCreateInputObjectSchema`,
+              `./objects/${modelName}UncheckedCreateInput.schema`,
+            ),
+          );
+          dataUnion = `${modelName}UncheckedCreateInputObjectSchema`;
+        } else {
+          // In full mode, use both CreateInput and UncheckedCreateInput
+          imports.push(
+            this.generateImportStatement(
+              `${modelName}CreateInputObjectSchema`,
+              `./objects/${modelName}CreateInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${modelName}UncheckedCreateInputObjectSchema`,
+              `./objects/${modelName}UncheckedCreateInput.schema`,
+            ),
+          );
+          dataUnion = `z.union([${modelName}CreateInputObjectSchema, ${modelName}UncheckedCreateInputObjectSchema])`;
+        }
+
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `${createOne}.schema.ts`),
           `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
             `${modelName}CreateOne`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${modelName}CreateInputObjectSchema, ${modelName}UncheckedCreateInputObjectSchema])  })`,
+            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion}  })`,
           )}`,
         );
       }
@@ -2731,7 +2833,9 @@ export default class Transformer {
     // Log import management if any filtering occurred
     Transformer.logImportManagement(imports, validImports, this.name);
 
-    generatedImports += validImports.join(';\r\n') ?? '';
+    // Ensure each import has a semicolon and join with newlines
+    const formattedImports = validImports.map((imp) => (imp.endsWith(';') ? imp : imp + ';'));
+    generatedImports += formattedImports.join('\n') ?? '';
     generatedImports += '\n\n';
     return generatedImports;
   }
@@ -3174,7 +3278,7 @@ export default class Transformer {
       selectFields.push(`  _count: z.boolean().optional()`);
     }
 
-    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = z.object({
+    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select, z.ZodTypeDef, Prisma.${modelName}Select> = z.object({
 ${selectFields.join(',\n')}
 }).strict()`;
   }
@@ -3188,17 +3292,25 @@ ${selectFields.join(',\n')}
 
     for (const field of model.fields) {
       if (field.relationName) {
-        const argsSchema = `${field.type}ArgsObjectSchema`;
-        imports.push(`import { ${argsSchema} } from './objects/${field.type}Args.schema'`);
+        const argsSchemaName = `${field.type}Args`;
+        // Only add import if the schema is enabled
+        if (this.isSchemaImportEnabled(argsSchemaName)) {
+          const argsSchema = `${field.type}ArgsObjectSchema`;
+          imports.push(`import { ${argsSchema} } from './objects/${field.type}Args.schema'`);
+        }
       }
     }
 
     // Add _count import if model has array relations (only these get count output types)
     const hasArrayRelations = model.fields.some((field) => field.relationName && field.isList);
     if (hasArrayRelations) {
-      imports.push(
-        `import { ${model.name}CountOutputTypeArgsObjectSchema } from './objects/${model.name}CountOutputTypeArgs.schema'`,
-      );
+      const countArgsSchemaName = `${model.name}CountOutputTypeArgs`;
+      // Only add import if the schema is enabled
+      if (this.isSchemaImportEnabled(countArgsSchemaName)) {
+        imports.push(
+          `import { ${model.name}CountOutputTypeArgsObjectSchema } from './objects/${model.name}CountOutputTypeArgs.schema'`,
+        );
+      }
     }
 
     // Remove duplicates
@@ -3220,7 +3332,7 @@ ${selectFields.join(',\n')}
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
       exports.push(
-        `export const ${typedName}: z.ZodType<${prismaType}, ${prismaType}> = ${schemaDefinition};`,
+        `export const ${typedName}: z.ZodType<${prismaType}, z.ZodTypeDef, ${prismaType}> = ${schemaDefinition};`,
       );
     }
 
@@ -3248,7 +3360,7 @@ ${selectFields.join(',\n')}
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operation ? operation : ''}Select${Transformer.typedSchemaSuffix}`;
       exports.push(
-        `export const ${typedName}: z.ZodType<Prisma.${modelName}Select, Prisma.${modelName}Select> = ${schemaDefinition};`,
+        `export const ${typedName}: z.ZodType<Prisma.${modelName}Select, z.ZodTypeDef, Prisma.${modelName}Select> = ${schemaDefinition};`,
       );
     }
 

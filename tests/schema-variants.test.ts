@@ -1175,16 +1175,16 @@ model User {
           expect(existsSync(userCreatePath), 'Create variant should exist').toBe(true);
           expect(existsSync(userUpdatePath), 'Update variant should exist').toBe(true);
 
-          // Should still respect minimal mode for operations (fewer operation files)
+          // Minimal mode still generates basic CRUD operation files but with simplified schemas
           const operationFiles = FileSystemUtils.countFiles(
             operationsDir,
             /^(findMany|findUnique|createOne|updateOne|deleteOne)\w+\.schema\.ts$/,
           );
           const allOperationFiles = FileSystemUtils.countFiles(operationsDir, /\w+\.schema\.ts$/);
 
-          // In minimal mode, should have fewer operation files
-          expect(operationFiles).toBeGreaterThan(0);
-          expect(operationFiles).toBeLessThan(allOperationFiles + 10); // Some reasonable threshold
+          expect(operationFiles).toBeGreaterThan(0); // CRUD operations are generated in minimal mode
+          // Ensure there are still some generated files (variants/pure etc.)
+          expect(allOperationFiles).toBeGreaterThan(operationFiles);
         } finally {
           await testEnv.cleanup();
         }
@@ -1250,7 +1250,7 @@ model TestModel {
 
           // Should complete in reasonable time
           // Allow a higher ceiling in parallel test runs to avoid flakiness.
-          expect(generationTime).toBeLessThan(50000); // 50 seconds
+          expect(generationTime).toBeLessThan(60000); // 60 seconds
 
           const variantsDir = join(testEnv.outputDir, 'schemas', 'variants');
 

@@ -447,7 +447,14 @@ export const DEFAULT_CONFIG = {
 /**
  * Minimal mode operation set
  */
-export const MINIMAL_OPERATIONS = ['findMany', 'findUnique', 'create', 'update', 'delete'] as const;
+export const MINIMAL_OPERATIONS = [
+  'findMany',
+  'findUnique',
+  'findFirst',
+  'create',
+  'update',
+  'delete',
+] as const;
 
 /**
  * Configuration validation error types
