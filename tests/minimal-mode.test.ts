@@ -12,7 +12,7 @@ import {
 describe('Minimal Mode Tests', () => {
   describe('Minimal Mode Configuration', () => {
     it(
-      'should generate only essential CRUD operations in minimal mode',
+      'should not generate CRUD/object schemas in minimal mode (pure/variants only)',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('minimal-mode-basic');
 
@@ -30,7 +30,7 @@ describe('Minimal Mode Tests', () => {
 
           const schemasDir = join(testEnv.outputDir, 'schemas');
 
-          // Essential operations should exist
+          // Minimal mode no longer emits CRUD or object/input schemas
           const essentialOperations = [
             'findManyUser.schema.ts',
             'findUniqueUser.schema.ts',
@@ -41,9 +41,10 @@ describe('Minimal Mode Tests', () => {
 
           essentialOperations.forEach((operation) => {
             const filePath = join(schemasDir, operation);
-            expect(existsSync(filePath), `Essential operation should exist: ${operation}`).toBe(
-              true,
-            );
+            expect(
+              existsSync(filePath),
+              `Operation should NOT exist in minimal mode: ${operation}`,
+            ).toBe(false);
           });
 
           // Advanced operations should NOT exist in minimal mode
@@ -63,6 +64,11 @@ describe('Minimal Mode Tests', () => {
               `Advanced operation should NOT exist in minimal mode: ${operation}`,
             ).toBe(false);
           });
+
+          // Pure model variant should still be emitted
+          const pureDir = join(schemasDir, 'variants', 'pure');
+          const userPure = join(pureDir, 'User.pure.ts');
+          expect(existsSync(userPure), 'Pure model should exist in minimal mode').toBe(true);
         } finally {
           await testEnv.cleanup();
         }
@@ -114,7 +120,7 @@ describe('Minimal Mode Tests', () => {
             ).toBe(false);
           });
 
-          // Basic input types should still exist
+          // Minimal mode skips all object/input schemas entirely
           const basicInputTypes = [
             'UserCreateInput.schema.ts',
             'UserUpdateInput.schema.ts',
@@ -126,8 +132,8 @@ describe('Minimal Mode Tests', () => {
             const filePath = join(objectsDir, inputType);
             expect(
               existsSync(filePath),
-              `Basic input type should exist in minimal mode: ${inputType}`,
-            ).toBe(true);
+              `Basic input type should NOT exist in minimal mode: ${inputType}`,
+            ).toBe(false);
           });
         } finally {
           await testEnv.cleanup();
@@ -156,7 +162,7 @@ describe('Minimal Mode Tests', () => {
 
           const schemasDir = join(testEnv.outputDir, 'schemas');
 
-          // Each model should have only essential operations
+          // Each model should NOT have CRUD operations in minimal mode
           const models = ['User', 'Post', 'Profile'];
           const essentialOps = ['findMany', 'findUnique', 'createOne', 'updateOne', 'deleteOne'];
 
@@ -166,8 +172,8 @@ describe('Minimal Mode Tests', () => {
               const filePath = join(schemasDir, fileName);
               expect(
                 existsSync(filePath),
-                `${model} should have essential operation: ${fileName}`,
-              ).toBe(true);
+                `${model} should NOT have CRUD operation in minimal mode: ${fileName}`,
+              ).toBe(false);
             });
 
             // Should NOT have advanced operations
@@ -187,6 +193,10 @@ describe('Minimal Mode Tests', () => {
                 `${model} should NOT have advanced operation: ${fileName}`,
               ).toBe(false);
             });
+
+            // Pure models should exist for each
+            const userPure = join(testEnv.outputDir, 'schemas', 'variants', 'pure', `${model}.pure.ts`);
+            expect(existsSync(userPure), `Pure model should exist: ${model}.pure.ts`).toBe(true);
           });
         } finally {
           await testEnv.cleanup();
@@ -281,28 +291,19 @@ describe('Minimal Mode Tests', () => {
 
           const schemasDir = join(testEnv.outputDir, 'schemas');
 
-          // Essential schemas should be valid and functional
-          const findManyUserPath = join(schemasDir, 'findManyUser.schema.ts');
-          expect(existsSync(findManyUserPath)).toBe(true);
+          // In minimal mode, validate pure model schema instead of CRUD
+          const userPurePath = join(schemasDir, 'variants', 'pure', 'User.pure.ts');
+          expect(existsSync(userPurePath)).toBe(true);
 
-          if (existsSync(findManyUserPath)) {
-            const content = readFileSync(findManyUserPath, 'utf-8');
-
+          if (existsSync(userPurePath)) {
+            const content = readFileSync(userPurePath, 'utf-8');
             // Should be valid Zod schema
-            expect(content).toMatch(/import.*zod/);
-            expect(content).toMatch(/export const.*Schema/);
-            expect(content).toMatch(/z\.object\(|z\.string\(|z\.number\(/);
-
+            expect(content).toMatch(/import.*z.*from.*zod/);
+            expect(content).toMatch(/export const/);
+            expect(content).toMatch(/z\.object\(/);
             // Should handle basic fields
-            expect(content).toMatch(/where/);
-            expect(content).toMatch(/orderBy/);
-          }
-
-          // Create operation should work
-          const createOneUserPath = join(schemasDir, 'createOneUser.schema.ts');
-          if (existsSync(createOneUserPath)) {
-            const content = readFileSync(createOneUserPath, 'utf-8');
-            expect(content).toMatch(/data/);
+            expect(content).toMatch(/id:/);
+            expect(content).toMatch(/email:/);
           }
         } finally {
           await testEnv.cleanup();
@@ -462,7 +463,7 @@ model Tag {
 
           const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
 
-          // Should have basic create inputs for all models
+          // Minimal mode skips object/input schemas entirely
           const basicInputs = [
             'UserCreateInput.schema.ts',
             'PostCreateInput.schema.ts',
@@ -472,7 +473,7 @@ model Tag {
 
           basicInputs.forEach((inputType) => {
             const filePath = join(objectsDir, inputType);
-            expect(existsSync(filePath), `Basic input should exist: ${inputType}`).toBe(true);
+            expect(existsSync(filePath), `Basic input should NOT exist: ${inputType}`).toBe(false);
           });
 
           // Should NOT have complex nested relation inputs
@@ -571,29 +572,20 @@ model Tag {
 
           const schemasDir = join(testEnv.outputDir, 'schemas');
 
-          // Should have only custom minimal operations
-          const allowedOperations = [
+          // Minimal mode now skips all CRUD regardless of customization
+          const allCrudOperations = [
             'findManyUser.schema.ts',
             'findUniqueUser.schema.ts',
             'createOneUser.schema.ts',
+            'updateOneUser.schema.ts',
+            'deleteOneUser.schema.ts',
           ];
 
-          allowedOperations.forEach((operation) => {
+          allCrudOperations.forEach((operation) => {
             const filePath = join(schemasDir, operation);
             expect(
               existsSync(filePath),
-              `Custom minimal operation should exist: ${operation}`,
-            ).toBe(true);
-          });
-
-          // Should NOT have operations not in custom set
-          const disallowedOperations = ['updateOneUser.schema.ts', 'deleteOneUser.schema.ts'];
-
-          disallowedOperations.forEach((operation) => {
-            const filePath = join(schemasDir, operation);
-            expect(
-              existsSync(filePath),
-              `Non-minimal operation should NOT exist: ${operation}`,
+              `CRUD operation should NOT exist in minimal mode: ${operation}`,
             ).toBe(false);
           });
         } finally {
@@ -704,12 +696,9 @@ model Tag {
           const schemasDir = join(testEnv.outputDir, 'schemas');
           expect(existsSync(schemasDir)).toBe(true);
 
-          // Check for presence of essential files
-          const essentialFiles = ['findManyUser.schema.ts', 'createOneUser.schema.ts'];
-
-          essentialFiles.forEach((file) => {
-            expect(existsSync(join(schemasDir, file))).toBe(true);
-          });
+          // Check for presence of at least one generated schema (pure model)
+          const userPure = join(schemasDir, 'variants', 'pure', 'User.pure.ts');
+          expect(existsSync(userPure)).toBe(true);
         } finally {
           await testEnv.cleanup();
         }
