@@ -1175,16 +1175,16 @@ model User {
           expect(existsSync(userCreatePath), 'Create variant should exist').toBe(true);
           expect(existsSync(userUpdatePath), 'Update variant should exist').toBe(true);
 
-          // Minimal mode suppresses CRUD operation files entirely now
+          // Minimal mode still generates basic CRUD operation files but with simplified schemas
           const operationFiles = FileSystemUtils.countFiles(
             operationsDir,
             /^(findMany|findUnique|createOne|updateOne|deleteOne)\w+\.schema\.ts$/,
           );
           const allOperationFiles = FileSystemUtils.countFiles(operationsDir, /\w+\.schema\.ts$/);
 
-          expect(operationFiles).toBe(0);
+          expect(operationFiles).toBeGreaterThan(0); // CRUD operations are generated in minimal mode
           // Ensure there are still some generated files (variants/pure etc.)
-          expect(allOperationFiles).toBeGreaterThan(0);
+          expect(allOperationFiles).toBeGreaterThan(operationFiles);
         } finally {
           await testEnv.cleanup();
         }

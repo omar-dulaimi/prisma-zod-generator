@@ -118,7 +118,7 @@ describe('Minimal Mode Tests', () => {
 
           // Basic input types should exist in minimal mode
           const basicInputTypes = [
-            'UserCreateInput.schema.ts',
+            'UserUncheckedCreateInput.schema.ts',  // Uses UncheckedCreateInput in minimal mode
             'UserUpdateInput.schema.ts',
             'UserWhereInput.schema.ts',
             'UserWhereUniqueInput.schema.ts',
@@ -457,15 +457,31 @@ model Tag {
 
           // Basic inputs should exist
           const basicInputs = [
-            'UserCreateInput.schema.ts',
-            'PostCreateInput.schema.ts',
-            'ProfileCreateInput.schema.ts',
-            'TagCreateInput.schema.ts',
+            'UserUncheckedCreateInput.schema.ts',    // Uses UncheckedCreateInput in minimal mode
+            'PostUncheckedCreateInput.schema.ts',    // Uses UncheckedCreateInput in minimal mode
+            'ProfileUncheckedCreateInput.schema.ts', // Uses UncheckedCreateInput in minimal mode
+            'TagUncheckedCreateInput.schema.ts',     // Uses UncheckedCreateInput in minimal mode
           ];
 
           basicInputs.forEach((inputType) => {
             const filePath = join(objectsDir, inputType);
             expect(existsSync(filePath), `Basic input should exist: ${inputType}`).toBe(true);
+          });
+
+          // Should NOT have regular CreateInput files (blocked in minimal mode)
+          const blockedCreateInputs = [
+            'UserCreateInput.schema.ts',
+            'PostCreateInput.schema.ts', 
+            'ProfileCreateInput.schema.ts',
+            'TagCreateInput.schema.ts',
+          ];
+
+          blockedCreateInputs.forEach((inputType) => {
+            const filePath = join(objectsDir, inputType);
+            expect(
+              existsSync(filePath),
+              `Regular CreateInput should NOT exist: ${inputType}`,
+            ).toBe(false);
           });
 
           // Should NOT have complex nested relation inputs
