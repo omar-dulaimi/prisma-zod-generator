@@ -1255,13 +1255,21 @@ export default class Transformer {
         // For enhanced schemas, check if optionality is already handled
         if (!line.includes('.optional()') && !line.includes('.nullable()')) {
           // Extract base type and validations, then reorder
-          const baseTypeMatch = line.match(/^(z\.[^.]+(?:\(\))?)/);
-          const validationsMatch = line.match(/(\.[^.]+(?:\([^)]*\))?)+$/);
+          // For enhanced Zod schemas like "z.string().email()", we need to carefully split
+          // to avoid duplicating the base type in the validations part
+          const baseTypeMatch = line.match(/^(z\.[^.(]+(?:\([^)]*\))?)/);
+          if (baseTypeMatch) {
+            const baseType = baseTypeMatch[1]; // e.g., "z.string"
+            const afterBaseType = line.substring(baseType.length); // e.g., "().email()"
+            const validationsMatch = afterBaseType.match(/^(\(\))?(.*)$/);
 
-          if (baseTypeMatch && validationsMatch) {
-            const baseType = baseTypeMatch[1];
-            const validations = validationsMatch[0];
-            line = `${baseType}${validations}.optional()`;
+            if (validationsMatch) {
+              const baseCall = validationsMatch[1] || ''; // e.g., "()"
+              const actualValidations = validationsMatch[2]; // e.g., ".email()"
+              line = `${baseType}${baseCall}${actualValidations}.optional()`;
+            } else {
+              line += '.optional()';
+            }
           } else {
             line += '.optional()';
           }
@@ -1456,6 +1464,12 @@ export default class Transformer {
     // IMPORTANT: Don't apply field validations to Select schemas
     // Select schemas should always use boolean types regardless of the original field type
     if (this.name && this.name.includes('Select')) {
+      return null;
+    }
+
+    // IMPORTANT: Don't apply field validations to aggregate input schemas
+    // Aggregate inputs use boolean flags to specify which fields to include in aggregation
+    if (this.name && /(?:Count|Min|Max|Sum|Avg)AggregateInput$/.test(this.name)) {
       return null;
     }
 
