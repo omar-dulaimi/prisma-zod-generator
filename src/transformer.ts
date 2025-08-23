@@ -1262,7 +1262,7 @@ export default class Transformer {
             const baseType = baseTypeMatch[1]; // e.g., "z.string"
             const afterBaseType = line.substring(baseType.length); // e.g., "().email()"
             const validationsMatch = afterBaseType.match(/^(\(\))?(.*)$/);
-            
+
             if (validationsMatch) {
               const baseCall = validationsMatch[1] || ''; // e.g., "()"
               const actualValidations = validationsMatch[2]; // e.g., ".email()"
