@@ -1596,4 +1596,480 @@ model MongoUser {
       GENERATION_TIMEOUT,
     );
   });
+
+  describe('Issue #189: @zod annotations without config file and pure variants', () => {
+    it(
+      'should work without config file (no zod-generator.config.json)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-189-no-config');
+
+        try {
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+}
+
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+  /// @zod.min(18)
+  age   Int?
+}
+`;
+          // Explicitly NOT creating a config file - this is the key test
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check that pure model variant is generated with @zod annotations
+          const pureVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'User.pure.ts');
+          
+          if (existsSync(pureVariantPath)) {
+            const content = readFileSync(pureVariantPath, 'utf-8');
+
+            // Should contain the @zod.min(18) validation
+            expect(content).toMatch(/age.*\.min\(18\)/);
+
+            // Should have correct method ordering: validations before .nullable()
+            expect(content).toMatch(/age.*\.int\(\)\.min\(18\)\.nullable\(\)/);
+            expect(content).not.toMatch(/age.*\.nullable\(\)\.min\(18\)/);
+
+            // Should generate UserModelSchema
+            expect(content).toMatch(/export const UserModelSchema/);
+          }
+
+          // Also check regular input schemas work
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
+          
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+            expect(content).toMatch(/age.*\.min\(18\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle correct Zod method ordering in pure variants',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-189-method-ordering');
+
+        try {
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+}
+
+model ValidationTest {
+  id          Int      @id @default(autoincrement())
+  /// @zod.min(1).max(100)
+  optString   String?
+  /// @zod.positive().max(999)
+  optNumber   Int?
+  /// @zod.email().toLowerCase()
+  optEmail    String?
+  /// @zod.min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])/)
+  password    String
+  /// @zod.min(0).max(120).default(25)
+  ageWithDef  Int      @default(25)
+}
+`;
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const pureVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'ValidationTest.pure.ts');
+          
+          if (existsSync(pureVariantPath)) {
+            const content = readFileSync(pureVariantPath, 'utf-8');
+
+            // Optional string: validations before .nullable()
+            expect(content).toMatch(/optString.*\.min\(1\)\.max\(100\)\.nullable\(\)/);
+            expect(content).not.toMatch(/optString.*\.nullable\(\)\.min/);
+
+            // Optional number: validations before .nullable()
+            expect(content).toMatch(/optNumber.*\.positive\(\)\.max\(999\)\.nullable\(\)/);
+            expect(content).not.toMatch(/optNumber.*\.nullable\(\)\.positive/);
+
+            // Optional email: chained validations before .nullable()
+            expect(content).toMatch(/optEmail.*\.email\(\)\.toLowerCase\(\)\.nullable\(\)/);
+            expect(content).not.toMatch(/optEmail.*\.nullable\(\)\.email/);
+
+            // Required password: no .nullable()
+            expect(content).toMatch(/password.*\.min\(8\)\.regex\(/);
+            expect(content).not.toMatch(/password.*\.nullable\(\)/);
+
+            // Required with default: validations but no .nullable()
+            expect(content).toMatch(/ageWithDef.*\.min\(0\)\.max\(120\)\.default\(25\)/);
+            expect(content).not.toMatch(/ageWithDef.*\.nullable\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle UserModelSchema pattern recognition',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-189-model-pattern');
+
+        try {
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+}
+
+model Account {
+  id        Int     @id @default(autoincrement())
+  /// @zod.email()
+  email     String  @unique
+  /// @zod.min(2).max(50)
+  firstName String
+  /// @zod.min(2).max(50)  
+  lastName  String?
+  /// @zod.min(18).max(99)
+  age       Int?
+}
+
+model Product {
+  id          Int     @id @default(autoincrement())
+  /// @zod.min(1).max(200)
+  name        String
+  /// @zod.positive()
+  price       Float
+  /// @zod.max(1000)
+  description String?
+}
+`;
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Test Account pure variant
+          const accountPurePath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'Account.pure.ts');
+          if (existsSync(accountPurePath)) {
+            const content = readFileSync(accountPurePath, 'utf-8');
+
+            expect(content).toMatch(/export const AccountModelSchema/);
+            expect(content).toMatch(/email.*\.email\(\)/);
+            expect(content).toMatch(/firstName.*\.min\(2\)\.max\(50\)/);
+            expect(content).toMatch(/lastName.*\.min\(2\)\.max\(50\)\.nullable\(\)/);
+            expect(content).toMatch(/age.*\.min\(18\)\.max\(99\)\.nullable\(\)/);
+          }
+
+          // Test Product pure variant  
+          const productPurePath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'Product.pure.ts');
+          if (existsSync(productPurePath)) {
+            const content = readFileSync(productPurePath, 'utf-8');
+
+            expect(content).toMatch(/export const ProductModelSchema/);
+            expect(content).toMatch(/name.*\.min\(1\)\.max\(200\)/);
+            expect(content).toMatch(/price.*\.positive\(\)/);
+            expect(content).toMatch(/description.*\.max\(1000\)\.nullable\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should work consistently with and without config files',
+      async () => {
+        const testEnvNoConfig = await TestEnvironment.createTestEnv('issue-189-consistency-no-config');
+        const testEnvWithConfig = await TestEnvironment.createTestEnv('issue-189-consistency-with-config');
+
+        try {
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "PLACEHOLDER_OUTPUT/schemas"
+}
+
+model TestUser {
+  id       Int     @id @default(autoincrement())
+  /// @zod.email().toLowerCase()
+  email    String  @unique
+  /// @zod.min(2).max(50).trim()
+  name     String?
+  /// @zod.min(13).max(100)
+  age      Int?
+  /// @zod.url()
+  website  String?
+}
+`;
+
+          // Test without config file
+          const schemaNoConfig = schema.replace('PLACEHOLDER_OUTPUT', testEnvNoConfig.outputDir);
+          writeFileSync(testEnvNoConfig.schemaPath, schemaNoConfig);
+          await testEnvNoConfig.runGeneration();
+
+          // Test with config file
+          const config = { mode: 'full', optionalFieldBehavior: 'nullable' };
+          const configPath = join(testEnvWithConfig.testDir, 'config.json');
+          const schemaWithConfig = schema.replace('PLACEHOLDER_OUTPUT', testEnvWithConfig.outputDir).replace(
+            'generator zod {',
+            `generator zod {\n  config   = "${configPath}"`
+          );
+          
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnvWithConfig.schemaPath, schemaWithConfig);
+          await testEnvWithConfig.runGeneration();
+
+          // Compare pure variant outputs
+          const purePathNoConfig = join(testEnvNoConfig.outputDir, 'schemas', 'variants', 'pure', 'TestUser.pure.ts');
+          const purePathWithConfig = join(testEnvWithConfig.outputDir, 'schemas', 'variants', 'pure', 'TestUser.pure.ts');
+
+          if (existsSync(purePathNoConfig) && existsSync(purePathWithConfig)) {
+            const contentNoConfig = readFileSync(purePathNoConfig, 'utf-8');
+            const contentWithConfig = readFileSync(purePathWithConfig, 'utf-8');
+
+            // Both should have the same @zod validations
+            [contentNoConfig, contentWithConfig].forEach(content => {
+              expect(content).toMatch(/email.*\.email\(\)\.toLowerCase\(\)/);
+              expect(content).toMatch(/name.*\.min\(2\)\.max\(50\)\.trim\(\)\.nullable\(\)/);
+              expect(content).toMatch(/age.*\.min\(13\)\.max\(100\)\.nullable\(\)/);
+              expect(content).toMatch(/website.*\.url\(\)\.nullable\(\)/);
+            });
+
+            // Both should have correct method ordering
+            [contentNoConfig, contentWithConfig].forEach(content => {
+              expect(content).not.toMatch(/\.nullable\(\)\.min\(/);
+              expect(content).not.toMatch(/\.nullable\(\)\.max\(/);
+              expect(content).not.toMatch(/\.nullable\(\)\.email\(/);
+              expect(content).not.toMatch(/\.nullable\(\)\.url\(/);
+            });
+          }
+
+          // Also compare input schema outputs
+          const inputPathNoConfig = join(testEnvNoConfig.outputDir, 'schemas', 'objects', 'TestUserCreateInput.schema.ts');
+          const inputPathWithConfig = join(testEnvWithConfig.outputDir, 'schemas', 'objects', 'TestUserCreateInput.schema.ts');
+
+          if (existsSync(inputPathNoConfig) && existsSync(inputPathWithConfig)) {
+            const inputNoConfig = readFileSync(inputPathNoConfig, 'utf-8');
+            const inputWithConfig = readFileSync(inputPathWithConfig, 'utf-8');
+
+            // Both should apply @zod validations
+            [inputNoConfig, inputWithConfig].forEach(content => {
+              expect(content).toMatch(/email.*\.email\(\)/);
+              expect(content).toMatch(/name.*\.min\(2\)\.max\(50\)/);
+              expect(content).toMatch(/age.*\.min\(13\)\.max\(100\)/);
+            });
+          }
+        } finally {
+          await testEnvNoConfig.cleanup();
+          await testEnvWithConfig.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle complex chained validations with correct ordering',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-189-chained-validations');
+
+        try {
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" 
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+}
+
+model ComplexValidation {
+  id                Int      @id @default(autoincrement())
+  
+  /// @zod.string().email().toLowerCase().trim().min(5).max(320)
+  complexEmail      String   @unique
+  
+  /// @zod.number().int().positive().min(18).max(99).default(25)
+  complexAge        Int?     @default(25)
+  
+  /// @zod.string().min(8).max(255).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/).trim()
+  complexPassword   String
+  
+  /// @zod.string().url().startsWith("https://").max(2048)
+  complexUrl        String?
+  
+  /// @zod.string().min(1).max(100).regex(/^[A-Za-z\\s-']+$/).trim().toLowerCase()
+  complexName       String?
+}
+`;
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const pureVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'ComplexValidation.pure.ts');
+          
+          if (existsSync(pureVariantPath)) {
+            const content = readFileSync(pureVariantPath, 'utf-8');
+
+            // Complex email: all validations should be in correct order before any modifiers
+            expect(content).toMatch(/complexEmail.*\.email\(\)\.toLowerCase\(\)\.trim\(\)\.min\(5\)\.max\(320\)/);
+            expect(content).not.toMatch(/complexEmail.*\.nullable\(\)/); // Required field
+
+            // Complex age: all validations before .nullable(), and should include .default()
+            expect(content).toMatch(/complexAge.*\.int\(\)\.positive\(\)\.min\(18\)\.max\(99\)\.default\(25\)\.nullable\(\)/);
+
+            // Complex password: all validations, no .nullable() 
+            expect(content).toMatch(/complexPassword.*\.min\(8\)\.max\(255\)\.regex\(.*\)\.trim\(\)/);
+            expect(content).not.toMatch(/complexPassword.*\.nullable\(\)/);
+
+            // Complex URL: all validations before .nullable()
+            expect(content).toMatch(/complexUrl.*\.url\(\)\.startsWith\("https:\/\/"\)\.max\(2048\)\.nullable\(\)/);
+
+            // Complex name: all validations before .nullable()
+            expect(content).toMatch(/complexName.*\.min\(1\)\.max\(100\)\.regex\(.*\)\.trim\(\)\.toLowerCase\(\)\.nullable\(\)/);
+
+            // Ensure no validation methods are called after .nullable()
+            expect(content).not.toMatch(/\.nullable\(\)\.[a-zA-Z]/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should preserve type safety with correct method ordering',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-189-type-safety');
+
+        try {
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+}
+
+model TypeSafeTest {
+  id              Int       @id @default(autoincrement())
+  
+  // String validations
+  /// @zod.min(1).max(50).email()
+  emailField      String?
+  
+  /// @zod.url().startsWith("https://")
+  urlField        String?
+  
+  /// @zod.uuid()
+  uuidField       String?
+  
+  // Number validations
+  /// @zod.int().positive().min(1).max(1000)
+  intField        Int?
+  
+  /// @zod.positive().multipleOf(0.01)
+  floatField      Float?
+  
+  // Complex combinations
+  /// @zod.min(2).max(100).trim().toLowerCase().regex(/^[a-z\\s]+$/)
+  nameField       String?
+}
+`;
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const pureVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'TypeSafeTest.pure.ts');
+          
+          if (existsSync(pureVariantPath)) {
+            const content = readFileSync(pureVariantPath, 'utf-8');
+
+            // All string method validations should come before .nullable()
+            expect(content).toMatch(/emailField.*\.min\(1\)\.max\(50\)\.email\(\)\.nullable\(\)/);
+            expect(content).toMatch(/urlField.*\.url\(\)\.startsWith\("https:\/\/"\)\.nullable\(\)/);
+            expect(content).toMatch(/uuidField.*\.uuid\(\)\.nullable\(\)/);
+
+            // All number method validations should come before .nullable()
+            expect(content).toMatch(/intField.*\.int\(\)\.positive\(\)\.min\(1\)\.max\(1000\)\.nullable\(\)/);
+            expect(content).toMatch(/floatField.*\.positive\(\)\.multipleOf\(0\.01\)\.nullable\(\)/);
+
+            // Complex string validations should maintain order
+            expect(content).toMatch(/nameField.*\.min\(2\)\.max\(100\)\.trim\(\)\.toLowerCase\(\)\.regex\(.*\)\.nullable\(\)/);
+
+            // Critical: No method should be called on ZodNullable
+            expect(content).not.toMatch(/\.nullable\(\)\.\w/);
+            
+            // All .nullable() should be at the very end
+            expect(content.match(/\.nullable\(\)/g)).toBeTruthy();
+            content.split('\n').forEach(line => {
+              if (line.includes('.nullable()')) {
+                expect(line.trim()).toMatch(/\.nullable\(\),?\s*$/);
+              }
+            });
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });
