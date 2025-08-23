@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.0...v1.16.1) (2025-08-23)
+
+### 🐛 Bug Fixes
+
+* **transformer:** avoid applying field validations to aggregate input schemas and fix optional() placement for enhanced zod chains ([a84d222](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a84d222138912757757e095e35ea487b1bde3f28))
+* **transformer:** correct optional() placement and skip validations on aggregate inputs ([097be4d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/097be4d50b391357d9ab700d0cc99fbfe1039dfe))
+
 ## [1.16.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.15.0...v1.16.0) (2025-08-22)
 
 ### ⚠ BREAKING CHANGES
