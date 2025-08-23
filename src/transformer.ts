@@ -674,6 +674,9 @@ export default class Transformer {
 
       // Args and other schemas
       /^(\w+)Args$/,
+
+      // Pure model schemas (variant schemas)
+      /^(\w+)ModelSchema$/,
     ];
 
     for (const pattern of patterns) {

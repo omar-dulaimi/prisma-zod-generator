@@ -1524,7 +1524,7 @@ async function generateVariantType(
     ];
 
     // Generate schema content
-    const schemaContent = generateVariantSchemaContent(
+    const schemaContent = await generateVariantSchemaContent(
       model,
       schemaName,
       excludeFields,
@@ -1556,12 +1556,12 @@ async function generateVariantType(
 /**
  * Generate schema content for a specific variant
  */
-function generateVariantSchemaContent(
+async function generateVariantSchemaContent(
   model: DMMF.Model,
   schemaName: string,
   excludeFields: string[],
   variantName: string,
-): string {
+): Promise<string> {
   const enabledFields = model.fields.filter((field) => !excludeFields.includes(field.name));
   // Collect enum types used in this model to generate proper imports
   const enumTypes = Array.from(
@@ -1585,10 +1585,48 @@ function generateVariantSchemaContent(
     }
   }
 
+  // Get enhanced models with @zod annotation processing
+  const { processModelsWithZodIntegration } = await import('./helpers/zod-integration');
+  const enhancedModels = processModelsWithZodIntegration([model], {
+    enableZodAnnotations: true,
+    generateFallbackSchemas: true,
+    validateTypeCompatibility: true,
+    collectDetailedErrors: true,
+  });
+  const enhancedModel = enhancedModels[0];
+
   const fieldDefinitions = enabledFields
     .map((field) => {
+      // Check if we have enhanced field information with @zod annotations
+      const enhancedField = enhancedModel?.enhancedFields.find(
+        (ef) => ef.field.name === field.name,
+      );
+
+      if (enhancedField && enhancedField.hasZodAnnotations && enhancedField.zodSchema) {
+        // Use the enhanced schema with @zod annotations
+        let schema = enhancedField.zodSchema;
+
+        // Apply variant-specific modifier adjustments - need to handle order correctly
+        // Zod validations must come BEFORE .nullable()/.optional() modifiers
+        if (!field.isRequired) {
+          if (variantName === 'input') {
+            // For input schemas: need .optional().nullable()
+            // Remove any existing .optional() or .nullable() and add them at the end
+            schema = schema.replace(/\.optional\(\)/g, '').replace(/\.nullable\(\)/g, '');
+            schema += '.optional().nullable()';
+          } else {
+            // For pure/result schemas: need .nullable()
+            // Remove any existing .optional() or .nullable() and add .nullable() at the end
+            schema = schema.replace(/\.optional\(\)/g, '').replace(/\.nullable\(\)/g, '');
+            schema += '.nullable()';
+          }
+        }
+
+        return `    ${field.name}: ${schema}`;
+      }
+
+      // Fallback to basic type generation
       const isEnum = field.kind === 'enum';
-      // Base type: always use generated enum schemas for consistency across all variants
       const base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
 
       // Apply consistent optional/nullable patterns based on Prisma behavior:
