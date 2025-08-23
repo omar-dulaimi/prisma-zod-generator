@@ -1,3 +1,9 @@
+## [1.16.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.1...v1.16.2) (2025-08-23)
+
+### 🐛 Bug Fixes
+
+* resolve [@zod](https://github.com/zod) annotations not working without config file (issue [#189](https://github.com/omar-dulaimi/prisma-zod-generator/issues/189)) ([3198737](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3198737c6189af7292e73c186ab01f0940f87243))
+
 ## [1.16.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.0...v1.16.1) (2025-08-23)
 
 ### 🐛 Bug Fixes
