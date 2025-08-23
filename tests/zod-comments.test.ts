@@ -1633,8 +1633,14 @@ model User {
           await testEnv.runGeneration();
 
           // Check that pure model variant is generated with @zod annotations
-          const pureVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'User.pure.ts');
-          
+          const pureVariantPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'User.pure.ts',
+          );
+
           if (existsSync(pureVariantPath)) {
             const content = readFileSync(pureVariantPath, 'utf-8');
 
@@ -1652,7 +1658,7 @@ model User {
           // Also check regular input schemas work
           const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
           const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
-          
+
           if (existsSync(userCreatePath)) {
             const content = readFileSync(userCreatePath, 'utf-8');
             expect(content).toMatch(/age.*\.min\(18\)/);
@@ -1703,8 +1709,14 @@ model ValidationTest {
 
           await testEnv.runGeneration();
 
-          const pureVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'ValidationTest.pure.ts');
-          
+          const pureVariantPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'ValidationTest.pure.ts',
+          );
+
           if (existsSync(pureVariantPath)) {
             const content = readFileSync(pureVariantPath, 'utf-8');
 
@@ -1783,7 +1795,13 @@ model Product {
           await testEnv.runGeneration();
 
           // Test Account pure variant
-          const accountPurePath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'Account.pure.ts');
+          const accountPurePath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'Account.pure.ts',
+          );
           if (existsSync(accountPurePath)) {
             const content = readFileSync(accountPurePath, 'utf-8');
 
@@ -1794,8 +1812,14 @@ model Product {
             expect(content).toMatch(/age.*\.min\(18\)\.max\(99\)\.nullable\(\)/);
           }
 
-          // Test Product pure variant  
-          const productPurePath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'Product.pure.ts');
+          // Test Product pure variant
+          const productPurePath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'Product.pure.ts',
+          );
           if (existsSync(productPurePath)) {
             const content = readFileSync(productPurePath, 'utf-8');
 
@@ -1814,8 +1838,12 @@ model Product {
     it(
       'should work consistently with and without config files',
       async () => {
-        const testEnvNoConfig = await TestEnvironment.createTestEnv('issue-189-consistency-no-config');
-        const testEnvWithConfig = await TestEnvironment.createTestEnv('issue-189-consistency-with-config');
+        const testEnvNoConfig = await TestEnvironment.createTestEnv(
+          'issue-189-consistency-no-config',
+        );
+        const testEnvWithConfig = await TestEnvironment.createTestEnv(
+          'issue-189-consistency-with-config',
+        );
 
         try {
           const schema = `
@@ -1854,25 +1882,36 @@ model TestUser {
           // Test with config file
           const config = { mode: 'full', optionalFieldBehavior: 'nullable' };
           const configPath = join(testEnvWithConfig.testDir, 'config.json');
-          const schemaWithConfig = schema.replace('PLACEHOLDER_OUTPUT', testEnvWithConfig.outputDir).replace(
-            'generator zod {',
-            `generator zod {\n  config   = "${configPath}"`
-          );
-          
+          const schemaWithConfig = schema
+            .replace('PLACEHOLDER_OUTPUT', testEnvWithConfig.outputDir)
+            .replace('generator zod {', `generator zod {\n  config   = "${configPath}"`);
+
           writeFileSync(configPath, JSON.stringify(config, null, 2));
           writeFileSync(testEnvWithConfig.schemaPath, schemaWithConfig);
           await testEnvWithConfig.runGeneration();
 
           // Compare pure variant outputs
-          const purePathNoConfig = join(testEnvNoConfig.outputDir, 'schemas', 'variants', 'pure', 'TestUser.pure.ts');
-          const purePathWithConfig = join(testEnvWithConfig.outputDir, 'schemas', 'variants', 'pure', 'TestUser.pure.ts');
+          const purePathNoConfig = join(
+            testEnvNoConfig.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'TestUser.pure.ts',
+          );
+          const purePathWithConfig = join(
+            testEnvWithConfig.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'TestUser.pure.ts',
+          );
 
           if (existsSync(purePathNoConfig) && existsSync(purePathWithConfig)) {
             const contentNoConfig = readFileSync(purePathNoConfig, 'utf-8');
             const contentWithConfig = readFileSync(purePathWithConfig, 'utf-8');
 
             // Both should have the same @zod validations
-            [contentNoConfig, contentWithConfig].forEach(content => {
+            [contentNoConfig, contentWithConfig].forEach((content) => {
               expect(content).toMatch(/email.*\.email\(\)\.toLowerCase\(\)/);
               expect(content).toMatch(/name.*\.min\(2\)\.max\(50\)\.trim\(\)\.nullable\(\)/);
               expect(content).toMatch(/age.*\.min\(13\)\.max\(100\)\.nullable\(\)/);
@@ -1880,7 +1919,7 @@ model TestUser {
             });
 
             // Both should have correct method ordering
-            [contentNoConfig, contentWithConfig].forEach(content => {
+            [contentNoConfig, contentWithConfig].forEach((content) => {
               expect(content).not.toMatch(/\.nullable\(\)\.min\(/);
               expect(content).not.toMatch(/\.nullable\(\)\.max\(/);
               expect(content).not.toMatch(/\.nullable\(\)\.email\(/);
@@ -1889,15 +1928,25 @@ model TestUser {
           }
 
           // Also compare input schema outputs
-          const inputPathNoConfig = join(testEnvNoConfig.outputDir, 'schemas', 'objects', 'TestUserCreateInput.schema.ts');
-          const inputPathWithConfig = join(testEnvWithConfig.outputDir, 'schemas', 'objects', 'TestUserCreateInput.schema.ts');
+          const inputPathNoConfig = join(
+            testEnvNoConfig.outputDir,
+            'schemas',
+            'objects',
+            'TestUserCreateInput.schema.ts',
+          );
+          const inputPathWithConfig = join(
+            testEnvWithConfig.outputDir,
+            'schemas',
+            'objects',
+            'TestUserCreateInput.schema.ts',
+          );
 
           if (existsSync(inputPathNoConfig) && existsSync(inputPathWithConfig)) {
             const inputNoConfig = readFileSync(inputPathNoConfig, 'utf-8');
             const inputWithConfig = readFileSync(inputPathWithConfig, 'utf-8');
 
             // Both should apply @zod validations
-            [inputNoConfig, inputWithConfig].forEach(content => {
+            [inputNoConfig, inputWithConfig].forEach((content) => {
               expect(content).toMatch(/email.*\.email\(\)/);
               expect(content).toMatch(/name.*\.min\(2\)\.max\(50\)/);
               expect(content).toMatch(/age.*\.min\(13\)\.max\(100\)/);
@@ -1955,27 +2004,43 @@ model ComplexValidation {
 
           await testEnv.runGeneration();
 
-          const pureVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'ComplexValidation.pure.ts');
-          
+          const pureVariantPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'ComplexValidation.pure.ts',
+          );
+
           if (existsSync(pureVariantPath)) {
             const content = readFileSync(pureVariantPath, 'utf-8');
 
             // Complex email: all validations should be in correct order before any modifiers
-            expect(content).toMatch(/complexEmail.*\.email\(\)\.toLowerCase\(\)\.trim\(\)\.min\(5\)\.max\(320\)/);
+            expect(content).toMatch(
+              /complexEmail.*\.email\(\)\.toLowerCase\(\)\.trim\(\)\.min\(5\)\.max\(320\)/,
+            );
             expect(content).not.toMatch(/complexEmail.*\.nullable\(\)/); // Required field
 
             // Complex age: all validations before .nullable(), and should include .default()
-            expect(content).toMatch(/complexAge.*\.int\(\)\.positive\(\)\.min\(18\)\.max\(99\)\.default\(25\)\.nullable\(\)/);
+            expect(content).toMatch(
+              /complexAge.*\.int\(\)\.positive\(\)\.min\(18\)\.max\(99\)\.default\(25\)\.nullable\(\)/,
+            );
 
-            // Complex password: all validations, no .nullable() 
-            expect(content).toMatch(/complexPassword.*\.min\(8\)\.max\(255\)\.regex\(.*\)\.trim\(\)/);
+            // Complex password: all validations, no .nullable()
+            expect(content).toMatch(
+              /complexPassword.*\.min\(8\)\.max\(255\)\.regex\(.*\)\.trim\(\)/,
+            );
             expect(content).not.toMatch(/complexPassword.*\.nullable\(\)/);
 
             // Complex URL: all validations before .nullable()
-            expect(content).toMatch(/complexUrl.*\.url\(\)\.startsWith\("https:\/\/"\)\.max\(2048\)\.nullable\(\)/);
+            expect(content).toMatch(
+              /complexUrl.*\.url\(\)\.startsWith\("https:\/\/"\)\.max\(2048\)\.nullable\(\)/,
+            );
 
             // Complex name: all validations before .nullable()
-            expect(content).toMatch(/complexName.*\.min\(1\)\.max\(100\)\.regex\(.*\)\.trim\(\)\.toLowerCase\(\)\.nullable\(\)/);
+            expect(content).toMatch(
+              /complexName.*\.min\(1\)\.max\(100\)\.regex\(.*\)\.trim\(\)\.toLowerCase\(\)\.nullable\(\)/,
+            );
 
             // Ensure no validation methods are called after .nullable()
             expect(content).not.toMatch(/\.nullable\(\)\.[a-zA-Z]/);
@@ -2037,29 +2102,43 @@ model TypeSafeTest {
 
           await testEnv.runGeneration();
 
-          const pureVariantPath = join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'TypeSafeTest.pure.ts');
-          
+          const pureVariantPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'TypeSafeTest.pure.ts',
+          );
+
           if (existsSync(pureVariantPath)) {
             const content = readFileSync(pureVariantPath, 'utf-8');
 
             // All string method validations should come before .nullable()
             expect(content).toMatch(/emailField.*\.min\(1\)\.max\(50\)\.email\(\)\.nullable\(\)/);
-            expect(content).toMatch(/urlField.*\.url\(\)\.startsWith\("https:\/\/"\)\.nullable\(\)/);
+            expect(content).toMatch(
+              /urlField.*\.url\(\)\.startsWith\("https:\/\/"\)\.nullable\(\)/,
+            );
             expect(content).toMatch(/uuidField.*\.uuid\(\)\.nullable\(\)/);
 
             // All number method validations should come before .nullable()
-            expect(content).toMatch(/intField.*\.int\(\)\.positive\(\)\.min\(1\)\.max\(1000\)\.nullable\(\)/);
-            expect(content).toMatch(/floatField.*\.positive\(\)\.multipleOf\(0\.01\)\.nullable\(\)/);
+            expect(content).toMatch(
+              /intField.*\.int\(\)\.positive\(\)\.min\(1\)\.max\(1000\)\.nullable\(\)/,
+            );
+            expect(content).toMatch(
+              /floatField.*\.positive\(\)\.multipleOf\(0\.01\)\.nullable\(\)/,
+            );
 
             // Complex string validations should maintain order
-            expect(content).toMatch(/nameField.*\.min\(2\)\.max\(100\)\.trim\(\)\.toLowerCase\(\)\.regex\(.*\)\.nullable\(\)/);
+            expect(content).toMatch(
+              /nameField.*\.min\(2\)\.max\(100\)\.trim\(\)\.toLowerCase\(\)\.regex\(.*\)\.nullable\(\)/,
+            );
 
             // Critical: No method should be called on ZodNullable
             expect(content).not.toMatch(/\.nullable\(\)\.\w/);
-            
+
             // All .nullable() should be at the very end
             expect(content.match(/\.nullable\(\)/g)).toBeTruthy();
-            content.split('\n').forEach(line => {
+            content.split('\n').forEach((line) => {
               if (line.includes('.nullable()')) {
                 expect(line.trim()).toMatch(/\.nullable\(\),?\s*$/);
               }

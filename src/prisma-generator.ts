@@ -1598,12 +1598,14 @@ async function generateVariantSchemaContent(
   const fieldDefinitions = enabledFields
     .map((field) => {
       // Check if we have enhanced field information with @zod annotations
-      const enhancedField = enhancedModel?.enhancedFields.find(ef => ef.field.name === field.name);
-      
+      const enhancedField = enhancedModel?.enhancedFields.find(
+        (ef) => ef.field.name === field.name,
+      );
+
       if (enhancedField && enhancedField.hasZodAnnotations && enhancedField.zodSchema) {
         // Use the enhanced schema with @zod annotations
         let schema = enhancedField.zodSchema;
-        
+
         // Apply variant-specific modifier adjustments - need to handle order correctly
         // Zod validations must come BEFORE .nullable()/.optional() modifiers
         if (!field.isRequired) {
@@ -1613,13 +1615,13 @@ async function generateVariantSchemaContent(
             schema = schema.replace(/\.optional\(\)/g, '').replace(/\.nullable\(\)/g, '');
             schema += '.optional().nullable()';
           } else {
-            // For pure/result schemas: need .nullable() 
+            // For pure/result schemas: need .nullable()
             // Remove any existing .optional() or .nullable() and add .nullable() at the end
             schema = schema.replace(/\.optional\(\)/g, '').replace(/\.nullable\(\)/g, '');
             schema += '.nullable()';
           }
         }
-        
+
         return `    ${field.name}: ${schema}`;
       }
 
