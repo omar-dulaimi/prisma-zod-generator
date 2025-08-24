@@ -1885,7 +1885,7 @@ export default class Transformer {
    * This avoids TS7022 and keeps output variable types unchanged.
    */
   private generateZodOnlySanityCheck(_finalFields: string[]): string | '' {
-    // According to the factory pattern spec, we should NOT add satisfies annotations 
+    // According to the factory pattern spec, we should NOT add satisfies annotations
     // to pure Zod schemas as they break .extend()/.omit() functionality
     return '';
   }
