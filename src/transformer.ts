@@ -1741,10 +1741,16 @@ export default class Transformer {
 
     // Only use lazy loading for self-references or complex object schemas that might have circular dependencies
     // Simple enums like SortOrder don't need lazy loading
-    const needsLazyLoading =
-      inputType.type === this.name || (!isEnum && inputType.namespace === 'prisma');
+    const isSelfReference = inputType.type === this.name;
+    const needsLazyLoading = isSelfReference || (!isEnum && inputType.namespace === 'prisma');
 
     if (needsLazyLoading) {
+      if (isSelfReference) {
+        // Use makeSchema factory to avoid self-referential const inits (TS7022)
+        return inputsLength === 1
+          ? `  ${field.name}: z.lazy(makeSchema)${arr}${opt}`
+          : `z.lazy(makeSchema)${arr}${opt}`;
+      }
       return inputsLength === 1
         ? `  ${field.name}: z.lazy(() => ${schema})${arr}${opt}`
         : `z.lazy(() => ${schema})${arr}${opt}`;
@@ -1774,9 +1780,15 @@ export default class Transformer {
     // This method just prepares the final schema
     let finalFields = zodObjectSchemaFields;
 
-    const objectSchema = `${this.generateExportObjectSchemaStatement(
-      this.addFinalWrappers({ zodStringFields: finalFields }),
-    )}\n`;
+    const objectSchemaBody = this.addFinalWrappers({ zodStringFields: finalFields });
+    const factoryDecl = `const makeSchema = (): z.ZodObject<any> => ${objectSchemaBody};\n`;
+    let objectSchema = `${factoryDecl}${this.generateExportObjectSchemaStatement('makeSchema()')}\n`;
+    // Add optional sanity-check block for Zod-only schemas when self recursion exists
+    const hasSelfRecursion = finalFields.some((l) => l.includes('z.lazy(makeSchema)'));
+    if (Transformer.exportZodSchemas && hasSelfRecursion) {
+      const sanity = this.generateZodOnlySanityCheck(finalFields);
+      if (sanity) objectSchema += sanity + '\n';
+    }
     const baseImports = this.generateObjectSchemaImportStatements();
     let jsonImport = '';
     if (this.hasJson) {
@@ -1865,6 +1877,72 @@ export default class Transformer {
   }
 
   /**
+   * Emit a manual TS type and a `satisfies z.ZodType<...>` check for Zod-only, self-recursive schemas.
+   * This avoids TS7022 and keeps output variable types unchanged.
+   */
+  private generateZodOnlySanityCheck(finalFields: string[]): string | '' {
+    const exportName = this.resolveObjectSchemaName();
+    const zodVar = `${exportName}Object${Transformer.zodSchemaSuffix}`;
+
+    // Build property lines by mapping basic zod expressions to TS types
+    const props: string[] = [];
+
+    const toTs = (expr: string): { type: string; optional: boolean; nullable: boolean } => {
+      const optional = /\.optional\(\)|\.nullish\(\)/.test(expr);
+      const nullable = /\.nullable\(\)|\bz\.literal\(null\)/.test(expr) || /\bz\.null\(\)/.test(expr);
+      const isArray = /\.array\(\)/.test(expr);
+
+      // Union handling (simple, two-branch typical cases)
+      const unionMatch = expr.match(/z\.union\s*\(\s*\[(.*)\]\s*\)/);
+      let baseType = '';
+      if (unionMatch) {
+        const inner = unionMatch[1];
+        // split by '),', keep last token cleanup
+        const parts = inner
+          .split(/\),\s*/)
+          .map((p) => (p.endsWith(')') ? p : p + ')'))
+          .map((p) => p.trim())
+          .filter(Boolean);
+        const mapped = parts.map((p) => toTsNonUnion(p).type);
+        baseType = mapped.join(' | ');
+      } else {
+        baseType = toTsNonUnion(expr).type;
+      }
+
+      if (isArray) baseType = `${baseType}[]`;
+      return { type: baseType + (nullable ? ' | null' : ''), optional, nullable };
+    };
+
+    const toTsNonUnion = (expr: string): { type: string } => {
+      if (/z\.boolean\(\)/.test(expr)) return { type: 'boolean' };
+      if (/z\.string\(\)/.test(expr)) return { type: 'string' };
+      if (/z\.bigint\(\)/.test(expr)) return { type: 'bigint' };
+      if (/z\.number\(\)/.test(expr)) return { type: 'number' };
+      if (/z\.date\(\)/.test(expr) || /z\.coerce\.date\(\)/.test(expr)) return { type: 'Date' };
+      if (/z\.lazy\(makeSchema\)/.test(expr)) return { type: exportName };
+      const lazyOther = expr.match(/z\.lazy\s*\(\s*\(\)\s*=>\s*([A-Za-z0-9_]+)\s*\)/);
+      if (lazyOther) return { type: `z.infer<typeof ${lazyOther[1]}>` };
+      return { type: 'unknown' };
+    };
+
+    for (const line of finalFields) {
+      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/);
+      if (!m) continue;
+      const name = m[1];
+      const expr = m[2];
+      const { type, optional } = toTs(expr);
+      props.push(`  ${name}${optional ? '?' : ''}: ${type};`);
+    }
+
+    if (props.length === 0) return '';
+    return (
+      `// Sanity-check the output type WITHOUT changing the variable’s type:\n` +
+      `type ${exportName} = {\n${props.join('\n')}\n};\n` +
+      `(${zodVar} satisfies z.ZodType<${exportName}>);`
+    );
+  }
+
+  /**
    * Resolve the appropriate Prisma type identifier for an object schema export.
    * In Prisma 6, certain aggregate input types are exported with a `Type` suffix.
    * Example: Prisma.PlanetCountAggregateInputType instead of Prisma.PlanetCountAggregateInput
@@ -1935,11 +2013,14 @@ export default class Transformer {
 
   generateObjectSchemaImportStatements() {
     let generatedImports = this.generateImportZodStatement();
-    // Ensure Prisma types import exists for type safety checks in tests
-    // Object schemas live under .../schemas/objects so compute path from that directory.
-    const objectsDir = path.join(Transformer.getSchemasPath(), 'objects');
-    const prismaImportPath = Transformer.resolvePrismaImportPath(objectsDir);
-    generatedImports += `import type { Prisma } from '${prismaImportPath}';\n`;
+    // Only import Prisma types when emitting typed schemas
+    if (Transformer.exportTypedSchemas) {
+      // Ensure Prisma types import exists for type safety checks in tests
+      // Object schemas live under .../schemas/objects so compute path from that directory.
+      const objectsDir = path.join(Transformer.getSchemasPath(), 'objects');
+      const prismaImportPath = Transformer.resolvePrismaImportPath(objectsDir);
+      generatedImports += `import type { Prisma } from '${prismaImportPath}';\n`;
+    }
     generatedImports += this.generateSchemaImports();
     generatedImports += '\n\n';
     return generatedImports;
