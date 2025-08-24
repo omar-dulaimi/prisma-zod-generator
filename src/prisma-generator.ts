@@ -4,22 +4,22 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-    generatorOptionsToConfigOverrides,
-    getLegacyMigrationSuggestions,
-    isLegacyUsage,
-    parseGeneratorOptions,
-    validateGeneratorOptions,
+  generatorOptionsToConfigOverrides,
+  getLegacyMigrationSuggestions,
+  isLegacyUsage,
+  parseGeneratorOptions,
+  validateGeneratorOptions,
 } from './config/generator-options';
 import {
-    GeneratorConfig as CustomGeneratorConfig,
-    VariantConfig,
-    parseConfiguration,
+  GeneratorConfig as CustomGeneratorConfig,
+  VariantConfig,
+  parseConfiguration,
 } from './config/parser';
 import {
-    addMissingInputObjectTypes,
-    hideInputObjectTypesAndRelatedFields,
-    resolveAddMissingInputObjectTypeOptions,
-    resolveModelsComments,
+  addMissingInputObjectTypes,
+  hideInputObjectTypesAndRelatedFields,
+  resolveAddMissingInputObjectTypeOptions,
+  resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -28,10 +28,10 @@ import { logger } from './utils/logger';
 import removeDir from './utils/removeDir';
 
 import {
-    flushSingleFile,
-    initSingleFile,
-    isSingleFileEnabled,
-    setSingleFilePrismaImportPath,
+  flushSingleFile,
+  initSingleFile,
+  isSingleFileEnabled,
+  setSingleFilePrismaImportPath,
 } from './utils/singleFileAggregator';
 import { writeFileSafely } from './utils/writeFileSafely';
 
@@ -418,13 +418,9 @@ export async function generate(options: GeneratorOptions) {
           ? generatorConfig.addIncludeType.toString()
           : 'true'),
       exportTypedSchemas:
-        toBoolString(exportTypedFromGenOpt) ??
-        toBoolString(exportTypedFromJson) ??
-        'true',
+        toBoolString(exportTypedFromGenOpt) ?? toBoolString(exportTypedFromJson) ?? 'true',
       exportZodSchemas:
-        toBoolString(exportZodFromGenOpt) ??
-        toBoolString(exportZodFromJson) ??
-        'true',
+        toBoolString(exportZodFromGenOpt) ?? toBoolString(exportZodFromJson) ?? 'true',
       typedSchemaSuffix: typedSuffixFromGenOpt ?? typedSuffixFromJson ?? 'Schema',
       zodSchemaSuffix: zodSuffixFromGenOpt ?? zodSuffixFromJson ?? 'ZodSchema',
     };
@@ -629,10 +625,14 @@ async function generateEnumSchemas(
 
 async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models: DMMF.Model[]) {
   // Debug: List all UpdateManyWithWhere types in DMMF
-  const updateManyWithWhereTypes = inputObjectTypes.filter(t => t.name.includes('UpdateManyWithWhere'));
-  console.log(`\n🔍 DEBUG: Found ${updateManyWithWhereTypes.length} UpdateManyWithWhere types in DMMF:`);
-  updateManyWithWhereTypes.forEach(t => {
-    console.log(`  - ${t.name}: fields [${t.fields.map(f => f.name).join(', ')}]`);
+  const updateManyWithWhereTypes = inputObjectTypes.filter((t) =>
+    t.name.includes('UpdateManyWithWhere'),
+  );
+  console.log(
+    `\n🔍 DEBUG: Found ${updateManyWithWhereTypes.length} UpdateManyWithWhere types in DMMF:`,
+  );
+  updateManyWithWhereTypes.forEach((t) => {
+    console.log(`  - ${t.name}: fields [${t.fields.map((f) => f.name).join(', ')}]`);
   });
 
   for (let i = 0; i < inputObjectTypes.length; i += 1) {
@@ -642,9 +642,9 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models:
     // Debug specific type
     if (name === 'PostUpdateManyWithWhereWithoutAuthorInput') {
       console.log(`\n🔍 DEBUG: Found ${name}`);
-      console.log(`Fields: ${originalFields?.map(f => f.name).join(', ')}`);
-      originalFields?.forEach(field => {
-        console.log(`  - ${field.name}: ${field.inputTypes.map(t => t.type).join(' | ')}`);
+      console.log(`Fields: ${originalFields?.map((f) => f.name).join(', ')}`);
+      originalFields?.forEach((field) => {
+        console.log(`  - ${field.name}: ${field.inputTypes.map((t) => t.type).join(' | ')}`);
       });
     }
 
@@ -1023,7 +1023,7 @@ function extractModelNameFromObjectSchema(objectSchemaName: string): string | nu
 
     // Args and other schemas
     /^(\w+)Args$/,
-    
+
     // Filter types - handle these specially as they may be phantom types
     /^Enum(\w+)NullableFilter$/,
     /^Enum(\w+)Filter$/,

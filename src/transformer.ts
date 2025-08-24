@@ -107,12 +107,12 @@ export default class Transformer {
       return modelConfig.enabled !== false;
     }
 
-  // In minimal mode, do NOT blanket-disable models.
-  // Default to enabling models unless explicitly disabled via config.models.
-  // This aligns minimal mode with full mode regarding model selection; other constraints
-  // (limited operations and pared-down object schemas) are handled elsewhere.
+    // In minimal mode, do NOT blanket-disable models.
+    // Default to enabling models unless explicitly disabled via config.models.
+    // This aligns minimal mode with full mode regarding model selection; other constraints
+    // (limited operations and pared-down object schemas) are handled elsewhere.
 
-  // If models configuration exists, only enable explicitly configured models
+    // If models configuration exists, only enable explicitly configured models
     if (config.models && Object.keys(config.models).length > 0) {
       return false;
     }
@@ -1029,26 +1029,28 @@ export default class Transformer {
     // Prisma's DMMF is missing the required 'where' field for these types
     if (/UpdateManyWithWhereWithout\w+Input$/.test(this.name)) {
       console.log(`🎯 MATCHED PATTERN: ${this.name}`);
-      console.log(`   - Fields available: [${this.fields.map(f => f.name).join(', ')}]`);
-      
-      const hasWhereField = this.fields.some(f => f.name === 'where');
+      console.log(`   - Fields available: [${this.fields.map((f) => f.name).join(', ')}]`);
+
+      const hasWhereField = this.fields.some((f) => f.name === 'where');
       console.log(`   - Has where field: ${hasWhereField}`);
-      
+
       if (!hasWhereField && modelName) {
         console.log(`🔧 FIXING DMMF BUG: Adding missing 'where' field to ${this.name}`);
-        
+
         // Create a synthetic 'where' field that references the model's ScalarWhereInput type
         const syntheticWhereField = {
           name: 'where',
           isOptional: false,
           isRequired: true,
-          inputTypes: [{
-            type: `${modelName}ScalarWhereInput`,
-            namespace: 'prisma',
-            location: 'inputObjectTypes'
-          }]
+          inputTypes: [
+            {
+              type: `${modelName}ScalarWhereInput`,
+              namespace: 'prisma',
+              location: 'inputObjectTypes',
+            },
+          ],
         };
-        
+
         // Inject the missing field
         this.fields = [...this.fields, syntheticWhereField as any];
         console.log(`   ✅ Added synthetic where field for ${modelName}ScalarWhereInput`);
@@ -1067,16 +1069,18 @@ export default class Transformer {
 
     // Special handling for UpdateManyWithWhereWithout*Input patterns - ensure 'where' field is preserved
     if (/UpdateManyWithWhereWithout\w+Input$/.test(this.name)) {
-      const whereField = this.fields.find(f => f.name === 'where');
-      const hasWhereInFiltered = filteredFields.some(f => f.name === 'where');
-      
+      const whereField = this.fields.find((f) => f.name === 'where');
+      const hasWhereInFiltered = filteredFields.some((f) => f.name === 'where');
+
       if (whereField && !hasWhereInFiltered) {
         logger.debug(`  - Restoring filtered 'where' field for ${this.name}`);
         filteredFields = [...filteredFields, whereField];
       } else if (!whereField) {
         // If the where field doesn't exist in the original fields, this might indicate a DMMF issue
         // We need to manually construct the missing where field based on the pattern
-        logger.debug(`  - 'where' field missing from DMMF for ${this.name}, attempting to fix in prepareObjectSchema`);
+        logger.debug(
+          `  - 'where' field missing from DMMF for ${this.name}, attempting to fix in prepareObjectSchema`,
+        );
       }
     }
     // Compute excluded field names for this schema context
@@ -1377,9 +1381,9 @@ export default class Transformer {
     if (helperTypePatterns.some((p) => p.test(schemaName))) {
       return true;
     }
-    
+
     // First check if the related model is enabled
-  const modelName = this.extractModelNameFromSchema(schemaName);
+    const modelName = this.extractModelNameFromSchema(schemaName);
     if (modelName && !Transformer.isModelEnabled(modelName)) {
       return false; // Don't import schemas for disabled models
     }
@@ -1505,7 +1509,7 @@ export default class Transformer {
       // Args and other schemas
       /^(\w+)Args$/,
       /^(\w+)CountOutputTypeArgs$/,
-      
+
       // Filter types - handle these specially as they may be phantom types
       /^Enum(\w+)NullableFilter$/,
       /^Enum(\w+)Filter$/,
@@ -1889,7 +1893,8 @@ export default class Transformer {
 
     const toTs = (expr: string): { type: string; optional: boolean; nullable: boolean } => {
       const optional = /\.optional\(\)|\.nullish\(\)/.test(expr);
-      const nullable = /\.nullable\(\)|\bz\.literal\(null\)/.test(expr) || /\bz\.null\(\)/.test(expr);
+      const nullable =
+        /\.nullable\(\)|\bz\.literal\(null\)/.test(expr) || /\bz\.null\(\)/.test(expr);
       const isArray = /\.array\(\)/.test(expr);
 
       // Union handling (simple, two-branch typical cases)
@@ -2158,8 +2163,8 @@ export default class Transformer {
           return `import { ${name}Schema } from '../enums/${name}.schema${importExtension}'`;
         } else {
           // Choose the appropriate schema name based on export settings
-          const schemaName = Transformer.exportTypedSchemas 
-            ? `${name}ObjectSchema` 
+          const schemaName = Transformer.exportTypedSchemas
+            ? `${name}ObjectSchema`
             : `${name}Object${Transformer.zodSchemaSuffix}`;
           return `import { ${schemaName} } from './${name}.schema${importExtension}'`;
         }
@@ -2188,8 +2193,8 @@ export default class Transformer {
     const modelNameCapitalized = modelName.charAt(0).toUpperCase() + modelName.slice(1);
     const queryNameCapitalized = queryName.charAt(0).toUpperCase() + (queryName as string).slice(1);
     const baseName = `${modelNameCapitalized}${queryNameCapitalized}`;
-    return Transformer.exportTypedSchemas 
-      ? `${baseName}Schema` 
+    return Transformer.exportTypedSchemas
+      ? `${baseName}Schema`
       : `${baseName}${Transformer.zodSchemaSuffix}`;
   }
 
@@ -2897,7 +2902,9 @@ export default class Transformer {
               `./objects/${modelName}MinAggregateInput.schema`,
             ),
           );
-          aggregateOperations.push(`_min: ${Transformer.getObjectSchemaName(`${modelName}MinAggregateInput`)}.optional()`);
+          aggregateOperations.push(
+            `_min: ${Transformer.getObjectSchemaName(`${modelName}MinAggregateInput`)}.optional()`,
+          );
         }
         if (this.aggregateOperationSupport[modelName].max) {
           imports.push(
@@ -2906,7 +2913,9 @@ export default class Transformer {
               `./objects/${modelName}MaxAggregateInput.schema`,
             ),
           );
-          aggregateOperations.push(`_max: ${Transformer.getObjectSchemaName(`${modelName}MaxAggregateInput`)}.optional()`);
+          aggregateOperations.push(
+            `_max: ${Transformer.getObjectSchemaName(`${modelName}MaxAggregateInput`)}.optional()`,
+          );
         }
         if (this.aggregateOperationSupport[modelName].avg) {
           imports.push(
@@ -2915,7 +2924,9 @@ export default class Transformer {
               `./objects/${modelName}AvgAggregateInput.schema`,
             ),
           );
-          aggregateOperations.push(`_avg: ${Transformer.getObjectSchemaName(`${modelName}AvgAggregateInput`)}.optional()`);
+          aggregateOperations.push(
+            `_avg: ${Transformer.getObjectSchemaName(`${modelName}AvgAggregateInput`)}.optional()`,
+          );
         }
         if (this.aggregateOperationSupport[modelName].sum) {
           imports.push(
@@ -2924,7 +2935,9 @@ export default class Transformer {
               `./objects/${modelName}SumAggregateInput.schema`,
             ),
           );
-          aggregateOperations.push(`_sum: ${Transformer.getObjectSchemaName(`${modelName}SumAggregateInput`)}.optional()`);
+          aggregateOperations.push(
+            `_sum: ${Transformer.getObjectSchemaName(`${modelName}SumAggregateInput`)}.optional()`,
+          );
         }
 
         await writeFileSafely(
@@ -3461,7 +3474,7 @@ export default class Transformer {
 
     const selectImport = Transformer.shouldGenerateSelectSchema(model)
       ? this.generateSmartImportStatement(
-          Transformer.exportTypedSchemas 
+          Transformer.exportTypedSchemas
             ? `${modelName}SelectObjectSchema`
             : `${modelName}SelectObject${Transformer.zodSchemaSuffix}`,
           `./objects/${modelName}Select.schema`,
@@ -3471,7 +3484,7 @@ export default class Transformer {
 
     const includeImport = Transformer.shouldGenerateIncludeSchema(model)
       ? this.generateSmartImportStatement(
-          Transformer.exportTypedSchemas 
+          Transformer.exportTypedSchemas
             ? `${modelName}IncludeObjectSchema`
             : `${modelName}IncludeObject${Transformer.zodSchemaSuffix}`,
           `./objects/${modelName}Include.schema`,
@@ -3485,8 +3498,8 @@ export default class Transformer {
     let includeZodSchemaLineLazy = '';
 
     if (Transformer.shouldGenerateSelectSchema(model)) {
-      const selectSchemaName = Transformer.exportTypedSchemas 
-        ? `${modelName}SelectObjectSchema` 
+      const selectSchemaName = Transformer.exportTypedSchemas
+        ? `${modelName}SelectObjectSchema`
         : `${modelName}SelectObject${Transformer.zodSchemaSuffix}`;
       const zodSelectObjectSchema = `${selectSchemaName}.optional()`;
       selectZodSchemaLine = `select: ${zodSelectObjectSchema},`;
@@ -3494,8 +3507,8 @@ export default class Transformer {
     }
 
     if (Transformer.shouldGenerateIncludeSchema(model)) {
-      const includeSchemaName = Transformer.exportTypedSchemas 
-        ? `${modelName}IncludeObjectSchema` 
+      const includeSchemaName = Transformer.exportTypedSchemas
+        ? `${modelName}IncludeObjectSchema`
         : `${modelName}IncludeObject${Transformer.zodSchemaSuffix}`;
       const zodIncludeObjectSchema = `${includeSchemaName}.optional()`;
       includeZodSchemaLine = `include: ${zodIncludeObjectSchema},`;
@@ -3620,9 +3633,7 @@ ${selectFields.join(',\n')}
     // Generate typed schema (perfect inference, no methods)
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
-      exports.push(
-        `export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition};`,
-      );
+      exports.push(`export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition};`);
     }
 
     // Generate Zod schema (methods available, loose inference)
