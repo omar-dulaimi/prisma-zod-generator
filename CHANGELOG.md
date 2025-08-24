@@ -1,3 +1,15 @@
+## [1.16.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.2...v1.16.3) (2025-08-24)
+
+### ⚠ BREAKING CHANGES
+
+* **config:** respect exportTypedSchemas/exportZodSchemas from JSON config with proper precedence
+
+### 🐛 Bug Fixes
+
+* **config:** respect exportTypedSchemas/exportZodSchemas from JSON config with proper precedence ([4a3f582](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4a3f5820917f96a0d70ffad03ad29cec97819a84))
+* **minimal,zod:** allow minimal mode without explicit model config; adjust [@zod](https://github.com/zod) string quoting (URLs double-quoted, others single-quoted); ensure output path precedence respects schema dir ([31072c8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/31072c8ad8dbad24fe3bdbde26b9701716d27ea1))
+* **zod:** avoid TS7022 for self-referential object schemas by using factory + z.lazy(makeSchema); emit optional sanity-check types; skip Prisma imports for zod-only ([6245b74](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6245b74e49463baae25fbad28f7c895e917897cc))
+
 ## [1.16.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.1...v1.16.2) (2025-08-23)
 
 ### 🐛 Bug Fixes
