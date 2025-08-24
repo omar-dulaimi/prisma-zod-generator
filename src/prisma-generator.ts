@@ -1449,10 +1449,18 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
 
           // Build field definitions with basic rules
           const enabledFields = model.fields.filter((field) => !excludeFields.includes(field.name));
+            // Collect enum types used to import enum values from @prisma/client
+            const enumTypes = Array.from(
+              new Set(
+                enabledFields
+                  .filter((field) => field.kind === 'enum')
+                  .map((field) => String(field.type)),
+              ),
+            );
           const fieldLines = enabledFields
             .map((field) => {
               // Base zod type
-              let zod = `z.${getZodTypeForField(field)}`;
+              let zod = field.kind === 'enum' ? `${String(field.type)}Schema` : `z.${getZodTypeForField(field)}`;
 
               // Apply optionality rules
               const wasRequired = field.isRequired;
@@ -1513,7 +1521,11 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
 
           // Use Transformer import strategy to match zodImportTarget
           const zImport = new Transformer({}).generateImportZodStatement();
-          const content = `${zImport}\n// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
+          const enumImportBase = placeAtRoot ? './enums' : '../enums';
+          const enumSchemaImports = enumTypes.length
+            ? enumTypes.map((n) => `import { ${n}Schema } from '${enumImportBase}/${n}.schema';`).join('\n') + '\n'
+            : '';
+          const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
           exportLines.push(`export { ${schemaName} } from './${fileBase}';`);
         }
@@ -1672,13 +1684,12 @@ async function generateVariantSchemaContent(
     ),
   );
 
-  // Build enum import lines - for array-based variants, we import enum values from @prisma/client
-  // This is different from object-based variants which use enum schema imports
+  // Build enum import lines for variant files: import generated enum schemas
   let enumImportLines = '';
   if (enumTypes.length > 0) {
-    // For array-based custom variants, import enum values from @prisma/client
-    // This matches the z.enum(EnumName) usage in getZodTypeForField
-    enumImportLines = `import { ${enumTypes.join(', ')} } from '@prisma/client';\n`;
+    enumImportLines = enumTypes
+      .map((name) => `import { ${name}Schema } from '../../enums/${name}.schema';`)
+      .join('\n') + '\n';
   }
 
   // Get enhanced models with @zod annotation processing

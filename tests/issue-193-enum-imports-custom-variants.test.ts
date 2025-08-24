@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
-import { ConfigGenerator, GENERATION_TIMEOUT, TestEnvironment } from './helpers';
+import { GENERATION_TIMEOUT, TestEnvironment } from './helpers';
 
 // Tests for Issue #193: Enums not being imported in schemas when using custom variants
 
@@ -65,11 +65,11 @@ model Item {
         
         const content = readFileSync(variantFile, 'utf-8');
         
-        // Should have the enum reference
-        expect(content).toMatch(/z\.enum\(UnitType\)/);
+  // Should use the generated enum schema reference
+  expect(content).toMatch(/unitType:\s*UnitTypeSchema/);
         
-        // Should have the enum import
-        expect(content).toMatch(/import.*\{.*UnitType.*\}.*from.*@prisma\/client/);
+  // Should import the enum schema with correct relative path from variants -> enums
+  expect(content).toMatch(/import\s*\{\s*UnitTypeSchema\s*\}\s*from\s*['"]\.\.\/enums\/UnitType\.schema['"];?/);
         
         // Should have the description
         expect(content).toMatch(/describe\("The unit measure that product is sold in\."\)/);
