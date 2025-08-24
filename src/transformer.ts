@@ -1855,7 +1855,7 @@ export default class Transformer {
         }
         if (prismaType) {
           lines.push(
-            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}> = ${schema};`,
+            `export const ${exportName}ObjectSchema: z.ZodType<${prismaType}> = ${schema} as unknown as z.ZodType<${prismaType}>;`,
           );
         } else {
           // Fallback to untyped if we cannot resolve a safe Prisma type
@@ -3573,10 +3573,10 @@ ${selectFields.join(',\n')}
   ): string {
     const exports: string[] = [];
 
-    // Generate typed schema (perfect inference, no methods)
+    // Generate typed schema (perfect inference, no methods) - KEEP PRISMA TYPING
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
-      exports.push(`export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition};`);
+      exports.push(`export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition} as unknown as z.ZodType<${prismaType}>;`);
     }
 
     // Generate Zod schema (methods available, loose inference)
@@ -3599,11 +3599,11 @@ ${selectFields.join(',\n')}
     const schemaDefinition = this.generateInlineSelectSchemaDefinition(model);
     const exports: string[] = [];
 
-    // Generate typed select schema
+    // Generate typed select schema - KEEP PRISMA TYPING
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operation ? operation : ''}Select${Transformer.typedSchemaSuffix}`;
       exports.push(
-        `export const ${typedName}: z.ZodType<Prisma.${modelName}Select> = ${schemaDefinition};`,
+        `export const ${typedName}: z.ZodType<Prisma.${modelName}Select> = ${schemaDefinition} as unknown as z.ZodType<Prisma.${modelName}Select>;`,
       );
     }
 
