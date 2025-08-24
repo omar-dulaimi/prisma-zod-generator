@@ -1884,61 +1884,7 @@ export default class Transformer {
    * Emit a manual TS type and a `satisfies z.ZodType<...>` check for Zod-only, self-recursive schemas.
    * This avoids TS7022 and keeps output variable types unchanged.
    */
-  private generateZodOnlySanityCheck(finalFields: string[]): string | '' {
-    const exportName = this.resolveObjectSchemaName();
-    const zodVar = `${exportName}Object${Transformer.zodSchemaSuffix}`;
-
-    // Build property lines by mapping basic zod expressions to TS types
-    const props: string[] = [];
-
-    const toTs = (expr: string): { type: string; optional: boolean; nullable: boolean } => {
-      const optional = /\.optional\(\)|\.nullish\(\)/.test(expr);
-      const nullable =
-        /\.nullable\(\)|\bz\.literal\(null\)/.test(expr) || /\bz\.null\(\)/.test(expr);
-      const isArray = /\.array\(\)/.test(expr);
-
-      // Union handling (simple, two-branch typical cases)
-      const unionMatch = expr.match(/z\.union\s*\(\s*\[(.*)\]\s*\)/);
-      let baseType = '';
-      if (unionMatch) {
-        const inner = unionMatch[1];
-        // split by '),', keep last token cleanup
-        const parts = inner
-          .split(/\),\s*/)
-          .map((p) => (p.endsWith(')') ? p : p + ')'))
-          .map((p) => p.trim())
-          .filter(Boolean);
-        const mapped = parts.map((p) => toTsNonUnion(p).type);
-        baseType = mapped.join(' | ');
-      } else {
-        baseType = toTsNonUnion(expr).type;
-      }
-
-      if (isArray) baseType = `${baseType}[]`;
-      return { type: baseType + (nullable ? ' | null' : ''), optional, nullable };
-    };
-
-    const toTsNonUnion = (expr: string): { type: string } => {
-      if (/z\.boolean\(\)/.test(expr)) return { type: 'boolean' };
-      if (/z\.string\(\)/.test(expr)) return { type: 'string' };
-      if (/z\.bigint\(\)/.test(expr)) return { type: 'bigint' };
-      if (/z\.number\(\)/.test(expr)) return { type: 'number' };
-      if (/z\.date\(\)/.test(expr) || /z\.coerce\.date\(\)/.test(expr)) return { type: 'Date' };
-      if (/z\.lazy\(makeSchema\)/.test(expr)) return { type: exportName };
-      const lazyOther = expr.match(/z\.lazy\s*\(\s*\(\)\s*=>\s*([A-Za-z0-9_]+)\s*\)/);
-      if (lazyOther) return { type: `z.infer<typeof ${lazyOther[1]}>` };
-      return { type: 'unknown' };
-    };
-
-    for (const line of finalFields) {
-      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/);
-      if (!m) continue;
-      const name = m[1];
-      const expr = m[2];
-      const { type, optional } = toTs(expr);
-      props.push(`  ${name}${optional ? '?' : ''}: ${type};`);
-    }
-
+  private generateZodOnlySanityCheck(_finalFields: string[]): string | '' {
     // According to the factory pattern spec, we should NOT add satisfies annotations 
     // to pure Zod schemas as they break .extend()/.omit() functionality
     return '';
