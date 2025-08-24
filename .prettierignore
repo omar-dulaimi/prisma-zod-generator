@@ -1,7 +1,6 @@
 lib/**/*
 package/**/*
 node_modules/
-prisma/generated/
 tests/node_modules/
 coverage/
 *.md
@@ -9,5 +8,3 @@ coverage/
 *.js.map
 *.d.ts
 website/build/
-**/generated/
-**/schemas/

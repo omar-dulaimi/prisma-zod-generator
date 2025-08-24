@@ -286,18 +286,11 @@ export class DefaultConfigurationManager {
       result.models = {};
     }
 
-    // Add default configuration for models not explicitly configured
-    availableModels.forEach((modelName) => {
+    // Only add default configuration for explicitly configured models
+    // Don't auto-add models that weren't specified by the user
+    Object.keys(result.models).forEach((modelName) => {
       const models = result.models;
-      if (!models?.[modelName]) {
-        if (models) {
-          models[modelName] = this.getDefaultModelConfig(
-            modelName,
-            result.mode,
-            modelFieldInfo?.[modelName],
-          );
-        }
-      } else {
+      if (models?.[modelName]) {
         // Fill in missing properties for existing model configs
         const modelConfig = models[modelName];
         const defaultModelConfig = this.getDefaultModelConfig(
