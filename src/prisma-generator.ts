@@ -374,6 +374,33 @@ export async function generate(options: GeneratorOptions) {
 
     // Merge backward compatibility options with new configuration
     // Priority: 1. Legacy generator options, 2. New config file options (addSelectType/addIncludeType)
+    // Resolve dual-export controls with proper precedence:
+    // 1) Prisma generator block (extendedOptions.raw)
+    // 2) JSON config (generatorConfig)
+    // 3) Defaults
+    const cfgAny = generatorConfig as unknown as Record<string, unknown>;
+    const exportTypedFromGenOpt = extendedOptions.raw?.exportTypedSchemas;
+    const exportTypedFromJson = cfgAny.exportTypedSchemas as boolean | string | undefined;
+    const exportZodFromGenOpt = extendedOptions.raw?.exportZodSchemas;
+    const exportZodFromJson = cfgAny.exportZodSchemas as boolean | string | undefined;
+    const typedSuffixFromGenOpt = extendedOptions.raw?.typedSchemaSuffix;
+    const typedSuffixFromJson = cfgAny.typedSchemaSuffix as string | undefined;
+    const zodSuffixFromGenOpt = extendedOptions.raw?.zodSchemaSuffix;
+    const zodSuffixFromJson = cfgAny.zodSchemaSuffix as string | undefined;
+
+    const toBoolString = (v: unknown): string | undefined => {
+      if (v === undefined) return undefined;
+      if (typeof v === 'string') {
+        const lc = v.trim().toLowerCase();
+        if (lc === 'true') return 'true';
+        if (lc === 'false') return 'false';
+        // Non-empty strings treated as truthy (defensive); but prefer explicit true/false in docs
+        return lc ? 'true' : undefined;
+      }
+      if (typeof v === 'boolean') return v ? 'true' : 'false';
+      return undefined;
+    };
+
     const backwardCompatibleOptions = {
       isGenerateSelect:
         extendedOptions.isGenerateSelect?.toString() ||
@@ -385,6 +412,16 @@ export async function generate(options: GeneratorOptions) {
         (generatorConfig.addIncludeType !== undefined
           ? generatorConfig.addIncludeType.toString()
           : 'true'),
+      exportTypedSchemas:
+        toBoolString(exportTypedFromGenOpt) ??
+        toBoolString(exportTypedFromJson) ??
+        'true',
+      exportZodSchemas:
+        toBoolString(exportZodFromGenOpt) ??
+        toBoolString(exportZodFromJson) ??
+        'true',
+      typedSchemaSuffix: typedSuffixFromGenOpt ?? typedSuffixFromJson ?? 'Schema',
+      zodSchemaSuffix: zodSuffixFromGenOpt ?? zodSuffixFromJson ?? 'ZodSchema',
     };
 
     const addMissingInputObjectTypeOptions =
@@ -596,12 +633,29 @@ async function generateEnumSchemas(
 }
 
 async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models: DMMF.Model[]) {
+  // Debug: List all UpdateManyWithWhere types in DMMF
+  const updateManyWithWhereTypes = inputObjectTypes.filter(t => t.name.includes('UpdateManyWithWhere'));
+  console.log(`\n🔍 DEBUG: Found ${updateManyWithWhereTypes.length} UpdateManyWithWhere types in DMMF:`);
+  updateManyWithWhereTypes.forEach(t => {
+    console.log(`  - ${t.name}: fields [${t.fields.map(f => f.name).join(', ')}]`);
+  });
+
   for (let i = 0; i < inputObjectTypes.length; i += 1) {
     const originalFields = inputObjectTypes[i]?.fields;
     const name = inputObjectTypes[i]?.name;
 
+    // Debug specific type
+    if (name === 'PostUpdateManyWithWhereWithoutAuthorInput') {
+      console.log(`\n🔍 DEBUG: Found ${name}`);
+      console.log(`Fields: ${originalFields?.map(f => f.name).join(', ')}`);
+      originalFields?.forEach(field => {
+        console.log(`  - ${field.name}: ${field.inputTypes.map(t => t.type).join(' | ')}`);
+      });
+    }
+
     // Filter object schemas based on enabled models
     if (name && !isObjectSchemaEnabled(name)) {
+      console.log(`[DEBUG] Skipping object schema: ${name} (disabled by config)`);
       continue;
     }
 
@@ -634,6 +688,25 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models:
  * Check if an object schema should be generated based on enabled models and operations
  */
 function isObjectSchemaEnabled(objectSchemaName: string): boolean {
+  // Always allow scalar/enum filter and field update helper schemas
+  const helperTypePatterns = [
+    // Basic filters and their nullable variants
+    /^(?:String|Int|Float|Decimal|BigInt|Bool|Boolean|DateTime|Bytes|Json)(?:Nullable)?Filter$/,
+    // Enum filters (e.g., EnumRoleNullableFilter, EnumRoleFilter)
+    /^Enum\w+(?:Nullable)?Filter$/,
+    // WithAggregates variants
+    /^(?:String|Int|Float|Decimal|BigInt|Bool|Boolean|DateTime|Bytes|Json)(?:Nullable)?WithAggregatesFilter$/,
+    /^Enum\w+(?:Nullable)?WithAggregatesFilter$/,
+    // Nested filters
+    /^Nested\w+(?:Nullable)?(?:WithAggregates)?Filter$/,
+    // Field update operation inputs (e.g., NullableBytesFieldUpdateOperationsInput)
+    /^(?:Nullable)?\w+FieldUpdateOperationsInput$/,
+  ];
+  if (helperTypePatterns.some((p) => p.test(objectSchemaName))) {
+    logger.debug(`🔍 Helper schema allowed: ${objectSchemaName}`);
+    return true;
+  }
+
   // Extract potential model name from object schema name
   const modelName = extractModelNameFromObjectSchema(objectSchemaName);
 
@@ -734,6 +807,10 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
       return hasEnabledOperation;
     }
   }
+
+  // Previously, some filter/update helper types were treated as "phantom" and skipped.
+  // In Prisma v6 these do exist (e.g., BytesNullableFilter, NullableBytesFieldUpdateOperationsInput, EnumRoleNullableFilter).
+  // Do not skip them here; generation must include these to satisfy typed Zod unions.
 
   // If we can't determine the model or operations, generate the schema (default behavior)
   logger.debug(
@@ -951,11 +1028,21 @@ function extractModelNameFromObjectSchema(objectSchemaName: string): string | nu
 
     // Args and other schemas
     /^(\w+)Args$/,
+    
+    // Filter types - handle these specially as they may be phantom types
+    /^Enum(\w+)NullableFilter$/,
+    /^Enum(\w+)Filter$/,
+    /^(\w+)NullableFilter$/,
+    /^(\w+)Filter$/,
   ];
 
   for (const pattern of patterns) {
     const match = objectSchemaName.match(pattern);
     if (match) {
+      // Special handling for Enum filter types
+      if (pattern.source.includes('Enum')) {
+        return match[1]; // Returns 'Role' from 'EnumRoleNullableFilter'
+      }
       return match[1];
     }
   }
