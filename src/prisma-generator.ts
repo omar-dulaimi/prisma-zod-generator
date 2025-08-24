@@ -1479,9 +1479,25 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
                   (field as unknown as { documentation?: string; doc?: string }).doc ||
                   undefined;
                 if (doc && doc.includes('@zod')) {
-                  const m = doc.match(/@zod(.*)$/m);
-                  if (m && m[1]) {
-                    zod += m[1];
+                  // Handle @zod.custom.use() as complete schema replacement
+                  const customUseMatch = doc.match(/@zod\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m);
+                  if (customUseMatch) {
+                    const baseExpression = customUseMatch[1].trim();
+                    const chainedMethods = customUseMatch[2].trim();
+                    
+                    if (baseExpression) {
+                      // Completely replace the base schema with custom expression
+                      zod = baseExpression;
+                      if (chainedMethods) {
+                        zod += chainedMethods;
+                      }
+                    }
+                  } else {
+                    // Regular @zod annotation processing
+                    const m = doc.match(/@zod(.*)$/m);
+                    if (m && m[1]) {
+                      zod += m[1];
+                    }
                   }
                 }
               }
@@ -1656,19 +1672,13 @@ async function generateVariantSchemaContent(
     ),
   );
 
-  // Build enum schema import lines - consistent across all variant types
-  // All variants use generated enum schemas for consistency and self-containment
+  // Build enum import lines - for array-based variants, we import enum values from @prisma/client
+  // This is different from object-based variants which use enum schema imports
   let enumImportLines = '';
   if (enumTypes.length > 0) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic require avoids ESM circular issues in build output
-      const { generateEnumSchemaImportLines } = require('./utils/enumImport');
-      enumImportLines = generateEnumSchemaImportLines(enumTypes, 2) + '\n';
-    } catch {
-      enumImportLines =
-        enumTypes.map((e) => `import { ${e}Schema } from '../../enums/${e}.schema';`).join('\n') +
-        '\n';
-    }
+    // For array-based custom variants, import enum values from @prisma/client
+    // This matches the z.enum(EnumName) usage in getZodTypeForField
+    enumImportLines = `import { ${enumTypes.join(', ')} } from '@prisma/client';\n`;
   }
 
   // Get enhanced models with @zod annotation processing

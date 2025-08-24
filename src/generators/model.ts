@@ -1346,34 +1346,23 @@ export class PrismaTypeMapper {
 
     try {
       // Fast-path: support custom full schema replacement via @zod.custom.use(<expr>)
-      // Pattern allows balanced parentheses for the first level only; if nested parentheses exist inside <expr>,
-      // we manually scan to capture until the matching closing paren of the opening directly after 'use'.
-      const customUseIndex = field.documentation.indexOf('@zod.custom.use(');
-      if (customUseIndex !== -1) {
-        const start = field.documentation.indexOf('(', customUseIndex);
-        if (start !== -1) {
-          let depth = 0;
-          let end = -1;
-          for (let i = start; i < field.documentation.length; i++) {
-            const ch = field.documentation[i];
-            if (ch === '(') depth++;
-            else if (ch === ')') {
-              depth--;
-              if (depth === 0) {
-                end = i;
-                break;
-              }
-            }
+      // This captures the entire expression including any chained method calls after the parentheses
+      const customUseMatch = field.documentation.match(/@zod\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m);
+      if (customUseMatch) {
+        const baseExpression = customUseMatch[1].trim();
+        const chainedMethods = customUseMatch[2].trim();
+        
+        if (baseExpression) {
+          // Combine the base expression with any chained methods
+          let fullExpression = baseExpression;
+          if (chainedMethods) {
+            fullExpression += chainedMethods;
           }
-          if (end !== -1) {
-            const expression = field.documentation.slice(start + 1, end).trim();
-            if (expression) {
-              result.zodSchema = expression;
-              result.additionalValidations.push('// Replaced base schema via @zod.custom.use');
-              result.requiresSpecialHandling = true;
-              return; // Skip standard parsing; full override applied
-            }
-          }
+          
+          result.zodSchema = fullExpression;
+          result.additionalValidations.push('// Replaced base schema via @zod.custom.use');
+          result.requiresSpecialHandling = true;
+          return; // Skip standard parsing; full override applied
         }
       }
 

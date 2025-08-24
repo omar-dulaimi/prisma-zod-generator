@@ -403,25 +403,50 @@ export class VariantFileGenerationCoordinator {
         );
       }
     } else {
-      // Non-pure variants: replace with generated enum schemas
+      // Non-pure variants: Need to handle both direct enum schema references and enum references in custom.use expressions
+      
+      // First find all enum references that need schema imports
       customizedContent = customizedContent.replace(enumUsageRe, (_m, enumName: string) => {
         if (!usedEnumNames.includes(enumName)) usedEnumNames.push(enumName);
         return `${enumName}Schema`;
       });
+      
+      // Also scan for enum names that might be referenced directly without z.enum() wrapper
+      // This handles cases where @zod.custom.use contains direct enum references
+      const enumSchemaImportRe =
+        /import\s*\{\s*([A-Za-z0-9_]+)Schema\s*\}\s*from\s*['"].*?\/enums\/[A-Za-z0-9_]+\.schema['"];?\n?/g;
+      let importMatch: RegExpExecArray | null;
+      while ((importMatch = enumSchemaImportRe.exec(customizedContent)) !== null) {
+        const enumBase = importMatch[1];
+        if (!usedEnumNames.includes(enumBase)) usedEnumNames.push(enumBase);
+      }
+      
       if (usedEnumNames.length > 0) {
+        // Remove existing @prisma/client enum imports to avoid duplication
         customizedContent = customizedContent.replace(
           /import\s*\{[^}]*\}\s*from\s*['"]@prisma\/client['"];?\n?/g,
           '',
         );
-        customizedContent = customizedContent.replace(
-          /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,
-          (match) => {
-            const importLines = usedEnumNames
-              .map((name) => `import { ${name}Schema } from '../../enums/${name}.schema';`)
-              .join('\n');
-            return `${match}\n${importLines}`;
-          },
-        );
+        // Ensure enum schema imports are present (handle missing imports for variants)
+        const missingEnumImports: string[] = [];
+        usedEnumNames.forEach((enumName) => {
+          const hasImport = customizedContent.includes(`import { ${enumName}Schema }`);
+          if (!hasImport) {
+            missingEnumImports.push(enumName);
+          }
+        });
+        
+        if (missingEnumImports.length > 0) {
+          customizedContent = customizedContent.replace(
+            /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,
+            (match) => {
+              const importLines = missingEnumImports
+                .map((name) => `import { ${name}Schema } from '../../enums/${name}.schema';`)
+                .join('\n');
+              return `${match}\n${importLines}`;
+            },
+          );
+        }
       }
     }
 
