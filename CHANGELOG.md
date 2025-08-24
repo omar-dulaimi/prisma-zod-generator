@@ -1,3 +1,13 @@
+## [1.16.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.3...v1.16.4) (2025-08-24)
+
+### 🐛 Bug Fixes
+
+* remove satisfies annotations from recursive Zod schemas ([ab51b0f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ab51b0f04b82cea7aaf4c95c4a9a0eb8e55511a9))
+
+### ♻️ Code Refactoring
+
+* clean up unused code in generateZodOnlySanityCheck ([392056f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/392056f5865daa9d98fc8f9de439bb5f796cfa84))
+
 ## [1.16.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.2...v1.16.3) (2025-08-24)
 
 ### ⚠ BREAKING CHANGES
