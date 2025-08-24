@@ -107,12 +107,12 @@ export default class Transformer {
       return modelConfig.enabled !== false;
     }
 
-    // For minimal mode, only enable models that are explicitly configured
-    if (config.mode === 'minimal') {
-      return false;
-    }
+  // In minimal mode, do NOT blanket-disable models.
+  // Default to enabling models unless explicitly disabled via config.models.
+  // This aligns minimal mode with full mode regarding model selection; other constraints
+  // (limited operations and pared-down object schemas) are handled elsewhere.
 
-    // If models configuration exists, only enable explicitly configured models
+  // If models configuration exists, only enable explicitly configured models
     if (config.models && Object.keys(config.models).length > 0) {
       return false;
     }
@@ -3399,13 +3399,13 @@ export default class Transformer {
 
     // Check if minimal mode has models configured
     if (config.mode === 'minimal' && (!config.models || Object.keys(config.models).length === 0)) {
-      result.errors.push(
-        'Minimal mode requires explicit model configuration. No models are configured for generation.',
+      // In minimal mode, absence of explicit model configuration should default to "all models enabled".
+      // Provide a non-blocking suggestion instead of an error so generation can proceed.
+      result.warnings.push(
+        'Minimal mode without explicit model configuration: generating schemas for all models with minimal constraints.',
       );
-      result.isValid = false;
-
       result.suggestions.push(
-        'Add model configurations to your config file or switch to "full" mode for automatic model inclusion.',
+        'Optionally add model configurations to fine-tune which models/operations are emitted in minimal mode.',
       );
     }
 

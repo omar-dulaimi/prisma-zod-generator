@@ -1461,7 +1461,14 @@ function formatSingleParameter(param: unknown): string {
     if (param.match(/^(new\s+\w+\(|RegExp\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\()/)) {
       return param; // Return complex expressions as-is
     }
-    return `'${param.replace(/'/g, "\\'")}'`;
+  // Prefer double quotes for URL-like strings (e.g., https://) to match snapshots
+  if (/^https?:\/\//i.test(param)) {
+    const escapedDq = param.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return `"${escapedDq}"`;
+  }
+  // Default: single quotes for plain strings (error messages, enum values, etc.)
+  const escapedSq = param.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  return `'${escapedSq}'`;
   }
 
   if (typeof param === 'number' || typeof param === 'boolean') {

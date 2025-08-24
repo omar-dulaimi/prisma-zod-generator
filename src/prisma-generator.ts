@@ -4,22 +4,22 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
-  generatorOptionsToConfigOverrides,
-  getLegacyMigrationSuggestions,
-  isLegacyUsage,
-  parseGeneratorOptions,
-  validateGeneratorOptions,
+    generatorOptionsToConfigOverrides,
+    getLegacyMigrationSuggestions,
+    isLegacyUsage,
+    parseGeneratorOptions,
+    validateGeneratorOptions,
 } from './config/generator-options';
 import {
-  GeneratorConfig as CustomGeneratorConfig,
-  VariantConfig,
-  parseConfiguration,
+    GeneratorConfig as CustomGeneratorConfig,
+    VariantConfig,
+    parseConfiguration,
 } from './config/parser';
 import {
-  addMissingInputObjectTypes,
-  hideInputObjectTypesAndRelatedFields,
-  resolveAddMissingInputObjectTypeOptions,
-  resolveModelsComments,
+    addMissingInputObjectTypes,
+    hideInputObjectTypesAndRelatedFields,
+    resolveAddMissingInputObjectTypeOptions,
+    resolveModelsComments,
 } from './helpers';
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
@@ -28,10 +28,10 @@ import { logger } from './utils/logger';
 import removeDir from './utils/removeDir';
 
 import {
-  flushSingleFile,
-  initSingleFile,
-  isSingleFileEnabled,
-  setSingleFilePrismaImportPath,
+    flushSingleFile,
+    initSingleFile,
+    isSingleFileEnabled,
+    setSingleFilePrismaImportPath,
 } from './utils/singleFileAggregator';
 import { writeFileSafely } from './utils/writeFileSafely';
 
@@ -194,8 +194,13 @@ export async function generate(options: GeneratorOptions) {
         } catch {}
         const userSpecifiedOutput = zodBlockHasExplicitOutput;
         if (prismaBlockOutput && userSpecifiedOutput) {
-          // Original behavior: generator block authoritative when present
-          await handleGeneratorOutputValue(prismaBlockOutput);
+          // Resolve generator block output relative to the schema directory
+          // to ensure per-test output paths are respected
+          const raw = parseEnvValue(prismaBlockOutput);
+          const resolved = path.isAbsolute(raw) ? raw : path.join(schemaBaseDir, raw);
+          await fs.mkdir(resolved, { recursive: true });
+          await removeDir(resolved, true);
+          Transformer.setOutputPath(resolved);
         } else if (generatorConfig.output) {
           // New behavior: allow JSON config to supply output when block omits it
           const resolved = path.isAbsolute(generatorConfig.output)
