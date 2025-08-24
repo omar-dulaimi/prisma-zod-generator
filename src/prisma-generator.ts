@@ -590,16 +590,6 @@ export async function generate(options: GeneratorOptions) {
   }
 }
 
-// Create output directory, wipe previous contents, and set Transformer output path
-async function handleGeneratorOutputValue(generatorOutputValue: EnvValue) {
-  const outputDirectoryPath = parseEnvValue(generatorOutputValue);
-  // create the output directory and delete contents that might exist from a previous run
-  await fs.mkdir(outputDirectoryPath, { recursive: true });
-  const isRemoveContentsOnly = true;
-  await removeDir(outputDirectoryPath, isRemoveContentsOnly);
-  Transformer.setOutputPath(outputDirectoryPath);
-}
-
 function getGeneratorConfigByProvider(generators: GeneratorConfig[], provider: string) {
   return generators.find((it) => parseEnvValue(it.provider) === provider);
 }

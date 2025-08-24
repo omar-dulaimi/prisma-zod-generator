@@ -1778,7 +1778,7 @@ export default class Transformer {
   prepareObjectSchema(zodObjectSchemaFields: string[]) {
     // Field processing is now handled earlier in generateObjectSchemaFields()
     // This method just prepares the final schema
-    let finalFields = zodObjectSchemaFields;
+    const finalFields = zodObjectSchemaFields;
 
     const objectSchemaBody = this.addFinalWrappers({ zodStringFields: finalFields });
     const factoryDecl = `const makeSchema = (): z.ZodObject<any> => ${objectSchemaBody};\n`;
