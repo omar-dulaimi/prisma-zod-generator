@@ -1145,14 +1145,18 @@ async function updateIndexWithVariants(config: CustomGeneratorConfig) {
 
   if (enabledVariants.length === 0) return;
 
-  // Import the addIndexExport function and add the variants directory
+  // Import the addIndexExport function and add the variants directory only if it exists
   const { addIndexExport, writeIndexFile } = await import('./utils/writeIndexFile');
   const variantsIndexPath = path.join(Transformer.getSchemasPath(), 'variants', 'index.ts');
 
-  // Add the variants export to the main index
-  addIndexExport(variantsIndexPath);
+  // Check if the variants directory and index file actually exist before adding the export
+  const fs = await import('fs');
+  if (fs.existsSync(variantsIndexPath)) {
+    // Add the variants export to the main index
+    addIndexExport(variantsIndexPath);
+  }
 
-  // Regenerate the main index file to include all exports (including variants)
+  // Regenerate the main index file to include all exports
   // Use the same path resolution as the transformer to avoid path mismatches
   const indexPath = path.join(Transformer.getSchemasPath(), 'index.ts');
   await writeIndexFile(indexPath);
