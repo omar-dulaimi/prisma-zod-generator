@@ -1939,12 +1939,9 @@ export default class Transformer {
       props.push(`  ${name}${optional ? '?' : ''}: ${type};`);
     }
 
-    if (props.length === 0) return '';
-    return (
-      `// Sanity-check the output type WITHOUT changing the variable’s type:\n` +
-      `type ${exportName} = {\n${props.join('\n')}\n};\n` +
-      `(${zodVar} satisfies z.ZodType<${exportName}>);`
-    );
+    // According to the factory pattern spec, we should NOT add satisfies annotations 
+    // to pure Zod schemas as they break .extend()/.omit() functionality
+    return '';
   }
 
   /**
