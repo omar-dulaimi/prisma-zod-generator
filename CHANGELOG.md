@@ -1,3 +1,13 @@
+## [1.16.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.4...v1.16.5) (2025-08-25)
+
+### 🐛 Bug Fixes
+
+* implement factory pattern for recursive Zod schemas ([bbe8e54](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bbe8e5432e588eab18f3f5151a18f92c5b091798))
+* improve [@zod](https://github.com/zod).custom.use parsing and enum import handling ([48b3c44](https://github.com/omar-dulaimi/prisma-zod-generator/commit/48b3c44532b355d715444dd0f98db54816b2a8ad))
+* improve json helper import path resolution (Issue [#196](https://github.com/omar-dulaimi/prisma-zod-generator/issues/196)) ([6c2290d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6c2290d4ac559a3401bad1ac5da27ef81bf47716))
+* prevent missing variants directory import errors ([52eb025](https://github.com/omar-dulaimi/prisma-zod-generator/commit/52eb0256a565fa88fc8609eb5ccc43cc7797cd22))
+* **variants:** import enum schemas in array-based custom variants and use *Schema refs (Issue [#193](https://github.com/omar-dulaimi/prisma-zod-generator/issues/193))\n\n- Switch custom variants to import from generated enums instead of @prisma/client\n- Use EnumNameSchema in field definitions\n- Update test to expect schema imports and references\n\nAlso validates [@zod](https://github.com/zod).custom.use chaining remains intact (Issue [#194](https://github.com/omar-dulaimi/prisma-zod-generator/issues/194) tests stay green). ([d3b57d4](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d3b57d481a22fec04e0d3c391d407000572da744))
+
 ## [1.16.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.3...v1.16.4) (2025-08-24)
 
 ### 🐛 Bug Fixes
