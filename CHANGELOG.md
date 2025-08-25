@@ -1,3 +1,9 @@
+## [1.16.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.5...v1.16.6) (2025-08-25)
+
+### 🐛 Bug Fixes
+
+* replace console.log with logger.debug for debug output ([3f75076](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3f75076f5ffce3b0403d43323e3c7223393ec31f))
+
 ## [1.16.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.4...v1.16.5) (2025-08-25)
 
 ### 🐛 Bug Fixes
