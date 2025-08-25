@@ -11,7 +11,7 @@ describe('Issue #196 — json-helpers import path', () => {
 
     const schemaWithJson = PrismaSchemaGenerator.createBasicSchema({
       models: ['User', 'Post', 'Profile'],
-      outputPath: `${testEnv!.outputDir}/schemas`,
+      outputPath: `${testEnv?.outputDir}/schemas`,
     }).concat(`
 
 model JsonHolder {
@@ -20,11 +20,12 @@ model JsonHolder {
 }
 `);
 
-  // Write schema
-  await fs.writeFile(testEnv!.schemaPath, schemaWithJson, 'utf8');
-
-    // Run generation (build + prisma generate)
-    await testEnv!.runGeneration();
+    // Write schema
+    if (testEnv) {
+      await fs.writeFile(testEnv.schemaPath, schemaWithJson, 'utf8');
+      // Run generation (build + prisma generate)
+      await testEnv.runGeneration();
+    }
   }, GENERATION_TIMEOUT);
 
   afterAll(async () => {
@@ -32,15 +33,18 @@ model JsonHolder {
   });
 
   it('emits a correct relative import to helpers/json-helpers from object schemas', async () => {
-    const objectsDir = join(testEnv!.outputDir, 'schemas', 'objects');
-    const helpersDir = join(testEnv!.outputDir, 'schemas', 'helpers');
+    if (!testEnv) throw new Error('Test environment not initialized');
+
+    const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+    const helpersDir = join(testEnv.outputDir, 'schemas', 'helpers');
 
     // Ensure helpers file exists
     await expect(fs.stat(join(helpersDir, 'json-helpers.ts'))).resolves.toBeDefined();
 
     // Scan object schema files for json helper import
     const entries = await fs.readdir(objectsDir);
-    const jsonImportRegex = /import\s+\{\s*JsonValueSchema\s+as\s+jsonSchema\s*\}\s+from\s+['"](\.{1,2}\/)+helpers\/json-helpers['"];?/;
+    const jsonImportRegex =
+      /import\s+\{\s*JsonValueSchema\s+as\s+jsonSchema\s*\}\s+from\s+['"](\.{1,2}\/)+helpers\/json-helpers['"];?/;
     let foundValidImport = false;
     let foundInvalidImport = false;
 

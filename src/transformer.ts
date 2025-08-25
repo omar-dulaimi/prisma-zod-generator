@@ -1038,21 +1038,22 @@ export default class Transformer {
         console.log(`🔧 FIXING DMMF BUG: Adding missing 'where' field to ${this.name}`);
 
         // Create a synthetic 'where' field that references the model's ScalarWhereInput type
-        const syntheticWhereField = {
+        const syntheticWhereField: PrismaDMMF.SchemaArg = {
           name: 'where',
-          isOptional: false,
+          isNullable: false,
           isRequired: true,
           inputTypes: [
             {
               type: `${modelName}ScalarWhereInput`,
               namespace: 'prisma',
               location: 'inputObjectTypes',
+              isList: false,
             },
           ],
         };
 
         // Inject the missing field
-        this.fields = [...this.fields, syntheticWhereField as any];
+        this.fields = [...this.fields, syntheticWhereField];
         console.log(`   ✅ Added synthetic where field for ${modelName}ScalarWhereInput`);
       }
     }
@@ -3586,7 +3587,9 @@ ${selectFields.join(',\n')}
     // Generate typed schema (perfect inference, no methods) - KEEP PRISMA TYPING
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
-      exports.push(`export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition} as unknown as z.ZodType<${prismaType}>;`);
+      exports.push(
+        `export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition} as unknown as z.ZodType<${prismaType}>;`,
+      );
     }
 
     // Generate Zod schema (methods available, loose inference)

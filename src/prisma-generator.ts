@@ -1449,18 +1449,21 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
 
           // Build field definitions with basic rules
           const enabledFields = model.fields.filter((field) => !excludeFields.includes(field.name));
-            // Collect enum types used to import enum values from @prisma/client
-            const enumTypes = Array.from(
-              new Set(
-                enabledFields
-                  .filter((field) => field.kind === 'enum')
-                  .map((field) => String(field.type)),
-              ),
-            );
+          // Collect enum types used to import enum values from @prisma/client
+          const enumTypes = Array.from(
+            new Set(
+              enabledFields
+                .filter((field) => field.kind === 'enum')
+                .map((field) => String(field.type)),
+            ),
+          );
           const fieldLines = enabledFields
             .map((field) => {
               // Base zod type
-              let zod = field.kind === 'enum' ? `${String(field.type)}Schema` : `z.${getZodTypeForField(field)}`;
+              let zod =
+                field.kind === 'enum'
+                  ? `${String(field.type)}Schema`
+                  : `z.${getZodTypeForField(field)}`;
 
               // Apply optionality rules
               const wasRequired = field.isRequired;
@@ -1488,11 +1491,13 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
                   undefined;
                 if (doc && doc.includes('@zod')) {
                   // Handle @zod.custom.use() as complete schema replacement
-                  const customUseMatch = doc.match(/@zod\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m);
+                  const customUseMatch = doc.match(
+                    /@zod\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m,
+                  );
                   if (customUseMatch) {
                     const baseExpression = customUseMatch[1].trim();
                     const chainedMethods = customUseMatch[2].trim();
-                    
+
                     if (baseExpression) {
                       // Completely replace the base schema with custom expression
                       zod = baseExpression;
@@ -1523,7 +1528,9 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
           const zImport = new Transformer({}).generateImportZodStatement();
           const enumImportBase = placeAtRoot ? './enums' : '../enums';
           const enumSchemaImports = enumTypes.length
-            ? enumTypes.map((n) => `import { ${n}Schema } from '${enumImportBase}/${n}.schema';`).join('\n') + '\n'
+            ? enumTypes
+                .map((n) => `import { ${n}Schema } from '${enumImportBase}/${n}.schema';`)
+                .join('\n') + '\n'
             : '';
           const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
@@ -1687,9 +1694,10 @@ async function generateVariantSchemaContent(
   // Build enum import lines for variant files: import generated enum schemas
   let enumImportLines = '';
   if (enumTypes.length > 0) {
-    enumImportLines = enumTypes
-      .map((name) => `import { ${name}Schema } from '../../enums/${name}.schema';`)
-      .join('\n') + '\n';
+    enumImportLines =
+      enumTypes
+        .map((name) => `import { ${name}Schema } from '../../enums/${name}.schema';`)
+        .join('\n') + '\n';
   }
 
   // Get enhanced models with @zod annotation processing

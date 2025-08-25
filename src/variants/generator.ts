@@ -404,13 +404,13 @@ export class VariantFileGenerationCoordinator {
       }
     } else {
       // Non-pure variants: Need to handle both direct enum schema references and enum references in custom.use expressions
-      
+
       // First find all enum references that need schema imports
       customizedContent = customizedContent.replace(enumUsageRe, (_m, enumName: string) => {
         if (!usedEnumNames.includes(enumName)) usedEnumNames.push(enumName);
         return `${enumName}Schema`;
       });
-      
+
       // Also scan for enum names that might be referenced directly without z.enum() wrapper
       // This handles cases where @zod.custom.use contains direct enum references
       const enumSchemaImportRe =
@@ -420,7 +420,7 @@ export class VariantFileGenerationCoordinator {
         const enumBase = importMatch[1];
         if (!usedEnumNames.includes(enumBase)) usedEnumNames.push(enumBase);
       }
-      
+
       if (usedEnumNames.length > 0) {
         // Remove existing @prisma/client enum imports to avoid duplication
         customizedContent = customizedContent.replace(
@@ -435,7 +435,7 @@ export class VariantFileGenerationCoordinator {
             missingEnumImports.push(enumName);
           }
         });
-        
+
         if (missingEnumImports.length > 0) {
           customizedContent = customizedContent.replace(
             /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,

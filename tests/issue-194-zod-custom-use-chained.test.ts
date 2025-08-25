@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
-import { ConfigGenerator, GENERATION_TIMEOUT, TestEnvironment } from './helpers';
+import { GENERATION_TIMEOUT, TestEnvironment } from './helpers';
 
 // Tests for Issue #194: @zod.custom.use comment isn't properly overriding the schema
 
@@ -47,24 +47,19 @@ model Item {
         writeFileSync(testEnv.schemaPath, schema);
         await testEnv.runGeneration();
 
-        const variantFile = join(
-          testEnv.outputDir,
-          'schemas',
-          'variants',
-          'ItemModel.schema.ts',
-        );
+        const variantFile = join(testEnv.outputDir, 'schemas', 'variants', 'ItemModel.schema.ts');
         expect(existsSync(variantFile)).toBe(true);
-        
+
         const content = readFileSync(variantFile, 'utf-8');
-        
+
         // Should use the complete custom expression, not append to base type
         expect(content).toMatch(
-          /unitType:\s*z\.enum\(\['volume',\s*'mass',\s*'length',\s*'area',\s*'each'\]\)\.describe\("The unit measure that product is sold in\."\)/
+          /unitType:\s*z\.enum\(\['volume',\s*'mass',\s*'length',\s*'area',\s*'each'\]\)\.describe\("The unit measure that product is sold in\."\)/,
         );
-        
+
         // Should NOT have the base type concatenated with custom.use
         expect(content).not.toMatch(/z\.string\(\)\.custom\.use/);
-        
+
         // Should NOT have any .custom.use patterns
         expect(content).not.toMatch(/\.custom\.use/);
       } finally {

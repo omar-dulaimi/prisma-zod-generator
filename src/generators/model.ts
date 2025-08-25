@@ -1347,18 +1347,20 @@ export class PrismaTypeMapper {
     try {
       // Fast-path: support custom full schema replacement via @zod.custom.use(<expr>)
       // This captures the entire expression including any chained method calls after the parentheses
-      const customUseMatch = field.documentation.match(/@zod\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m);
+      const customUseMatch = field.documentation.match(
+        /@zod\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m,
+      );
       if (customUseMatch) {
         const baseExpression = customUseMatch[1].trim();
         const chainedMethods = customUseMatch[2].trim();
-        
+
         if (baseExpression) {
           // Combine the base expression with any chained methods
           let fullExpression = baseExpression;
           if (chainedMethods) {
             fullExpression += chainedMethods;
           }
-          
+
           result.zodSchema = fullExpression;
           result.additionalValidations.push('// Replaced base schema via @zod.custom.use');
           result.requiresSpecialHandling = true;
