@@ -73,7 +73,7 @@ function transformContentForSingleFile(filePath: string, source: string): string
       continue; // skip all lines within block
     }
     if (
-      /import\s+\{\s*JsonValueSchema\s+as\s+jsonSchema\s*\}\s+from\s+['"]\.\/helpers\/json-helpers['"];?/.test(
+      /import\s+\{\s*JsonValueSchema\s+as\s+jsonSchema\s*\}\s+from\s+['"](?:\.{1,2}\/)+helpers\/json-helpers['"];?/.test(
         line,
       )
     ) {

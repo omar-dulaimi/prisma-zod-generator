@@ -1802,8 +1802,18 @@ export default class Transformer {
         // Inline lightweight json helpers per file (cheaper in minimal mode, files are separate)
         jsonImport = `\nconst literalSchema = z.union([z.string(), z.number(), z.boolean()]);\nconst jsonSchema: any = z.lazy(() =>\n  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])\n);\n\n`;
       } else {
+        // Ensure helpers file exists once and compute correct relative path from objects dir → helpers dir
         Transformer.ensureJsonHelpersFile();
-        jsonImport = `import { JsonValueSchema as jsonSchema } from './helpers/json-helpers';\n\n`;
+        try {
+          const objectsDir = path.join(Transformer.getSchemasPath(), 'objects');
+          const helpersDir = path.join(Transformer.getOutputPath(), 'helpers');
+          let rel = path.relative(objectsDir, helpersDir).replace(/\\/g, '/');
+          if (!rel.startsWith('.') && !rel.startsWith('/')) rel = `./${rel}`;
+          jsonImport = `import { JsonValueSchema as jsonSchema } from '${rel}/json-helpers';\n\n`;
+        } catch {
+          // Fallback to original relative import (pre-change behavior)
+          jsonImport = `import { JsonValueSchema as jsonSchema } from './helpers/json-helpers';\n\n`;
+        }
       }
     }
     return `${baseImports}${jsonImport}${objectSchema}`;
