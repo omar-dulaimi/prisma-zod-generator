@@ -628,11 +628,11 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models:
   const updateManyWithWhereTypes = inputObjectTypes.filter((t) =>
     t.name.includes('UpdateManyWithWhere'),
   );
-  console.log(
+  logger.debug(
     `\n🔍 DEBUG: Found ${updateManyWithWhereTypes.length} UpdateManyWithWhere types in DMMF:`,
   );
   updateManyWithWhereTypes.forEach((t) => {
-    console.log(`  - ${t.name}: fields [${t.fields.map((f) => f.name).join(', ')}]`);
+    logger.debug(`  - ${t.name}: fields [${t.fields.map((f) => f.name).join(', ')}]`);
   });
 
   for (let i = 0; i < inputObjectTypes.length; i += 1) {
@@ -641,16 +641,16 @@ async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models:
 
     // Debug specific type
     if (name === 'PostUpdateManyWithWhereWithoutAuthorInput') {
-      console.log(`\n🔍 DEBUG: Found ${name}`);
-      console.log(`Fields: ${originalFields?.map((f) => f.name).join(', ')}`);
+      logger.debug(`\n🔍 DEBUG: Found ${name}`);
+      logger.debug(`Fields: ${originalFields?.map((f) => f.name).join(', ')}`);
       originalFields?.forEach((field) => {
-        console.log(`  - ${field.name}: ${field.inputTypes.map((t) => t.type).join(' | ')}`);
+        logger.debug(`  - ${field.name}: ${field.inputTypes.map((t) => t.type).join(' | ')}`);
       });
     }
 
     // Filter object schemas based on enabled models
     if (name && !isObjectSchemaEnabled(name)) {
-      console.log(`[DEBUG] Skipping object schema: ${name} (disabled by config)`);
+      logger.debug(`[DEBUG] Skipping object schema: ${name} (disabled by config)`);
       continue;
     }
 

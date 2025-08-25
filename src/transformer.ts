@@ -1020,7 +1020,7 @@ export default class Transformer {
     const variant = Transformer.determineSchemaVariant(this.name);
 
     // Debug all schemas being processed
-    console.log(`🔍 Processing: ${this.name}`);
+    logger.debug(`🔍 Processing: ${this.name}`);
 
     // Debug: Log the raw context name and extracted model name
     logger.debug(`🔍 Schema context: "${this.name}" -> extracted model: "${modelName}"`);
@@ -1028,14 +1028,14 @@ export default class Transformer {
     // CRITICAL FIX: UpdateManyWithWhereWithout*Input DMMF Bug
     // Prisma's DMMF is missing the required 'where' field for these types
     if (/UpdateManyWithWhereWithout\w+Input$/.test(this.name)) {
-      console.log(`🎯 MATCHED PATTERN: ${this.name}`);
-      console.log(`   - Fields available: [${this.fields.map((f) => f.name).join(', ')}]`);
+      logger.debug(`🎯 MATCHED PATTERN: ${this.name}`);
+      logger.debug(`   - Fields available: [${this.fields.map((f) => f.name).join(', ')}]`);
 
       const hasWhereField = this.fields.some((f) => f.name === 'where');
-      console.log(`   - Has where field: ${hasWhereField}`);
+      logger.debug(`   - Has where field: ${hasWhereField}`);
 
       if (!hasWhereField && modelName) {
-        console.log(`🔧 FIXING DMMF BUG: Adding missing 'where' field to ${this.name}`);
+        logger.debug(`🔧 FIXING DMMF BUG: Adding missing 'where' field to ${this.name}`);
 
         // Create a synthetic 'where' field that references the model's ScalarWhereInput type
         const syntheticWhereField: PrismaDMMF.SchemaArg = {
@@ -1054,7 +1054,7 @@ export default class Transformer {
 
         // Inject the missing field
         this.fields = [...this.fields, syntheticWhereField];
-        console.log(`   ✅ Added synthetic where field for ${modelName}ScalarWhereInput`);
+        logger.debug(`   ✅ Added synthetic where field for ${modelName}ScalarWhereInput`);
       }
     }
 
