@@ -1,3 +1,28 @@
+## [1.17.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.6...v1.17.0) (2025-08-26)
+
+### 🚀 Features
+
+* add manifest tracking methods to transformer ([68f62f3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/68f62f32cd9cb38f2b77b5db573ac51310ea060d))
+* add safety configuration resolver with precedence handling ([0cce3e9](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0cce3e97209e5368f1c5aa469afae5920992c72a))
+* add safety system type definitions and interfaces ([972a272](https://github.com/omar-dulaimi/prisma-zod-generator/commit/972a272f6c58d24875f3679696949c1900102950)), closes [#71](https://github.com/omar-dulaimi/prisma-zod-generator/issues/71)
+* extend configuration parser with safety options support ([38b3474](https://github.com/omar-dulaimi/prisma-zod-generator/commit/38b3474fc99d96cc55b02025d748277e6cc1e40f))
+* implement configurable safety system with manifest tracking ([d8e449b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d8e449be7ff334455ce7cd39c77a90bd2c06968e)), closes [#71](https://github.com/omar-dulaimi/prisma-zod-generator/issues/71)
+* integrate configurable safety system into main generator ([9944137](https://github.com/omar-dulaimi/prisma-zod-generator/commit/994413744e13028720eec371f0998681b3cc93f4))
+
+### 🐛 Bug Fixes
+
+* resolve TypeScript type errors and linting issues ([65dbc9a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/65dbc9a7b8db38bb3b42dc4a676031c6e0b91ff2))
+
+### ♻️ Code Refactoring
+
+* update file writing utilities for safety system integration ([b38ec5f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b38ec5f229f83ca57347362cb36d1ddcf02bfda6))
+
+### 📚 Documentation
+
+* add comprehensive safety system reference documentation ([a509b21](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a509b21694fa90b132c6a29a8c7c4e4f69334ba3))
+* add safety system configuration recipe guides ([46bc94f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/46bc94ff38875d4f3ca93b409e03e3038859d097))
+* integrate safety system documentation into website navigation ([3968f5f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3968f5f2514841e7ea8098db1778157ff8be097f))
+
 ## [1.16.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.5...v1.16.6) (2025-08-25)
 
 ### 🐛 Bug Fixes
