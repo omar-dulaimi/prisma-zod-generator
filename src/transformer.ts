@@ -9,6 +9,7 @@ import { AggregateOperationSupport, TransformerParams } from './types';
 import { logger } from './utils/logger';
 import { writeFileSafely } from './utils/writeFileSafely';
 import { addIndexExport, writeIndexFile } from './utils/writeIndexFile';
+import type { GeneratedManifest } from './utils/safeOutputManagement';
 
 /**
  * Filter validation result interface
@@ -51,6 +52,8 @@ export default class Transformer {
   // Track excluded field names for current object generation to inform typed Omit
   private lastExcludedFieldNames: string[] | null = null;
   private static jsonHelpersWritten = false;
+  // Track generated files for safe cleanup
+  private static currentManifest: GeneratedManifest | null = null;
 
   constructor(params: TransformerParams) {
     this.name = params.name ?? '';
@@ -862,6 +865,14 @@ export default class Transformer {
 
   static getOutputPath() {
     return this.outputPath;
+  }
+  
+  static setCurrentManifest(manifest: GeneratedManifest | null) {
+    this.currentManifest = manifest;
+  }
+  
+  static getCurrentManifest(): GeneratedManifest | null {
+    return this.currentManifest;
   }
 
   static setPrismaClientOutputPath(prismaClientCustomPath: string) {
