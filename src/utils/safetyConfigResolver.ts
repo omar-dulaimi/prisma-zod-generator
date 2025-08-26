@@ -63,21 +63,19 @@ export function resolveSafetyConfig(options: SafetyOptions = {}): ResolvedSafety
     level,
     // Apply user overrides
     ...(options.enabled !== undefined && { enabled: options.enabled }),
-    ...(options.allowDangerousPaths !== undefined && { allowDangerousPaths: options.allowDangerousPaths }),
-    ...(options.allowProjectRoots !== undefined && { allowProjectRoots: options.allowProjectRoots }),
+    ...(options.allowDangerousPaths !== undefined && {
+      allowDangerousPaths: options.allowDangerousPaths,
+    }),
+    ...(options.allowProjectRoots !== undefined && {
+      allowProjectRoots: options.allowProjectRoots,
+    }),
     ...(options.allowUserFiles !== undefined && { allowUserFiles: options.allowUserFiles }),
     ...(options.skipManifest !== undefined && { skipManifest: options.skipManifest }),
     ...(options.warningsOnly !== undefined && { warningsOnly: options.warningsOnly }),
     ...(options.maxUserFiles !== undefined && { maxUserFiles: options.maxUserFiles }),
     // Merge custom arrays
-    customDangerousPaths: [
-      ...preset.customDangerousPaths,
-      ...(options.customDangerousPaths || [])
-    ],
-    customProjectFiles: [
-      ...preset.customProjectFiles,
-      ...(options.customProjectFiles || [])
-    ],
+    customDangerousPaths: [...preset.customDangerousPaths, ...(options.customDangerousPaths || [])],
+    customProjectFiles: [...preset.customProjectFiles, ...(options.customProjectFiles || [])],
   };
 
   // Special case: if safety is explicitly disabled, override all other settings
@@ -99,7 +97,9 @@ export function resolveSafetyConfig(options: SafetyOptions = {}): ResolvedSafety
 /**
  * Parse safety configuration from generator options or environment
  */
-export function parseSafetyConfigFromGeneratorOptions(generatorOptions: Record<string, any>): SafetyOptions {
+export function parseSafetyConfigFromGeneratorOptions(
+  generatorOptions: Record<string, unknown>,
+): SafetyOptions {
   const safetyConfig: SafetyOptions = {};
 
   // Parse from generator block options (prefixed with safety)
@@ -108,43 +108,53 @@ export function parseSafetyConfigFromGeneratorOptions(generatorOptions: Record<s
   }
 
   if (generatorOptions.safetyEnabled !== undefined) {
-    safetyConfig.enabled = parseBoolean(generatorOptions.safetyEnabled);
+    safetyConfig.enabled = parseBoolean(generatorOptions.safetyEnabled as string | boolean);
   }
 
   if (generatorOptions.safetyAllowDangerousPaths !== undefined) {
-    safetyConfig.allowDangerousPaths = parseBoolean(generatorOptions.safetyAllowDangerousPaths);
+    safetyConfig.allowDangerousPaths = parseBoolean(
+      generatorOptions.safetyAllowDangerousPaths as string | boolean,
+    );
   }
 
   if (generatorOptions.safetyAllowProjectRoots !== undefined) {
-    safetyConfig.allowProjectRoots = parseBoolean(generatorOptions.safetyAllowProjectRoots);
+    safetyConfig.allowProjectRoots = parseBoolean(
+      generatorOptions.safetyAllowProjectRoots as string | boolean,
+    );
   }
 
   if (generatorOptions.safetyAllowUserFiles !== undefined) {
-    safetyConfig.allowUserFiles = parseBoolean(generatorOptions.safetyAllowUserFiles);
+    safetyConfig.allowUserFiles = parseBoolean(
+      generatorOptions.safetyAllowUserFiles as string | boolean,
+    );
   }
 
   if (generatorOptions.safetySkipManifest !== undefined) {
-    safetyConfig.skipManifest = parseBoolean(generatorOptions.safetySkipManifest);
+    safetyConfig.skipManifest = parseBoolean(
+      generatorOptions.safetySkipManifest as string | boolean,
+    );
   }
 
   if (generatorOptions.safetyWarningsOnly !== undefined) {
-    safetyConfig.warningsOnly = parseBoolean(generatorOptions.safetyWarningsOnly);
+    safetyConfig.warningsOnly = parseBoolean(
+      generatorOptions.safetyWarningsOnly as string | boolean,
+    );
   }
 
   if (generatorOptions.safetyMaxUserFiles !== undefined) {
-    safetyConfig.maxUserFiles = parseInt(generatorOptions.safetyMaxUserFiles, 10);
+    safetyConfig.maxUserFiles = parseInt(generatorOptions.safetyMaxUserFiles as string, 10);
   }
 
   // Parse custom paths (comma-separated strings)
   if (generatorOptions.safetyCustomDangerousPaths) {
-    safetyConfig.customDangerousPaths = generatorOptions.safetyCustomDangerousPaths
+    safetyConfig.customDangerousPaths = (generatorOptions.safetyCustomDangerousPaths as string)
       .split(',')
       .map((s: string) => s.trim())
       .filter((s: string) => s.length > 0);
   }
 
   if (generatorOptions.safetyCustomProjectFiles) {
-    safetyConfig.customProjectFiles = generatorOptions.safetyCustomProjectFiles
+    safetyConfig.customProjectFiles = (generatorOptions.safetyCustomProjectFiles as string)
       .split(',')
       .map((s: string) => s.trim())
       .filter((s: string) => s.length > 0);
@@ -168,11 +178,15 @@ export function parseSafetyConfigFromEnvironment(): SafetyOptions {
   }
 
   if (process.env.PRISMA_ZOD_SAFETY_ALLOW_DANGEROUS_PATHS !== undefined) {
-    safetyConfig.allowDangerousPaths = parseBoolean(process.env.PRISMA_ZOD_SAFETY_ALLOW_DANGEROUS_PATHS);
+    safetyConfig.allowDangerousPaths = parseBoolean(
+      process.env.PRISMA_ZOD_SAFETY_ALLOW_DANGEROUS_PATHS,
+    );
   }
 
   if (process.env.PRISMA_ZOD_SAFETY_ALLOW_PROJECT_ROOTS !== undefined) {
-    safetyConfig.allowProjectRoots = parseBoolean(process.env.PRISMA_ZOD_SAFETY_ALLOW_PROJECT_ROOTS);
+    safetyConfig.allowProjectRoots = parseBoolean(
+      process.env.PRISMA_ZOD_SAFETY_ALLOW_PROJECT_ROOTS,
+    );
   }
 
   if (process.env.PRISMA_ZOD_SAFETY_ALLOW_USER_FILES !== undefined) {
@@ -193,17 +207,17 @@ export function parseSafetyConfigFromEnvironment(): SafetyOptions {
 
   // Parse custom paths (comma-separated)
   if (process.env.PRISMA_ZOD_SAFETY_CUSTOM_DANGEROUS_PATHS) {
-    safetyConfig.customDangerousPaths = process.env.PRISMA_ZOD_SAFETY_CUSTOM_DANGEROUS_PATHS
-      .split(',')
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
+    safetyConfig.customDangerousPaths = process.env.PRISMA_ZOD_SAFETY_CUSTOM_DANGEROUS_PATHS.split(
+      ',',
+    )
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
   }
 
   if (process.env.PRISMA_ZOD_SAFETY_CUSTOM_PROJECT_FILES) {
-    safetyConfig.customProjectFiles = process.env.PRISMA_ZOD_SAFETY_CUSTOM_PROJECT_FILES
-      .split(',')
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
+    safetyConfig.customProjectFiles = process.env.PRISMA_ZOD_SAFETY_CUSTOM_PROJECT_FILES.split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
   }
 
   return safetyConfig;
@@ -221,7 +235,8 @@ export function mergeSafetyConfigs(...configs: SafetyOptions[]): SafetyOptions {
     // Merge primitive values (later values override)
     if (config.level !== undefined) result.level = config.level;
     if (config.enabled !== undefined) result.enabled = config.enabled;
-    if (config.allowDangerousPaths !== undefined) result.allowDangerousPaths = config.allowDangerousPaths;
+    if (config.allowDangerousPaths !== undefined)
+      result.allowDangerousPaths = config.allowDangerousPaths;
     if (config.allowProjectRoots !== undefined) result.allowProjectRoots = config.allowProjectRoots;
     if (config.allowUserFiles !== undefined) result.allowUserFiles = config.allowUserFiles;
     if (config.skipManifest !== undefined) result.skipManifest = config.skipManifest;
@@ -232,14 +247,14 @@ export function mergeSafetyConfigs(...configs: SafetyOptions[]): SafetyOptions {
     if (config.customDangerousPaths?.length) {
       result.customDangerousPaths = [
         ...(result.customDangerousPaths || []),
-        ...config.customDangerousPaths
+        ...config.customDangerousPaths,
       ];
     }
 
     if (config.customProjectFiles?.length) {
       result.customProjectFiles = [
         ...(result.customProjectFiles || []),
-        ...config.customProjectFiles
+        ...config.customProjectFiles,
       ];
     }
   }
@@ -302,11 +317,16 @@ export function validateSafetyConfig(config: SafetyOptions): string[] {
 
   // Validate safety level
   if (config.level && !['strict', 'standard', 'permissive', 'disabled'].includes(config.level)) {
-    errors.push(`Invalid safety level: ${config.level}. Must be one of: strict, standard, permissive, disabled`);
+    errors.push(
+      `Invalid safety level: ${config.level}. Must be one of: strict, standard, permissive, disabled`,
+    );
   }
 
   // Validate maxUserFiles
-  if (config.maxUserFiles !== undefined && (config.maxUserFiles < 0 || !Number.isInteger(config.maxUserFiles))) {
+  if (
+    config.maxUserFiles !== undefined &&
+    (config.maxUserFiles < 0 || !Number.isInteger(config.maxUserFiles))
+  ) {
     errors.push(`maxUserFiles must be a non-negative integer, got: ${config.maxUserFiles}`);
   }
 

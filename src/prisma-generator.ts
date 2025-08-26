@@ -24,13 +24,14 @@ import {
 import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
 import { AggregateOperationSupport } from './types';
+import { ResolvedSafetyConfig } from './types/safety';
 import { logger } from './utils/logger';
 import { safeCleanupOutput, saveManifest } from './utils/safeOutputManagement';
-import { 
-  resolveSafetyConfig, 
+import {
+  resolveSafetyConfig,
   parseSafetyConfigFromGeneratorOptions,
   parseSafetyConfigFromEnvironment,
-  mergeSafetyConfigs
+  mergeSafetyConfigs,
 } from './utils/safetyConfigResolver';
 
 import {
@@ -94,7 +95,7 @@ export async function generate(options: GeneratorOptions) {
     // (Output path deferred until after this merge so JSON 'output' can be honored if the
     // generator block omits an output attribute.)
     let generatorConfig: CustomGeneratorConfig;
-  let resolvedSafetyConfig: any; // Will be properly typed after resolution
+    let resolvedSafetyConfig: ResolvedSafetyConfig | undefined;
     try {
       const schemaBaseDir = path.dirname(options.schemaPath);
       let configFileOptions: Partial<CustomGeneratorConfig> = {};
@@ -182,14 +183,20 @@ export async function generate(options: GeneratorOptions) {
       );
 
       // --- Safety Configuration Resolution ---
-      const generatorSafetyConfig = parseSafetyConfigFromGeneratorOptions(options.generator.config || {});
+      const generatorSafetyConfig = parseSafetyConfigFromGeneratorOptions(
+        options.generator.config || {},
+      );
       const envSafetyConfig = parseSafetyConfigFromEnvironment();
       const fileSafetyConfig = generatorConfig.safety || {};
-      
+
       // Merge safety configs with precedence: environment > generator options > config file > defaults
-      const mergedSafetyConfig = mergeSafetyConfigs(fileSafetyConfig, generatorSafetyConfig, envSafetyConfig);
+      const mergedSafetyConfig = mergeSafetyConfigs(
+        fileSafetyConfig,
+        generatorSafetyConfig,
+        envSafetyConfig,
+      );
       resolvedSafetyConfig = resolveSafetyConfig(mergedSafetyConfig);
-      
+
       logger.debug(`[debug] resolvedSafetyConfig = ${JSON.stringify(resolvedSafetyConfig)}`);
 
       // --- Output Path Resolution (replaces earlier immediate initialization) ---

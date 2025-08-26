@@ -866,11 +866,11 @@ export default class Transformer {
   static getOutputPath() {
     return this.outputPath;
   }
-  
+
   static setCurrentManifest(manifest: GeneratedManifest | null) {
     this.currentManifest = manifest;
   }
-  
+
   static getCurrentManifest(): GeneratedManifest | null {
     return this.currentManifest;
   }

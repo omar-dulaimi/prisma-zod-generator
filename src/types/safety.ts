@@ -5,11 +5,11 @@
 /**
  * Safety levels provide preset configurations for different use cases
  */
-export type SafetyLevel = 
-  | 'strict'     // Block even warned paths (most restrictive)
-  | 'standard'   // Current behavior: warn dangerous, block project roots  
+export type SafetyLevel =
+  | 'strict' // Block even warned paths (most restrictive)
+  | 'standard' // Current behavior: warn dangerous, block project roots
   | 'permissive' // Only warn, never block generation
-  | 'disabled';  // No safety checks at all
+  | 'disabled'; // No safety checks at all
 
 /**
  * Granular safety configuration options for advanced control
