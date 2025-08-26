@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import { isAbsolute, resolve } from 'path';
 import { logger } from '../utils/logger';
+import type { SafetyOptions } from '../types/safety';
 
 /**
  * Configuration interface for the Prisma Zod Generator
@@ -147,6 +148,12 @@ export interface GeneratorConfig {
     /** Generate variant wrapper schemas (variants/ directory & index). Default true if any variant enabled. */
     variants?: boolean;
   };
+
+  /**
+   * Safety system configuration to protect user code from accidental deletion.
+   * Controls how the generator handles potentially dangerous output paths.
+   */
+  safety?: SafetyOptions;
 }
 
 /**

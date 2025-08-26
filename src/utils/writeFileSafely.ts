@@ -4,6 +4,7 @@ import Transformer from '../transformer';
 import { formatFile } from './formatFile';
 import { appendSingleFile, isSingleFileEnabled } from './singleFileAggregator';
 import { addIndexExport } from './writeIndexFile';
+import { addFileToManifest, addDirectoryToManifest } from './safeOutputManagement';
 
 export const writeFileSafely = async (
   writeLocation: string,
@@ -20,6 +21,13 @@ export const writeFileSafely = async (
     const dir = path.dirname(writeLocation);
     fs.mkdirSync(dir, { recursive: true });
 
+    // Track directory creation in manifest
+    const manifest = Transformer.getCurrentManifest();
+    const outputPath = Transformer.getOutputPath();
+    if (manifest && outputPath) {
+      addDirectoryToManifest(manifest, dir, outputPath);
+    }
+
     // Control formatting via config, default off for schemas for speed
     const cfg = Transformer.getGeneratorConfig();
     const isSchemasFile = /[\\\/]schemas[\\\/]/.test(writeLocation);
@@ -29,6 +37,12 @@ export const writeFileSafely = async (
     } else {
       fs.writeFileSync(writeLocation, await formatFile(content));
     }
+
+    // Track file creation in manifest
+    if (manifest && outputPath) {
+      addFileToManifest(manifest, writeLocation, outputPath);
+    }
+
     if (addToIndex) {
       try {
         // Avoid bloating index in minimal mode: don't add object schemas or helper files
