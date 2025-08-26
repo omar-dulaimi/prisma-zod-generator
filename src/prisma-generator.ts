@@ -28,10 +28,10 @@ import { ResolvedSafetyConfig } from './types/safety';
 import { logger } from './utils/logger';
 import { safeCleanupOutput, saveManifest } from './utils/safeOutputManagement';
 import {
-  resolveSafetyConfig,
-  parseSafetyConfigFromGeneratorOptions,
-  parseSafetyConfigFromEnvironment,
   mergeSafetyConfigs,
+  parseSafetyConfigFromEnvironment,
+  parseSafetyConfigFromGeneratorOptions,
+  resolveSafetyConfig,
 } from './utils/safetyConfigResolver';
 
 import {
@@ -102,11 +102,30 @@ export async function generate(options: GeneratorOptions) {
 
       // Step 1: Load config file if specified or try auto-discovery (medium priority)
       if (extendedOptions.config) {
-        const parseResult = await parseConfiguration(extendedOptions.config, schemaBaseDir);
-        configFileOptions = parseResult.config;
-        logger.debug(
-          `📋 Loaded configuration from: ${parseResult.configPath || 'discovered file'}`,
-        );
+        logger.debug(`🔧 Config path specified: ${extendedOptions.config}`);
+        logger.debug(`📁 Schema base directory: ${schemaBaseDir}`);
+        try {
+          const parseResult = await parseConfiguration(extendedOptions.config, schemaBaseDir);
+          configFileOptions = parseResult.config;
+          logger.debug(
+            `📋 Successfully loaded configuration from: ${parseResult.configPath || 'discovered file'}`,
+          );
+        } catch (configError) {
+          if (configError instanceof Error) {
+            const resolvedPath = path.isAbsolute(extendedOptions.config)
+              ? extendedOptions.config
+              : path.resolve(schemaBaseDir, extendedOptions.config);
+            console.warn(
+              `⚠️  Configuration loading failed:\n` +
+                `   Specified path: ${extendedOptions.config}\n` +
+                `   Resolved path: ${resolvedPath}\n` +
+                `   Error: ${configError.message}\n` +
+                `   Falling back to defaults.`,
+            );
+            logger.debug(`🔍 Config error details:`, configError);
+          }
+          throw configError; // Re-throw to be handled by outer catch block
+        }
       } else {
         // Try auto-discovery and specific paths
         try {
@@ -253,10 +272,37 @@ export async function generate(options: GeneratorOptions) {
         throw outputInitError;
       }
     } catch (configError) {
-      const msg = `[prisma-zod-generator] ⚠️  Configuration loading failed, using defaults: ${String(configError)}`;
-      console.warn(msg);
-      // Fall back to defaults
-      generatorConfig = processConfiguration({});
+      logger.debug(`[prisma-generator] Caught config error: ${configError}`);
+      logger.debug(`[prisma-generator] Error type: ${(configError as Error)?.constructor?.name}`);
+      logger.debug(`[prisma-generator] Error message: ${(configError as Error)?.message}`);
+
+      // Only catch file not found errors - let validation errors bubble up
+      const isFileNotFoundError =
+        configError instanceof Error &&
+        configError.message.includes('Configuration file not found');
+      logger.debug(`[prisma-generator] Is file not found error: ${isFileNotFoundError}`);
+
+      if (isFileNotFoundError) {
+        const baseDir = path.dirname(options.schemaPath);
+        const configPath = extendedOptions.config || '';
+        const resolvedPath = path.isAbsolute(configPath)
+          ? configPath
+          : path.resolve(baseDir, configPath);
+        const msg =
+          `[prisma-zod-generator] ⚠️  Configuration loading failed:\n` +
+          `   Specified path: ${configPath}\n` +
+          `   Resolved path: ${resolvedPath}\n` +
+          `   Error: Configuration file not found\n` +
+          `   Using defaults instead.`;
+        logger.info(msg);
+        logger.debug(`[prisma-generator] Warned about file not found, falling back to defaults`);
+        // Fall back to defaults for file not found errors
+        generatorConfig = processConfiguration({});
+      } else {
+        logger.debug(`[prisma-generator] Re-throwing error: ${configError}`);
+        // Re-throw validation errors and other critical errors
+        throw configError;
+      }
     }
     checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
     setPrismaClientProvider(prismaClientGeneratorConfig);

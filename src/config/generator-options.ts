@@ -43,7 +43,7 @@ export function parseGeneratorOptions(
   };
 
   // Parse config file path
-  if (generatorConfig.config) {
+  if (generatorConfig.config !== undefined) {
     options.config = parseConfigPath(generatorConfig.config);
   }
 
@@ -128,15 +128,27 @@ export function parseGeneratorOptions(
  */
 function parseConfigPath(configValue: string): string {
   if (!configValue || typeof configValue !== 'string') {
+    logger.info(
+      '❌ [prisma-zod-generator] Invalid configuration:\n' +
+        `   config = "${configValue}"\n` +
+        '   Error: Config path must be a non-empty string.\n' +
+        '   Solution: Remove the config attribute entirely to use defaults, or provide a valid path.',
+    );
     throw new GeneratorOptionError('config', configValue, 'Config path must be a non-empty string');
   }
 
   const trimmed = configValue.trim();
   if (trimmed.length === 0) {
+    logger.info(
+      '❌ [prisma-zod-generator] Invalid configuration:\n' +
+        '   config = ""\n' +
+        '   Error: Config path cannot be empty or whitespace only.\n' +
+        '   Solution: Remove the config attribute entirely to use defaults, or provide a valid path.',
+    );
     throw new GeneratorOptionError(
       'config',
       configValue,
-      'Config path cannot be empty or whitespace only',
+      'Config path cannot be empty or whitespace only. If you want to disable config file loading, remove the config attribute entirely.',
     );
   }
 

@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import { isAbsolute, resolve } from 'path';
-import { logger } from '../utils/logger';
 import type { SafetyOptions } from '../types/safety';
+import { logger } from '../utils/logger';
 
 /**
  * Configuration interface for the Prisma Zod Generator
@@ -251,7 +251,10 @@ export async function validateFileExists(filePath: string): Promise<void> {
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new ConfigParseError(`Configuration file not found: ${filePath}`);
+      throw new ConfigParseError(
+        `Configuration file not found at resolved path: ${filePath}. ` +
+          `Please verify the file exists or remove the config attribute to use defaults.`,
+      );
     }
     throw new ConfigParseError(
       `Cannot access configuration file: ${filePath}`,
@@ -400,15 +403,24 @@ export async function parseConfigFromFile(
   baseDir?: string,
 ): Promise<ParseResult> {
   const resolvedPath = resolveConfigPath(configPath, baseDir);
+  logger.debug(`🔍 Attempting to load config from: ${resolvedPath}`);
 
   // Validate file exists
-  await validateFileExists(resolvedPath);
+  try {
+    await validateFileExists(resolvedPath);
+    logger.debug(`✅ Config file exists at: ${resolvedPath}`);
+  } catch (error) {
+    logger.debug(`❌ Config file validation failed for: ${resolvedPath}`);
+    throw error;
+  }
 
   // Read file content
   const content = await readConfigFile(resolvedPath);
+  logger.debug(`📖 Successfully read config file: ${resolvedPath} (${content.length} characters)`);
 
   // Parse JSON content
   const config = parseJsonConfig(content, resolvedPath);
+  logger.debug(`✅ Successfully parsed config from: ${resolvedPath}`);
 
   return {
     config,
