@@ -25,7 +25,13 @@ import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
 import { AggregateOperationSupport } from './types';
 import { logger } from './utils/logger';
-import removeDir from './utils/removeDir';
+import { safeCleanupOutput, saveManifest } from './utils/safeOutputManagement';
+import { 
+  resolveSafetyConfig, 
+  parseSafetyConfigFromGeneratorOptions,
+  parseSafetyConfigFromEnvironment,
+  mergeSafetyConfigs
+} from './utils/safetyConfigResolver';
 
 import {
   flushSingleFile,
@@ -88,6 +94,7 @@ export async function generate(options: GeneratorOptions) {
     // (Output path deferred until after this merge so JSON 'output' can be honored if the
     // generator block omits an output attribute.)
     let generatorConfig: CustomGeneratorConfig;
+  let resolvedSafetyConfig: any; // Will be properly typed after resolution
     try {
       const schemaBaseDir = path.dirname(options.schemaPath);
       let configFileOptions: Partial<CustomGeneratorConfig> = {};
@@ -174,6 +181,17 @@ export async function generate(options: GeneratorOptions) {
         `[debug] generatorConfig.output (post-merge/process) = ${generatorConfig.output}`,
       );
 
+      // --- Safety Configuration Resolution ---
+      const generatorSafetyConfig = parseSafetyConfigFromGeneratorOptions(options.generator.config || {});
+      const envSafetyConfig = parseSafetyConfigFromEnvironment();
+      const fileSafetyConfig = generatorConfig.safety || {};
+      
+      // Merge safety configs with precedence: environment > generator options > config file > defaults
+      const mergedSafetyConfig = mergeSafetyConfigs(fileSafetyConfig, generatorSafetyConfig, envSafetyConfig);
+      resolvedSafetyConfig = resolveSafetyConfig(mergedSafetyConfig);
+      
+      logger.debug(`[debug] resolvedSafetyConfig = ${JSON.stringify(resolvedSafetyConfig)}`);
+
       // --- Output Path Resolution (replaces earlier immediate initialization) ---
       // Precedence for output now:
       // 1. Prisma generator block 'output' attribute (if provided)
@@ -199,23 +217,26 @@ export async function generate(options: GeneratorOptions) {
           const raw = parseEnvValue(prismaBlockOutput);
           const resolved = path.isAbsolute(raw) ? raw : path.join(schemaBaseDir, raw);
           await fs.mkdir(resolved, { recursive: true });
-          await removeDir(resolved, true);
+          const manifest = await safeCleanupOutput(resolved, resolvedSafetyConfig);
           Transformer.setOutputPath(resolved);
+          Transformer.setCurrentManifest(manifest);
         } else if (generatorConfig.output) {
           // New behavior: allow JSON config to supply output when block omits it
           const resolved = path.isAbsolute(generatorConfig.output)
             ? generatorConfig.output
             : path.join(schemaBaseDir, generatorConfig.output);
           await fs.mkdir(resolved, { recursive: true });
-          await removeDir(resolved, true);
+          const manifest = await safeCleanupOutput(resolved, resolvedSafetyConfig);
           Transformer.setOutputPath(resolved);
+          Transformer.setCurrentManifest(manifest);
           logger.debug(`[prisma-zod-generator] ℹ️ Using JSON config output path: ${resolved}`);
         } else {
           // Fallback (should rarely happen because processConfiguration sets default)
           const fallback = path.join(path.dirname(options.schemaPath), 'generated');
           await fs.mkdir(fallback, { recursive: true });
-          await removeDir(fallback, true);
+          const manifest = await safeCleanupOutput(fallback, resolvedSafetyConfig);
           Transformer.setOutputPath(fallback);
+          Transformer.setCurrentManifest(manifest);
           logger.debug(`[prisma-zod-generator] ℹ️ Using fallback output path: ${fallback}`);
         }
       } catch (outputInitError) {
@@ -574,12 +595,20 @@ export async function generate(options: GeneratorOptions) {
           const full = path.join(baseDir, entry.name);
           if (full === bundlePath) continue;
           if (entry.isDirectory()) {
-            await removeDir(full, false);
+            await fs.rm(full, { recursive: true, force: true });
           } else {
             await fs.unlink(full);
           }
         }
       } catch {}
+    }
+
+    // Save the manifest at the end of generation
+    const finalManifest = Transformer.getCurrentManifest();
+    if (finalManifest && resolvedSafetyConfig && !resolvedSafetyConfig.skipManifest) {
+      await saveManifest(Transformer.getOutputPath(), finalManifest);
+    } else if (resolvedSafetyConfig?.skipManifest) {
+      logger.debug('[prisma-generator] Skipping manifest save (skipManifest enabled)');
     }
   } catch (error) {
     console.error(error);
