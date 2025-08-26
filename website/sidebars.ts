@@ -50,14 +50,27 @@ const sidebars: SidebarsConfig = {
         'recipes/hide-fields',
         'recipes/circular-dependency-exclusion',
         'recipes/optional-field-control',
+        {
+          type: 'category',
+          label: 'Safety System',
+          collapsed: true,
+          items: [
+            'recipes/safety-custom-configuration',
+            'recipes/safety-force-dangerous-path',
+            'recipes/safety-project-migration',
+            'recipes/safety-disable-completely',
+          ],
+        },
       ],
     },
     {
       type: 'category',
       label: 'Reference',
       items: [
+        'reference/safety-system',
         'reference/bytes-json',
         'reference/naming-preset-map',
+        'reference/logging-debug',
         'reference/faq',
         'reference/troubleshooting',
       ],
