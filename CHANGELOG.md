@@ -1,3 +1,13 @@
+## [1.17.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.0...v1.17.1) (2025-08-26)
+
+### 🐛 Bug Fixes
+
+* **config:** improve validation and error handling for config file paths ([7eeaebf](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7eeaebf3b0d839d39a2aeb64c107dd7bfff3bf8f))
+
+### 📚 Documentation
+
+* document config file path resolution behavior ([ff3b4de](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ff3b4de1701844a1b8b7196024d2cecab31c25da))
+
 ## [1.17.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.16.6...v1.17.0) (2025-08-26)
 
 ### 🚀 Features
