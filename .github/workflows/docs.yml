@@ -75,10 +75,11 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: website/package-lock.json
       - name: Install dependencies
-        run: npm ci
+        run: cd website && npm ci
       - name: Build docs
-        run: npm run docs:build
+        run: cd website && npm run build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
