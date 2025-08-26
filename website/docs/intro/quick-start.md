@@ -51,10 +51,17 @@ generator client {
 generator zod {
   provider = "prisma-zod-generator"
   // optional output = "./prisma/generated" (JSON config can supply if omitted)
+  // optional config = "./zod-generator.config.json" (relative to schema file)
 }
 ```
 
-## 3. (Optional) Create `prisma/zod-generator.config.json`
+:::info Config Path Resolution
+Config file paths (e.g., `config = "./my-config.json"`) are resolved **relative to the Prisma schema file location**, not the project root. If your schema is at `prisma/schema.prisma`, then `config = "./my-config.json"` will look for the config file at `prisma/my-config.json`.
+:::
+
+## 3. (Optional) Create configuration file
+
+Create `prisma/zod-generator.config.json` (next to your schema file):
 
 ```jsonc
 {
