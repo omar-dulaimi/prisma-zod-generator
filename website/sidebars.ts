@@ -17,6 +17,7 @@ const sidebars: SidebarsConfig = {
         'config/variants',
         'config/naming',
         'config/optional-fields',
+        'config/datetime-strategy',
         'config/filtering',
         'config/emission-controls',
         'config/file-layout',
