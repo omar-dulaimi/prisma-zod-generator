@@ -10,6 +10,7 @@ let needsZodImport = false;
 let needsPrismaTypeImport = false; // import type { Prisma }
 const prismaValueImports = new Set<string>(); // enums etc.
 let sawPrismaAlias = false; // whether __PrismaAlias was referenced
+let needsPrismaValueImport = false; // whether Prisma is used as a value (for enums)
 let prismaImportBase = '@prisma/client';
 let needsJsonHelpers = false; // whether to inject json helpers block
 
@@ -23,6 +24,7 @@ export function initSingleFile(bundleFullPath: string) {
   chunks = [];
   needsZodImport = false;
   needsPrismaTypeImport = false;
+  needsPrismaValueImport = false;
   prismaValueImports.clear();
   sawPrismaAlias = false;
 }
@@ -94,7 +96,12 @@ function transformContentForSingleFile(filePath: string, source: string): string
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean)
-        .forEach((name) => prismaValueImports.add(name));
+        .forEach((name) => {
+          // Don't add Prisma to value imports if it's handled separately
+          if (name !== 'Prisma') {
+            prismaValueImports.add(name);
+          }
+        });
       continue;
     }
     if (relImportRe.test(line)) {
@@ -167,15 +174,26 @@ function transformContentForSingleFile(filePath: string, source: string): string
     text = text.replace(/z\.lazy\(makeSchema\)/g, `z.lazy(${uniqueMakeSchema})`);
   }
 
+  // Check if Prisma is used as a value (for enums like z.nativeEnum(Prisma.SomeEnum))
+  const prismaEnumUseRe = /z\.nativeEnum\(Prisma\./g;
+  if (prismaEnumUseRe.test(text)) {
+    needsPrismaValueImport = true;
+    // Replace Prisma. with PrismaClient. in the content
+    text = text.replace(/z\.nativeEnum\(Prisma\./g, 'z.nativeEnum(PrismaClient.');
+  }
+
   // Heuristic: if native enums are referenced (e.g., z.enum(Role) or z.nativeEnum(Role)),
   // hoist those enum names as value imports from @prisma/client
+  // But exclude Prisma itself as it's handled separately above
   const enumUseRe = /z\.(?:enum|nativeEnum)\(([_A-Za-z][_A-Za-z0-9]*)\)/g;
   let em: RegExpExecArray | null;
   enumUseRe.lastIndex = 0;
   while ((em = enumUseRe.exec(text)) !== null) {
     const name = em[1];
-    // Avoid picking up local Schema identifiers
-    if (name && !name.endsWith('Schema')) prismaValueImports.add(name);
+    // Avoid picking up local Schema identifiers and Prisma (handled separately)
+    if (name && !name.endsWith('Schema') && name !== 'Prisma' && name !== 'PrismaClient') {
+      prismaValueImports.add(name);
+    }
   }
 
   return `// File: ${path.basename(filePath)}\n${text}\n`;
@@ -205,6 +223,9 @@ export async function flushSingleFile(): Promise<void> {
     }
   }
   if (needsPrismaTypeImport) header.push(`import type { Prisma } from '${prismaImportBase}';`);
+  if (needsPrismaValueImport) {
+    header.push(`import { Prisma as PrismaClient } from '${prismaImportBase}';`);
+  }
   if (prismaValueImports.size > 0)
     header.push(
       `import { ${Array.from(prismaValueImports).sort().join(', ')} } from '${prismaImportBase}';`,
@@ -244,6 +265,7 @@ export async function flushSingleFile(): Promise<void> {
   chunks = [];
   needsZodImport = false;
   needsPrismaTypeImport = false;
+  needsPrismaValueImport = false;
   prismaValueImports.clear();
   sawPrismaAlias = false;
 }
