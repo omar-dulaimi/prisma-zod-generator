@@ -130,7 +130,7 @@ function transformContentForSingleFile(filePath: string, source: string): string
     .replace(/[^a-zA-Z0-9_]/g, '_');
   const unique = `__Schema_${base}`;
   const uniqueMakeSchema = `__makeSchema_${base}`;
-  
+
   // Replace only the first "const Schema[ :type]? =" per file, preserving any type annotation
   text = text.replace(
     /(^|\n)\s*const\s+Schema(\s*:\s*[^=]+)?\s*=\s*/m,
@@ -140,7 +140,7 @@ function transformContentForSingleFile(filePath: string, source: string): string
     /export\s+const\s+(\w+)ObjectSchema\s*=\s*Schema/g,
     `export const $1ObjectSchema = ${unique}`,
   );
-  
+
   // Handle makeSchema function declarations - rename to unique identifier
   text = text.replace(
     /(^|\n)\s*const\s+makeSchema\s*=\s*/m,
@@ -179,7 +179,7 @@ function transformContentForSingleFile(filePath: string, source: string): string
     // Avoid picking up local Schema identifiers
     if (name && !name.endsWith('Schema')) prismaValueImports.add(name);
   }
-  
+
   // Check for actual Prisma value usage (not type positions)
   // Look for patterns like z.nativeEnum(Prisma.Something) but exclude type annotations
   const prismaValueUseRe = /z\.(enum|nativeEnum)\(Prisma\.([A-Za-z][A-Za-z0-9]*)\)/g;
@@ -222,10 +222,12 @@ export async function flushSingleFile(): Promise<void> {
   } else if (needsPrismaValueImport) {
     header.push(`import { Prisma } from '${prismaImportBase}';`);
   }
-  
+
   if (prismaValueImports.size > 0) {
     // Don't duplicate Prisma if it's already imported above
-    const valueImports = Array.from(prismaValueImports).filter(name => name !== 'Prisma').sort();
+    const valueImports = Array.from(prismaValueImports)
+      .filter((name) => name !== 'Prisma')
+      .sort();
     if (valueImports.length > 0) {
       header.push(`import { ${valueImports.join(', ')} } from '${prismaImportBase}';`);
     }
