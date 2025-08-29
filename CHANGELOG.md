@@ -1,3 +1,9 @@
+## [1.17.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.3...v1.17.4) (2025-08-29)
+
+### 🐛 Bug Fixes
+
+* use npx for docusaurus commands in website scripts ([d4740ee](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d4740ee6a64629c0488214bade926f61cb6f266a))
+
 ## [1.17.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.2...v1.17.3) (2025-08-29)
 
 ### 🐛 Bug Fixes
