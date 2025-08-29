@@ -152,6 +152,21 @@ function transformContentForSingleFile(filePath: string, source: string): string
     }
   }
 
+  // Uniquify duplicate makeSchema functions that appear across different files
+  // This prevents "Duplicate identifier 'makeSchema'" errors in single-file mode
+  const makeSchemaRe = /const\s+makeSchema\s*=\s*/;
+  if (makeSchemaRe.test(text)) {
+    const uniqueMakeSchema = `makeSchema_${base}`;
+    // Replace the makeSchema declaration
+    text = text.replace(
+      /(^|\n)(\s*)const\s+makeSchema(\s*:\s*[^=]+)?\s*=\s*/m,
+      `$1$2const ${uniqueMakeSchema}$3 = `,
+    );
+    // Replace all references to makeSchema with the unique name
+    text = text.replace(/\bmakeSchema\(/g, `${uniqueMakeSchema}(`);
+    text = text.replace(/z\.lazy\(makeSchema\)/g, `z.lazy(${uniqueMakeSchema})`);
+  }
+
   // Heuristic: if native enums are referenced (e.g., z.enum(Role) or z.nativeEnum(Role)),
   // hoist those enum names as value imports from @prisma/client
   const enumUseRe = /z\.(?:enum|nativeEnum)\(([_A-Za-z][_A-Za-z0-9]*)\)/g;
