@@ -2335,7 +2335,7 @@ export default class Transformer {
         const selectField = `select: ${selectFieldReference},`;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
         const schemaFields =
-          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([z.nativeEnum(Prisma.${modelName}ScalarFieldEnum), z.nativeEnum(Prisma.${modelName}ScalarFieldEnum).array()]).optional()`
+          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`
             .trim()
             .replace(/,\s*,/g, ',');
 
@@ -2400,7 +2400,7 @@ export default class Transformer {
         const selectField = `select: ${selectFieldReference},`;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
         const schemaFields =
-          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([z.nativeEnum(Prisma.${modelName}ScalarFieldEnum), z.nativeEnum(Prisma.${modelName}ScalarFieldEnum).array()]).optional()`
+          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`
             .trim()
             .replace(/,\s*,/g, ',');
 
@@ -2463,7 +2463,7 @@ export default class Transformer {
         const selectField = `select: ${selectFieldReference},`;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
         const schemaFields =
-          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([z.nativeEnum(Prisma.${modelName}ScalarFieldEnum), z.nativeEnum(Prisma.${modelName}ScalarFieldEnum).array()]).optional()`
+          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`
             .trim()
             .replace(/,\s*,/g, ',');
 

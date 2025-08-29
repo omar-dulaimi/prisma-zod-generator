@@ -28,11 +28,11 @@ export function checkIsModelRelationField(modelField: DMMF.Field) {
   return kind === 'object' && !!relationName;
 }
 
-export function checkIsManyModelRelationField(modelField: DMMF.Field) {
+export function checkIsManyModelRelationField(modelField: DMMF.Field): boolean {
   return checkIsModelRelationField(modelField) && modelField.isList;
 }
 
-export function findModelByName(models: DMMF.Model[], modelName: string) {
+export function findModelByName(models: DMMF.Model[], modelName: string): DMMF.Model | undefined {
   return models.find(({ name }) => name === modelName);
 }
 

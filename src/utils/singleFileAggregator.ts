@@ -8,6 +8,7 @@ let bundlePath = '';
 let chunks: Chunk[] = [];
 let needsZodImport = false;
 let needsPrismaTypeImport = false; // import type { Prisma }
+let needsPrismaValueImport = false; // import { Prisma } (as value)
 const prismaValueImports = new Set<string>(); // enums etc.
 let sawPrismaAlias = false; // whether __PrismaAlias was referenced
 let prismaImportBase = '@prisma/client';
@@ -23,6 +24,7 @@ export function initSingleFile(bundleFullPath: string) {
   chunks = [];
   needsZodImport = false;
   needsPrismaTypeImport = false;
+  needsPrismaValueImport = false;
   prismaValueImports.clear();
   sawPrismaAlias = false;
 }
@@ -94,7 +96,12 @@ function transformContentForSingleFile(filePath: string, source: string): string
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean)
-        .forEach((name) => prismaValueImports.add(name));
+        .forEach((name) => {
+          // Don't add Prisma to value imports if it's used as a type import
+          if (name !== 'Prisma') {
+            prismaValueImports.add(name);
+          }
+        });
       continue;
     }
     if (relImportRe.test(line)) {
@@ -122,6 +129,8 @@ function transformContentForSingleFile(filePath: string, source: string): string
     .replace(/\.[jt]s$/, '')
     .replace(/[^a-zA-Z0-9_]/g, '_');
   const unique = `__Schema_${base}`;
+  const uniqueMakeSchema = `__makeSchema_${base}`;
+  
   // Replace only the first "const Schema[ :type]? =" per file, preserving any type annotation
   text = text.replace(
     /(^|\n)\s*const\s+Schema(\s*:\s*[^=]+)?\s*=\s*/m,
@@ -131,6 +140,14 @@ function transformContentForSingleFile(filePath: string, source: string): string
     /export\s+const\s+(\w+)ObjectSchema\s*=\s*Schema/g,
     `export const $1ObjectSchema = ${unique}`,
   );
+  
+  // Handle makeSchema function declarations - rename to unique identifier
+  text = text.replace(
+    /(^|\n)\s*const\s+makeSchema\s*=\s*/m,
+    (_m, p1) => `${p1}const ${uniqueMakeSchema} = `,
+  );
+  // Replace all references to makeSchema with the unique name
+  text = text.replace(/\bmakeSchema\b/g, uniqueMakeSchema);
 
   // Uniquify duplicate SelectSchema identifiers that appear across different files
   const selectDeclRe = /export\s+const\s+([A-Za-z0-9_]+SelectSchema)\b/g;
@@ -162,6 +179,13 @@ function transformContentForSingleFile(filePath: string, source: string): string
     // Avoid picking up local Schema identifiers
     if (name && !name.endsWith('Schema')) prismaValueImports.add(name);
   }
+  
+  // Check for actual Prisma value usage (not type positions)
+  // Look for patterns like z.nativeEnum(Prisma.Something) but exclude type annotations
+  const prismaValueUseRe = /z\.(enum|nativeEnum)\(Prisma\.([A-Za-z][A-Za-z0-9]*)\)/g;
+  if (prismaValueUseRe.test(text)) {
+    needsPrismaValueImport = true;
+  }
 
   return `// File: ${path.basename(filePath)}\n${text}\n`;
 }
@@ -189,11 +213,23 @@ export async function flushSingleFile(): Promise<void> {
       header.push(`import { z } from 'zod';`);
     }
   }
-  if (needsPrismaTypeImport) header.push(`import type { Prisma } from '${prismaImportBase}';`);
-  if (prismaValueImports.size > 0)
-    header.push(
-      `import { ${Array.from(prismaValueImports).sort().join(', ')} } from '${prismaImportBase}';`,
-    );
+  // Handle Prisma imports - if we need both type and value imports, use separate lines
+  if (needsPrismaTypeImport && needsPrismaValueImport) {
+    header.push(`import type { Prisma } from '${prismaImportBase}';`);
+    header.push(`import { Prisma } from '${prismaImportBase}';`);
+  } else if (needsPrismaTypeImport) {
+    header.push(`import type { Prisma } from '${prismaImportBase}';`);
+  } else if (needsPrismaValueImport) {
+    header.push(`import { Prisma } from '${prismaImportBase}';`);
+  }
+  
+  if (prismaValueImports.size > 0) {
+    // Don't duplicate Prisma if it's already imported above
+    const valueImports = Array.from(prismaValueImports).filter(name => name !== 'Prisma').sort();
+    if (valueImports.length > 0) {
+      header.push(`import { ${valueImports.join(', ')} } from '${prismaImportBase}';`);
+    }
+  }
   if (needsJsonHelpers) {
     header.push(`// JSON helper schemas (hoisted)`);
     header.push(`const jsonSchema = (() => {`);
@@ -211,7 +247,7 @@ export async function flushSingleFile(): Promise<void> {
   if (sawPrismaAlias) {
     header.push(`type __PrismaAlias = Prisma.JsonValue | Prisma.InputJsonValue;`);
     // Ensure Prisma type import is present
-    if (!needsPrismaTypeImport) {
+    if (!needsPrismaTypeImport && !needsPrismaValueImport) {
       header.unshift(`import type { Prisma } from '${prismaImportBase}';`);
       needsPrismaTypeImport = true;
     }
@@ -229,6 +265,7 @@ export async function flushSingleFile(): Promise<void> {
   chunks = [];
   needsZodImport = false;
   needsPrismaTypeImport = false;
+  needsPrismaValueImport = false;
   prismaValueImports.clear();
   sawPrismaAlias = false;
 }
