@@ -4,10 +4,10 @@
   "description": "Documentation site for prisma-zod-generator",
   "private": true,
   "scripts": {
-    "dev": "docusaurus start",
-    "build": "node scripts/sync-changelog.js && node scripts/build-metrics.js && docusaurus build",
-    "serve": "docusaurus serve",
-    "version": "docusaurus docs:version"
+    "dev": "npx docusaurus start",
+    "build": "node scripts/sync-changelog.js && node scripts/build-metrics.js && npx docusaurus build",
+    "serve": "npx docusaurus serve",
+    "version": "npx docusaurus docs:version"
   },
   "dependencies": {
     "@docusaurus/core": "^3.8.1",
