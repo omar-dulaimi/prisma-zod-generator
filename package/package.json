@@ -131,7 +131,7 @@
     "tsx": "^4.20.4",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4",
-    "zod": "^4.0.17"
+    "zod": "^4.1.5"
   },
   "resolutions": {
     "postcss": "^8.4.38"
