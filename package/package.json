@@ -1,6 +1,6 @@
 {
   "name": "prisma-zod-generator",
-  "version": "1.17.1",
+  "version": "1.17.2",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
@@ -115,6 +115,7 @@
     "@semantic-release/github": "^11.0.4",
     "@semantic-release/npm": "^12.0.2",
     "@semantic-release/release-notes-generator": "^14.0.3",
+    "@types/json-schema": "^7.0.15",
     "@types/node": "^24.3.0",
     "@typescript-eslint/eslint-plugin": "^8.39.1",
     "@typescript-eslint/parser": "^8.39.1",
@@ -122,8 +123,8 @@
     "conventional-changelog-conventionalcommits": "^9.1.0",
     "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
-    "husky": "^9.0.11",
     "expect-type": "^1.2.2",
+    "husky": "^9.0.11",
     "prisma": "^6.14.0",
     "semantic-release": "^24.2.7",
     "ts-node": "^10.9.2",
