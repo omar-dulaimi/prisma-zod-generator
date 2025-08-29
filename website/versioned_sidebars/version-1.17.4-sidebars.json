@@ -1,0 +1,89 @@
+{
+  "docs": [
+    {
+      "type": "category",
+      "label": "Introduction",
+      "collapsed": false,
+      "items": [
+        "intro/what-is",
+        "intro/quick-start",
+        "intro/concepts"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Configuration",
+      "items": [
+        "config/precedence",
+        "config/modes",
+        "config/variants",
+        "config/naming",
+        "config/optional-fields",
+        "config/datetime-strategy",
+        "config/dual-exports",
+        "config/filtering",
+        "config/emission-controls",
+        "config/file-layout"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Generation Pipeline",
+      "items": [
+        "pipeline/objects-crud",
+        "pipeline/pure-models",
+        "pipeline/single-file",
+        "pipeline/special-types",
+        "pipeline/zod-comments"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Recipes",
+      "items": [
+        "recipes/minimal-crud",
+        "recipes/models-only",
+        "recipes/pure-models-lean",
+        "recipes/crud-only",
+        "recipes/result-only",
+        "recipes/input-only",
+        "recipes/zod-import-targets",
+        "recipes/trpc-optimized",
+        "recipes/single-file",
+        "recipes/granular-per-model",
+        "recipes/hide-fields",
+        "recipes/circular-dependency-exclusion",
+        "recipes/optional-field-control",
+        {
+          "type": "category",
+          "label": "Safety System",
+          "collapsed": true,
+          "items": [
+            "recipes/safety-custom-configuration",
+            "recipes/safety-force-dangerous-path",
+            "recipes/safety-project-migration",
+            "recipes/safety-disable-completely"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Reference",
+      "items": [
+        "reference/safety-system",
+        "reference/bytes-json",
+        "reference/naming-preset-map",
+        "reference/logging-debug",
+        "reference/faq",
+        "reference/troubleshooting"
+      ]
+    },
+    "usage-patterns",
+    "performance",
+    "upgrade-guide",
+    "contributing",
+    "release-and-versioning",
+    "changelog"
+  ]
+}
