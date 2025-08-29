@@ -9,8 +9,20 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.17.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.17.2**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.17.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.1...v1.17.2) (2025-08-29)
+
+### 🐛 Bug Fixes
+
+* resolve duplicate identifiers and improve enum usage ([#205](https://github.com/omar-dulaimi/prisma-zod-generator/issues/205)) ([5437309](https://github.com/omar-dulaimi/prisma-zod-generator/commit/543730998a8ff5a15f693d80fef1d5eeb6344a5b))
+
+### 📚 Documentation
+
+* add dateTimeStrategy configuration documentation ([617988b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/617988b755e2158c4c71f967140d95400f14d111))
+* add dual-exports configuration to sidebar ([230ea46](https://github.com/omar-dulaimi/prisma-zod-generator/commit/230ea4648723e2807212173a1d1a4d2d2aca1cfa))
+* optimize workflow by splitting dependencies ([9723238](https://github.com/omar-dulaimi/prisma-zod-generator/commit/97232383d27c2544e0c627ba70a4e2416787b6db))
 
 ## [1.17.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.0...v1.17.1) (2025-08-26)
 
