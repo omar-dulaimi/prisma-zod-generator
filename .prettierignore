@@ -8,3 +8,5 @@ coverage/
 *.js.map
 *.d.ts
 website/build/
+pnpm-lock.yaml
+**/pnpm-lock.yaml
