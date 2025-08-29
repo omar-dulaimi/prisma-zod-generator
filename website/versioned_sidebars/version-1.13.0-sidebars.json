@@ -15,6 +15,7 @@
         "config/variants",
         "config/naming",
         "config/optional-fields",
+        "config/dual-exports",
         "config/filtering",
         "config/emission-controls",
         "config/file-layout"
