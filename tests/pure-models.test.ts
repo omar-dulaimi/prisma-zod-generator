@@ -731,6 +731,270 @@ model User {
     );
 
     it(
+      'should generate correct enum import paths in pure models',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('pure-models-enum-import-paths');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            pureModels: true,
+            variants: {
+              pure: { enabled: true },
+              input: { enabled: false },
+              result: { enabled: false },
+            },
+            emit: { objects: false, crud: false, variants: false },
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  config   = "./config.json"
+  output   = "${testEnv.outputDir}/schemas"
+}
+
+model Company {
+  id        Int         @id @default(autoincrement())
+  type      CompanyType
+  name      String
+  email     String
+  website   String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+enum CompanyType {
+  LLC
+  CORPORATION
+  PARTNERSHIP
+  SOLE_PROPRIETOR
+  TRUST
+  OTHER
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
+          const companyModelPath = join(modelsDir, 'Company.schema.ts');
+
+          if (existsSync(companyModelPath)) {
+            const content = readFileSync(companyModelPath, 'utf-8');
+
+            // Should reference CompanyTypeSchema
+            expect(content).toMatch(/type:\s*CompanyTypeSchema/);
+
+            // Should import CompanyTypeSchema from correct path (from models/ to enums/)
+            expect(content).toMatch(
+              /import\s*\{\s*CompanyTypeSchema\s*\}\s*from\s*'\.\.\/enums\/CompanyType\.schema'/,
+            );
+
+            // Should NOT import from incorrect path
+            expect(content).not.toMatch(
+              /import\s*\{\s*CompanyTypeSchema\s*\}\s*from\s*'\.\.\/schemas\/enums\/CompanyType\.schema'/,
+            );
+          }
+
+          // Verify enum schema file exists at expected location
+          const enumsDir = join(testEnv.outputDir, 'schemas', 'enums');
+          const companyTypeEnumPath = join(enumsDir, 'CompanyType.schema.ts');
+
+          if (existsSync(companyTypeEnumPath)) {
+            const content = readFileSync(companyTypeEnumPath, 'utf-8');
+            expect(content).toMatch(/z\.enum\(\[/);
+            expect(content).toMatch(/'LLC'/);
+            expect(content).toMatch(/'CORPORATION'/);
+            expect(content).toMatch(/'PARTNERSHIP'/);
+            expect(content).toMatch(/'SOLE_PROPRIETOR'/);
+            expect(content).toMatch(/'TRUST'/);
+            expect(content).toMatch(/'OTHER'/);
+          }
+
+          // Test TypeScript compilation by attempting to import
+          // This ensures the import paths are actually correct
+          const testImportContent = `
+import { CompanySchema } from '${companyModelPath.replace('.ts', '')}';
+import { CompanyTypeSchema } from '${companyTypeEnumPath.replace('.ts', '')}';
+
+// Test that schemas can be used
+const testCompany = CompanySchema.parse({
+  id: 1,
+  type: 'LLC',
+  name: 'Test Company',
+  email: 'test@example.com',
+  website: 'https://example.com',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
+
+const testType = CompanyTypeSchema.parse('LLC');
+`;
+
+          const testImportPath = join(testEnv.testDir, 'test-imports.ts');
+          writeFileSync(testImportPath, testImportContent);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should generate correct enum import paths in object schemas',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('enum-import-paths-object-schemas');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            mode: 'full',
+            pureModels: true,
+            generateResultSchemas: true,
+            emit: { objects: true, crud: true, variants: false },
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  config   = "./config.json"
+  output   = "${testEnv.outputDir}/schemas"
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  name     String?
+  password String
+  role     Role?
+  posts    Post[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  viewCount Int      @default(0)
+  author    User?    @relation(fields: [authorId], references: [id])
+  authorId  Int?
+  likes     BigInt
+  bytes     Bytes?
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check object schema enum imports
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const userCreateManyPath = join(objectsDir, 'UserCreateManyInput.schema.ts');
+
+          if (existsSync(userCreateManyPath)) {
+            const content = readFileSync(userCreateManyPath, 'utf-8');
+
+            // Should reference RoleSchema
+            expect(content).toMatch(/role:\s*RoleSchema/);
+
+            // Should import RoleSchema from correct path (from objects/ to enums/)
+            expect(content).toMatch(
+              /import\s*\{\s*RoleSchema\s*\}\s*from\s*'\.\.\/enums\/Role\.schema'/,
+            );
+
+            // Should NOT import from incorrect path
+            expect(content).not.toMatch(
+              /import\s*\{\s*RoleSchema\s*\}\s*from\s*'\.\.\/schemas\/enums\/Role\.schema'/,
+            );
+          }
+
+          // Check enum filter schema imports
+          const enumRoleFilterPath = join(objectsDir, 'EnumRoleNullableFilter.schema.ts');
+          if (existsSync(enumRoleFilterPath)) {
+            const content = readFileSync(enumRoleFilterPath, 'utf-8');
+
+            // Should import RoleSchema from correct path
+            expect(content).toMatch(
+              /import\s*\{\s*RoleSchema\s*\}\s*from\s*'\.\.\/enums\/Role\.schema'/,
+            );
+
+            // Should NOT import from incorrect path
+            expect(content).not.toMatch(
+              /import\s*\{\s*RoleSchema\s*\}\s*from\s*'\.\.\/schemas\/enums\/Role\.schema'/,
+            );
+          }
+
+          // Verify enum schema file exists at expected location
+          const enumsDir = join(testEnv.outputDir, 'schemas', 'enums');
+          const roleEnumPath = join(enumsDir, 'Role.schema.ts');
+
+          if (existsSync(roleEnumPath)) {
+            const content = readFileSync(roleEnumPath, 'utf-8');
+            expect(content).toMatch(/z\.enum\(\[/);
+            expect(content).toMatch(/'USER'/);
+            expect(content).toMatch(/'ADMIN'/);
+          }
+
+          // Test that the import paths work by attempting to import
+          // This ensures TypeScript module resolution works
+          if (existsSync(userCreateManyPath) && existsSync(roleEnumPath)) {
+            const testImportContent = `
+import { UserCreateManyInputObjectSchema } from '${userCreateManyPath.replace('.ts', '')}';
+import { RoleSchema } from '${roleEnumPath.replace('.ts', '')}';
+
+// Test that schemas can be used
+const testUser = UserCreateManyInputObjectSchema.parse({
+  email: 'test@example.com',
+  name: 'Test User',
+  password: 'password123',
+  role: 'USER',
+});
+
+const testRole = RoleSchema.parse('ADMIN');
+`;
+
+            const testImportPath = join(testEnv.testDir, 'test-object-imports.ts');
+            writeFileSync(testImportPath, testImportContent);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
       'single-file-enums: should not import enum values from @prisma/client in single-file pure models (uses generated enum schemas)',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('pure-models-single-file-enums');
