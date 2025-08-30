@@ -8,14 +8,16 @@ This is a Prisma Generator that automatically generates Zod schemas from Prisma 
 
 ## Key Commands
 
+**IMPORTANT**: Always use `pnpm`, never use `npm` or `npx`.
+
 ### Build and Generate
-- `tsc` - Compile TypeScript to JavaScript in the `lib/` directory
-- `npx prisma generate` - Generate Zod schemas from Prisma schema
-- `npm run gen-example` - Build and generate schemas in one command
+- `pnpm exec tsc` - Compile TypeScript to JavaScript in the `lib/` directory
+- `pnpm prisma generate` - Generate Zod schemas from Prisma schema
+- `pnpm run gen-example` - Build and generate schemas in one command
 
 ### Development
-- `npm run check-uncommitted` - Check for uncommitted changes before publishing
-- `npm run package:publish` - Full publish process (update, check, package, publish)
+- `pnpm run check-uncommitted` - Check for uncommitted changes before publishing
+- `pnpm run package:publish` - Full publish process (update, check, package, publish)
 
 ## Architecture
 

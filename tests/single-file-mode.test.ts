@@ -257,4 +257,53 @@ describe('Single-file output mode', () => {
     },
     GENERATION_TIMEOUT,
   );
+
+  it(
+    'includes Prisma type import when ZodType generics are used in single-file mode',
+    async () => {
+      const env = await TestEnvironment.createTestEnv('single-file-prisma-import');
+      try {
+        // Config: single-file mode with default settings (should generate typed schemas)
+        const config = {
+          ...ConfigGenerator.createBasicConfig(),
+          useMultipleFiles: false,
+        };
+        const configPath = join(env.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          outputPath: `${env.outputDir}/schemas`,
+          generatorOptions: { config: './config.json' },
+        });
+        writeFileSync(env.schemaPath, schema);
+
+        await env.runGeneration();
+
+        const schemasDir = join(env.outputDir, 'schemas');
+        const bundlePath = join(schemasDir, 'schemas.ts');
+
+        expect(existsSync(bundlePath)).toBe(true);
+
+        const content = readFileSync(bundlePath, 'utf-8');
+
+        // Should have Prisma type import when ZodType generics are present
+        expect(content).toMatch(/import type \{ Prisma \} from ['"][^'"]*['"];/);
+
+        // Should have ZodType generic usage patterns
+        expect(content).toMatch(/z\.ZodType<Prisma\.[A-Z][A-Za-z]*>/);
+
+        // Verify common typed schema patterns exist
+        expect(content).toMatch(/z\.ZodType<Prisma\.UserWhereInput>/);
+        expect(content).toMatch(/z\.ZodType<Prisma\.PostWhereInput>/);
+
+        // Directory should contain the bundle (and potentially a manifest file)
+        const entries = readdirSync(schemasDir);
+        expect(entries).toContain('schemas.ts');
+        expect(entries.filter(f => f.endsWith('.ts'))).toEqual(['schemas.ts']);
+      } finally {
+        await env.cleanup();
+      }
+    },
+    GENERATION_TIMEOUT,
+  );
 });

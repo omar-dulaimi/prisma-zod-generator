@@ -187,6 +187,12 @@ function transformContentForSingleFile(filePath: string, source: string): string
     needsPrismaValueImport = true;
   }
 
+  // Check for Prisma type usage in ZodType generics like z.ZodType<Prisma.Something>
+  const prismaTypeUseRe = /z\.ZodType<Prisma\.([A-Za-z][A-Za-z0-9]*)/g;
+  if (prismaTypeUseRe.test(text)) {
+    needsPrismaTypeImport = true;
+  }
+
   return `// File: ${path.basename(filePath)}\n${text}\n`;
 }
 
