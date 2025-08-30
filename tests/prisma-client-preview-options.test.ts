@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-// This test suite validates compatibility with the new `prisma-client` preview generator options
+// This test suite validates compatibility with the new `prisma-client` generator options
 // (runtime, moduleFormat, generatedFileExtension, importFileExtension, binaryTargets, previewFeatures)
 // ensuring the zod generator adapts import extensions and relative Prisma Client path resolution.
 
@@ -14,7 +14,7 @@ function buildSchema({ generatorBlock }: { generatorBlock: string }) {
   return `datasource db {\n  provider = "sqlite"\n  url      = "file:./test.db"\n}\n\n${generatorBlock}\n\ngenerator zod {\n  provider = "node ./lib/generator.js"\n  output   = "./zod"\n  useMultipleFiles = false\n  singleFileName = "index.ts"\n}\n\n${BASE_SCHEMA_MODELS}`;
 }
 
-describe('prisma-client preview generator option matrix', () => {
+describe('prisma-client generator option', () => {
   const root = join(process.cwd(), 'test-preview-options');
   const schemaPath = join(root, 'schema.prisma');
   const zodOut = join(root, 'zod');

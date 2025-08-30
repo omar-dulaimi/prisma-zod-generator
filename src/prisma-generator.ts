@@ -1776,9 +1776,12 @@ async function generateVariantSchemaContent(
   // Build enum import lines for variant files: import generated enum schemas
   let enumImportLines = '';
   if (enumTypes.length > 0) {
+    const importExtension = Transformer.getImportFileExtension();
     enumImportLines =
       enumTypes
-        .map((name) => `import { ${name}Schema } from '../../schemas/enums/${name}.schema';`)
+        .map(
+          (name) => `import { ${name}Schema } from '../../enums/${name}.schema${importExtension}';`,
+        )
         .join('\n') + '\n';
   }
 
