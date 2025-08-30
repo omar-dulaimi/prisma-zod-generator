@@ -299,7 +299,7 @@ describe('Single-file output mode', () => {
         // Directory should contain the bundle (and potentially a manifest file)
         const entries = readdirSync(schemasDir);
         expect(entries).toContain('schemas.ts');
-        expect(entries.filter(f => f.endsWith('.ts'))).toEqual(['schemas.ts']);
+        expect(entries.filter((f) => f.endsWith('.ts'))).toEqual(['schemas.ts']);
       } finally {
         await env.cleanup();
       }
