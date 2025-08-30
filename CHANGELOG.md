@@ -1,3 +1,9 @@
+## [1.17.8](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.7...v1.17.8) (2025-08-30)
+
+### 🐛 Bug Fixes
+
+* correct manifest tracking for single file mode ([decbfcd](https://github.com/omar-dulaimi/prisma-zod-generator/commit/decbfcd47de4339abef47fbd5ef60f551bb06948))
+
 ## [1.17.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.6...v1.17.7) (2025-08-30)
 
 ### 🐛 Bug Fixes
