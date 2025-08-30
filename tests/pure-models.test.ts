@@ -798,14 +798,14 @@ enum CompanyType {
             // Should reference CompanyTypeSchema
             expect(content).toMatch(/type:\s*CompanyTypeSchema/);
 
-            // Should import CompanyTypeSchema from correct path (from models/ to enums/)
+            // Should import CompanyTypeSchema from correct path (from models/ to schemas/enums/)
             expect(content).toMatch(
-              /import\s*\{\s*CompanyTypeSchema\s*\}\s*from\s*'\.\.\/enums\/CompanyType\.schema'/,
+              /import\s*\{\s*CompanyTypeSchema\s*\}\s*from\s*'\.\.\/schemas\/enums\/CompanyType\.schema'/,
             );
 
             // Should NOT import from incorrect path
             expect(content).not.toMatch(
-              /import\s*\{\s*CompanyTypeSchema\s*\}\s*from\s*'\.\.\/schemas\/enums\/CompanyType\.schema'/,
+              /import\s*\{\s*CompanyTypeSchema\s*\}\s*from\s*'\.\.\/enums\/CompanyType\.schema'/,
             );
           }
 

@@ -441,7 +441,7 @@ export class VariantFileGenerationCoordinator {
             /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,
             (match) => {
               const importLines = missingEnumImports
-                .map((name) => `import { ${name}Schema } from '../../enums/${name}.schema';`)
+                .map((name) => `import { ${name}Schema } from '../enums/${name}.schema';`)
                 .join('\n');
               return `${match}\n${importLines}`;
             },

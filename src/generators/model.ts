@@ -2150,8 +2150,8 @@ export class PrismaTypeMapper {
     );
     enumSchemaImports.forEach((imp) => {
       const enumBase = imp.replace(/Schema$/, '');
-      // From generated/models/* to generated/enums/* is ../enums/
-      lines.push(`import { ${imp} } from '../enums/${enumBase}.schema';`);
+      // From generated/models/* to generated/schemas/enums/* is ../schemas/enums/
+      lines.push(`import { ${imp} } from '../schemas/enums/${enumBase}.schema';`);
     });
 
     // Related model schema imports (exclude current schema + enums)

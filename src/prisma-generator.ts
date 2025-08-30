@@ -1778,7 +1778,7 @@ async function generateVariantSchemaContent(
   if (enumTypes.length > 0) {
     enumImportLines =
       enumTypes
-        .map((name) => `import { ${name}Schema } from '../../enums/${name}.schema';`)
+        .map((name) => `import { ${name}Schema } from '../../schemas/enums/${name}.schema';`)
         .join('\n') + '\n';
   }
 
@@ -2056,7 +2056,7 @@ async function generatePureModelSchemas(
         // Import paths are generated correctly by the model generator; no enum path rewrite needed
         // Remove accidental duplicate enum imports (defensive clean-up)
         content = content.replace(
-          /^(import { (\w+)Schema } from '..\/enums\/\2\.schema';)\n\1/gm,
+          /^(import { (\w+)Schema } from '..\/schemas\/enums\/\2\.schema';)\n\1/gm,
           '$1',
         );
         // Rename exported const & type if suffix customization used
