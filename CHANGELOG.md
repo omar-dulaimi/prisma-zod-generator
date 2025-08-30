@@ -1,3 +1,13 @@
+## [1.17.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.4...v1.17.5) (2025-08-30)
+
+### 🐛 Bug Fixes
+
+* resolve enum import path inconsistencies across generation contexts ([b46990a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b46990a52b6450dafd4de050ebe6d7afd771ecfd))
+
+### 📚 Documentation
+
+* add dual-exports page links to all versioned sidebars ([355c03d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/355c03d4814c4b263859f8d689a80dfb9d83ef08))
+
 ## [1.17.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.3...v1.17.4) (2025-08-29)
 
 ### 🐛 Bug Fixes
