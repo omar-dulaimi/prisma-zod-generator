@@ -1,3 +1,9 @@
+## [1.17.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.6...v1.17.7) (2025-08-30)
+
+### 🐛 Bug Fixes
+
+* remove incorrect /schemas path segment in variant enum imports ([62cd853](https://github.com/omar-dulaimi/prisma-zod-generator/commit/62cd853bad1221d5146f848ce9256892f96f55d0)), closes [#208](https://github.com/omar-dulaimi/prisma-zod-generator/issues/208)
+
 ## [1.17.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.5...v1.17.6) (2025-08-30)
 
 ### 🐛 Bug Fixes
