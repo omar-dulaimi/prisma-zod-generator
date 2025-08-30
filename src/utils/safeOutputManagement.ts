@@ -368,6 +368,8 @@ async function performManifestBasedCleanup(
 export async function safeCleanupOutput(
   outputPath: string,
   config: ResolvedSafetyConfig,
+  singleFileMode = false,
+  singleFileName?: string,
 ): Promise<GeneratedManifest> {
   logger.debug(`[safeOutputManagement] Starting safe cleanup for: ${outputPath}`);
   logger.debug(`[safeOutputManagement] Safety config: ${JSON.stringify(config)}`);
@@ -412,7 +414,7 @@ export async function safeCleanupOutput(
     );
   }
 
-  const newManifest = createNewManifest(outputPath);
+  const newManifest = createNewManifest(outputPath, singleFileMode, singleFileName);
 
   logger.debug(`[safeOutputManagement] Safe cleanup completed for: ${outputPath}`);
   return newManifest;

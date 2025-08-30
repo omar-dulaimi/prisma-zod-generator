@@ -26,7 +26,7 @@ import Transformer from './transformer';
 import { AggregateOperationSupport } from './types';
 import { ResolvedSafetyConfig } from './types/safety';
 import { logger } from './utils/logger';
-import { safeCleanupOutput, saveManifest } from './utils/safeOutputManagement';
+import { addFileToManifest, safeCleanupOutput, saveManifest } from './utils/safeOutputManagement';
 import {
   mergeSafetyConfigs,
   parseSafetyConfigFromEnvironment,
@@ -96,6 +96,8 @@ export async function generate(options: GeneratorOptions) {
     // generator block omits an output attribute.)
     let generatorConfig: CustomGeneratorConfig;
     let resolvedSafetyConfig: ResolvedSafetyConfig | undefined;
+    let singleFileMode = false;
+    let singleFileName: string | undefined;
     try {
       const schemaBaseDir = path.dirname(options.schemaPath);
       let configFileOptions: Partial<CustomGeneratorConfig> = {};
@@ -218,6 +220,12 @@ export async function generate(options: GeneratorOptions) {
 
       logger.debug(`[debug] resolvedSafetyConfig = ${JSON.stringify(resolvedSafetyConfig)}`);
 
+      // --- Single File Mode Configuration ---
+      singleFileMode = generatorConfig.useMultipleFiles === false;
+      singleFileName = singleFileMode
+        ? (generatorConfig.singleFileName || 'schemas.ts').trim()
+        : undefined;
+
       // --- Output Path Resolution (replaces earlier immediate initialization) ---
       // Precedence for output now:
       // 1. Prisma generator block 'output' attribute (if provided)
@@ -243,7 +251,12 @@ export async function generate(options: GeneratorOptions) {
           const raw = parseEnvValue(prismaBlockOutput);
           const resolved = path.isAbsolute(raw) ? raw : path.join(schemaBaseDir, raw);
           await fs.mkdir(resolved, { recursive: true });
-          const manifest = await safeCleanupOutput(resolved, resolvedSafetyConfig);
+          const manifest = await safeCleanupOutput(
+            resolved,
+            resolvedSafetyConfig,
+            singleFileMode,
+            singleFileName,
+          );
           Transformer.setOutputPath(resolved);
           Transformer.setCurrentManifest(manifest);
         } else if (generatorConfig.output) {
@@ -252,7 +265,12 @@ export async function generate(options: GeneratorOptions) {
             ? generatorConfig.output
             : path.join(schemaBaseDir, generatorConfig.output);
           await fs.mkdir(resolved, { recursive: true });
-          const manifest = await safeCleanupOutput(resolved, resolvedSafetyConfig);
+          const manifest = await safeCleanupOutput(
+            resolved,
+            resolvedSafetyConfig,
+            singleFileMode,
+            singleFileName,
+          );
           Transformer.setOutputPath(resolved);
           Transformer.setCurrentManifest(manifest);
           logger.debug(`[prisma-zod-generator] ℹ️ Using JSON config output path: ${resolved}`);
@@ -260,7 +278,12 @@ export async function generate(options: GeneratorOptions) {
           // Fallback (should rarely happen because processConfiguration sets default)
           const fallback = path.join(path.dirname(options.schemaPath), 'generated');
           await fs.mkdir(fallback, { recursive: true });
-          const manifest = await safeCleanupOutput(fallback, resolvedSafetyConfig);
+          const manifest = await safeCleanupOutput(
+            fallback,
+            resolvedSafetyConfig,
+            singleFileMode,
+            singleFileName,
+          );
           Transformer.setOutputPath(fallback);
           Transformer.setCurrentManifest(manifest);
           logger.debug(`[prisma-zod-generator] ℹ️ Using fallback output path: ${fallback}`);
@@ -340,7 +363,6 @@ export async function generate(options: GeneratorOptions) {
     Transformer.setGeneratorConfig(generatorConfig);
 
     // Init single-file mode if configured
-    const singleFileMode = generatorConfig.useMultipleFiles === false;
     if (singleFileMode) {
       const bundleName = (generatorConfig.singleFileName || 'schemas.ts').trim();
       const placeAtRoot = generatorConfig.placeSingleFileAtRoot !== false; // default true
@@ -642,6 +664,12 @@ export async function generate(options: GeneratorOptions) {
       const baseDir = placeAtRoot ? Transformer.getOutputPath() : Transformer.getSchemasPath();
       const bundleName = (generatorConfig.singleFileName || 'schemas.ts').trim();
       const bundlePath = path.join(baseDir, bundleName);
+
+      // Add the single file to the manifest
+      const manifest = Transformer.getCurrentManifest();
+      if (manifest) {
+        addFileToManifest(manifest, bundlePath, Transformer.getOutputPath());
+      }
       try {
         const entries = await fs.readdir(baseDir, { withFileTypes: true });
         for (const entry of entries) {
