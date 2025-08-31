@@ -1,3 +1,9 @@
+## [1.17.9](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.8...v1.17.9) (2025-08-31)
+
+### 🐛 Bug Fixes
+
+* add missing types for enums ([431227d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/431227de5c779f0874d5df6afe0228627deec8a8))
+
 ## [1.17.8](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.7...v1.17.8) (2025-08-30)
 
 ### 🐛 Bug Fixes
