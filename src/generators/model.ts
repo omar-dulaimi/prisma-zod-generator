@@ -2257,9 +2257,10 @@ export class PrismaTypeMapper {
       lines.push(` * Inferred TypeScript type for ${composition.modelName}`);
       lines.push(' */');
     }
-    lines.push(
-      `export type ${composition.modelName}Type = z.infer<typeof ${composition.schemaName}>;`,
-    );
+    // Avoid naming conflicts with enum types by using a different pattern for model types
+    // If modelName ends with common enum suffixes or conflicts with known enums, use ModelSchema pattern
+    const modelTypeName = this.resolveModelTypeName(composition.modelName);
+    lines.push(`export type ${modelTypeName} = z.infer<typeof ${composition.schemaName}>;`);
     // Only emit legacy alias when NOT in pureModels mode. In pureModels mode we transform
     // the *Schema export into *Model directly and an alias would cause a duplicate export
     // and reference to a non-existent *Schema symbol after transformation.
@@ -2593,5 +2594,31 @@ export class PrismaTypeMapper {
     }
 
     return stats;
+  }
+
+  /**
+   * Resolve model type name to avoid conflicts with enum types
+   */
+  private resolveModelTypeName(modelName: string): string {
+    // Dynamically get enum names from the transformer to avoid hardcoding
+    let enumNames: string[] = [];
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const transformer = require('../transformer').default;
+      enumNames = transformer.enumNames || [];
+    } catch {
+      // Fallback: if we can't get enum names, use conservative approach
+      enumNames = [];
+    }
+
+    // If the model name + "Type" would conflict with an existing enum, use a different pattern
+    const defaultTypeName = `${modelName}Type`;
+
+    if (enumNames.includes(defaultTypeName)) {
+      // Use the model name directly instead of adding "Type" suffix to avoid conflict
+      return modelName;
+    }
+
+    return defaultTypeName;
   }
 }

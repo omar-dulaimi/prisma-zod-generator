@@ -2100,17 +2100,34 @@ async function generatePureModelSchemas(
           const defaultConstRegex = new RegExp(`export const ${modelName}Schema`, 'g');
           content = content.replace(defaultConstRegex, `export const ${schemaExport}`);
           // Replace inferred type export line
+          // Avoid naming conflicts with enum types by dynamically checking
+          const resolveModelTypeName = (name: string): string => {
+            // Dynamically get enum names from the transformer to avoid hardcoding
+            let enumNames: string[] = [];
+            try {
+              enumNames = Transformer.enumNames || [];
+            } catch {
+              // Fallback: if we can't get enum names, use conservative approach
+              enumNames = [];
+            }
+
+            const defaultTypeName = `${name}Type`;
+            return enumNames.includes(defaultTypeName) ? name : defaultTypeName;
+          };
+
+          const safeTypeName = resolveModelTypeName(modelName);
           const defaultTypeRegex = new RegExp(
             `export type ${modelName}Type = z.infer<typeof ${modelName}Schema>;`,
             'g',
           );
           content = content.replace(
             defaultTypeRegex,
-            `export type ${modelName}${typeSuffix || 'Type'} = z.infer<typeof ${schemaExport}>;`,
+            `export type ${safeTypeName}${typeSuffix && typeSuffix !== 'Type' ? typeSuffix : ''} = z.infer<typeof ${schemaExport}>;`,
           );
           // If legacy alias requested, add it after primary export
           if (legacyAliases) {
-            content += `\n// Legacy aliases\nexport const ${modelName}Schema = ${schemaExport};\nexport type ${modelName}Type = z.infer<typeof ${schemaExport}>;`;
+            const safeTypeName = resolveModelTypeName(modelName);
+            content += `\n// Legacy aliases\nexport const ${modelName}Schema = ${schemaExport};\nexport type ${safeTypeName} = z.infer<typeof ${schemaExport}>;`;
           }
         } else if (legacyAliases) {
           content += `\n// Legacy aliases\nexport const ${modelName}Model = ${modelName}Schema;`;

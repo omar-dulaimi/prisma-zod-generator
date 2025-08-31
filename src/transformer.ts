@@ -7,9 +7,9 @@ import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
 import { AggregateOperationSupport, TransformerParams } from './types';
 import { logger } from './utils/logger';
+import type { GeneratedManifest } from './utils/safeOutputManagement';
 import { writeFileSafely } from './utils/writeFileSafely';
 import { addIndexExport, writeIndexFile } from './utils/writeIndexFile';
-import type { GeneratedManifest } from './utils/safeOutputManagement';
 
 /**
  * Filter validation result interface
@@ -959,7 +959,7 @@ export default class Transformer {
             `${name}`,
             // Use single-quoted values for enum array representation to match tests
             `z.enum([${values.map((v) => `'${v}'`).join(', ')}])`,
-          )}`,
+          )}\n\nexport type ${name} = z.infer<typeof ${name}Schema>;`,
         );
       }
     }
