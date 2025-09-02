@@ -1957,9 +1957,7 @@ export default class Transformer {
         const model = this.models.find((m) => m.name === modelName);
         if (model) {
           // Single-field uniques: id or individually unique fields
-          singleUnique = model.fields
-            .filter((f) => f.isId || f.isUnique)
-            .map((f) => f.name);
+          singleUnique = model.fields.filter((f) => f.isId || f.isUnique).map((f) => f.name);
 
           // Composite groups: prefer uniqueIndexes[].fields, then uniqueFields if available
           const mAny = model as unknown as {
