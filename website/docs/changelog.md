@@ -9,8 +9,18 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.18.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.18.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.18.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.0...v1.18.1) (2025-09-02)
+
+### 🐛 Bug Fixes
+
+* **objects:** add .nullable() to optional non-relation fields and keep relation args optional-only ([ce9695c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ce9695c8cbdca1268b57191deaed04534a9fb668))
+
+### 📚 Documentation
+
+* **versioned:** add json-friendly-datetime recipe for v1.17.4 to satisfy sidebar ([0222f84](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0222f8484678524943247b8bf41facdd93071997))
 
 ## [1.18.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.10...v1.18.0) (2025-09-02)
 
