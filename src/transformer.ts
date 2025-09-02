@@ -2905,8 +2905,9 @@ export default class Transformer {
           );
         }
 
+        const aggregateFilePath = path.join(Transformer.getSchemasPath(), `${aggregate}.schema.ts`);
         await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${aggregate}.schema.ts`),
+          aggregateFilePath,
           `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
             `${modelName}Aggregate`,
             `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
@@ -2914,6 +2915,9 @@ export default class Transformer {
             )} })`,
           )}`,
         );
+        // Add to index exports
+        addIndexExport(aggregateFilePath);
+        logger.debug(`✅ Added aggregate schema to index: ${aggregate}.schema.ts`);
       }
 
       if (groupBy && Transformer.isOperationEnabled(modelName, 'groupBy')) {
@@ -2947,13 +2951,17 @@ export default class Transformer {
             `./objects/${modelName}MaxAggregateInput.schema`,
           ),
         ];
+        const groupByFilePath = path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`);
         await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`),
+          groupByFilePath,
           `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
             `${modelName}GroupBy`,
             `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), orderBy: z.union([${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}, ${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}.array()]).optional(), having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${modelName}ScalarFieldEnumSchema), _count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${modelName}CountAggregateInput`)} ]).optional(), _min: ${Transformer.getObjectSchemaName(`${modelName}MinAggregateInput`)}.optional(), _max: ${Transformer.getObjectSchemaName(`${modelName}MaxAggregateInput`)}.optional() })`,
           )}`,
         );
+        // Add to index exports
+        addIndexExport(groupByFilePath);
+        logger.debug(`✅ Added groupBy schema to index: ${groupBy}.schema.ts`);
       }
     }
   }
