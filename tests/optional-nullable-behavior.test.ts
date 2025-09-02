@@ -1,4 +1,5 @@
 import { describe, it } from 'vitest';
+import { z } from 'zod';
 import { SchemaTestUtils } from './schema-test-utils';
 
 // Generated object schemas under prisma/generated
@@ -9,7 +10,7 @@ import { UserWhereInputObjectSchema } from '../prisma/generated/schemas/objects/
 
 describe('Optional vs Nullable behavior in object schemas', () => {
   describe('PostCreateInputObjectSchema', () => {
-    const base: any = {
+    const base: Partial<z.input<typeof PostCreateInputObjectSchema>> = {
       title: 'Hello',
       likes: BigInt(0),
     };
@@ -44,7 +45,7 @@ describe('Optional vs Nullable behavior in object schemas', () => {
   });
 
   describe('UserCreateInputObjectSchema', () => {
-    const base: any = {
+    const base: Partial<z.input<typeof UserCreateInputObjectSchema>> = {
       email: 'test@example.com',
       password: 'P@ssw0rd',
     };
