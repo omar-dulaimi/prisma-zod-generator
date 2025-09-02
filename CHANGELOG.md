@@ -1,3 +1,9 @@
+## [1.18.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.10...v1.18.0) (2025-09-02)
+
+### 🚀 Features
+
+* **generator:** DateTime split default for inputs and Prisma-parity WhereUniqueInput semantics ([d31c823](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d31c82316d944270f0cdb09067e2dbd46659b821))
+
 ## [1.17.10](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.9...v1.17.10) (2025-09-02)
 
 ### 🐛 Bug Fixes
