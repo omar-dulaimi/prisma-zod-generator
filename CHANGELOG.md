@@ -1,3 +1,9 @@
+## [1.17.10](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.9...v1.17.10) (2025-09-02)
+
+### 🐛 Bug Fixes
+
+* add missing exports for aggregate and groupBy schemas in index.ts ([7b980d2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7b980d294cbb15c1d9325bc874cc9cc893938ff7))
+
 ## [1.17.9](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.8...v1.17.9) (2025-08-31)
 
 ### 🐛 Bug Fixes
