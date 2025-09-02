@@ -34,11 +34,9 @@ describe('Optional vs Nullable behavior in object schemas', () => {
 
     it('optional relation field remains optional-only (rejects null)', () => {
       // author is relation-shaped and should NOT be nullable
-      SchemaTestUtils.testInvalidData(
-        PostCreateInputObjectSchema,
-        { ...base, author: null },
-        ['author'],
-      );
+      SchemaTestUtils.testInvalidData(PostCreateInputObjectSchema, { ...base, author: null }, [
+        'author',
+      ]);
 
       // Omission of author is allowed (optional)
       SchemaTestUtils.testValidData(PostCreateInputObjectSchema, { ...base });
@@ -57,11 +55,9 @@ describe('Optional vs Nullable behavior in object schemas', () => {
     });
 
     it('optional relation field (posts) remains optional-only (rejects null)', () => {
-      SchemaTestUtils.testInvalidData(
-        UserCreateInputObjectSchema,
-        { ...base, posts: null },
-        ['posts'],
-      );
+      SchemaTestUtils.testInvalidData(UserCreateInputObjectSchema, { ...base, posts: null }, [
+        'posts',
+      ]);
       SchemaTestUtils.testValidData(UserCreateInputObjectSchema, { ...base });
     });
   });

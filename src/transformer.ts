@@ -592,7 +592,7 @@ export default class Transformer {
       /\w+ScalarRelationFilter$/,
 
       // Order by relation inputs
-      /OrderByRelation/
+      /OrderByRelation/,
     ];
 
     return field.inputTypes.some((inputType) => {

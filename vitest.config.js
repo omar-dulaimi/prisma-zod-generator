@@ -5,6 +5,6 @@
  */
 module.exports = (() => {
   throw new Error(
-    'Do not use vitest.config.js. Use vitest.config.mjs with --config vitest.config.mjs instead.'
+    'Do not use vitest.config.js. Use vitest.config.mjs with --config vitest.config.mjs instead.',
   );
 })();
