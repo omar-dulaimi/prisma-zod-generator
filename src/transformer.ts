@@ -1171,6 +1171,17 @@ export default class Transformer {
             dateExpr =
               'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime").transform(v => new Date(v))';
           }
+        } else {
+          // No explicit strategy set. If split strategy is enabled, use variant-aware default:
+          // inputs => coerce; pure/result => date
+          if (cfg?.dateTimeSplitStrategy === true) {
+            const variant = Transformer.determineSchemaVariant(this.name);
+            if (variant === 'input') {
+              dateExpr = 'z.coerce.date()';
+            } else {
+              dateExpr = 'z.date()';
+            }
+          }
         }
         result.push(this.wrapWithZodValidators(dateExpr, field, inputType));
       } else if (inputType.type === 'Json') {
@@ -1933,7 +1944,90 @@ export default class Transformer {
   addFinalWrappers({ zodStringFields }: { zodStringFields: string[] }) {
     const fields = [...zodStringFields];
 
-    return this.wrapWithZodObject(fields) + '.strict()';
+    // Base object + strict
+    let base = this.wrapWithZodObject(fields) + '.strict()';
+
+    // Enhance WhereUniqueInput: at-least-one unique selector, plus composite completeness via superRefine
+    if (this.name && /WhereUniqueInput$/.test(this.name)) {
+      const modelName = Transformer.extractModelNameFromContext(this.name);
+      let singleUnique: string[] = [];
+      let compositeGroups: string[][] = [];
+
+      if (modelName) {
+        const model = this.models.find((m) => m.name === modelName);
+        if (model) {
+          // Single-field uniques: id or individually unique fields
+          singleUnique = model.fields
+            .filter((f) => f.isId || f.isUnique)
+            .map((f) => f.name);
+
+          // Composite groups: prefer uniqueIndexes[].fields, then uniqueFields if available
+          const mAny = model as unknown as {
+            uniqueIndexes?: Array<{ fields: string[] }>;
+            uniqueFields?: string[][];
+            primaryKey?: { fields: string[] } | null;
+          };
+
+          if (Array.isArray(mAny?.uniqueIndexes)) {
+            compositeGroups = (mAny.uniqueIndexes as Array<{ fields: string[] }>)
+              .map((ui) => ui.fields)
+              .filter((arr) => Array.isArray(arr) && arr.length > 1);
+          } else if (Array.isArray(mAny?.uniqueFields)) {
+            compositeGroups = (mAny.uniqueFields as string[][]).filter(
+              (arr) => Array.isArray(arr) && arr.length > 1,
+            );
+          }
+
+          // Include composite primary key as a group if present
+          if (mAny?.primaryKey?.fields && mAny.primaryKey.fields.length > 1) {
+            compositeGroups.push(mAny.primaryKey.fields);
+          }
+        }
+      }
+
+      // Stringify arrays to embed in generated code
+      const singleUniqueJson = JSON.stringify(Array.from(new Set(singleUnique)));
+      const compositeGroupsJson = JSON.stringify(
+        compositeGroups.map((g) => Array.from(new Set(g))),
+      );
+
+      // Build superRefine that:
+      // - requires at least one single unique OR one complete composite group
+      // - enforces composite completeness when any field from a group is provided
+      const refine = `.superRefine((obj, ctx) => {
+        const present = (k: any) => obj[k] !== undefined && obj[k] !== null;
+        const singles: string[] = ${singleUniqueJson} as string[];
+        const groups: string[][] = ${compositeGroupsJson} as string[][];
+
+        const anySingle = Array.isArray(singles) && singles.length > 0 ? singles.some(present) : false;
+
+        let anyComposite = false;
+        if (Array.isArray(groups)) {
+          for (const g of groups as string[][]) {
+            if (!Array.isArray(g) || g.length === 0) continue;
+            const count = (g as string[]).filter(present).length;
+            if (count > 0 && count < g.length) {
+              for (const f of g as string[]) {
+                if (!present(f)) {
+                  ctx.addIssue({ code: 'custom', message: 'All fields of composite unique must be provided', path: [f] });
+                }
+              }
+            }
+            if (count === g.length && g.length > 0) {
+              anyComposite = true;
+            }
+          }
+        }
+
+        if (!anySingle && !anyComposite) {
+          ctx.addIssue({ code: 'custom', message: 'Provide at least one unique selector' });
+        }
+      })`;
+
+      base = base + refine;
+    }
+
+    return base;
   }
 
   // Legacy method retained for backward compatibility; now returns empty string.

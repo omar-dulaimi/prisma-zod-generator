@@ -1973,7 +1973,17 @@ async function generatePureModelSchemas(
 
   try {
     const outputPath = Transformer.getOutputPath();
-    const modelsOutputPath = `${outputPath}/models`;
+    // Place pure models alongside the "schemas" folder so imports can use ../schemas/enums
+    // If outputPath already ends with "schemas", put models at its parent-level sibling
+    let modelsOutputPath = path.join(outputPath, 'models');
+    try {
+      const base = path.basename(outputPath);
+      if (base === 'schemas') {
+        modelsOutputPath = path.join(path.dirname(outputPath), 'models');
+      }
+    } catch {
+      // noop, fallback to default models path
+    }
     const singleFileMode = isSingleFileEnabled();
 
     // Filter models based on configuration

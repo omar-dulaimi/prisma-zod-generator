@@ -45,6 +45,14 @@ export interface GeneratorConfig {
   /** Strategy for DateTime scalar mapping in pure models and variants. Default: 'date' */
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
 
+  /**
+   * When true, apply a split strategy by default when no dateTimeStrategy is set:
+   * - Inputs: coerce (z.coerce.date()) to accept ISO strings from JSON clients
+   * - Pure models and result schemas: date (z.date())
+   * Default: false. Note: Explicit dateTimeStrategy overrides this behavior.
+   */
+  dateTimeSplitStrategy?: boolean;
+
   /** How to handle optional fields in Zod schemas. Default: 'nullish' */
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
 

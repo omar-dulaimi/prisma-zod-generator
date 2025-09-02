@@ -22,6 +22,7 @@ export interface ExtendedGeneratorOptions {
   pureModelsIncludeRelations?: boolean; // Include relation fields when generating pure models (default false)
   pureModelsExcludeCircularRelations?: boolean; // When pureModelsIncludeRelations is true, exclude circular relations (default false)
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString'; // DateTime scalar strategy
+  dateTimeSplitStrategy?: boolean; // Split default: inputs=coerce, pure/results=date when dateTimeStrategy is unset
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish'; // How to handle optional fields
 
   // Existing options (for backward compatibility)
@@ -95,6 +96,12 @@ export function parseGeneratorOptions(
       );
     }
     options.dateTimeStrategy = v as 'date' | 'coerce' | 'isoString';
+  }
+  if (generatorConfig.dateTimeSplitStrategy !== undefined) {
+    options.dateTimeSplitStrategy = parseBoolean(
+      generatorConfig.dateTimeSplitStrategy,
+      'dateTimeSplitStrategy',
+    );
   }
   if (generatorConfig.optionalFieldBehavior !== undefined) {
     const v = generatorConfig.optionalFieldBehavior;
@@ -353,6 +360,9 @@ export function generatorOptionsToConfigOverrides(
   if (options.dateTimeStrategy) {
     overrides.dateTimeStrategy = options.dateTimeStrategy;
   }
+  if (options.dateTimeSplitStrategy !== undefined) {
+    overrides.dateTimeSplitStrategy = options.dateTimeSplitStrategy;
+  }
   if (options.optionalFieldBehavior) {
     overrides.optionalFieldBehavior = options.optionalFieldBehavior;
   }
@@ -376,6 +386,7 @@ export interface GeneratorConfigOverrides {
   pureModelsIncludeRelations?: boolean;
   pureModelsExcludeCircularRelations?: boolean;
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
+  dateTimeSplitStrategy?: boolean;
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
   variants?: {
     pure?: { enabled?: boolean };
