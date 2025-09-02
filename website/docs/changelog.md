@@ -9,8 +9,14 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.17.10**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.18.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.18.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.10...v1.18.0) (2025-09-02)
+
+### 🚀 Features
+
+* **generator:** DateTime split default for inputs and Prisma-parity WhereUniqueInput semantics ([d31c823](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d31c82316d944270f0cdb09067e2dbd46659b821))
 
 ## [1.17.10](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.17.9...v1.17.10) (2025-09-02)
 
@@ -702,7 +708,7 @@ For the complete version history including older releases, please see the [full 
 
 ## Version Support
 
-- **Current:** v1.17.x - Full support with new features and bug fixes
+- **Current:** v1.18.x - Full support with new features and bug fixes
 - **Previous:** Previous minor versions - Security and critical bug fixes only
 - **Legacy:** Older versions - Community support only
 
