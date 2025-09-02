@@ -54,6 +54,7 @@
         "recipes/hide-fields",
         "recipes/circular-dependency-exclusion",
         "recipes/optional-field-control",
+        "recipes/json-friendly-datetime",
         {
           "type": "category",
           "label": "Safety System",
@@ -75,6 +76,7 @@
         "reference/bytes-json",
         "reference/naming-preset-map",
         "reference/logging-debug",
+        "reference/where-unique-input",
         "reference/faq",
         "reference/troubleshooting"
       ]

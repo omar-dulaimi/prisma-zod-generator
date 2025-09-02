@@ -4,7 +4,24 @@ Configure how Prisma `DateTime` fields are validated in your generated Zod schem
 
 ## Overview
 
-The `dateTimeStrategy` configuration option controls how Prisma `DateTime` fields are transformed into Zod validation schemas. This affects both pure models and input/result variants.
+The generator supports two complementary controls for DateTime behavior:
+- dateTimeSplitStrategy (boolean, default: true) controls the default behavior when no explicit dateTimeStrategy is set.
+- dateTimeStrategy ('date' | 'coerce' | 'isoString') forces a specific mapping across all variants.
+
+When dateTimeSplitStrategy is true and dateTimeStrategy is NOT set:
+- Input schemas default to z.coerce.date() (JSON-friendly — accepts ISO strings and coerces to Date)
+- Pure model and result schemas default to z.date()
+
+When dateTimeStrategy is set, it takes precedence and applies to all variants.
+
+## Split Strategy (Default)
+
+With split enabled (default):
+- Inputs: z.coerce.date() (accepts ISO strings)
+- Pure/Results: z.date()
+This provides a JSON-first default for APIs while keeping strict Date objects in read models.
+
+Disable split by setting "dateTimeSplitStrategy": false to revert to a single global default (see strategies below).
 
 ## Available Strategies
 

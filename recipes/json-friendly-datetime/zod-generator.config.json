@@ -1,0 +1,18 @@
+{
+  "mode": "custom",
+  "output": "./generated",
+  "dateTimeSplitStrategy": true,
+  "variants": {
+    "pure": { "enabled": true, "suffix": ".model" },
+    "input": { "enabled": true, "suffix": ".input" },
+    "result": { "enabled": true, "suffix": ".result" }
+  },
+  "emit": {
+    "crud": true,
+    "objects": true,
+    "results": true,
+    "pureModels": true,
+    "variants": true,
+    "enums": true
+  }
+}

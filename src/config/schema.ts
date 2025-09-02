@@ -141,6 +141,12 @@ export const ConfigurationSchema: JSONSchema7 = {
       description:
         'How DateTime fields are represented: date (z.date()), coerce (z.coerce.date()), isoString (ISO string validated & transformed)',
     },
+    dateTimeSplitStrategy: {
+      type: 'boolean',
+      default: true,
+      description:
+        'When true and dateTimeStrategy is unset, use coerce for input schemas and date for pure/result schemas (split strategy)',
+    },
     addSelectType: {
       type: 'boolean',
       default: false,

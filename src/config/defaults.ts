@@ -51,6 +51,7 @@ export class DefaultConfigurationManager {
       pureModelsIncludeRelations: false,
       pureModelsExcludeCircularRelations: false,
       dateTimeStrategy: 'date',
+      dateTimeSplitStrategy: true,
       optionalFieldBehavior: 'nullish',
       naming: {
         preset: 'default',

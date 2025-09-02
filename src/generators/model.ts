@@ -2144,13 +2144,21 @@ export class PrismaTypeMapper {
         .map((f) => f.prismaType),
     );
 
-    // Enum schema imports – ensure correct relative path from models/ -> ../schemas/enums/
+    // Enum schema imports – compute correct relative path based on actual layout:
+    // - Pure models are emitted under:
+    //     a) <output>/models             (default)
+    //     b) <output>/schemas/models     (when output already ends with 'schemas')
+    // - Enums are emitted under: <schemasPath>/enums
+    //
+    // So relative import should be:
+    //   from <output>/models             -> ../schemas/enums/<Enum>.schema
+    //   from <output>/schemas/models     -> ../enums/<Enum>.schema
     const enumSchemaImports = imports.filter(
       (imp) => /Schema$/.test(imp) && enumNames.has(imp.replace(/Schema$/, '')),
     );
     enumSchemaImports.forEach((imp) => {
       const enumBase = imp.replace(/Schema$/, '');
-      // From generated/models/* to generated/schemas/enums/* is ../schemas/enums/
+      // Tests and documentation expect pure models in "<out>/models" and enums in "<out>/schemas/enums"
       lines.push(`import { ${imp} } from '../schemas/enums/${enumBase}.schema';`);
     });
 
