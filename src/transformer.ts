@@ -563,19 +563,42 @@ export default class Transformer {
    * Check if a schema arg represents a relation field
    */
   static isRelationFieldArg(field: PrismaDMMF.SchemaArg): boolean {
-    // Check if the field type suggests it's a relation
+    // Heuristic: relation-shaped nested inputs and relation filters
+    // Detect a wide set of Prisma relation input object patterns
+    const relationTypePatterns: RegExp[] = [
+      // Connect targets for nested relations
+      /\w+WhereUniqueInput$/,
+
+      // Nested relation operations
+      /\w+CreateNested(?:One|Many)Without\w+Input$/,
+      /\w+UpdateNested(?:One|Many)Without\w+Input$/,
+      /\w+UpsertNested(?:One|Many)Without\w+Input$/,
+
+      // Without-variants used in nested create/update
+      /\w+CreateOrConnectWithout\w+Input$/,
+      /\w+CreateWithout\w+Input$/,
+      /\w+UncheckedCreateWithout\w+Input$/,
+      /\w+UpdateWithout\w+Input$/,
+      /\w+UncheckedUpdateWithout\w+Input$/,
+      /\w+UpdateToOneWithWhereWithout\w+Input$/,
+      /\w+UpdateOneRequiredWithout\w+NestedInput$/,
+      /\w+UpdateWithWhereUniqueWithout\w+Input$/,
+      /\w+UpdateManyWithWhereWithout\w+Input$/,
+      /\w+UpsertWithWhereUniqueWithout\w+Input$/,
+
+      // Relation filter helpers
+      /\w+ListRelationFilter$/,
+      /\w+RelationFilter$/,
+      /\w+ScalarRelationFilter$/,
+
+      // Order by relation inputs
+      /OrderByRelation/
+    ];
+
     return field.inputTypes.some((inputType) => {
-      return (
-        inputType.location === 'inputObjectTypes' &&
-        ((inputType.type as string).includes('WhereInput') ||
-          (inputType.type as string).includes('CreateInput') ||
-          (inputType.type as string).includes('UpdateInput') ||
-          (inputType.type as string).includes('ListRelationFilter') ||
-          (inputType.type as string).includes('RelationFilter') ||
-          (inputType.type as string).includes('CreateNested') ||
-          (inputType.type as string).includes('UpdateNested') ||
-          (inputType.type as string).includes('OrderByRelation'))
-      );
+      if (inputType.location !== 'inputObjectTypes') return false;
+      const typeName = String(inputType.type);
+      return relationTypePatterns.some((re) => re.test(typeName));
     });
   }
 
@@ -1225,7 +1248,7 @@ export default class Transformer {
 
     const fieldName = allAlternativesHaveFieldName ? '' : fieldNamePattern;
 
-    // Base optional marker; will be normalized below based on config/nullable
+    // Base optional marker; union gets a trailing optional which we'll normalize below
     const opt = !field.isRequired ? '.optional()' : '';
 
     let resString =
@@ -1233,29 +1256,39 @@ export default class Transformer {
         ? alternatives.join(', ')
         : `z.union([${alternatives.join(', ')}])${opt}`;
 
-    // Normalize optional/nullable behavior based on configuration
-    const config = Transformer.getGeneratorConfig();
-    const optionalFieldBehavior = config?.optionalFieldBehavior || 'nullish';
+    // Policy fix:
+    // - Keep relation fields as optional only (no nullable)
+    // - For non-relation fields that are optional, append .optional().nullable()
+    // - For required-but-nullable fields, append .nullable()
+    const isRelationArg =
+      Transformer.isRelationFieldArg(field) ||
+      [
+        'create',
+        'connectOrCreate',
+        'connect',
+        'disconnect',
+        'delete',
+        'update',
+        'upsert',
+        'set',
+        'updateMany',
+        'deleteMany',
+        'createMany',
+      ].includes(field.name);
+
+    // Strip any existing optional/nullable/nullish from the composed string; we will re-apply
+    resString = resString
+      .replace(/\.optional\(\)/g, '')
+      .replace(/\.nullish\(\)/g, '')
+      .replace(/\.nullable\(\)/g, '');
+
     if (!field.isRequired) {
-      // Field is optional
-      // First, strip any existing .optional() added earlier; we'll re-apply below
-      resString = resString.replace('.optional()', '');
-      if (field.isNullable) {
-        // Optional + nullable → follow configured behavior
-        if (optionalFieldBehavior === 'nullish') resString += '.nullish()';
-        else if (optionalFieldBehavior === 'optional') resString += '.optional()';
-        else resString += '.nullable()';
+      if (isRelationArg) {
+        // Relations: keep as optional only
+        resString += '.optional()';
       } else {
-        // Optional only (not nullable)
-        if (optionalFieldBehavior === 'nullable') {
-          // For non-nullable optional fields, .nullable() would change type; keep .optional()
-          resString += '.optional()';
-        } else if (optionalFieldBehavior === 'nullish') {
-          // Non-nullable optional → nullish would accept null; avoid widening; keep .optional()
-          resString += '.optional()';
-        } else {
-          resString += '.optional()';
-        }
+        // Scalars/enums/others: optional + nullable
+        resString += '.optional().nullable()';
       }
     } else if (field.isNullable) {
       // Required but nullable
@@ -1993,7 +2026,7 @@ export default class Transformer {
       // - requires at least one single unique OR one complete composite group
       // - enforces composite completeness when any field from a group is provided
       const refine = `.superRefine((obj, ctx) => {
-        const present = (k: any) => obj[k] !== undefined && obj[k] !== null;
+        const present = (k: string) => (obj as any)[k] != null;
         const singles: string[] = ${singleUniqueJson} as string[];
         const groups: string[][] = ${compositeGroupsJson} as string[][];
 
