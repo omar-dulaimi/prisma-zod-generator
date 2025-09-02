@@ -145,6 +145,34 @@ UserCreateInputSchema.parse(prismaUser); // ✅ Always valid
 - Null is a meaningful value
 - You want to distinguish between "not set" and "explicitly null"
 
+## Object Schemas: Optional vs Nullable (Behavior Note)
+
+For input object schemas under `objects/` (e.g., `UserCreateInput.schema.ts`, `PostUpdateInput.schema.ts`), the generator applies a policy that aligns Prisma optionality with practical API usage:
+
+- Optional non‑relation fields (scalars/enums/unions) are emitted as `.optional().nullable()` to accept both omission and explicit `null`.
+- Optional relation‑shaped fields remain `.optional()` only and reject `null` (use omission to skip).
+
+Examples:
+
+```ts
+// Optional non-relation scalar
+name: z.string().optional().nullable()
+
+// Optional non-relation union (e.g., update operations)
+title: z.union([z.string(), TitleFieldUpdateOperationsInputObjectSchema]).optional().nullable()
+
+// Optional relation-shaped fields
+author: z.lazy(() => UserCreateNestedOneWithoutPostsInputObjectSchema).optional()         // ✅ undefined ok
+// author: null  // ❌ invalid, use omission instead
+```
+
+Additionally, in filter/where inputs, optional non-relation unions (e.g., `AND`, `OR`, `NOT`, or scalar filter unions) are treated as optional + nullable to allow `null` as a shorthand for “not applied”.
+
+Rationale:
+- Prisma optional fields often map to nullable columns; allowing `null` and omission improves ergonomics for JSON clients while keeping relation operations explicit and unambiguous.
+
+This policy applies to object input schemas irrespective of `optionalFieldBehavior` (which continues to control pure model and variant schema generation).
+
 ## Migration
 
 When changing `optionalFieldBehavior`, regenerate your schemas:
