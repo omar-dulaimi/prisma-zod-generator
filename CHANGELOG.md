@@ -1,3 +1,9 @@
+## [1.18.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.3...v1.18.4) (2025-09-03)
+
+### 🐛 Bug Fixes
+
+* improve type inference for self-referential schemas ([be14309](https://github.com/omar-dulaimi/prisma-zod-generator/commit/be1430958b99cd64f6280250878b911a7acc34c1)), closes [#214](https://github.com/omar-dulaimi/prisma-zod-generator/issues/214)
+
 ## [1.18.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.2...v1.18.3) (2025-09-03)
 
 ### 🐛 Bug Fixes
