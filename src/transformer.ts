@@ -1857,10 +1857,16 @@ export default class Transformer {
     // Check if schema has self-references (needs explicit return type to avoid TS7023)
     const needsReturnType = finalFields.some((field) => field.includes('z.lazy(makeSchema)'));
 
-    // Add explicit return type annotation for self-referential schemas to avoid TS7023
-    const returnTypeAnnotation = needsReturnType ? ': z.ZodType<any>' : '';
-    const factoryDecl = `const makeSchema = ()${returnTypeAnnotation} => ${objectSchemaBody};\n`;
-    let objectSchema = `${factoryDecl}${this.generateExportObjectSchemaStatement('makeSchema()')}\n`;
+    // Apply GitHub issue 214 fix: use schema constant pattern for better type inference
+    let objectSchema: string;
+    if (needsReturnType) {
+      const schemaDecl = `const schema = ${objectSchemaBody};\n`;
+      const factoryDecl = `function makeSchema(): z.ZodObject<any> { return schema }\n`;
+      objectSchema = `${schemaDecl}${factoryDecl}${this.generateExportObjectSchemaStatement('schema')}\n`;
+    } else {
+      const factoryDecl = `const makeSchema = () => ${objectSchemaBody};\n`;
+      objectSchema = `${factoryDecl}${this.generateExportObjectSchemaStatement('makeSchema()')}\n`;
+    }
     // Add optional sanity-check block for Zod-only schemas when self recursion exists
     const hasSelfRecursion = finalFields.some((l) => l.includes('z.lazy(makeSchema)'));
     if (Transformer.exportZodSchemas && hasSelfRecursion) {
