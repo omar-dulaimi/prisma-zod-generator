@@ -1841,7 +1841,13 @@ export default class Transformer {
     const finalFields = zodObjectSchemaFields;
 
     const objectSchemaBody = this.addFinalWrappers({ zodStringFields: finalFields });
-    const factoryDecl = `const makeSchema = (): z.ZodObject<any> => ${objectSchemaBody};\n`;
+
+    // Check if schema has self-references (needs explicit return type to avoid TS7023)
+    const needsReturnType = finalFields.some((field) => field.includes('z.lazy(makeSchema)'));
+
+    // Add explicit return type annotation for self-referential schemas to avoid TS7023
+    const returnTypeAnnotation = needsReturnType ? ': z.ZodType<any>' : '';
+    const factoryDecl = `const makeSchema = ()${returnTypeAnnotation} => ${objectSchemaBody};\n`;
     let objectSchema = `${factoryDecl}${this.generateExportObjectSchemaStatement('makeSchema()')}\n`;
     // Add optional sanity-check block for Zod-only schemas when self recursion exists
     const hasSelfRecursion = finalFields.some((l) => l.includes('z.lazy(makeSchema)'));
