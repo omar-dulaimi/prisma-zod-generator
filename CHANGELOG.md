@@ -1,3 +1,10 @@
+## [1.18.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.2...v1.18.3) (2025-09-03)
+
+### 🐛 Bug Fixes
+
+* fix failing schema validation tests ([d319ac4](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d319ac48fc5daaa903389b8033efd8e6707e2243))
+* Improve optional/nullable field handling in schema generation and update tests ([3b00458](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3b004580c6949ef7d477b8379d369a265c76d2e6))
+
 ## [1.18.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.1...v1.18.2) (2025-09-03)
 
 ### 🐛 Bug Fixes
