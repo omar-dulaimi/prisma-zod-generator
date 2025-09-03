@@ -166,7 +166,11 @@ describe('Generated Schema Tests', () => {
           posts: {},
         };
 
-        SchemaTestUtils.testRequiredFields(UserCreateInputObjectSchema, baseData, ['email', 'password', 'posts']);
+        SchemaTestUtils.testRequiredFields(UserCreateInputObjectSchema, baseData, [
+          'email',
+          'password',
+          'posts',
+        ]);
       });
     });
 
