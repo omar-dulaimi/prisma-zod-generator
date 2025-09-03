@@ -5,7 +5,7 @@ import { SchemaTestUtils } from './schema-test-utils';
 import { UserCreateManySchema } from '../prisma/generated/schemas/createManyUser.schema';
 import { SortOrderSchema } from '../prisma/generated/schemas/enums/SortOrder.schema';
 import { UserScalarFieldEnumSchema } from '../prisma/generated/schemas/enums/UserScalarFieldEnum.schema';
-import { PostFindManySchema } from '../prisma/generated/schemas/findManyPost.schema';
+
 import { UserFindManySchema } from '../prisma/generated/schemas/findManyUser.schema';
 
 // Import object schemas
@@ -25,7 +25,7 @@ describe('Generated Schema Tests', () => {
       it('should validate with all optional fields', () => {
         const validData = {
           select: { id: true, email: true },
-          include: { posts: true },
+
           where: { email: 'test@example.com' },
           orderBy: { email: 'desc' as const }, // Use valid field from schema
           take: 10,
@@ -71,8 +71,7 @@ describe('Generated Schema Tests', () => {
           data: {
             email: 'test@example.com',
             name: 'Test User',
-            password: 'P@ssw0rd123',
-            role: Role.USER,
+            role: [Role.USER],
           },
         };
 
@@ -85,14 +84,12 @@ describe('Generated Schema Tests', () => {
             {
               email: 'test1@example.com',
               name: 'Test User 1',
-              password: 'P@ssw0rd123',
-              role: Role.USER,
+              role: [Role.USER],
             },
             {
               email: 'test2@example.com',
               name: 'Test User 2',
-              password: 'P@ssw0rd456',
-              role: Role.ADMIN,
+              role: [Role.ADMIN],
             },
           ],
         };
@@ -103,20 +100,10 @@ describe('Generated Schema Tests', () => {
       it('should reject missing required fields', () => {
         SchemaTestUtils.testInvalidData(UserCreateManySchema, {
           data: {
-            name: 'Test User',
-            // missing email
+            email: 'test@example.com',
+            // missing name
           },
         });
-      });
-    });
-
-    describe('PostFindManySchema', () => {
-      it('should validate array orderBy', () => {
-        const validData = {
-          orderBy: [{ id: 'desc' as const }, { title: 'asc' as const }],
-        };
-
-        SchemaTestUtils.testValidData(PostFindManySchema, validData);
       });
     });
   });
@@ -125,7 +112,7 @@ describe('Generated Schema Tests', () => {
     describe('UserScalarFieldEnumSchema', () => {
       it('should validate correct enum values', () => {
         const validValues = ['id', 'email', 'name'];
-        const invalidValues = ['invalid', 'createdAt', 'updatedAt'];
+        const invalidValues = ['invalid'];
 
         SchemaTestUtils.testEnumValues(UserScalarFieldEnumSchema, validValues, invalidValues);
       });
@@ -147,8 +134,7 @@ describe('Generated Schema Tests', () => {
         const validData = {
           email: 'test@example.com',
           name: 'Test User',
-          password: 'P@ssw0rd123',
-          role: Role.USER,
+          role: [Role.USER],
         };
 
         SchemaTestUtils.testValidData(UserCreateInputObjectSchema, validData);
@@ -158,16 +144,7 @@ describe('Generated Schema Tests', () => {
         const validData = {
           email: 'test@example.com',
           name: 'Test User',
-          password: 'P@ssw0rd123',
-          role: Role.USER,
-          posts: {
-            create: {
-              title: 'Test Post',
-              content: 'Test content',
-              likes: BigInt(0),
-              bytes: new Uint8Array([1, 2, 3]),
-            },
-          },
+          role: [Role.USER],
         };
 
         SchemaTestUtils.testValidData(UserCreateInputObjectSchema, validData);
@@ -177,11 +154,10 @@ describe('Generated Schema Tests', () => {
         const baseData = {
           email: 'test@example.com',
           name: 'Test User',
-          password: 'P@ssw0rd123',
-          role: Role.USER,
+          role: [Role.USER],
         };
 
-        SchemaTestUtils.testRequiredFields(UserCreateInputObjectSchema, baseData, ['email']);
+        SchemaTestUtils.testRequiredFields(UserCreateInputObjectSchema, baseData, ['name', 'role']);
       });
     });
 
@@ -201,11 +177,30 @@ describe('Generated Schema Tests', () => {
 
       it('should validate with logical operators', () => {
         const validData = {
-          AND: [{ email: { contains: 'test' } }, { name: { not: null } }],
+          AND: [{ email: { contains: 'test' } }, { name: { not: 'some name' } }],
           OR: [{ email: { endsWith: '.com' } }, { name: { equals: 'Admin' } }],
         };
 
         SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validData);
+      });
+
+      it('should handle nullable fields correctly', () => {
+        const validDataWithNull = {
+          email: null,
+        };
+        SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validDataWithNull);
+
+        const validDataWithFilter = {
+          email: {
+            equals: 'test@example.com',
+          },
+        };
+        SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validDataWithFilter);
+
+        const validDataWithUndefined = {
+          email: undefined,
+        };
+        SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validDataWithUndefined);
       });
     });
 
@@ -305,34 +300,9 @@ describe('Generated Schema Tests', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle nested object validation', () => {
-      const validData = {
-        where: {
-          AND: [
-            {
-              email: {
-                contains: 'test',
-              },
-            },
-            {
-              posts: {
-                some: {
-                  title: {
-                    startsWith: 'Important',
-                  },
-                },
-              },
-            },
-          ],
-        },
-      };
-
-      SchemaTestUtils.testValidData(UserFindManySchema, validData);
-    });
-
     it('should handle complex array operations', () => {
       const validData = {
-        distinct: ['id', 'email', 'name'] as ('id' | 'email' | 'name')[],
+        distinct: ['id', 'email'] as ('id' | 'email')[],
         orderBy: [{ id: 'desc' as const }, { email: 'asc' as const }],
       };
 

@@ -1282,16 +1282,28 @@ export default class Transformer {
       .replace(/\.nullish\(\)/g, '')
       .replace(/\.nullable\(\)/g, '');
 
-    if (!field.isRequired) {
-      if (isRelationArg) {
-        // Relations: keep as optional only
-        resString += '.optional()';
-      } else {
-        // Scalars/enums/others: optional + nullable
-        resString += '.optional().nullable()';
+    let isRequired = field.isRequired;
+
+    if (this.name.includes('CreateInput')) {
+      const modelName = Transformer.extractModelNameFromContext(this.name);
+      if (modelName) {
+        const model = this.models.find((m) => m.name === modelName);
+        if (model) {
+          const modelField = model.fields.find((f) => f.name === field.name);
+          if (modelField) {
+            if (modelField.isUpdatedAt) {
+              return [];
+            }
+            isRequired = modelField.isRequired && !modelField.hasDefaultValue;
+          }
+        }
       }
-    } else if (field.isNullable) {
-      // Required but nullable
+    }
+
+    if (!isRequired) {
+      resString += '.optional()';
+    }
+    if (field.isNullable && !isRelationArg) {
       resString += '.nullable()';
     }
 
