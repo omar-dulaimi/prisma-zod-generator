@@ -1,3 +1,9 @@
+## [1.18.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.4...v1.18.5) (2025-09-03)
+
+### 🐛 Bug Fixes
+
+* improve type inference for recursive schemas with AND/OR/NOT operations ([2c360ef](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2c360efaac604392211bb6330b98c222eb11e020))
+
 ## [1.18.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.3...v1.18.4) (2025-09-03)
 
 ### 🐛 Bug Fixes
