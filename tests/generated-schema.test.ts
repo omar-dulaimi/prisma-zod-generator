@@ -71,7 +71,8 @@ describe('Generated Schema Tests', () => {
           data: {
             email: 'test@example.com',
             name: 'Test User',
-            role: [Role.USER],
+            password: 'password123',
+            role: Role.USER,
           },
         };
 
@@ -84,12 +85,14 @@ describe('Generated Schema Tests', () => {
             {
               email: 'test1@example.com',
               name: 'Test User 1',
-              role: [Role.USER],
+              password: 'password123',
+              role: Role.USER,
             },
             {
               email: 'test2@example.com',
               name: 'Test User 2',
-              role: [Role.ADMIN],
+              password: 'password456',
+              role: Role.ADMIN,
             },
           ],
         };
@@ -134,7 +137,9 @@ describe('Generated Schema Tests', () => {
         const validData = {
           email: 'test@example.com',
           name: 'Test User',
-          role: [Role.USER],
+          password: 'password123',
+          role: Role.USER,
+          posts: {},
         };
 
         SchemaTestUtils.testValidData(UserCreateInputObjectSchema, validData);
@@ -144,7 +149,9 @@ describe('Generated Schema Tests', () => {
         const validData = {
           email: 'test@example.com',
           name: 'Test User',
-          role: [Role.USER],
+          password: 'password123',
+          role: Role.USER,
+          posts: {},
         };
 
         SchemaTestUtils.testValidData(UserCreateInputObjectSchema, validData);
@@ -154,10 +161,12 @@ describe('Generated Schema Tests', () => {
         const baseData = {
           email: 'test@example.com',
           name: 'Test User',
-          role: [Role.USER],
+          password: 'password123',
+          role: Role.USER,
+          posts: {},
         };
 
-        SchemaTestUtils.testRequiredFields(UserCreateInputObjectSchema, baseData, ['name', 'role']);
+        SchemaTestUtils.testRequiredFields(UserCreateInputObjectSchema, baseData, ['email', 'password', 'posts']);
       });
     });
 
@@ -186,19 +195,19 @@ describe('Generated Schema Tests', () => {
 
       it('should handle nullable fields correctly', () => {
         const validDataWithNull = {
-          email: null,
+          name: null,
         };
         SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validDataWithNull);
 
         const validDataWithFilter = {
-          email: {
-            equals: 'test@example.com',
+          name: {
+            equals: 'Test User',
           },
         };
         SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validDataWithFilter);
 
         const validDataWithUndefined = {
-          email: undefined,
+          name: undefined,
         };
         SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validDataWithUndefined);
       });
