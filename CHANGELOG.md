@@ -1,3 +1,13 @@
+## [1.18.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.1...v1.18.2) (2025-09-03)
+
+### 🐛 Bug Fixes
+
+* resolve TypeScript errors in generated schemas ([b7af26a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b7af26a0f5340a3020fea29866cb06b69dd57bb7))
+
+### 📚 Documentation
+
+* **config:** document optional vs nullable policy for object input schemas (non-relation optional nullable; relations optional-only) ([82bdfc1](https://github.com/omar-dulaimi/prisma-zod-generator/commit/82bdfc143ccb09461c06439e137ad4be78a26b29))
+
 ## [1.18.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.0...v1.18.1) (2025-09-02)
 
 ### 🐛 Bug Fixes
