@@ -1818,10 +1818,10 @@ export default class Transformer {
 
     if (needsLazyLoading) {
       if (isSelfReference) {
-        // Use makeSchema factory to avoid self-referential const inits (TS7022)
+        // Use direct schema reference for better type inference (GitHub issue 214 fix)
         return inputsLength === 1
-          ? `  ${field.name}: z.lazy(makeSchema)${arr}${opt}`
-          : `z.lazy(makeSchema)${arr}${opt}`;
+          ? `  ${field.name}: z.lazy(() => ${this.name}ObjectSchema)${arr}${opt}`
+          : `z.lazy(() => ${this.name}ObjectSchema)${arr}${opt}`;
       }
       return inputsLength === 1
         ? `  ${field.name}: z.lazy(() => ${schema})${arr}${opt}`
@@ -1855,20 +1855,19 @@ export default class Transformer {
     const objectSchemaBody = this.addFinalWrappers({ zodStringFields: finalFields });
 
     // Check if schema has self-references (needs explicit return type to avoid TS7023)
-    const needsReturnType = finalFields.some((field) => field.includes('z.lazy(makeSchema)'));
+    const needsReturnType = finalFields.some((field) => field.includes(`z.lazy(() => ${this.name}ObjectSchema)`));
 
     // Apply GitHub issue 214 fix: use schema constant pattern for better type inference
     let objectSchema: string;
     if (needsReturnType) {
       const schemaDecl = `const schema = ${objectSchemaBody};\n`;
-      const factoryDecl = `function makeSchema(): z.ZodObject<any> { return schema }\n`;
-      objectSchema = `${schemaDecl}${factoryDecl}${this.generateExportObjectSchemaStatement('schema')}\n`;
+      objectSchema = `${schemaDecl}${this.generateExportObjectSchemaStatement('schema')}\n`;
     } else {
       const factoryDecl = `const makeSchema = () => ${objectSchemaBody};\n`;
       objectSchema = `${factoryDecl}${this.generateExportObjectSchemaStatement('makeSchema()')}\n`;
     }
     // Add optional sanity-check block for Zod-only schemas when self recursion exists
-    const hasSelfRecursion = finalFields.some((l) => l.includes('z.lazy(makeSchema)'));
+    const hasSelfRecursion = finalFields.some((l) => l.includes(`z.lazy(() => ${this.name}ObjectSchema)`));
     if (Transformer.exportZodSchemas && hasSelfRecursion) {
       const sanity = this.generateZodOnlySanityCheck(finalFields);
       if (sanity) objectSchema += sanity + '\n';
