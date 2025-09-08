@@ -1,3 +1,9 @@
+## [1.18.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.6...v1.18.7) (2025-09-08)
+
+### 🐛 Bug Fixes
+
+* **ci:** update pnpm version to 10.15.1 in docs and ci workflows ([de2326d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/de2326d5199b34d8c7eeef2467c9065d40dc8133))
+
 ## [1.18.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.5...v1.18.6) (2025-09-08)
 
 ### 🐛 Bug Fixes
