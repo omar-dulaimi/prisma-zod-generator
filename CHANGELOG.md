@@ -1,3 +1,9 @@
+## [1.18.8](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.7...v1.18.8) (2025-09-08)
+
+### 🐛 Bug Fixes
+
+* **single-file-mode:** remove duplicated schema declarations ([cdb65b4](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cdb65b4081fb9be22b16cdda4429155f9448ca80))
+
 ## [1.18.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.6...v1.18.7) (2025-09-08)
 
 ### 🐛 Bug Fixes
