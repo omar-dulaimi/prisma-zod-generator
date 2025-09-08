@@ -88,43 +88,43 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build project
-        run: npm run gen-example
+        run: pnpm run gen-example
 
       - name: Run type checking
-        run: npm run test:type-check
+        run: pnpm run test:type-check
 
       - name: Run linting
-        run: npm run lint || echo "Linting failed but continuing for now"
+        run: pnpm run lint || echo "Linting failed but continuing for now"
         continue-on-error: true
 
       # Vitest 3.x requires Node 20.19.0+ or 22.12.0+, so skip tests for Node 18
       - name: Run basic tests
         if: matrix.node-version != '18.x'
-        run: npm run test:basic
+        run: pnpm run test:basic
 
       - name: Run comprehensive tests
         if: matrix.node-version != '18.x'
-        run: npm run test:coverage:comprehensive
+        run: pnpm run test:coverage:comprehensive
         timeout-minutes: 10
 
       - name: Generate MongoDB schemas
         if: matrix.node-version != '18.x'
-        run: npx prisma generate --schema="prisma/schemas/mongodb/schema.prisma"
+        run: pnpm prisma generate --schema="prisma/schemas/mongodb/schema.prisma"
 
       - name: Run MongoDB tests
         if: matrix.node-version != '18.x'
-        run: npm run test:coverage:mongodb
+        run: pnpm run test:coverage:mongodb
         timeout-minutes: 10
 
       - name: Run multi-provider tests (sequential)
         if: matrix.node-version != '18.x'
-        run: npm run test:multi:sequential
+        run: pnpm run test:multi:sequential
         timeout-minutes: 15
 
   package-test:
@@ -139,20 +139,20 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '20.x'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build and package
         run: |
-          npm run gen-example
+          pnpm run gen-example
           ./package.sh
 
       - name: Test package integrity
         run: |
           cd package
-          npm pack --dry-run
+          pnpm pack --dry-run
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4

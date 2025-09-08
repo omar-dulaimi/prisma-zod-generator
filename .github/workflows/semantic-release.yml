@@ -23,17 +23,17 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '20.x'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build and test
         run: |
-          npm run gen-example
-          npm run test:type-check
-          npm run lint
-          npm run test:basic
+          pnpm run gen-example
+          pnpm run test:type-check
+          pnpm run lint
+          pnpm run test:basic
 
       - name: Build package
         run: ./package.sh
@@ -42,7 +42,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm run release
+        run: pnpm run release
 
       - name: Version docs for new release
         env:
@@ -67,7 +67,7 @@ jobs:
             website/versions.json \
             website/docs/changelog.md \
             package.json \
-            package-lock.json \
+            pnpm-lock.yaml \
             package/package.json \
             CHANGELOG.md || true
           # If nothing is staged, skip committing to avoid exit 1 from git commit
