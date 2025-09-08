@@ -271,10 +271,7 @@ export class ResultSchemaGenerator {
 
     if (options.paginationSupport) {
       const paginationSchema = this.generatePaginationSchema();
-      zodSchema = `z.object({
-  data: z.array(${baseSchema}),
-  pagination: ${paginationSchema}
-})`;
+      zodSchema = `z.object({\n  data: z.array(${baseSchema}),\n  pagination: ${paginationSchema}\n})`;
       typeDefinition = `z.infer<typeof ${schemaName}>`;
     } else {
       zodSchema = `z.array(${baseSchema})`;
@@ -470,7 +467,8 @@ ${allFields.join(',\n')}
       });
     }
 
-    return `z.object({\n${fieldSchemas.join(',\n')}\n})`;
+    const baseSchemaStr = `z.object({\n${fieldSchemas.join(',\n')}\n})`;
+    return baseSchemaStr;
   }
 
   private buildRelationSchema(field: DMMF.Field): string {

@@ -1862,8 +1862,10 @@ export default class Transformer {
     // Apply GitHub issue 214 fix: use schema constant pattern for better type inference
     let objectSchema: string;
     if (needsReturnType) {
-      const schemaDecl = `const schema = ${objectSchemaBody};\n`;
-      objectSchema = `${schemaDecl}${this.generateExportObjectSchemaStatement('schema')}\n`;
+      // Use unique variable name to avoid conflicts in single-file mode
+      const uniqueVarName = `${this.name.toLowerCase()}Schema`;
+      const schemaDecl = `const ${uniqueVarName} = ${objectSchemaBody};\n`;
+      objectSchema = `${schemaDecl}${this.generateExportObjectSchemaStatement(uniqueVarName)}\n`;
     } else {
       const factoryDecl = `const makeSchema = () => ${objectSchemaBody};\n`;
       objectSchema = `${factoryDecl}${this.generateExportObjectSchemaStatement('makeSchema()')}\n`;
