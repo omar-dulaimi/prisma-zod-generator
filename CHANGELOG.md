@@ -1,3 +1,11 @@
+## [1.18.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.5...v1.18.6) (2025-09-08)
+
+### 🐛 Bug Fixes
+
+* **ci:** update pnpm version to 10.15.1 to resolve lockfile mismatch ([6593409](https://github.com/omar-dulaimi/prisma-zod-generator/commit/65934090a282c63c9c27160f3189a8ffdff5358a))
+* convert npm resolutions to pnpm overrides format ([02e6d13](https://github.com/omar-dulaimi/prisma-zod-generator/commit/02e6d135e3422a3483595a6648ffd1e758ec982d))
+* remove pnpm caching from setup-node before pnpm installation ([f3974c7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f3974c7b08f12e00a0190e891958824e05ba2133))
+
 ## [1.18.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.4...v1.18.5) (2025-09-03)
 
 ### 🐛 Bug Fixes
