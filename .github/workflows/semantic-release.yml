@@ -2,7 +2,7 @@ name: Semantic Release
 
 on:
   push:
-    branches: [master, upgrade/prisma-and-dependencies]
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10.15.1
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
