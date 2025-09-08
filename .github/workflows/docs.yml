@@ -76,6 +76,10 @@ jobs:
           node-version: 20
           cache: pnpm
           cache-dependency-path: website/pnpm-lock.yaml
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
       - name: Install dependencies
         run: cd website && pnpm install --frozen-lockfile
       - name: Build docs
