@@ -1151,10 +1151,7 @@ function extractModelNameFromObjectSchema(objectSchemaName: string): string | nu
   return null;
 }
 
-async function generateModelSchemas(
-  models: DMMF.Model[],
-  modelOperations: DMMF.ModelMapping[],
-) {
+async function generateModelSchemas(models: DMMF.Model[], modelOperations: DMMF.ModelMapping[]) {
   // Filter models and operations based on configuration before transformation
   const enabledModels = models.filter((model) => Transformer.isModelEnabled(model.name));
   const enabledModelOperations = modelOperations.filter((operation) =>

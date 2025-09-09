@@ -1017,7 +1017,6 @@ export default class Transformer {
     return null;
   }
 
-
   generateImportZodStatement() {
     // Determine import target based on configuration
     const config = Transformer.getGeneratorConfig();
@@ -1754,7 +1753,6 @@ export default class Transformer {
     return null;
   }
 
-
   generatePrismaStringLine(
     field: PrismaDMMF.SchemaArg,
     inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
@@ -2064,7 +2062,6 @@ export default class Transformer {
     return '';
   }
 
-
   private static ensureJsonHelpersFile() {
     if (this.jsonHelpersWritten) return;
     this.jsonHelpersWritten = true;
@@ -2133,7 +2130,9 @@ export default class Transformer {
    * Convert model name to PascalCase for consistent file naming
    */
   private getPascalCaseModelName(modelName: string): string {
-    return modelName.replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase()).replace(/\s+/g, '');
+    return modelName
+      .replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase())
+      .replace(/\s+/g, '');
   }
 
   /**
@@ -2317,8 +2316,7 @@ export default class Transformer {
     // Log model filtering information
     Transformer.logModelFiltering(this.models);
 
-
-    for (const modelOperation of this.modelOperations) {      
+    for (const modelOperation of this.modelOperations) {
       try {
         const {
           model: modelName,
@@ -2345,409 +2343,426 @@ export default class Transformer {
           continue;
         }
 
-      // Log operation filtering information for this model
-      const allOperations = [
-        findUnique,
-        findFirst,
-        findMany,
-        createOne,
-        createMany,
-        deleteOne,
-        deleteMany,
-        updateOne,
-        updateMany,
-        upsertOne,
-        aggregate,
-        groupBy,
-        'count',
-      ].filter(Boolean); // Remove undefined operations
+        // Log operation filtering information for this model
+        const allOperations = [
+          findUnique,
+          findFirst,
+          findMany,
+          createOne,
+          createMany,
+          deleteOne,
+          deleteMany,
+          updateOne,
+          updateMany,
+          upsertOne,
+          aggregate,
+          groupBy,
+          'count',
+        ].filter(Boolean); // Remove undefined operations
 
-      Transformer.logOperationFiltering(modelName, allOperations);
+        Transformer.logOperationFiltering(modelName, allOperations);
 
-      const model = findModelByName(this.models, modelName) as PrismaDMMF.Model;
+        const model = findModelByName(this.models, modelName) as PrismaDMMF.Model;
 
-      const {
-        selectImport,
-        includeImport,
-        selectZodSchemaLine,
-        includeZodSchemaLine,
-        selectZodSchemaLineLazy,
-        includeZodSchemaLineLazy,
-      } = this.resolveSelectIncludeImportAndZodSchemaLine(model);
-
-
-      const { orderByImport, orderByZodSchemaLine } =
-        this.resolveOrderByWithRelationImportAndZodSchemaLine(model);
-
-
-      if (findUnique && Transformer.isOperationEnabled(modelName, 'findUnique')) {
-        const imports = [
+        const {
           selectImport,
           includeImport,
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-            `./objects/${modelName}WhereUniqueInput.schema`,
-          ),
-        ];
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${findUnique}.schema.ts`),
-          `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-            `${modelName}FindUnique`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })`,
-          )}`,
-        );
-      }
+          selectZodSchemaLine,
+          includeZodSchemaLine,
+          selectZodSchemaLineLazy,
+          includeZodSchemaLineLazy,
+        } = this.resolveSelectIncludeImportAndZodSchemaLine(model);
 
-      // Generate findUniqueOrThrow schema (same as findUnique but with error-throwing behavior)
-      if (Transformer.isOperationEnabled(modelName, 'findUniqueOrThrow')) {
-        const imports = [
-          selectImport,
-          includeImport,
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-            `./objects/${modelName}WhereUniqueInput.schema`,
-          ),
-        ];
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `findUniqueOrThrow${modelName}.schema.ts`),
-          `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-            `${modelName}FindUniqueOrThrow`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })`,
-          )}`,
-        );
-      }
+        const { orderByImport, orderByZodSchemaLine } =
+          this.resolveOrderByWithRelationImportAndZodSchemaLine(model);
 
-      if (Transformer.isOperationEnabled(modelName, 'findFirst')) {
-        const fileBase = findFirst ?? `findFirst${modelName}`;
-        const shouldInline = this.shouldInlineSelectSchema(model);
-
-        // Build imports based on aggressive inlining strategy
-        const baseImports = [
-          includeImport, // Include always external
-          orderByImport,
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-            `./objects/${modelName}WhereInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-            `./objects/${modelName}WhereUniqueInput.schema`,
-          ),
-          this.generateImportStatement(
-            `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
-            `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
-          ),
-        ];
-
-        // Add select import only if NOT inlining, add inline imports if inlining
-        const imports = shouldInline
-          ? [...baseImports, ...this.generateInlineSelectImports(model)]
-          : [...baseImports, selectImport];
-
-        // Determine select field reference based on dual export strategy
-        const selectFieldReference = shouldInline
-          ? Transformer.exportTypedSchemas
-            ? `${modelName}FindFirstSelect${Transformer.typedSchemaSuffix}.optional()`
-            : `${modelName}FindFirstSelect${Transformer.zodSchemaSuffix}.optional()`
-          : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
-
-        const selectField = `select: ${selectFieldReference},`;
-        const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
-        const schemaFields =
-          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
-            .trim()
-            .replace(/,\s*,/g, ',');
-
-        // Add Prisma type import for explicit type binding
-        const crudDir = Transformer.getSchemasPath();
-        const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-        let schemaContent = `import { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
-
-        // Add inline select schema definitions (dual export pattern)
-        if (shouldInline) {
-          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model, 'FindFirst')}\n\n`;
-        }
-
-        // Generate dual schema exports for FindFirst operation
-        const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
-        const dualExports = this.generateDualSchemaExports(
-          modelName,
-          'FindFirst',
-          schemaObjectDefinition,
-          `Prisma.${modelName}FindFirstArgs`,
-        );
-
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${fileBase}.schema.ts`),
-          schemaContent + dualExports,
-        );
-      }
-
-      // Generate findFirstOrThrow schema (same as findFirst but with error-throwing behavior)
-      if (Transformer.isOperationEnabled(modelName, 'findFirstOrThrow')) {
-        const shouldInline = this.shouldInlineSelectSchema(model);
-
-        // Build imports based on aggressive inlining strategy
-        const baseImports = [
-          includeImport, // Include always external
-          orderByImport,
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-            `./objects/${modelName}WhereInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-            `./objects/${modelName}WhereUniqueInput.schema`,
-          ),
-          this.generateImportStatement(
-            `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
-            `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
-          ),
-        ];
-
-        // Add select import only if NOT inlining, add inline imports if inlining
-        const imports = shouldInline
-          ? [...baseImports, ...this.generateInlineSelectImports(model)]
-          : [...baseImports, selectImport];
-        // Determine select field reference based on dual export strategy
-        const selectFieldReference = shouldInline
-          ? Transformer.exportTypedSchemas
-            ? `${modelName}FindFirstOrThrowSelect${Transformer.typedSchemaSuffix}.optional()`
-            : `${modelName}FindFirstOrThrowSelect${Transformer.zodSchemaSuffix}.optional()`
-          : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
-
-        const selectField = `select: ${selectFieldReference},`;
-        const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
-        const schemaFields =
-          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
-            .trim()
-            .replace(/,\s*,/g, ',');
-
-        // Add Prisma type import for explicit type binding
-        const crudDir = Transformer.getSchemasPath();
-        const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-        let schemaContent = `import { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
-
-        // Add inline select schema definitions (dual export pattern)
-        if (shouldInline) {
-          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model, 'FindFirstOrThrow')}\n\n`;
-        }
-
-        const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
-        const dualExports = this.generateDualSchemaExports(
-          modelName,
-          'FindFirstOrThrow',
-          schemaObjectDefinition,
-          `Prisma.${modelName}FindFirstOrThrowArgs`,
-        );
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `findFirstOrThrow${modelName}.schema.ts`),
-          schemaContent + dualExports,
-        );
-      }
-
-      if (findMany && Transformer.isOperationEnabled(modelName, 'findMany')) {
-        const shouldInline = this.shouldInlineSelectSchema(model);
-
-        // Build imports based on aggressive inlining strategy
-        const baseImports = [
-          includeImport, // Include always external
-          orderByImport,
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-            `./objects/${modelName}WhereInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-            `./objects/${modelName}WhereUniqueInput.schema`,
-          ),
-          this.generateImportStatement(
-            `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
-            `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
-          ),
-        ];
-
-        // Add select import only if NOT inlining, add inline imports if inlining
-        const imports = shouldInline
-          ? [...baseImports, ...this.generateInlineSelectImports(model)]
-          : [...baseImports, selectImport];
-
-        // Determine select field reference based on dual export strategy
-        const selectFieldReference = shouldInline
-          ? Transformer.exportTypedSchemas
-            ? `${modelName}FindManySelect${Transformer.typedSchemaSuffix}.optional()`
-            : `${modelName}FindManySelect${Transformer.zodSchemaSuffix}.optional()`
-          : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
-
-        const selectField = `select: ${selectFieldReference},`;
-        const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
-        const schemaFields =
-          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
-            .trim()
-            .replace(/,\s*,/g, ',');
-
-        // Add Prisma type import for explicit type binding
-        const crudDir2 = Transformer.getSchemasPath();
-        const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir2);
-        let schemaContent = `import { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
-
-        // Add inline select schema definitions (dual export pattern)
-        if (shouldInline) {
-          schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model, 'FindMany')}\n\n`;
-        }
-
-        // Generate dual schema exports for FindMany operation
-        const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
-        const dualExports = this.generateDualSchemaExports(
-          modelName,
-          'FindMany',
-          schemaObjectDefinition,
-          `Prisma.${modelName}FindManyArgs`,
-        );
-
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${findMany}.schema.ts`),
-          schemaContent + dualExports,
-        );
-      }
-
-      // Generate count schema aligned with Prisma <Model>CountArgs
-      if (Transformer.isOperationEnabled(modelName, 'count')) {
-        // Build imports
-        const imports = [
-          orderByImport,
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-            `./objects/${modelName}WhereInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-            `./objects/${modelName}WhereUniqueInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`),
-            `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
-          ),
-        ];
-
-        // Add Prisma type import for explicit type binding
-        const crudDirCount = Transformer.getSchemasPath();
-        const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
-        const schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
-
-        const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional() }).strict()`;
-
-        const dualExports = this.generateDualSchemaExports(
-          modelName,
-          'Count',
-          countSchemaObject,
-          `Prisma.${modelName}CountArgs`,
-        );
-
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `count${modelName}.schema.ts`),
-          schemaContent + dualExports,
-        );
-      }
-
-      if (createOne && Transformer.isOperationEnabled(modelName, 'createOne')) {
-        const cfg = Transformer.getGeneratorConfig();
-        const isMinimalMode = cfg?.mode === 'minimal';
-
-        const imports = [selectImport, includeImport];
-
-        let dataUnion;
-        if (isMinimalMode) {
-          // In minimal mode, prefer UncheckedCreateInput to avoid relation field issues
-          imports.push(
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`),
-              `./objects/${modelName}UncheckedCreateInput.schema`,
-            ),
-          );
-          dataUnion = Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`);
-        } else {
-          // In full mode, use both CreateInput and UncheckedCreateInput
-          imports.push(
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}CreateInput`),
-              `./objects/${modelName}CreateInput.schema`,
-            ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`),
-              `./objects/${modelName}UncheckedCreateInput.schema`,
-            ),
-          );
-          dataUnion = `z.union([${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)}])`;
-        }
-
-        await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `${createOne}.schema.ts`),
-          `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-            `${modelName}CreateOne`,
-            `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion}  })`,
-          )}`,
-        );
-      }
-
-      if (createMany && Transformer.isOperationEnabled(modelName, 'createMany')) {
-        const cfg = Transformer.getGeneratorConfig();
-        if (cfg?.mode === 'minimal') {
-          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createMany`);
-        } else {
-          const imports = [
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}CreateManyInput`),
-              `./objects/${modelName}CreateManyInput.schema`,
-            ),
-          ];
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${createMany}.schema.ts`),
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}CreateMany`,
-              `z.object({ data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
-                Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
-                  ? 'skipDuplicates: z.boolean().optional()'
-                  : ''
-              } })`,
-            )}`,
-          );
-        }
-      }
-
-      // Generate createManyAndReturn schema (same as createMany but returns created records)
-      if (Transformer.isOperationEnabled(modelName, 'createManyAndReturn')) {
-        const cfg = Transformer.getGeneratorConfig();
-        if (cfg?.mode === 'minimal') {
-          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createManyAndReturn`);
-        } else {
+        if (findUnique && Transformer.isOperationEnabled(modelName, 'findUnique')) {
           const imports = [
             selectImport,
+            includeImport,
             this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}CreateManyInput`),
-              `./objects/${modelName}CreateManyInput.schema`,
+              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
+              `./objects/${modelName}WhereUniqueInput.schema`,
             ),
           ];
           await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `createManyAndReturn${modelName}.schema.ts`),
+            path.join(Transformer.getSchemasPath(), `${findUnique}.schema.ts`),
             `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}CreateManyAndReturn`,
-              `z.object({ ${selectZodSchemaLine} data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
-                Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
-                  ? 'skipDuplicates: z.boolean().optional()'
-                  : ''
-              } }).strict()`,
+              `${modelName}FindUnique`,
+              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })`,
             )}`,
           );
         }
-      }
 
-      if (deleteOne && Transformer.isOperationEnabled(modelName, 'deleteOne')) {
-        const cfg = Transformer.getGeneratorConfig();
-        if (cfg?.mode === 'minimal') {
-          const ops = (cfg as unknown as { minimalOperations?: string[] }).minimalOperations;
-          if (Array.isArray(ops) && !ops.includes('delete') && !ops.includes('deleteOne')) {
-            logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.deleteOne`);
+        // Generate findUniqueOrThrow schema (same as findUnique but with error-throwing behavior)
+        if (Transformer.isOperationEnabled(modelName, 'findUniqueOrThrow')) {
+          const imports = [
+            selectImport,
+            includeImport,
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
+              `./objects/${modelName}WhereUniqueInput.schema`,
+            ),
+          ];
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `findUniqueOrThrow${modelName}.schema.ts`),
+            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
+              `${modelName}FindUniqueOrThrow`,
+              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })`,
+            )}`,
+          );
+        }
+
+        if (Transformer.isOperationEnabled(modelName, 'findFirst')) {
+          const fileBase = findFirst ?? `findFirst${modelName}`;
+          const shouldInline = this.shouldInlineSelectSchema(model);
+
+          // Build imports based on aggressive inlining strategy
+          const baseImports = [
+            includeImport, // Include always external
+            orderByImport,
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
+              `./objects/${modelName}WhereInput.schema`,
+            ),
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
+              `./objects/${modelName}WhereUniqueInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
+            ),
+          ];
+
+          // Add select import only if NOT inlining, add inline imports if inlining
+          const imports = shouldInline
+            ? [...baseImports, ...this.generateInlineSelectImports(model)]
+            : [...baseImports, selectImport];
+
+          // Determine select field reference based on dual export strategy
+          const selectFieldReference = shouldInline
+            ? Transformer.exportTypedSchemas
+              ? `${modelName}FindFirstSelect${Transformer.typedSchemaSuffix}.optional()`
+              : `${modelName}FindFirstSelect${Transformer.zodSchemaSuffix}.optional()`
+            : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
+
+          const selectField = `select: ${selectFieldReference},`;
+          const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
+          const schemaFields =
+            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
+              .trim()
+              .replace(/,\s*,/g, ',');
+
+          // Add Prisma type import for explicit type binding
+          const crudDir = Transformer.getSchemasPath();
+          const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+          let schemaContent = `import { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+          // Add inline select schema definitions (dual export pattern)
+          if (shouldInline) {
+            schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model, 'FindFirst')}\n\n`;
+          }
+
+          // Generate dual schema exports for FindFirst operation
+          const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
+          const dualExports = this.generateDualSchemaExports(
+            modelName,
+            'FindFirst',
+            schemaObjectDefinition,
+            `Prisma.${modelName}FindFirstArgs`,
+          );
+
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `${fileBase}.schema.ts`),
+            schemaContent + dualExports,
+          );
+        }
+
+        // Generate findFirstOrThrow schema (same as findFirst but with error-throwing behavior)
+        if (Transformer.isOperationEnabled(modelName, 'findFirstOrThrow')) {
+          const shouldInline = this.shouldInlineSelectSchema(model);
+
+          // Build imports based on aggressive inlining strategy
+          const baseImports = [
+            includeImport, // Include always external
+            orderByImport,
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
+              `./objects/${modelName}WhereInput.schema`,
+            ),
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
+              `./objects/${modelName}WhereUniqueInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
+            ),
+          ];
+
+          // Add select import only if NOT inlining, add inline imports if inlining
+          const imports = shouldInline
+            ? [...baseImports, ...this.generateInlineSelectImports(model)]
+            : [...baseImports, selectImport];
+          // Determine select field reference based on dual export strategy
+          const selectFieldReference = shouldInline
+            ? Transformer.exportTypedSchemas
+              ? `${modelName}FindFirstOrThrowSelect${Transformer.typedSchemaSuffix}.optional()`
+              : `${modelName}FindFirstOrThrowSelect${Transformer.zodSchemaSuffix}.optional()`
+            : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
+
+          const selectField = `select: ${selectFieldReference},`;
+          const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
+          const schemaFields =
+            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
+              .trim()
+              .replace(/,\s*,/g, ',');
+
+          // Add Prisma type import for explicit type binding
+          const crudDir = Transformer.getSchemasPath();
+          const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+          let schemaContent = `import { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+          // Add inline select schema definitions (dual export pattern)
+          if (shouldInline) {
+            schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model, 'FindFirstOrThrow')}\n\n`;
+          }
+
+          const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
+          const dualExports = this.generateDualSchemaExports(
+            modelName,
+            'FindFirstOrThrow',
+            schemaObjectDefinition,
+            `Prisma.${modelName}FindFirstOrThrowArgs`,
+          );
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `findFirstOrThrow${modelName}.schema.ts`),
+            schemaContent + dualExports,
+          );
+        }
+
+        if (findMany && Transformer.isOperationEnabled(modelName, 'findMany')) {
+          const shouldInline = this.shouldInlineSelectSchema(model);
+
+          // Build imports based on aggressive inlining strategy
+          const baseImports = [
+            includeImport, // Include always external
+            orderByImport,
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
+              `./objects/${modelName}WhereInput.schema`,
+            ),
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
+              `./objects/${modelName}WhereUniqueInput.schema`,
+            ),
+            this.generateImportStatement(
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
+            ),
+          ];
+
+          // Add select import only if NOT inlining, add inline imports if inlining
+          const imports = shouldInline
+            ? [...baseImports, ...this.generateInlineSelectImports(model)]
+            : [...baseImports, selectImport];
+
+          // Determine select field reference based on dual export strategy
+          const selectFieldReference = shouldInline
+            ? Transformer.exportTypedSchemas
+              ? `${modelName}FindManySelect${Transformer.typedSchemaSuffix}.optional()`
+              : `${modelName}FindManySelect${Transformer.zodSchemaSuffix}.optional()`
+            : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
+
+          const selectField = `select: ${selectFieldReference},`;
+          const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
+          const schemaFields =
+            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
+              .trim()
+              .replace(/,\s*,/g, ',');
+
+          // Add Prisma type import for explicit type binding
+          const crudDir2 = Transformer.getSchemasPath();
+          const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir2);
+          let schemaContent = `import { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+          // Add inline select schema definitions (dual export pattern)
+          if (shouldInline) {
+            schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model, 'FindMany')}\n\n`;
+          }
+
+          // Generate dual schema exports for FindMany operation
+          const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
+          const dualExports = this.generateDualSchemaExports(
+            modelName,
+            'FindMany',
+            schemaObjectDefinition,
+            `Prisma.${modelName}FindManyArgs`,
+          );
+
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `${findMany}.schema.ts`),
+            schemaContent + dualExports,
+          );
+        }
+
+        // Generate count schema aligned with Prisma <Model>CountArgs
+        if (Transformer.isOperationEnabled(modelName, 'count')) {
+          // Build imports
+          const imports = [
+            orderByImport,
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
+              `./objects/${modelName}WhereInput.schema`,
+            ),
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
+              `./objects/${modelName}WhereUniqueInput.schema`,
+            ),
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(
+                `${this.getPascalCaseModelName(modelName)}CountAggregateInput`,
+              ),
+              `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
+            ),
+          ];
+
+          // Add Prisma type import for explicit type binding
+          const crudDirCount = Transformer.getSchemasPath();
+          const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
+          const schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
+
+          const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional() }).strict()`;
+
+          const dualExports = this.generateDualSchemaExports(
+            modelName,
+            'Count',
+            countSchemaObject,
+            `Prisma.${modelName}CountArgs`,
+          );
+
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `count${modelName}.schema.ts`),
+            schemaContent + dualExports,
+          );
+        }
+
+        if (createOne && Transformer.isOperationEnabled(modelName, 'createOne')) {
+          const cfg = Transformer.getGeneratorConfig();
+          const isMinimalMode = cfg?.mode === 'minimal';
+
+          const imports = [selectImport, includeImport];
+
+          let dataUnion;
+          if (isMinimalMode) {
+            // In minimal mode, prefer UncheckedCreateInput to avoid relation field issues
+            imports.push(
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`),
+                `./objects/${modelName}UncheckedCreateInput.schema`,
+              ),
+            );
+            dataUnion = Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`);
+          } else {
+            // In full mode, use both CreateInput and UncheckedCreateInput
+            imports.push(
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}CreateInput`),
+                `./objects/${modelName}CreateInput.schema`,
+              ),
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`),
+                `./objects/${modelName}UncheckedCreateInput.schema`,
+              ),
+            );
+            dataUnion = `z.union([${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)}])`;
+          }
+
+          await writeFileSafely(
+            path.join(Transformer.getSchemasPath(), `${createOne}.schema.ts`),
+            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
+              `${modelName}CreateOne`,
+              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion}  })`,
+            )}`,
+          );
+        }
+
+        if (createMany && Transformer.isOperationEnabled(modelName, 'createMany')) {
+          const cfg = Transformer.getGeneratorConfig();
+          if (cfg?.mode === 'minimal') {
+            logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createMany`);
+          } else {
+            const imports = [
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}CreateManyInput`),
+                `./objects/${modelName}CreateManyInput.schema`,
+              ),
+            ];
+            await writeFileSafely(
+              path.join(Transformer.getSchemasPath(), `${createMany}.schema.ts`),
+              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
+                `${modelName}CreateMany`,
+                `z.object({ data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
+                  Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
+                    ? 'skipDuplicates: z.boolean().optional()'
+                    : ''
+                } })`,
+              )}`,
+            );
+          }
+        }
+
+        // Generate createManyAndReturn schema (same as createMany but returns created records)
+        if (Transformer.isOperationEnabled(modelName, 'createManyAndReturn')) {
+          const cfg = Transformer.getGeneratorConfig();
+          if (cfg?.mode === 'minimal') {
+            logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createManyAndReturn`);
+          } else {
+            const imports = [
+              selectImport,
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}CreateManyInput`),
+                `./objects/${modelName}CreateManyInput.schema`,
+              ),
+            ];
+            await writeFileSafely(
+              path.join(Transformer.getSchemasPath(), `createManyAndReturn${modelName}.schema.ts`),
+              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
+                `${modelName}CreateManyAndReturn`,
+                `z.object({ ${selectZodSchemaLine} data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
+                  Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
+                    ? 'skipDuplicates: z.boolean().optional()'
+                    : ''
+                } }).strict()`,
+              )}`,
+            );
+          }
+        }
+
+        if (deleteOne && Transformer.isOperationEnabled(modelName, 'deleteOne')) {
+          const cfg = Transformer.getGeneratorConfig();
+          if (cfg?.mode === 'minimal') {
+            const ops = (cfg as unknown as { minimalOperations?: string[] }).minimalOperations;
+            if (Array.isArray(ops) && !ops.includes('delete') && !ops.includes('deleteOne')) {
+              logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.deleteOne`);
+            } else {
+              const imports = [
+                selectImport,
+                includeImport,
+                this.generateImportStatement(
+                  Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
+                  `./objects/${modelName}WhereUniqueInput.schema`,
+                ),
+              ];
+              await writeFileSafely(
+                path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
+                `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
+                  `${modelName}DeleteOne`,
+                  `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
+                )}`,
+              );
+            }
           } else {
             const imports = [
               selectImport,
@@ -2765,53 +2780,61 @@ export default class Transformer {
               )}`,
             );
           }
-        } else {
-          const imports = [
-            selectImport,
-            includeImport,
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-              `./objects/${modelName}WhereUniqueInput.schema`,
-            ),
-          ];
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}DeleteOne`,
-              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
-            )}`,
-          );
         }
-      }
 
-      if (deleteMany && Transformer.isOperationEnabled(modelName, 'deleteMany')) {
-        const cfg = Transformer.getGeneratorConfig();
-        if (cfg?.mode === 'minimal') {
-          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.deleteMany`);
-        } else {
-          const imports = [
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-              `./objects/${modelName}WhereInput.schema`,
-            ),
-          ];
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${deleteMany}.schema.ts`),
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}DeleteMany`,
-              `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  })`,
-            )}`,
-          );
+        if (deleteMany && Transformer.isOperationEnabled(modelName, 'deleteMany')) {
+          const cfg = Transformer.getGeneratorConfig();
+          if (cfg?.mode === 'minimal') {
+            logger.debug(`⏭️  Minimal mode: skipping ${modelName}.deleteMany`);
+          } else {
+            const imports = [
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}WhereInput`),
+                `./objects/${modelName}WhereInput.schema`,
+              ),
+            ];
+            await writeFileSafely(
+              path.join(Transformer.getSchemasPath(), `${deleteMany}.schema.ts`),
+              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
+                `${modelName}DeleteMany`,
+                `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  })`,
+              )}`,
+            );
+          }
         }
-      }
 
-      if (updateOne && Transformer.isOperationEnabled(modelName, 'updateOne')) {
-        const cfg = Transformer.getGeneratorConfig();
-        if (cfg?.mode === 'minimal') {
-          const ops = (cfg as unknown as { minimalOperations?: string[] }).minimalOperations;
-          if (Array.isArray(ops) && !ops.includes('update') && !ops.includes('updateOne')) {
-            logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.updateOne`);
-            // Do not generate
+        if (updateOne && Transformer.isOperationEnabled(modelName, 'updateOne')) {
+          const cfg = Transformer.getGeneratorConfig();
+          if (cfg?.mode === 'minimal') {
+            const ops = (cfg as unknown as { minimalOperations?: string[] }).minimalOperations;
+            if (Array.isArray(ops) && !ops.includes('update') && !ops.includes('updateOne')) {
+              logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.updateOne`);
+              // Do not generate
+            } else {
+              const imports = [
+                selectImport,
+                includeImport,
+                this.generateImportStatement(
+                  Transformer.getObjectSchemaName(`${modelName}UpdateInput`),
+                  `./objects/${modelName}UpdateInput.schema`,
+                ),
+                this.generateImportStatement(
+                  Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`),
+                  `./objects/${modelName}UncheckedUpdateInput.schema`,
+                ),
+                this.generateImportStatement(
+                  Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
+                  `./objects/${modelName}WhereUniqueInput.schema`,
+                ),
+              ];
+              await writeFileSafely(
+                path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
+                `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
+                  `${modelName}UpdateOne`,
+                  `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
+                )}`,
+              );
+            }
           } else {
             const imports = [
               selectImport,
@@ -2837,226 +2860,213 @@ export default class Transformer {
               )}`,
             );
           }
-        } else {
+        }
+
+        if (updateMany && Transformer.isOperationEnabled(modelName, 'updateMany')) {
+          const cfg = Transformer.getGeneratorConfig();
+          if (cfg?.mode === 'minimal') {
+            logger.debug(`⏭️  Minimal mode: skipping ${modelName}.updateMany`);
+          } else {
+            const imports = [
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`),
+                `./objects/${modelName}UpdateManyMutationInput.schema`,
+              ),
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}WhereInput`),
+                `./objects/${modelName}WhereInput.schema`,
+              ),
+            ];
+            await writeFileSafely(
+              path.join(Transformer.getSchemasPath(), `${updateMany}.schema.ts`),
+              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
+                `${modelName}UpdateMany`,
+                `z.object({ data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  })`,
+              )}`,
+            );
+          }
+        }
+
+        // Generate updateManyAndReturn schema (same as updateMany but returns updated records)
+        if (Transformer.isOperationEnabled(modelName, 'updateManyAndReturn')) {
+          const cfg = Transformer.getGeneratorConfig();
+          if (cfg?.mode === 'minimal') {
+            logger.debug(`⏭️  Minimal mode: skipping ${modelName}.updateManyAndReturn`);
+          } else {
+            const imports = [
+              selectImport,
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`),
+                `./objects/${modelName}UpdateManyMutationInput.schema`,
+              ),
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}WhereInput`),
+                `./objects/${modelName}WhereInput.schema`,
+              ),
+            ];
+            await writeFileSafely(
+              path.join(Transformer.getSchemasPath(), `updateManyAndReturn${modelName}.schema.ts`),
+              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
+                `${modelName}UpdateManyAndReturn`,
+                `z.object({ ${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  }).strict()`,
+              )}`,
+            );
+          }
+        }
+
+        if (upsertOne && Transformer.isOperationEnabled(modelName, 'upsertOne')) {
+          const cfg = Transformer.getGeneratorConfig();
+          if (cfg?.mode === 'minimal') {
+            logger.debug(`⏭️  Minimal mode: skipping ${modelName}.upsertOne`);
+          } else {
+            const imports = [
+              selectImport,
+              includeImport,
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
+                `./objects/${modelName}WhereUniqueInput.schema`,
+              ),
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}CreateInput`),
+                `./objects/${modelName}CreateInput.schema`,
+              ),
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`),
+                `./objects/${modelName}UncheckedCreateInput.schema`,
+              ),
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}UpdateInput`),
+                `./objects/${modelName}UpdateInput.schema`,
+              ),
+              this.generateImportStatement(
+                Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`),
+                `./objects/${modelName}UncheckedUpdateInput.schema`,
+              ),
+            ];
+            await writeFileSafely(
+              path.join(Transformer.getSchemasPath(), `${upsertOne}.schema.ts`),
+              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
+                `${modelName}Upsert`,
+                `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ])  })`,
+              )}`,
+            );
+          }
+        }
+
+        if (aggregate && Transformer.isOperationEnabled(modelName, 'aggregate')) {
           const imports = [
-            selectImport,
-            includeImport,
+            orderByImport,
             this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}UpdateInput`),
-              `./objects/${modelName}UpdateInput.schema`,
-            ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`),
-              `./objects/${modelName}UncheckedUpdateInput.schema`,
+              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
+              `./objects/${modelName}WhereInput.schema`,
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
               `./objects/${modelName}WhereUniqueInput.schema`,
             ),
           ];
+          const aggregateOperations = [];
+
+          // All models support count, min, max operations - no complex detection needed
+          imports.push(
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(
+                `${this.getPascalCaseModelName(modelName)}CountAggregateInput`,
+              ),
+              `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
+            ),
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(
+                `${this.getPascalCaseModelName(modelName)}MinAggregateInput`,
+              ),
+              `./objects/${this.getPascalCaseModelName(modelName)}MinAggregateInput.schema`,
+            ),
+            this.generateImportStatement(
+              Transformer.getObjectSchemaName(
+                `${this.getPascalCaseModelName(modelName)}MaxAggregateInput`,
+              ),
+              `./objects/${this.getPascalCaseModelName(modelName)}MaxAggregateInput.schema`,
+            ),
+          );
+
+          aggregateOperations.push(
+            `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional()`,
+            `_min: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`)}.optional()`,
+            `_max: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`)}.optional()`,
+          );
+
+          const aggregateFilePath = path.join(
+            Transformer.getSchemasPath(),
+            `${aggregate}.schema.ts`,
+          );
           await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
+            aggregateFilePath,
             `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}UpdateOne`,
-              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
+              `${modelName}Aggregate`,
+              `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
+                ', ',
+              )} })`,
             )}`,
           );
+          // Add to index exports
+          addIndexExport(aggregateFilePath);
+          logger.debug(`✅ Added aggregate schema to index: ${aggregate}.schema.ts`);
         }
-      }
 
-      if (updateMany && Transformer.isOperationEnabled(modelName, 'updateMany')) {
-        const cfg = Transformer.getGeneratorConfig();
-        if (cfg?.mode === 'minimal') {
-          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.updateMany`);
-        } else {
+        if (groupBy && Transformer.isOperationEnabled(modelName, 'groupBy')) {
           const imports = [
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`),
-              `./objects/${modelName}UpdateManyMutationInput.schema`,
-            ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(`${modelName}WhereInput`),
               `./objects/${modelName}WhereInput.schema`,
             ),
-          ];
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${updateMany}.schema.ts`),
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}UpdateMany`,
-              `z.object({ data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  })`,
-            )}`,
-          );
-        }
-      }
-
-      // Generate updateManyAndReturn schema (same as updateMany but returns updated records)
-      if (Transformer.isOperationEnabled(modelName, 'updateManyAndReturn')) {
-        const cfg = Transformer.getGeneratorConfig();
-        if (cfg?.mode === 'minimal') {
-          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.updateManyAndReturn`);
-        } else {
-          const imports = [
-            selectImport,
             this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`),
-              `./objects/${modelName}UpdateManyMutationInput.schema`,
+              Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`),
+              `./objects/${modelName}OrderByWithAggregationInput.schema`,
             ),
             this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-              `./objects/${modelName}WhereInput.schema`,
-            ),
-          ];
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `updateManyAndReturn${modelName}.schema.ts`),
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}UpdateManyAndReturn`,
-              `z.object({ ${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  }).strict()`,
-            )}`,
-          );
-        }
-      }
-
-      if (upsertOne && Transformer.isOperationEnabled(modelName, 'upsertOne')) {
-        const cfg = Transformer.getGeneratorConfig();
-        if (cfg?.mode === 'minimal') {
-          logger.debug(`⏭️  Minimal mode: skipping ${modelName}.upsertOne`);
-        } else {
-          const imports = [
-            selectImport,
-            includeImport,
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-              `./objects/${modelName}WhereUniqueInput.schema`,
+              Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`),
+              `./objects/${modelName}ScalarWhereWithAggregatesInput.schema`,
             ),
             this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}CreateInput`),
-              `./objects/${modelName}CreateInput.schema`,
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
             ),
             this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`),
-              `./objects/${modelName}UncheckedCreateInput.schema`,
+              Transformer.getObjectSchemaName(
+                `${this.getPascalCaseModelName(modelName)}CountAggregateInput`,
+              ),
+              `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
             ),
             this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}UpdateInput`),
-              `./objects/${modelName}UpdateInput.schema`,
+              Transformer.getObjectSchemaName(
+                `${this.getPascalCaseModelName(modelName)}MinAggregateInput`,
+              ),
+              `./objects/${this.getPascalCaseModelName(modelName)}MinAggregateInput.schema`,
             ),
             this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`),
-              `./objects/${modelName}UncheckedUpdateInput.schema`,
+              Transformer.getObjectSchemaName(
+                `${this.getPascalCaseModelName(modelName)}MaxAggregateInput`,
+              ),
+              `./objects/${this.getPascalCaseModelName(modelName)}MaxAggregateInput.schema`,
             ),
           ];
+          const groupByFilePath = path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`);
           await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${upsertOne}.schema.ts`),
+            groupByFilePath,
             `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}Upsert`,
-              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ])  })`,
+              `${modelName}GroupBy`,
+              `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), orderBy: z.union([${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}, ${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}.array()]).optional(), having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema), _count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional(), _min: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`)}.optional(), _max: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`)}.optional() })`,
             )}`,
           );
+          // Add to index exports
+          addIndexExport(groupByFilePath);
+          logger.debug(`✅ Added groupBy schema to index: ${groupBy}.schema.ts`);
         }
-      }
-
-      if (aggregate && Transformer.isOperationEnabled(modelName, 'aggregate')) {
-        const imports = [
-          orderByImport,
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-            `./objects/${modelName}WhereInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-            `./objects/${modelName}WhereUniqueInput.schema`,
-          ),
-        ];
-        const aggregateOperations = [];
-        
-        // All models support count, min, max operations - no complex detection needed
-        imports.push(
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`),
-            `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`),
-            `./objects/${this.getPascalCaseModelName(modelName)}MinAggregateInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`),
-            `./objects/${this.getPascalCaseModelName(modelName)}MaxAggregateInput.schema`,
-          ),
-        );
-        
-        aggregateOperations.push(
-          `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional()`,
-          `_min: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`)}.optional()`,
-          `_max: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`)}.optional()`,
-        );
-
-        const aggregateFilePath = path.join(Transformer.getSchemasPath(), `${aggregate}.schema.ts`);
-        await writeFileSafely(
-          aggregateFilePath,
-          `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-            `${modelName}Aggregate`,
-            `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
-              ', ',
-            )} })`,
-          )}`,
-        );
-        // Add to index exports
-        addIndexExport(aggregateFilePath);
-        logger.debug(`✅ Added aggregate schema to index: ${aggregate}.schema.ts`);
-      }
-
-      if (groupBy && Transformer.isOperationEnabled(modelName, 'groupBy')) {
-        const imports = [
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-            `./objects/${modelName}WhereInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`),
-            `./objects/${modelName}OrderByWithAggregationInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`),
-            `./objects/${modelName}ScalarWhereWithAggregatesInput.schema`,
-          ),
-          this.generateImportStatement(
-            `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
-            `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`),
-            `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`),
-            `./objects/${this.getPascalCaseModelName(modelName)}MinAggregateInput.schema`,
-          ),
-          this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`),
-            `./objects/${this.getPascalCaseModelName(modelName)}MaxAggregateInput.schema`,
-          ),
-        ];
-        const groupByFilePath = path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`);
-        await writeFileSafely(
-          groupByFilePath,
-          `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-            `${modelName}GroupBy`,
-            `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), orderBy: z.union([${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}, ${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}.array()]).optional(), having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema), _count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional(), _min: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`)}.optional(), _max: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`)}.optional() })`,
-          )}`,
-        );
-        // Add to index exports
-        addIndexExport(groupByFilePath);
-        logger.debug(`✅ Added groupBy schema to index: ${groupBy}.schema.ts`);
-      }
-      
-      
       } catch {
         // Continue to next model instead of breaking the entire process
         continue;
       }
     }
-    
   }
 
   /**

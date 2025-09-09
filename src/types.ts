@@ -9,4 +9,3 @@ export type TransformerParams = {
   isDefaultPrismaClientOutput?: boolean;
   prismaClientOutputPath?: string;
 };
-

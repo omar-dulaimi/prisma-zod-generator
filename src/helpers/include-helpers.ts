@@ -50,9 +50,10 @@ function generateModelIncludeInputObjectTypes(models: DMMF.Model[], isGenerateSe
       const { name: modelFieldName, isList, type } = modelField;
 
       // Check if the target model has findMany enabled for list relations
-      const targetArgsType = isList && isOperationEnabledForModel(type, 'findMany') 
-        ? `${type}FindManyArgs` 
-        : `${type}Args`;
+      const targetArgsType =
+        isList && isOperationEnabledForModel(type, 'findMany')
+          ? `${type}FindManyArgs`
+          : `${type}Args`;
 
       const field: DMMF.SchemaArg = {
         name: modelFieldName,
