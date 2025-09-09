@@ -2385,12 +2385,23 @@ export default class Transformer {
               `./objects/${modelName}WhereUniqueInput.schema`,
             ),
           ];
+          // Add Prisma type import for explicit type binding
+          const crudDir = Transformer.getSchemasPath();
+          const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+          const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+          // Generate dual schema exports for FindUnique operation
+          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+          const dualExports = this.generateDualSchemaExports(
+            modelName,
+            'FindUnique',
+            schemaObjectDefinition,
+            `Prisma.${modelName}FindUniqueArgs`,
+          );
+
           await writeFileSafely(
             path.join(Transformer.getSchemasPath(), `${findUnique}.schema.ts`),
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}FindUnique`,
-              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })`,
-            )}`,
+            schemaContent + dualExports,
           );
         }
 
@@ -2404,12 +2415,23 @@ export default class Transformer {
               `./objects/${modelName}WhereUniqueInput.schema`,
             ),
           ];
+          // Add Prisma type import for explicit type binding
+          const crudDir = Transformer.getSchemasPath();
+          const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+          const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+          // Generate dual schema exports for FindUniqueOrThrow operation
+          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+          const dualExports = this.generateDualSchemaExports(
+            modelName,
+            'FindUniqueOrThrow',
+            schemaObjectDefinition,
+            `Prisma.${modelName}FindUniqueOrThrowArgs`,
+          );
+
           await writeFileSafely(
             path.join(Transformer.getSchemasPath(), `findUniqueOrThrow${modelName}.schema.ts`),
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}FindUniqueOrThrow`,
-              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })`,
-            )}`,
+            schemaContent + dualExports,
           );
         }
 
@@ -2457,7 +2479,7 @@ export default class Transformer {
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          let schemaContent = `import { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
           // Add inline select schema definitions (dual export pattern)
           if (shouldInline) {
@@ -2522,7 +2544,7 @@ export default class Transformer {
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          let schemaContent = `import { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
           // Add inline select schema definitions (dual export pattern)
           if (shouldInline) {
@@ -2585,7 +2607,7 @@ export default class Transformer {
           // Add Prisma type import for explicit type binding
           const crudDir2 = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir2);
-          let schemaContent = `import { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
           // Add inline select schema definitions (dual export pattern)
           if (shouldInline) {
@@ -2999,15 +3021,23 @@ export default class Transformer {
             Transformer.getSchemasPath(),
             `${aggregate}.schema.ts`,
           );
-          await writeFileSafely(
-            aggregateFilePath,
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}Aggregate`,
-              `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
-                ', ',
-              )} })`,
-            )}`,
+          // Add Prisma type import for explicit type binding
+          const crudDirAggregate = Transformer.getSchemasPath();
+          const prismaImportPathAggregate = Transformer.resolvePrismaImportPath(crudDirAggregate);
+          const schemaContent = `import type { Prisma } from '${prismaImportPathAggregate}';\n${this.generateImportStatements(imports)}`;
+
+          // Generate dual schema exports for Aggregate operation
+          const aggregateSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
+            ', ',
+          )} }).strict()`;
+          const dualExports = this.generateDualSchemaExports(
+            modelName,
+            'Aggregate',
+            aggregateSchemaObject,
+            `Prisma.${modelName}AggregateArgs`,
           );
+
+          await writeFileSafely(aggregateFilePath, schemaContent + dualExports);
           // Add to index exports
           addIndexExport(aggregateFilePath);
           logger.debug(`✅ Added aggregate schema to index: ${aggregate}.schema.ts`);
@@ -3051,19 +3081,28 @@ export default class Transformer {
             ),
           ];
           const groupByFilePath = path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`);
-          await writeFileSafely(
-            groupByFilePath,
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}GroupBy`,
-              `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), orderBy: z.union([${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}, ${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}.array()]).optional(), having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema), _count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional(), _min: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`)}.optional(), _max: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`)}.optional() })`,
-            )}`,
+          // Add Prisma type import for explicit type binding
+          const crudDirGroupBy = Transformer.getSchemasPath();
+          const prismaImportPathGroupBy = Transformer.resolvePrismaImportPath(crudDirGroupBy);
+          const schemaContent = `import type { Prisma } from '${prismaImportPathGroupBy}';\n${this.generateImportStatements(imports)}`;
+
+          // Generate dual schema exports for GroupBy operation
+          const groupBySchemaObject = `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), orderBy: z.union([${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}, ${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}.array()]).optional(), having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema), _count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional(), _min: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`)}.optional(), _max: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`)}.optional() }).strict()`;
+          const dualExports = this.generateDualSchemaExports(
+            modelName,
+            'GroupBy',
+            groupBySchemaObject,
+            `Prisma.${modelName}GroupByArgs`,
           );
+
+          await writeFileSafely(groupByFilePath, schemaContent + dualExports);
           // Add to index exports
           addIndexExport(groupByFilePath);
           logger.debug(`✅ Added groupBy schema to index: ${groupBy}.schema.ts`);
         }
-      } catch {
-        // Continue to next model instead of breaking the entire process
+      } catch (err) {
+        // Log error with contextual information before continuing to next model
+        logger.error(`Failed to generate schemas for model "${modelOperation.model}":`, err);
         continue;
       }
     }
