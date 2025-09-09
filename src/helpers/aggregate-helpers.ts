@@ -67,7 +67,7 @@ export function addMissingInputObjectTypesForAggregate(
   }
 }
 
-// Aggregate support detection removed - simplified to assume all models support count, min, max
+// Aggregate support detection - recognizes Count, Min, Max, Sum, and Avg aggregate types
 
 /**
  * Check if aggregate operations should be generated for a model

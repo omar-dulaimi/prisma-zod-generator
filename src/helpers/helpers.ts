@@ -1,6 +1,9 @@
 import { ConnectorType, DMMF } from '@prisma/generator-helper';
 import Transformer from '../transformer';
-import { addMissingInputObjectTypesForAggregate } from './aggregate-helpers';
+import {
+  addMissingInputObjectTypesForAggregate,
+  filterAggregateInputTypes,
+} from './aggregate-helpers';
 import { addMissingInputObjectTypesForInclude } from './include-helpers';
 import { addMissingInputObjectTypesForModelArgs } from './modelArgs-helpers';
 import { addMissingInputObjectTypesForMongoDbRawOpsAndQueries } from './mongodb-helpers';
@@ -37,6 +40,13 @@ export function addMissingInputObjectTypes(
 
   // Filter out fieldRefTypes from input types to avoid generating non-existent schemas
   filterFieldRefTypes(inputObjectTypes);
+
+  // Filter aggregate input types based on model and operation filtering
+  if (!isMinimal) {
+    const filteredTypes = filterAggregateInputTypes(inputObjectTypes);
+    inputObjectTypes.length = 0;
+    inputObjectTypes.push(...filteredTypes);
+  }
 
   if (!isMinimal) {
     addMissingInputObjectTypesForAggregate(inputObjectTypes, outputObjectTypes);

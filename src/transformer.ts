@@ -698,7 +698,6 @@ export default class Transformer {
       /^(\w+)UpdateManyWithout\w+NestedInput$/,
 
       // Additional specific patterns found in generated schemas
-      /^(\w+)ScalarWhereInput$/,
       /^(\w+)UncheckedUpdateManyInput$/,
 
       // Args and other schemas
@@ -2270,8 +2269,9 @@ export default class Transformer {
   }
 
   resolveModelQuerySchemaName(modelName: string, queryName: string) {
-    // Generate camelCase names to match the actual exports: roleFindManySchema, not RoleFindManySchema
-    const baseName = `${modelName}${queryName.charAt(0).toUpperCase() + (queryName as string).slice(1)}`;
+    // Generate camelCase names to match actual exports: roleFindManySchema
+    const camelModel = modelName.charAt(0).toLowerCase() + modelName.slice(1);
+    const baseName = `${camelModel}${queryName.charAt(0).toUpperCase() + (queryName as string).slice(1)}`;
     return Transformer.exportTypedSchemas
       ? `${baseName}Schema`
       : `${baseName}${Transformer.zodSchemaSuffix}`;
@@ -3673,23 +3673,13 @@ ${selectFields.join(',\n')}
    * Generates the additional imports needed for inlined select schemas.
    * Returns import statements for Args schemas referenced in relation fields.
    */
-  generateInlineSelectImports(model: PrismaDMMF.Model): string[] {
+  generateInlineSelectImports(_model: PrismaDMMF.Model): string[] {
     const imports: string[] = [];
 
     // Since select schemas are simplified to only use z.boolean().optional() for relation fields,
     // we don't need to import Args schemas. Only import _count schema if needed.
 
-    // Add _count import if model has array relations (only these get count output types)
-    const hasArrayRelations = model.fields.some((field) => field.relationName && field.isList);
-    if (hasArrayRelations) {
-      const countArgsSchemaName = `${model.name}CountOutputTypeArgs`;
-      // Only add import if the schema is enabled
-      if (this.isSchemaImportEnabled(countArgsSchemaName)) {
-        imports.push(
-          `import { ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(model.name)}CountOutputTypeArgs`)} } from './objects/${this.getPascalCaseModelName(model.name)}CountOutputTypeArgs.schema'`,
-        );
-      }
-    }
+    // No extra imports required; _count remains a boolean in inlined select schemas.
 
     // Remove duplicates
     return [...new Set(imports)];
