@@ -522,8 +522,8 @@ export async function generate(options: GeneratorOptions) {
     const addMissingInputObjectTypeOptions =
       resolveAddMissingInputObjectTypeOptions(backwardCompatibleOptions);
 
-    const mutableInputObjectTypes = [...inputObjectTypes];
-    const mutableOutputObjectTypes = [...outputObjectTypes];
+    const mutableInputObjectTypes = Array.from(inputObjectTypes ?? []);
+    const mutableOutputObjectTypes = Array.from(outputObjectTypes ?? []);
 
     addMissingInputObjectTypes(
       mutableInputObjectTypes,
