@@ -21,9 +21,7 @@ import {
   resolveAddMissingInputObjectTypeOptions,
   resolveModelsComments,
 } from './helpers';
-import { resolveAggregateOperationSupport } from './helpers/aggregate-helpers';
 import Transformer from './transformer';
-import { AggregateOperationSupport } from './types';
 import { ResolvedSafetyConfig } from './types/safety';
 import { logger } from './utils/logger';
 import { addFileToManifest, safeCleanupOutput, saveManifest } from './utils/safeOutputManagement';
@@ -536,8 +534,6 @@ export async function generate(options: GeneratorOptions) {
       addMissingInputObjectTypeOptions,
     );
 
-    const aggregateOperationSupport = resolveAggregateOperationSupport(mutableInputObjectTypes);
-
     // Set dual export configuration options on Transformer
     // In minimal mode, forcibly disable select/include types regardless of legacy flags
     const minimalMode = generatorConfig.mode === 'minimal';
@@ -606,7 +602,7 @@ export async function generate(options: GeneratorOptions) {
     }
 
     if (emitCrud && !shouldSkipCrudAndObjectsDueToHeuristics) {
-      await generateModelSchemas(models, mutableModelOperations, aggregateOperationSupport);
+      await generateModelSchemas(models, mutableModelOperations);
     } else if (!emitCrud) {
       logger.debug('[prisma-zod-generator] ⏭️  emit.crud=false (skipping CRUD operation schemas)');
     }
@@ -1158,7 +1154,6 @@ function extractModelNameFromObjectSchema(objectSchemaName: string): string | nu
 async function generateModelSchemas(
   models: DMMF.Model[],
   modelOperations: DMMF.ModelMapping[],
-  aggregateOperationSupport: AggregateOperationSupport,
 ) {
   // Filter models and operations based on configuration before transformation
   const enabledModels = models.filter((model) => Transformer.isModelEnabled(model.name));
@@ -1166,18 +1161,9 @@ async function generateModelSchemas(
     Transformer.isModelEnabled(operation.model),
   );
 
-  // Filter aggregate operation support to only include enabled models
-  const filteredAggregateSupport: AggregateOperationSupport = {};
-  Object.entries(aggregateOperationSupport).forEach(([modelName, support]) => {
-    if (Transformer.isModelEnabled(modelName)) {
-      filteredAggregateSupport[modelName] = support;
-    }
-  });
-
   const transformer = new Transformer({
     models: enabledModels,
     modelOperations: enabledModelOperations,
-    aggregateOperationSupport: filteredAggregateSupport,
   });
   await transformer.generateModelSchemas();
   await transformer.generateResultSchemas();

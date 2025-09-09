@@ -49,6 +49,11 @@ function generateModelIncludeInputObjectTypes(models: DMMF.Model[], isGenerateSe
     for (const modelField of enabledRelationFields) {
       const { name: modelFieldName, isList, type } = modelField;
 
+      // Check if the target model has findMany enabled for list relations
+      const targetArgsType = isList && isOperationEnabledForModel(type, 'findMany') 
+        ? `${type}FindManyArgs` 
+        : `${type}Args`;
+
       const field: DMMF.SchemaArg = {
         name: modelFieldName,
         isRequired: false,
@@ -57,7 +62,7 @@ function generateModelIncludeInputObjectTypes(models: DMMF.Model[], isGenerateSe
           { isList: false, type: 'Boolean', location: 'scalar' },
           {
             isList: false,
-            type: isList ? `${type}FindManyArgs` : `${type}Args`,
+            type: targetArgsType,
             location: 'inputObjectTypes',
             namespace: 'prisma',
           },
@@ -92,7 +97,7 @@ function generateModelIncludeInputObjectTypes(models: DMMF.Model[], isGenerateSe
           }>
         ).push({
           isList: false,
-          type: `${modelName}CountOutputTypeArgs`,
+          type: `${modelName.charAt(0).toUpperCase() + modelName.slice(1)}CountOutputTypeArgs`,
           location: 'inputObjectTypes',
           namespace: 'prisma',
         });

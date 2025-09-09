@@ -5,7 +5,7 @@ import ResultSchemaGenerator from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
-import { AggregateOperationSupport, TransformerParams } from './types';
+import { TransformerParams } from './types';
 import { logger } from './utils/logger';
 import type { GeneratedManifest } from './utils/safeOutputManagement';
 import { writeFileSafely } from './utils/writeFileSafely';
@@ -27,7 +27,6 @@ export default class Transformer {
   schemaImports = new Set<string>();
   models: PrismaDMMF.Model[];
   modelOperations: PrismaDMMF.ModelMapping[];
-  aggregateOperationSupport: AggregateOperationSupport;
   enumTypes: PrismaDMMF.SchemaEnum[];
   enhancedModels: EnhancedModelInfo[];
 
@@ -60,7 +59,6 @@ export default class Transformer {
     this.fields = params.fields ?? [];
     this.models = params.models ?? [];
     this.modelOperations = params.modelOperations ?? [];
-    this.aggregateOperationSupport = params.aggregateOperationSupport ?? {};
     this.enumTypes = params.enumTypes ?? [];
 
     // Process models with Zod integration on initialization
@@ -1019,6 +1017,7 @@ export default class Transformer {
     return null;
   }
 
+
   generateImportZodStatement() {
     // Determine import target based on configuration
     const config = Transformer.getGeneratorConfig();
@@ -1755,36 +1754,6 @@ export default class Transformer {
     return null;
   }
 
-  /**
-   * Get the base Zod type for a model field
-   */
-  private getBaseZodTypeForField(field: PrismaDMMF.Field): string {
-    switch (field.type) {
-      case 'String':
-        return 'z.string()';
-      case 'Int':
-        return 'z.number().int()';
-      case 'Float':
-      case 'Decimal':
-        return 'z.number()';
-      case 'Boolean':
-        return 'z.boolean()';
-      case 'DateTime':
-        return 'z.coerce.date()';
-      case 'Json':
-        return 'z.unknown()'; // or jsonSchema depending on context
-      case 'Bytes':
-        return 'z.instanceof(Uint8Array)';
-      case 'BigInt':
-        return 'z.bigint()';
-      default:
-        // Handle enums and other types
-        if (field.kind === 'enum') {
-          return `z.enum(${field.type})`;
-        }
-        return 'z.unknown()';
-    }
-  }
 
   generatePrismaStringLine(
     field: PrismaDMMF.SchemaArg,
@@ -2095,19 +2064,6 @@ export default class Transformer {
     return '';
   }
 
-  private static async writeJsonHelpersFile(targetPath: string) {
-    const fs = await import('fs');
-    const pathMod = await import('path');
-    const helpersDir = pathMod.join(targetPath, 'helpers');
-    await fs.promises.mkdir(helpersDir, { recursive: true });
-    const filePath = pathMod.join(helpersDir, 'json-helpers.ts');
-    // Source content mirrors src/helpers/json-helpers.ts (keep in sync manually)
-    const zImport = new (this as unknown as typeof Transformer)(
-      {} as TransformerParams,
-    ).generateImportZodStatement();
-    const content = `${zImport}\nexport type JsonPrimitive = string | number | boolean | null;\nexport type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };\nexport type InputJsonValue = JsonPrimitive | InputJsonValue[] | { [k: string]: InputJsonValue | null };\nexport type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return null;\n  if (v === 'JsonNull') return null;\n  return v as JsonValue;\n};\nexport const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n) as z.ZodType<JsonValue>;\nexport const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n) as z.ZodType<InputJsonValue>;\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull'), z.literal(null)])\n  .transform((v) => transformJsonNull(v as NullableJsonInput));\n`;
-    await fs.promises.writeFile(filePath, content, 'utf8');
-  }
 
   private static ensureJsonHelpersFile() {
     if (this.jsonHelpersWritten) return;
@@ -2125,7 +2081,6 @@ export default class Transformer {
         fields: [],
         models: [],
         modelOperations: [],
-        aggregateOperationSupport: {},
         enumTypes: [],
       }).generateImportZodStatement();
       const content = `${zImport2}\nexport type JsonPrimitive = string | number | boolean | null;\nexport type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };\nexport type InputJsonValue = JsonPrimitive | InputJsonValue[] | { [k: string]: InputJsonValue | null };\nexport type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return null;\n  if (v === 'JsonNull') return null;\n  return v as JsonValue;\n};\nexport const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n) as z.ZodType<JsonValue>;\nexport const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n) as z.ZodType<InputJsonValue>;\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull'), z.literal(null)])\n  .transform((v) => transformJsonNull(v as NullableJsonInput));\n`;
@@ -2172,6 +2127,13 @@ export default class Transformer {
 
     // Default to no extension for backward compatibility
     return '';
+  }
+
+  /**
+   * Convert model name to PascalCase for consistent file naming
+   */
+  private getPascalCaseModelName(modelName: string): string {
+    return modelName.replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase()).replace(/\s+/g, '');
   }
 
   /**
@@ -2309,9 +2271,8 @@ export default class Transformer {
   }
 
   resolveModelQuerySchemaName(modelName: string, queryName: string) {
-    const modelNameCapitalized = modelName.charAt(0).toUpperCase() + modelName.slice(1);
-    const queryNameCapitalized = queryName.charAt(0).toUpperCase() + (queryName as string).slice(1);
-    const baseName = `${modelNameCapitalized}${queryNameCapitalized}`;
+    // Generate camelCase names to match the actual exports: roleFindManySchema, not RoleFindManySchema
+    const baseName = `${modelName}${queryName.charAt(0).toUpperCase() + (queryName as string).slice(1)}`;
     return Transformer.exportTypedSchemas
       ? `${baseName}Schema`
       : `${baseName}${Transformer.zodSchemaSuffix}`;
@@ -2356,31 +2317,33 @@ export default class Transformer {
     // Log model filtering information
     Transformer.logModelFiltering(this.models);
 
-    for (const modelOperation of this.modelOperations) {
-      const {
-        model: modelName,
-        findUnique,
-        findFirst,
-        findMany,
-        // @ts-expect-error - Legacy API compatibility
-        createOne,
-        createMany,
-        // @ts-expect-error - Legacy API compatibility
-        deleteOne,
-        // @ts-expect-error - Legacy API compatibility
-        updateOne,
-        deleteMany,
-        updateMany,
-        // @ts-expect-error - Legacy API compatibility
-        upsertOne,
-        aggregate,
-        groupBy,
-      } = modelOperation;
 
-      // Skip generation for disabled models based on configuration
-      if (!Transformer.isModelEnabled(modelName)) {
-        continue;
-      }
+    for (const modelOperation of this.modelOperations) {      
+      try {
+        const {
+          model: modelName,
+          findUnique,
+          findFirst,
+          findMany,
+          // @ts-expect-error - Legacy API compatibility
+          createOne,
+          createMany,
+          // @ts-expect-error - Legacy API compatibility
+          deleteOne,
+          // @ts-expect-error - Legacy API compatibility
+          updateOne,
+          deleteMany,
+          updateMany,
+          // @ts-expect-error - Legacy API compatibility
+          upsertOne,
+          aggregate,
+          groupBy,
+        } = modelOperation;
+
+        // Skip generation for disabled models based on configuration
+        if (!Transformer.isModelEnabled(modelName)) {
+          continue;
+        }
 
       // Log operation filtering information for this model
       const allOperations = [
@@ -2412,8 +2375,10 @@ export default class Transformer {
         includeZodSchemaLineLazy,
       } = this.resolveSelectIncludeImportAndZodSchemaLine(model);
 
+
       const { orderByImport, orderByZodSchemaLine } =
         this.resolveOrderByWithRelationImportAndZodSchemaLine(model);
+
 
       if (findUnique && Transformer.isOperationEnabled(modelName, 'findUnique')) {
         const imports = [
@@ -2469,8 +2434,8 @@ export default class Transformer {
             `./objects/${modelName}WhereUniqueInput.schema`,
           ),
           this.generateImportStatement(
-            `${modelName}ScalarFieldEnumSchema`,
-            `./enums/${modelName}ScalarFieldEnum.schema`,
+            `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+            `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
           ),
         ];
 
@@ -2489,7 +2454,7 @@ export default class Transformer {
         const selectField = `select: ${selectFieldReference},`;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
         const schemaFields =
-          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`
+          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
             .trim()
             .replace(/,\s*,/g, ',');
 
@@ -2535,8 +2500,8 @@ export default class Transformer {
             `./objects/${modelName}WhereUniqueInput.schema`,
           ),
           this.generateImportStatement(
-            `${modelName}ScalarFieldEnumSchema`,
-            `./enums/${modelName}ScalarFieldEnum.schema`,
+            `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+            `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
           ),
         ];
 
@@ -2554,7 +2519,7 @@ export default class Transformer {
         const selectField = `select: ${selectFieldReference},`;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
         const schemaFields =
-          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`
+          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
             .trim()
             .replace(/,\s*,/g, ',');
 
@@ -2597,8 +2562,8 @@ export default class Transformer {
             `./objects/${modelName}WhereUniqueInput.schema`,
           ),
           this.generateImportStatement(
-            `${modelName}ScalarFieldEnumSchema`,
-            `./enums/${modelName}ScalarFieldEnum.schema`,
+            `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+            `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
           ),
         ];
 
@@ -2617,7 +2582,7 @@ export default class Transformer {
         const selectField = `select: ${selectFieldReference},`;
         const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
         const schemaFields =
-          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${modelName}ScalarFieldEnumSchema, ${modelName}ScalarFieldEnumSchema.array()]).optional()`
+          `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
             .trim()
             .replace(/,\s*,/g, ',');
 
@@ -2660,8 +2625,8 @@ export default class Transformer {
             `./objects/${modelName}WhereUniqueInput.schema`,
           ),
           this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}CountAggregateInput`),
-            `./objects/${modelName}CountAggregateInput.schema`,
+            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`),
+            `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
           ),
         ];
 
@@ -2670,7 +2635,7 @@ export default class Transformer {
         const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
         const schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
 
-        const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${modelName}CountAggregateInput`)} ]).optional() }).strict()`;
+        const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional() }).strict()`;
 
         const dualExports = this.generateDualSchemaExports(
           modelName,
@@ -3003,61 +2968,28 @@ export default class Transformer {
           ),
         ];
         const aggregateOperations = [];
-        if (this.aggregateOperationSupport[modelName].count) {
-          imports.push(
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}CountAggregateInput`),
-              `./objects/${modelName}CountAggregateInput.schema`,
-            ),
-          );
-          aggregateOperations.push(
-            `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${modelName}CountAggregateInput`)} ]).optional()`,
-          );
-        }
-        if (this.aggregateOperationSupport[modelName].min) {
-          imports.push(
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}MinAggregateInput`),
-              `./objects/${modelName}MinAggregateInput.schema`,
-            ),
-          );
-          aggregateOperations.push(
-            `_min: ${Transformer.getObjectSchemaName(`${modelName}MinAggregateInput`)}.optional()`,
-          );
-        }
-        if (this.aggregateOperationSupport[modelName].max) {
-          imports.push(
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}MaxAggregateInput`),
-              `./objects/${modelName}MaxAggregateInput.schema`,
-            ),
-          );
-          aggregateOperations.push(
-            `_max: ${Transformer.getObjectSchemaName(`${modelName}MaxAggregateInput`)}.optional()`,
-          );
-        }
-        if (this.aggregateOperationSupport[modelName].avg) {
-          imports.push(
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}AvgAggregateInput`),
-              `./objects/${modelName}AvgAggregateInput.schema`,
-            ),
-          );
-          aggregateOperations.push(
-            `_avg: ${Transformer.getObjectSchemaName(`${modelName}AvgAggregateInput`)}.optional()`,
-          );
-        }
-        if (this.aggregateOperationSupport[modelName].sum) {
-          imports.push(
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}SumAggregateInput`),
-              `./objects/${modelName}SumAggregateInput.schema`,
-            ),
-          );
-          aggregateOperations.push(
-            `_sum: ${Transformer.getObjectSchemaName(`${modelName}SumAggregateInput`)}.optional()`,
-          );
-        }
+        
+        // All models support count, min, max operations - no complex detection needed
+        imports.push(
+          this.generateImportStatement(
+            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`),
+            `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
+          ),
+          this.generateImportStatement(
+            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`),
+            `./objects/${this.getPascalCaseModelName(modelName)}MinAggregateInput.schema`,
+          ),
+          this.generateImportStatement(
+            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`),
+            `./objects/${this.getPascalCaseModelName(modelName)}MaxAggregateInput.schema`,
+          ),
+        );
+        
+        aggregateOperations.push(
+          `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional()`,
+          `_min: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`)}.optional()`,
+          `_max: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`)}.optional()`,
+        );
 
         const aggregateFilePath = path.join(Transformer.getSchemasPath(), `${aggregate}.schema.ts`);
         await writeFileSafely(
@@ -3089,20 +3021,20 @@ export default class Transformer {
             `./objects/${modelName}ScalarWhereWithAggregatesInput.schema`,
           ),
           this.generateImportStatement(
-            `${modelName}ScalarFieldEnumSchema`,
-            `./enums/${modelName}ScalarFieldEnum.schema`,
+            `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+            `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
           ),
           this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}CountAggregateInput`),
-            `./objects/${modelName}CountAggregateInput.schema`,
+            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`),
+            `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
           ),
           this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}MinAggregateInput`),
-            `./objects/${modelName}MinAggregateInput.schema`,
+            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`),
+            `./objects/${this.getPascalCaseModelName(modelName)}MinAggregateInput.schema`,
           ),
           this.generateImportStatement(
-            Transformer.getObjectSchemaName(`${modelName}MaxAggregateInput`),
-            `./objects/${modelName}MaxAggregateInput.schema`,
+            Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`),
+            `./objects/${this.getPascalCaseModelName(modelName)}MaxAggregateInput.schema`,
           ),
         ];
         const groupByFilePath = path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`);
@@ -3110,14 +3042,21 @@ export default class Transformer {
           groupByFilePath,
           `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
             `${modelName}GroupBy`,
-            `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), orderBy: z.union([${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}, ${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}.array()]).optional(), having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${modelName}ScalarFieldEnumSchema), _count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${modelName}CountAggregateInput`)} ]).optional(), _min: ${Transformer.getObjectSchemaName(`${modelName}MinAggregateInput`)}.optional(), _max: ${Transformer.getObjectSchemaName(`${modelName}MaxAggregateInput`)}.optional() })`,
+            `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), orderBy: z.union([${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}, ${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}.array()]).optional(), having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema), _count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional(), _min: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`)}.optional(), _max: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`)}.optional() })`,
           )}`,
         );
         // Add to index exports
         addIndexExport(groupByFilePath);
         logger.debug(`✅ Added groupBy schema to index: ${groupBy}.schema.ts`);
       }
+      
+      
+      } catch {
+        // Continue to next model instead of breaking the entire process
+        continue;
+      }
     }
+    
   }
 
   /**
@@ -3737,7 +3676,7 @@ ${selectFields.join(',\n')}
       // Only add import if the schema is enabled
       if (this.isSchemaImportEnabled(countArgsSchemaName)) {
         imports.push(
-          `import { ${Transformer.getObjectSchemaName(`${model.name}CountOutputTypeArgs`)} } from './objects/${model.name}CountOutputTypeArgs.schema'`,
+          `import { ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(model.name)}CountOutputTypeArgs`)} } from './objects/${this.getPascalCaseModelName(model.name)}CountOutputTypeArgs.schema'`,
         );
       }
     }
