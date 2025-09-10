@@ -977,7 +977,7 @@ export default class Transformer {
         const normalizedEnumName = this.normalizeEnumName(name);
         const fileName = normalizedEnumName || name;
         const schemaName = normalizedEnumName || name;
-        
+
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `enums/${fileName}.schema.ts`),
           `${this.generateImportZodStatement()}\n${this.generateExportSchemaStatement(
@@ -1055,12 +1055,12 @@ export default class Transformer {
     // Convert Pascal case back to snake_case with proper casing for DMMF
     // DocParserAgent -> doc_parser_agent -> Doc_parser_agent (capitalized first letter)
     const snakeCase = pascalModelName
-      .replace(/[A-Z]/g, (letter, index) => index === 0 ? letter : `_${letter.toLowerCase()}`)
+      .replace(/[A-Z]/g, (letter, index) => (index === 0 ? letter : `_${letter.toLowerCase()}`))
       .toLowerCase();
-    
+
     // Capitalize first letter for DMMF naming convention
     const dmmfModelName = snakeCase.charAt(0).toUpperCase() + snakeCase.slice(1);
-    
+
     return `${dmmfModelName}${inputSuffix}`;
   }
 
@@ -3728,17 +3728,23 @@ export default class Transformer {
 
       if (relationName) {
         // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
-        selectFields.push(`  ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
+        selectFields.push(
+          `  ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
+        );
       } else {
         // Scalar field: just boolean
-        selectFields.push(`  ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
+        selectFields.push(
+          `  ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
+        );
       }
     }
 
     // Add _count field if model has array relations (for aggregation support)
     const hasArrayRelations = fields.some((field) => field.relationName && field.isList);
     if (hasArrayRelations) {
-      selectFields.push(`  _count: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
+      selectFields.push(
+        `  _count: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
+      );
     }
 
     return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select> = z.object({
@@ -3832,17 +3838,23 @@ ${selectFields.join(',\n')}
 
       if (relationName) {
         // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
-        selectFields.push(`    ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
+        selectFields.push(
+          `    ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
+        );
       } else {
         // Scalar field: just boolean
-        selectFields.push(`    ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
+        selectFields.push(
+          `    ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
+        );
       }
     }
 
     // Add _count field if model has array relations (for aggregation support)
     const hasArrayRelations = fields.some((field) => field.relationName && field.isList);
     if (hasArrayRelations) {
-      selectFields.push(`    _count: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
+      selectFields.push(
+        `    _count: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
+      );
     }
 
     return `z.object({
