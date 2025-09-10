@@ -973,13 +973,18 @@ export default class Transformer {
 
       // Filter out enum schemas for disabled models
       if (this.isEnumSchemaEnabled(name)) {
+        // Normalize enum name for consistent file naming and exports
+        const normalizedEnumName = this.normalizeEnumName(name);
+        const fileName = normalizedEnumName || name;
+        const schemaName = normalizedEnumName || name;
+        
         await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `enums/${name}.schema.ts`),
+          path.join(Transformer.getSchemasPath(), `enums/${fileName}.schema.ts`),
           `${this.generateImportZodStatement()}\n${this.generateExportSchemaStatement(
-            `${name}`,
+            `${schemaName}`,
             // Use single-quoted values for enum array representation to match tests
             `z.enum([${values.map((v) => `'${v}'`).join(', ')}])`,
-          )}\n\nexport type ${name} = z.infer<typeof ${name}Schema>;`,
+          )}\n\nexport type ${schemaName} = z.infer<typeof ${schemaName}Schema>;`,
         );
       }
     }
@@ -1016,13 +1021,65 @@ export default class Transformer {
     return null;
   }
 
+  /**
+   * Normalize enum names to match import expectations
+   * For model-related enums, use Pascal case model names consistently
+   */
+  private normalizeEnumName(enumName: string): string | null {
+    // Handle ScalarFieldEnum patterns
+    const scalarFieldMatch = enumName.match(/^(.+)ScalarFieldEnum$/);
+    if (scalarFieldMatch) {
+      const modelName = scalarFieldMatch[1];
+      // Convert model name to Pascal case and rebuild enum name
+      const pascalModelName = this.getPascalCaseModelName(modelName);
+      return `${pascalModelName}ScalarFieldEnum`;
+    }
+
+    // Handle other enum patterns in the future if needed
+    const orderByRelevanceMatch = enumName.match(/^(.+)OrderByRelevanceFieldEnum$/);
+    if (orderByRelevanceMatch) {
+      const modelName = orderByRelevanceMatch[1];
+      const pascalModelName = this.getPascalCaseModelName(modelName);
+      return `${pascalModelName}OrderByRelevanceFieldEnum`;
+    }
+
+    // Return null for non-model-related enums to use original name
+    return null;
+  }
+
+  /**
+   * Convert Pascal case model names back to DMMF aggregate input names
+   * For doc_parser_agent model: DocParserAgent -> Doc_parser_agent
+   */
+  private getAggregateInputName(pascalModelName: string, inputSuffix: string): string {
+    // Convert Pascal case back to snake_case with proper casing for DMMF
+    // DocParserAgent -> doc_parser_agent -> Doc_parser_agent (capitalized first letter)
+    const snakeCase = pascalModelName
+      .replace(/[A-Z]/g, (letter, index) => index === 0 ? letter : `_${letter.toLowerCase()}`)
+      .toLowerCase();
+    
+    // Capitalize first letter for DMMF naming convention
+    const dmmfModelName = snakeCase.charAt(0).toUpperCase() + snakeCase.slice(1);
+    
+    return `${dmmfModelName}${inputSuffix}`;
+  }
+
+  /**
+   * Get the correct Prisma type name for model types
+   * For snake_case models like doc_parser_agent, Prisma uses Doc_parser_agent (capitalized first letter)
+   */
+  private getPrismaTypeName(modelName: string): string {
+    // For snake_case model names, capitalize the first letter to match Prisma's type naming
+    return modelName.charAt(0).toUpperCase() + modelName.slice(1);
+  }
+
   generateImportZodStatement() {
     // Determine import target based on configuration
     const config = Transformer.getGeneratorConfig();
     const target = (config?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
     switch (target) {
       case 'v4':
-        return "import * as z from 'zod/v4';\n";
+        return "import { z } from 'zod';\n";
       case 'auto':
       case 'v3':
       default:
@@ -1172,8 +1229,6 @@ export default class Transformer {
         result.push(this.wrapWithZodValidators('z.number()', field, inputType));
       } else if (inputType.type === 'BigInt') {
         result.push(this.wrapWithZodValidators('z.bigint()', field, inputType));
-      } else if (inputType.type === 'Boolean') {
-        result.push(this.wrapWithZodValidators('z.boolean()', field, inputType));
       } else if (inputType.type === 'DateTime') {
         // Apply configurable DateTime strategy
         const cfg = Transformer.getGeneratorConfig();
@@ -2106,23 +2161,7 @@ export default class Transformer {
    * For ESM with importFileExtension = "js", we need to add .js extension
    */
   private getImportFileExtension(): string {
-    // Check if we're using the new prisma-client generator with ESM configuration
-    const isNewPrismaClientGenerator =
-      Transformer.prismaClientProvider === 'prisma-client' ||
-      Transformer.prismaClientConfig.moduleFormat !== undefined ||
-      Transformer.prismaClientConfig.runtime !== undefined;
-
-    // If using ESM with importFileExtension specified, use that extension
-    if (
-      isNewPrismaClientGenerator &&
-      Transformer.prismaClientConfig.moduleFormat === 'esm' &&
-      Transformer.prismaClientConfig.importFileExtension
-    ) {
-      return `.${Transformer.prismaClientConfig.importFileExtension}`;
-    }
-
-    // Default to no extension for backward compatibility
-    return '';
+    return Transformer.getImportFileExtension();
   }
 
   /**
@@ -2130,8 +2169,8 @@ export default class Transformer {
    */
   private getPascalCaseModelName(modelName: string): string {
     return modelName
-      .replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => word.toUpperCase())
-      .replace(/\s+/g, '');
+      .replace(/[_-\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''))
+      .replace(/^\w/, (c) => c.toUpperCase());
   }
 
   /**
@@ -2269,9 +2308,8 @@ export default class Transformer {
   }
 
   resolveModelQuerySchemaName(modelName: string, queryName: string) {
-    // Generate camelCase names to match actual exports: roleFindManySchema
-    const camelModel = modelName.charAt(0).toLowerCase() + modelName.slice(1);
-    const baseName = `${camelModel}${queryName.charAt(0).toUpperCase() + (queryName as string).slice(1)}`;
+    // Match exported identifiers from generateDualSchemaExports (e.g., PostFindManySchema)
+    const baseName = `${modelName}${queryName[0].toUpperCase()}${queryName.slice(1)}`;
     return Transformer.exportTypedSchemas
       ? `${baseName}Schema`
       : `${baseName}${Transformer.zodSchemaSuffix}`;
@@ -2644,9 +2682,9 @@ export default class Transformer {
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getPascalCaseModelName(modelName)}CountAggregateInput`,
+                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`,
               ),
-              `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
+              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}.schema`,
             ),
           ];
 
@@ -2655,7 +2693,7 @@ export default class Transformer {
           const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
           const schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
 
-          const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional() }).strict()`;
+          const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`)} ]).optional() }).strict()`;
 
           const dualExports = this.generateDualSchemaExports(
             modelName,
@@ -2993,28 +3031,28 @@ export default class Transformer {
           imports.push(
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getPascalCaseModelName(modelName)}CountAggregateInput`,
+                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`,
               ),
-              `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
+              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}.schema`,
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getPascalCaseModelName(modelName)}MinAggregateInput`,
+                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}`,
               ),
-              `./objects/${this.getPascalCaseModelName(modelName)}MinAggregateInput.schema`,
+              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}.schema`,
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getPascalCaseModelName(modelName)}MaxAggregateInput`,
+                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}`,
               ),
-              `./objects/${this.getPascalCaseModelName(modelName)}MaxAggregateInput.schema`,
+              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}.schema`,
             ),
           );
 
           aggregateOperations.push(
-            `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional()`,
-            `_min: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`)}.optional()`,
-            `_max: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`)}.optional()`,
+            `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`)} ]).optional()`,
+            `_min: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}`)}.optional()`,
+            `_max: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}`)}.optional()`,
           );
 
           const aggregateFilePath = path.join(
@@ -3034,7 +3072,7 @@ export default class Transformer {
             modelName,
             'Aggregate',
             aggregateSchemaObject,
-            `Prisma.${modelName}AggregateArgs`,
+            `Prisma.${this.getPrismaTypeName(modelName)}AggregateArgs`,
           );
 
           await writeFileSafely(aggregateFilePath, schemaContent + dualExports);
@@ -3063,21 +3101,21 @@ export default class Transformer {
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getPascalCaseModelName(modelName)}CountAggregateInput`,
+                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`,
               ),
-              `./objects/${this.getPascalCaseModelName(modelName)}CountAggregateInput.schema`,
+              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}.schema`,
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getPascalCaseModelName(modelName)}MinAggregateInput`,
+                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}`,
               ),
-              `./objects/${this.getPascalCaseModelName(modelName)}MinAggregateInput.schema`,
+              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}.schema`,
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getPascalCaseModelName(modelName)}MaxAggregateInput`,
+                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}`,
               ),
-              `./objects/${this.getPascalCaseModelName(modelName)}MaxAggregateInput.schema`,
+              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}.schema`,
             ),
           ];
           const groupByFilePath = path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`);
@@ -3087,7 +3125,7 @@ export default class Transformer {
           const schemaContent = `import type { Prisma } from '${prismaImportPathGroupBy}';\n${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for GroupBy operation
-          const groupBySchemaObject = `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), orderBy: z.union([${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}, ${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}.array()]).optional(), having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema), _count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}CountAggregateInput`)} ]).optional(), _min: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MinAggregateInput`)}.optional(), _max: ${Transformer.getObjectSchemaName(`${this.getPascalCaseModelName(modelName)}MaxAggregateInput`)}.optional() }).strict()`;
+          const groupBySchemaObject = `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), orderBy: z.union([${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}, ${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}.array()]).optional(), having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema), _count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`)} ]).optional(), _min: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}`)}.optional(), _max: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}`)}.optional() }).strict()`;
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'GroupBy',
@@ -3690,17 +3728,17 @@ export default class Transformer {
 
       if (relationName) {
         // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
-        selectFields.push(`  ${fieldName}: z.boolean().optional()`);
+        selectFields.push(`  ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
       } else {
         // Scalar field: just boolean
-        selectFields.push(`  ${fieldName}: z.boolean().optional()`);
+        selectFields.push(`  ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
       }
     }
 
     // Add _count field if model has array relations (for aggregation support)
     const hasArrayRelations = fields.some((field) => field.relationName && field.isList);
     if (hasArrayRelations) {
-      selectFields.push(`  _count: z.boolean().optional()`);
+      selectFields.push(`  _count: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
     }
 
     return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select> = z.object({
@@ -3794,17 +3832,17 @@ ${selectFields.join(',\n')}
 
       if (relationName) {
         // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
-        selectFields.push(`    ${fieldName}: z.boolean().optional()`);
+        selectFields.push(`    ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
       } else {
         // Scalar field: just boolean
-        selectFields.push(`    ${fieldName}: z.boolean().optional()`);
+        selectFields.push(`    ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
       }
     }
 
     // Add _count field if model has array relations (for aggregation support)
     const hasArrayRelations = fields.some((field) => field.relationName && field.isList);
     if (hasArrayRelations) {
-      selectFields.push(`    _count: z.boolean().optional()`);
+      selectFields.push(`    _count: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`);
     }
 
     return `z.object({
