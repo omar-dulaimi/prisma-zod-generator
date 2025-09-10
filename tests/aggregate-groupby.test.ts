@@ -1,4 +1,4 @@
-import { expect, test, describe } from 'vitest';
+import { expect, test, describe, beforeAll, afterAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
@@ -201,7 +201,7 @@ generator zod {
 }
 
 model TestModel {
-  id      ${numericTypes.includes('Int') ? 'Int' : 'String'}      ${provider === 'mongodb' ? '@id @map("_id") @default(auto()) @db.ObjectId' : '@id @default(autoincrement())'}
+  id      ${provider === 'mongodb' ? 'String' : numericTypes.includes('Int') ? 'Int' : 'String'}      ${provider === 'mongodb' ? '@id @map("_id") @default(auto()) @db.ObjectId' : '@id @default(autoincrement())'}
   ${numericTypes.includes('Int') ? 'intField    Int?' : ''}
   ${numericTypes.includes('Float') ? 'floatField  Float?' : ''}
   ${numericTypes.includes('BigInt') ? 'bigIntField BigInt?' : ''}
