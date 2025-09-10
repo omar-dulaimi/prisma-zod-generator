@@ -180,7 +180,7 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
           { isList: false, type: 'Boolean', location: 'scalar' },
           {
             isList: false,
-            type: `${modelName}CountOutputTypeArgs`,
+            type: `${modelName.charAt(0).toUpperCase() + modelName.slice(1)}CountOutputTypeArgs`,
             location: 'inputObjectTypes',
             namespace: 'prisma',
           },

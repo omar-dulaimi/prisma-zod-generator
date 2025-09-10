@@ -1,5 +1,4 @@
 import { DMMF } from '@prisma/generator-helper';
-import { AggregateOperationSupport } from '../types';
 import Transformer from '../transformer';
 import { isOperationEnabledForModel } from './model-helpers';
 
@@ -68,47 +67,7 @@ export function addMissingInputObjectTypesForAggregate(
   }
 }
 
-export function resolveAggregateOperationSupport(inputObjectTypes: DMMF.InputType[]) {
-  const aggregateOperationSupport: AggregateOperationSupport = {};
-  for (const inputType of inputObjectTypes) {
-    if (isAggregateInputType(inputType.name)) {
-      const name = inputType.name.replace('AggregateInput', '');
-      let model = '';
-      let operation = '';
-
-      if (name.endsWith('Count')) {
-        model = name.replace('Count', '');
-        operation = 'count';
-      } else if (name.endsWith('Min')) {
-        model = name.replace('Min', '');
-        operation = 'min';
-      } else if (name.endsWith('Max')) {
-        model = name.replace('Max', '');
-        operation = 'max';
-      } else if (name.endsWith('Sum')) {
-        model = name.replace('Sum', '');
-        operation = 'sum';
-      } else if (name.endsWith('Avg')) {
-        model = name.replace('Avg', '');
-        operation = 'avg';
-      }
-
-      // Only include support for enabled models and operations
-      if (
-        model &&
-        operation &&
-        Transformer.isModelEnabled(model) &&
-        isOperationEnabledForModel(model, 'aggregate')
-      ) {
-        aggregateOperationSupport[model] = {
-          ...aggregateOperationSupport[model],
-          [operation]: true,
-        };
-      }
-    }
-  }
-  return aggregateOperationSupport;
-}
+// Aggregate support detection - recognizes Count, Min, Max, Sum, and Avg aggregate types
 
 /**
  * Check if aggregate operations should be generated for a model
