@@ -2434,7 +2434,7 @@ export default class Transformer {
             modelName,
             'FindUnique',
             schemaObjectDefinition,
-            `Prisma.${modelName}FindUniqueArgs`,
+            `Prisma.${this.getPrismaTypeName(modelName)}FindUniqueArgs`,
           );
 
           await writeFileSafely(
@@ -2464,7 +2464,7 @@ export default class Transformer {
             modelName,
             'FindUniqueOrThrow',
             schemaObjectDefinition,
-            `Prisma.${modelName}FindUniqueOrThrowArgs`,
+            `Prisma.${this.getPrismaTypeName(modelName)}FindUniqueOrThrowArgs`,
           );
 
           await writeFileSafely(
@@ -2530,7 +2530,7 @@ export default class Transformer {
             modelName,
             'FindFirst',
             schemaObjectDefinition,
-            `Prisma.${modelName}FindFirstArgs`,
+            `Prisma.${this.getPrismaTypeName(modelName)}FindFirstArgs`,
           );
 
           await writeFileSafely(
@@ -2594,7 +2594,7 @@ export default class Transformer {
             modelName,
             'FindFirstOrThrow',
             schemaObjectDefinition,
-            `Prisma.${modelName}FindFirstOrThrowArgs`,
+            `Prisma.${this.getPrismaTypeName(modelName)}FindFirstOrThrowArgs`,
           );
           await writeFileSafely(
             path.join(Transformer.getSchemasPath(), `findFirstOrThrow${modelName}.schema.ts`),
@@ -2658,7 +2658,7 @@ export default class Transformer {
             modelName,
             'FindMany',
             schemaObjectDefinition,
-            `Prisma.${modelName}FindManyArgs`,
+            `Prisma.${this.getPrismaTypeName(modelName)}FindManyArgs`,
           );
 
           await writeFileSafely(
@@ -2699,7 +2699,7 @@ export default class Transformer {
             modelName,
             'Count',
             countSchemaObject,
-            `Prisma.${modelName}CountArgs`,
+            `Prisma.${this.getPrismaTypeName(modelName)}CountArgs`,
           );
 
           await writeFileSafely(
@@ -3130,7 +3130,7 @@ export default class Transformer {
             modelName,
             'GroupBy',
             groupBySchemaObject,
-            `Prisma.${modelName}GroupByArgs`,
+            `Prisma.${this.getPrismaTypeName(modelName)}GroupByArgs`,
           );
 
           await writeFileSafely(groupByFilePath, schemaContent + dualExports);
@@ -3741,7 +3741,7 @@ export default class Transformer {
       selectFields.push(`  _count: z.boolean().optional()`);
     }
 
-    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select> = z.object({
+    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${this.getPrismaTypeName(modelName)}Select> = z.object({
 ${selectFields.join(',\n')}
 }).strict()`;
   }
@@ -3805,7 +3805,7 @@ ${selectFields.join(',\n')}
     if (Transformer.exportTypedSchemas) {
       const typedName = `${modelName}${operation ? operation : ''}Select${Transformer.typedSchemaSuffix}`;
       exports.push(
-        `export const ${typedName}: z.ZodType<Prisma.${modelName}Select> = ${schemaDefinition} as unknown as z.ZodType<Prisma.${modelName}Select>;`,
+        `export const ${typedName}: z.ZodType<Prisma.${this.getPrismaTypeName(modelName)}Select> = ${schemaDefinition} as unknown as z.ZodType<Prisma.${this.getPrismaTypeName(modelName)}Select>;`,
       );
     }
 
