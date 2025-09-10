@@ -1,3 +1,27 @@
+## [1.19.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.8...v1.19.0) (2025-09-10)
+
+### ⚠ BREAKING CHANGES
+
+* **schema:** Enum and aggregate schema names may change for models with snake_case naming, requiring updates to dependent code.
+
+### 🚀 Features
+
+* complete dual export consistency for all analytics operations ([3456f72](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3456f725ffe5747131993ce1533672a435667aab))
+
+### 🐛 Bug Fixes
+
+* address critical CodeRabbit review issues ([c39eebc](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c39eebc20d15fcfc330d580075d8b52648d4fbcb))
+* conditionally include avg/sum aggregates only for numeric fields ([a4d137c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a4d137c9424c4d533dc1cbdc27913977e8ee3865))
+* correct getPrismaTypeName to use original model names ([7c44948](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7c449484d88924d0a301550317a855446223b7e5))
+* handle Prisma aggregate type naming for snake_case models ([78ee433](https://github.com/omar-dulaimi/prisma-zod-generator/commit/78ee433013979f3516e11dbef63019eb6f668cdc))
+* only apply enum import aliasing when names differ ([40dd0f8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/40dd0f87e18f837f0104981ce3acc3a4cc0814ce))
+* remove empty objects from select schema generation ([3c8ecbc](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3c8ecbcc1a172453f18382eff27093dd1d53ca77))
+* resolve enum import/export mismatch for normalized names ([cd82993](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cd829932c1cd57cebac3ebfe2352d503756486e1))
+* resolve import/export naming inconsistencies in generated schemas ([8148da6](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8148da6009f1abd89e27a1982c9089bfe5078c73))
+* **schema:** resolve naming inconsistencies in generated schemas ([9ad6988](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9ad69882099c8c834cd7ff3cacae03225e87d162))
+* use correct Prisma type names for snake_case models ([facc067](https://github.com/omar-dulaimi/prisma-zod-generator/commit/facc0677e4922aa5372a64efac452dce594719eb))
+* use String type for MongoDB id fields with [@db](https://github.com/db).ObjectId ([af016f8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/af016f83c4352f88af11b592b99063f6dbf91dd4))
+
 ## [1.18.8](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.7...v1.18.8) (2025-09-08)
 
 ### 🐛 Bug Fixes
