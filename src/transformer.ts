@@ -1068,8 +1068,13 @@ export default class Transformer {
    * Get the correct Prisma type name for model types
    * Prisma uses the original model name as-is (e.g., doc_parser_agent -> Prisma.doc_parser_agentSelect)
    */
-  private getPrismaTypeName(modelName: string): string {
-    // Prisma exports types using the original model name without any case transformation
+  private getPrismaTypeName(modelName: string, operationType?: string): string {
+    // Special case: Aggregate operations use capitalized first letter for snake_case models
+    if (operationType === 'Aggregate' && modelName.includes('_')) {
+      return modelName.charAt(0).toUpperCase() + modelName.slice(1);
+    }
+
+    // All other operations use the original model name without any case transformation
     return modelName;
   }
 
@@ -3074,7 +3079,7 @@ export default class Transformer {
             modelName,
             'Aggregate',
             aggregateSchemaObject,
-            `Prisma.${this.getPrismaTypeName(modelName)}AggregateArgs`,
+            `Prisma.${this.getPrismaTypeName(modelName, 'Aggregate')}AggregateArgs`,
           );
 
           await writeFileSafely(aggregateFilePath, schemaContent + dualExports);
