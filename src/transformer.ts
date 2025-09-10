@@ -2283,9 +2283,14 @@ export default class Transformer {
             queryName as string,
           )} } from '../${queryName}${modelName}.schema${importExtension}'`;
         } else if (Transformer.enumNames.includes(name)) {
-          const normalized = this.normalizeEnumName(name) || name;
-          // Import normalized file/export and alias to the original enum identifier
-          return `import { ${normalized}Schema as ${name}Schema } from '../enums/${normalized}.schema${importExtension}'`;
+          const normalized = this.normalizeEnumName(name);
+          if (normalized && normalized !== name) {
+            // Import normalized file/export and alias to the original enum identifier (only when different)
+            return `import { ${normalized}Schema as ${name}Schema } from '../enums/${normalized}.schema${importExtension}'`;
+          } else {
+            // Use original name without aliasing
+            return `import { ${name}Schema } from '../enums/${name}.schema${importExtension}'`;
+          }
         } else {
           // Choose the appropriate schema name based on export settings
           const schemaName = Transformer.exportTypedSchemas
