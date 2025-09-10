@@ -3728,23 +3728,17 @@ export default class Transformer {
 
       if (relationName) {
         // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
-        selectFields.push(
-          `  ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
-        );
+        selectFields.push(`  ${fieldName}: z.boolean().optional()`);
       } else {
         // Scalar field: just boolean
-        selectFields.push(
-          `  ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
-        );
+        selectFields.push(`  ${fieldName}: z.boolean().optional()`);
       }
     }
 
     // Add _count field if model has array relations (for aggregation support)
     const hasArrayRelations = fields.some((field) => field.relationName && field.isList);
     if (hasArrayRelations) {
-      selectFields.push(
-        `  _count: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
-      );
+      selectFields.push(`  _count: z.boolean().optional()`);
     }
 
     return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${modelName}Select> = z.object({
@@ -3838,23 +3832,17 @@ ${selectFields.join(',\n')}
 
       if (relationName) {
         // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
-        selectFields.push(
-          `    ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
-        );
+        selectFields.push(`    ${fieldName}: z.boolean().optional()`);
       } else {
         // Scalar field: just boolean
-        selectFields.push(
-          `    ${fieldName}: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
-        );
+        selectFields.push(`    ${fieldName}: z.boolean().optional()`);
       }
     }
 
     // Add _count field if model has array relations (for aggregation support)
     const hasArrayRelations = fields.some((field) => field.relationName && field.isList);
     if (hasArrayRelations) {
-      selectFields.push(
-        `    _count: z.union([ z.boolean(), z.object({}).passthrough() ]).optional()`,
-      );
+      selectFields.push(`    _count: z.boolean().optional()`);
     }
 
     return `z.object({
