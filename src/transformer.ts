@@ -1066,11 +1066,11 @@ export default class Transformer {
 
   /**
    * Get the correct Prisma type name for model types
-   * For snake_case models like doc_parser_agent, Prisma uses Doc_parser_agent (capitalized first letter)
+   * Prisma uses the original model name as-is (e.g., doc_parser_agent -> Prisma.doc_parser_agentSelect)
    */
   private getPrismaTypeName(modelName: string): string {
-    // For snake_case model names, capitalize the first letter to match Prisma's type naming
-    return modelName.charAt(0).toUpperCase() + modelName.slice(1);
+    // Prisma exports types using the original model name without any case transformation
+    return modelName;
   }
 
   generateImportZodStatement() {
