@@ -68,3 +68,4 @@ node_modules/
 # tasks/ 
 prisma/client
 debug-test
+app

@@ -1048,20 +1048,14 @@ export default class Transformer {
   }
 
   /**
-   * Convert Pascal case model names back to DMMF aggregate input names
-   * For doc_parser_agent model: DocParserAgent -> Doc_parser_agent
+   * Convert model names to DMMF aggregate input names
+   * For doc_parser_agent model: matches Prisma's DMMF format Doc_parser_agentCountAggregateInput
    */
-  private getAggregateInputName(pascalModelName: string, inputSuffix: string): string {
-    // Convert Pascal case back to snake_case with proper casing for DMMF
-    // DocParserAgent -> doc_parser_agent -> Doc_parser_agent (capitalized first letter)
-    const snakeCase = pascalModelName
-      .replace(/[A-Z]/g, (letter, index) => (index === 0 ? letter : `_${letter.toLowerCase()}`))
-      .toLowerCase();
-
-    // Capitalize first letter for DMMF naming convention
-    const dmmfModelName = snakeCase.charAt(0).toUpperCase() + snakeCase.slice(1);
-
-    return `${dmmfModelName}${inputSuffix}`;
+  private getAggregateInputName(modelName: string, inputSuffix: string): string {
+    // Prisma's DMMF uses original model name with first letter capitalized for aggregate inputs
+    // doc_parser_agent -> Doc_parser_agentCountAggregateInput (not DocParserAgentCountAggregateInput)
+    const capitalizedModelName = modelName.charAt(0).toUpperCase() + modelName.slice(1);
+    return `${capitalizedModelName}${inputSuffix}`;
   }
 
   /**
@@ -2706,9 +2700,9 @@ export default class Transformer {
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`,
+                `${this.getAggregateInputName(modelName, 'CountAggregateInput')}`,
               ),
-              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}.schema`,
+              `./objects/${this.getAggregateInputName(modelName, 'CountAggregateInput')}.schema`,
             ),
           ];
 
@@ -2717,7 +2711,7 @@ export default class Transformer {
           const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
           const schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
 
-          const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`)} ]).optional() }).strict()`;
+          const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional() }).strict()`;
 
           const dualExports = this.generateDualSchemaExports(
             modelName,
@@ -3055,21 +3049,21 @@ export default class Transformer {
           imports.push(
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`,
+                `${this.getAggregateInputName(modelName, 'CountAggregateInput')}`,
               ),
-              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}.schema`,
+              `./objects/${this.getAggregateInputName(modelName, 'CountAggregateInput')}.schema`,
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}`,
+                `${this.getAggregateInputName(modelName, 'MinAggregateInput')}`,
               ),
-              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}.schema`,
+              `./objects/${this.getAggregateInputName(modelName, 'MinAggregateInput')}.schema`,
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}`,
+                `${this.getAggregateInputName(modelName, 'MaxAggregateInput')}`,
               ),
-              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}.schema`,
+              `./objects/${this.getAggregateInputName(modelName, 'MaxAggregateInput')}.schema`,
             ),
           );
 
@@ -3079,30 +3073,30 @@ export default class Transformer {
             imports.push(
               this.generateImportStatement(
                 Transformer.getObjectSchemaName(
-                  `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'AvgAggregateInput')}`,
+                  `${this.getAggregateInputName(modelName, 'AvgAggregateInput')}`,
                 ),
-                `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'AvgAggregateInput')}.schema`,
+                `./objects/${this.getAggregateInputName(modelName, 'AvgAggregateInput')}.schema`,
               ),
               this.generateImportStatement(
                 Transformer.getObjectSchemaName(
-                  `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'SumAggregateInput')}`,
+                  `${this.getAggregateInputName(modelName, 'SumAggregateInput')}`,
                 ),
-                `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'SumAggregateInput')}.schema`,
+                `./objects/${this.getAggregateInputName(modelName, 'SumAggregateInput')}.schema`,
               ),
             );
           }
 
           aggregateOperations.push(
-            `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`)} ]).optional()`,
-            `_min: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}`)}.optional()`,
-            `_max: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}`)}.optional()`,
+            `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional()`,
+            `_min: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'MinAggregateInput')}`)}.optional()`,
+            `_max: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'MaxAggregateInput')}`)}.optional()`,
           );
 
           // Only include _avg and _sum for models with numeric fields
           if (hasNumericFields) {
             aggregateOperations.push(
-              `_avg: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'AvgAggregateInput')}`)}.optional()`,
-              `_sum: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'SumAggregateInput')}`)}.optional()`,
+              `_avg: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'AvgAggregateInput')}`)}.optional()`,
+              `_sum: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'SumAggregateInput')}`)}.optional()`,
             );
           }
 
@@ -3152,21 +3146,21 @@ export default class Transformer {
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`,
+                `${this.getAggregateInputName(modelName, 'CountAggregateInput')}`,
               ),
-              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}.schema`,
+              `./objects/${this.getAggregateInputName(modelName, 'CountAggregateInput')}.schema`,
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}`,
+                `${this.getAggregateInputName(modelName, 'MinAggregateInput')}`,
               ),
-              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}.schema`,
+              `./objects/${this.getAggregateInputName(modelName, 'MinAggregateInput')}.schema`,
             ),
             this.generateImportStatement(
               Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}`,
+                `${this.getAggregateInputName(modelName, 'MaxAggregateInput')}`,
               ),
-              `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}.schema`,
+              `./objects/${this.getAggregateInputName(modelName, 'MaxAggregateInput')}.schema`,
             ),
           ];
 
@@ -3176,15 +3170,15 @@ export default class Transformer {
             imports.push(
               this.generateImportStatement(
                 Transformer.getObjectSchemaName(
-                  `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'AvgAggregateInput')}`,
+                  `${this.getAggregateInputName(modelName, 'AvgAggregateInput')}`,
                 ),
-                `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'AvgAggregateInput')}.schema`,
+                `./objects/${this.getAggregateInputName(modelName, 'AvgAggregateInput')}.schema`,
               ),
               this.generateImportStatement(
                 Transformer.getObjectSchemaName(
-                  `${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'SumAggregateInput')}`,
+                  `${this.getAggregateInputName(modelName, 'SumAggregateInput')}`,
                 ),
-                `./objects/${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'SumAggregateInput')}.schema`,
+                `./objects/${this.getAggregateInputName(modelName, 'SumAggregateInput')}.schema`,
               ),
             );
           }
@@ -3202,16 +3196,16 @@ export default class Transformer {
             'take: z.number().optional()',
             'skip: z.number().optional()',
             `by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema)`,
-            `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'CountAggregateInput')}`)} ]).optional()`,
-            `_min: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MinAggregateInput')}`)}.optional()`,
-            `_max: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'MaxAggregateInput')}`)}.optional()`,
+            `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional()`,
+            `_min: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'MinAggregateInput')}`)}.optional()`,
+            `_max: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'MaxAggregateInput')}`)}.optional()`,
           ];
 
           // Only include _avg and _sum for models with numeric fields
           if (hasNumericFieldsForGroupBy) {
             baseFields.push(
-              `_avg: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'AvgAggregateInput')}`)}.optional()`,
-              `_sum: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(this.getPascalCaseModelName(modelName), 'SumAggregateInput')}`)}.optional()`,
+              `_avg: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'AvgAggregateInput')}`)}.optional()`,
+              `_sum: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'SumAggregateInput')}`)}.optional()`,
             );
           }
 
