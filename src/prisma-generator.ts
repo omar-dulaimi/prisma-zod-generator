@@ -1743,6 +1743,7 @@ async function generateVariantType(
       schemaName,
       excludeFields,
       variantName,
+      config,
     );
 
     logger.debug(`   📝 Creating ${variantName} variant: ${fileName} (${schemaName})`);
@@ -1775,6 +1776,7 @@ async function generateVariantSchemaContent(
   schemaName: string,
   excludeFields: string[],
   variantName: string,
+  config?: CustomGeneratorConfig,
 ): Promise<string> {
   const enabledFields = model.fields.filter((field) => !excludeFields.includes(field.name));
   // Collect enum types used in this model to generate proper imports
@@ -1803,6 +1805,7 @@ async function generateVariantSchemaContent(
     generateFallbackSchemas: true,
     validateTypeCompatibility: true,
     collectDetailedErrors: true,
+    zodVersion: config?.zodImportTarget || 'auto',
   });
   const enhancedModel = enhancedModels[0];
 
@@ -1991,7 +1994,10 @@ async function generatePureModelSchemas(
           config?: { provider?: 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'mongodb' };
         }
       ).config?.provider || 'postgresql';
-    const typeMapper = new PrismaTypeMapper({ provider });
+    const typeMapper = new PrismaTypeMapper({
+      provider,
+      zodImportTarget: config.zodImportTarget,
+    });
 
     // Detect circular dependencies if the option is enabled
     let circularDependencyResult: ReturnType<typeof detectCircularDependencies> | null = null;

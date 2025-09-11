@@ -925,6 +925,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'object',
     'array',
     'record',
+    'json',
   ];
 
   // Check if method is known
@@ -1094,11 +1095,13 @@ export interface ValidationMethodConfig {
  *
  * @param annotations - Array of parsed annotations
  * @param context - Field context for validation
+ * @param zodVersion - Zod version target ('v3', 'v4', or 'auto')
  * @returns Schema generation result with method chain and imports
  */
 export function mapAnnotationsToZodSchema(
   annotations: ParsedZodAnnotation[],
   context: FieldCommentContext,
+  zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
 ): ZodSchemaGenerationResult {
   const result: ZodSchemaGenerationResult = {
     schemaChain: '',
@@ -1116,7 +1119,7 @@ export function mapAnnotationsToZodSchema(
 
     for (const annotation of annotations) {
       try {
-        const methodCall = mapAnnotationToZodMethod(annotation, context);
+        const methodCall = mapAnnotationToZodMethod(annotation, context, zodVersion);
         methodCalls.push(methodCall.methodCall);
 
         // Add any required imports
@@ -1133,7 +1136,25 @@ export function mapAnnotationsToZodSchema(
 
     // Join all method calls into a chain
     if (methodCalls.length > 0) {
-      result.schemaChain = methodCalls.join('');
+      // Check if any method call is a complete replacement (doesn't start with dot)
+      const hasReplacementMethod = methodCalls.some((call) => !call.startsWith('.'));
+
+      if (hasReplacementMethod) {
+        // If we have replacement methods, they should be the only content
+        const replacementMethods = methodCalls.filter((call) => !call.startsWith('.'));
+        const chainMethods = methodCalls.filter((call) => call.startsWith('.'));
+
+        if (replacementMethods.length > 1) {
+          result.errors.push('Multiple replacement methods detected - only one allowed per field');
+          result.isValid = false;
+        } else {
+          // Use the replacement method as base, then chain any additional methods
+          result.schemaChain = replacementMethods[0] + chainMethods.join('');
+        }
+      } else {
+        // All are chaining methods, join normally
+        result.schemaChain = methodCalls.join('');
+      }
     }
   } catch (error) {
     result.errors.push(
@@ -1158,11 +1179,13 @@ interface MethodMappingResult {
  *
  * @param annotation - Parsed annotation
  * @param context - Field context
+ * @param zodVersion - Zod version target for version-specific handling
  * @returns Method mapping result
  */
 function mapAnnotationToZodMethod(
   annotation: ParsedZodAnnotation,
   context: FieldCommentContext,
+  _zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
 ): MethodMappingResult {
   const { method, parameters } = annotation;
 
@@ -1196,7 +1219,25 @@ function mapAnnotationToZodMethod(
     }
   }
 
-  // Generate the method call
+  // Handle special cases that replace the base type rather than chain
+  if (method === 'json') {
+    // z.json() replaces the base type entirely
+    return {
+      methodCall: 'z.json()',
+      requiredImport: methodConfig.requiresImport,
+    };
+  }
+
+  if (method === 'enum') {
+    // z.enum() replaces the base type entirely
+    const formattedParams = formatParameters(parameters);
+    return {
+      methodCall: `z.enum(${formattedParams})`,
+      requiredImport: methodConfig.requiresImport,
+    };
+  }
+
+  // Generate the method call for regular chaining methods
   const formattedParams = formatParameters(parameters);
   const methodCall = `.${methodConfig.zodMethod}(${formattedParams})`;
 
@@ -1406,6 +1447,12 @@ function getValidationMethodConfig(
     },
     { methodName: 'object', zodMethod: 'object', parameterCount: 0 },
     { methodName: 'array', zodMethod: 'array', parameterCount: 'variable' },
+    {
+      methodName: 'json',
+      zodMethod: 'json',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['Json'],
+    },
     // Note: Removed 'string', 'number', 'boolean' method configs as they duplicate base types
   ];
 
@@ -1503,8 +1550,9 @@ export function generateCompleteZodSchema(
   baseType: string,
   annotations: ParsedZodAnnotation[],
   context: FieldCommentContext,
+  zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
 ): ZodSchemaGenerationResult {
-  const validationResult = mapAnnotationsToZodSchema(annotations, context);
+  const validationResult = mapAnnotationsToZodSchema(annotations, context, zodVersion);
 
   if (!validationResult.isValid) {
     return validationResult;
@@ -1513,13 +1561,23 @@ export function generateCompleteZodSchema(
   // Combine base type with validation chain
   let schemaChain = validationResult.schemaChain;
 
-  // Remove redundant .optional() calls if base type already includes .optional()
-  if (baseType.includes('.optional()') && schemaChain.includes('.optional()')) {
-    // Remove all .optional() calls from the chain since base type already handles optionality
-    schemaChain = schemaChain.replace(/\.optional\(\)/g, '');
-  }
+  // Check if the schema chain is a replacement method (doesn't start with dot)
+  const isReplacementSchema = !schemaChain.startsWith('.');
 
-  const fullSchema = baseType + schemaChain;
+  let fullSchema: string;
+  if (isReplacementSchema) {
+    // For replacement schemas (json, enum), use them directly instead of concatenating
+    fullSchema = schemaChain;
+  } else {
+    // Remove redundant .optional() calls if base type already includes .optional()
+    if (baseType.includes('.optional()') && schemaChain.includes('.optional()')) {
+      // Remove all .optional() calls from the chain since base type already handles optionality
+      schemaChain = schemaChain.replace(/\.optional\(\)/g, '');
+    }
+
+    // Regular concatenation for chaining methods
+    fullSchema = baseType + schemaChain;
+  }
 
   return {
     schemaChain: fullSchema,

@@ -39,6 +39,9 @@ export interface TypeMappingConfig {
   /** Provider-specific options */
   provider?: 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'mongodb';
 
+  /** Zod import target for version-specific behavior */
+  zodImportTarget?: 'auto' | 'v3' | 'v4';
+
   /** Complex type configuration */
   complexTypes: {
     /** Decimal field configuration */
@@ -103,6 +106,7 @@ export const DEFAULT_TYPE_MAPPING_CONFIG: TypeMappingConfig = {
   validateBigInt: true,
   includeDatabaseValidations: true,
   provider: 'postgresql',
+  zodImportTarget: 'auto',
   complexTypes: {
     decimal: {
       validatePrecision: true,
@@ -1402,7 +1406,11 @@ export class PrismaTypeMapper {
       }
 
       // Map annotations to Zod schema
-      const zodSchemaResult = mapAnnotationsToZodSchema(parseResult.annotations, context);
+      const zodSchemaResult = mapAnnotationsToZodSchema(
+        parseResult.annotations,
+        context,
+        this.config.zodImportTarget || 'auto',
+      );
       if (!zodSchemaResult.isValid) {
         result.additionalValidations.push(
           `// @zod mapping errors: ${zodSchemaResult.errors.join(', ')}`,
@@ -1414,26 +1422,35 @@ export class PrismaTypeMapper {
       if (zodSchemaResult.schemaChain) {
         // Remove redundant optional() calls from inline validations; optionality handled later
         const chainNoOptional = zodSchemaResult.schemaChain.replace(/\.optional\(\)/g, '');
-        // Combine base schema with validation chain
-        // The validation chain contains just the validation methods (e.g., '.min(3).max(20)')
-        // We need to combine it with the existing base schema
-        // Special handling: if field is Json and chain includes .record(...),
-        // prefer z.record(...) as the base instead of z.unknown()
-        if (field.type === 'Json' && /\.record\(/.test(chainNoOptional)) {
-          const recordMatch = chainNoOptional.match(/\.record\(([^)]*)\)/);
-          if (recordMatch) {
-            const recordParam = recordMatch[1] || 'z.unknown()';
-            // Build a base z.record(...) and append the remaining chain without the .record(...) segment
-            const remainingChain = chainNoOptional.replace(/\.record\([^)]*\)/, '');
-            result.zodSchema = `z.record(${recordParam})${remainingChain}`;
-          } else {
-            result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
-          }
+
+        // Check if the schema chain contains a replacement method (doesn't start with dot)
+        const isReplacementSchema = !chainNoOptional.startsWith('.');
+
+        if (isReplacementSchema) {
+          // For replacement schemas (json, enum), use them directly
+          result.zodSchema = chainNoOptional;
         } else {
-          if (chainNoOptional.startsWith('.')) {
-            result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
+          // Combine base schema with validation chain
+          // The validation chain contains just the validation methods (e.g., '.min(3).max(20)')
+          // We need to combine it with the existing base schema
+          // Special handling: if field is Json and chain includes .record(...),
+          // prefer z.record(...) as the base instead of z.unknown()
+          if (field.type === 'Json' && /\.record\(/.test(chainNoOptional)) {
+            const recordMatch = chainNoOptional.match(/\.record\(([^)]*)\)/);
+            if (recordMatch) {
+              const recordParam = recordMatch[1] || 'z.unknown()';
+              // Build a base z.record(...) and append the remaining chain without the .record(...) segment
+              const remainingChain = chainNoOptional.replace(/\.record\([^)]*\)/, '');
+              result.zodSchema = `z.record(${recordParam})${remainingChain}`;
+            } else {
+              result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
+            }
           } else {
-            result.zodSchema = chainNoOptional;
+            if (chainNoOptional.startsWith('.')) {
+              result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
+            } else {
+              result.zodSchema = chainNoOptional;
+            }
           }
         }
         result.additionalValidations.push('// Enhanced with @zod inline validations');
