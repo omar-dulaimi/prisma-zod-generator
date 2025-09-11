@@ -1137,13 +1137,13 @@ export function mapAnnotationsToZodSchema(
     // Join all method calls into a chain
     if (methodCalls.length > 0) {
       // Check if any method call is a complete replacement (doesn't start with dot)
-      const hasReplacementMethod = methodCalls.some(call => !call.startsWith('.'));
-      
+      const hasReplacementMethod = methodCalls.some((call) => !call.startsWith('.'));
+
       if (hasReplacementMethod) {
         // If we have replacement methods, they should be the only content
-        const replacementMethods = methodCalls.filter(call => !call.startsWith('.'));
-        const chainMethods = methodCalls.filter(call => call.startsWith('.'));
-        
+        const replacementMethods = methodCalls.filter((call) => !call.startsWith('.'));
+        const chainMethods = methodCalls.filter((call) => call.startsWith('.'));
+
         if (replacementMethods.length > 1) {
           result.errors.push('Multiple replacement methods detected - only one allowed per field');
           result.isValid = false;
@@ -1229,7 +1229,7 @@ function mapAnnotationToZodMethod(
   }
 
   if (method === 'enum') {
-    // z.enum() replaces the base type entirely 
+    // z.enum() replaces the base type entirely
     const formattedParams = formatParameters(parameters);
     return {
       methodCall: `z.enum(${formattedParams})`,
@@ -1574,7 +1574,7 @@ export function generateCompleteZodSchema(
       // Remove all .optional() calls from the chain since base type already handles optionality
       schemaChain = schemaChain.replace(/\.optional\(\)/g, '');
     }
-    
+
     // Regular concatenation for chaining methods
     fullSchema = baseType + schemaChain;
   }

@@ -1407,9 +1407,9 @@ export class PrismaTypeMapper {
 
       // Map annotations to Zod schema
       const zodSchemaResult = mapAnnotationsToZodSchema(
-        parseResult.annotations, 
+        parseResult.annotations,
         context,
-        this.config.zodImportTarget || 'auto'
+        this.config.zodImportTarget || 'auto',
       );
       if (!zodSchemaResult.isValid) {
         result.additionalValidations.push(
@@ -1422,10 +1422,10 @@ export class PrismaTypeMapper {
       if (zodSchemaResult.schemaChain) {
         // Remove redundant optional() calls from inline validations; optionality handled later
         const chainNoOptional = zodSchemaResult.schemaChain.replace(/\.optional\(\)/g, '');
-        
+
         // Check if the schema chain contains a replacement method (doesn't start with dot)
         const isReplacementSchema = !chainNoOptional.startsWith('.');
-        
+
         if (isReplacementSchema) {
           // For replacement schemas (json, enum), use them directly
           result.zodSchema = chainNoOptional;

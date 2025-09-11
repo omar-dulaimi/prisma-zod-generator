@@ -1994,9 +1994,9 @@ async function generatePureModelSchemas(
           config?: { provider?: 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'mongodb' };
         }
       ).config?.provider || 'postgresql';
-    const typeMapper = new PrismaTypeMapper({ 
-      provider, 
-      zodImportTarget: config.zodImportTarget 
+    const typeMapper = new PrismaTypeMapper({
+      provider,
+      zodImportTarget: config.zodImportTarget,
     });
 
     // Detect circular dependencies if the option is enabled

@@ -2160,7 +2160,7 @@ model TypeSafeTest {
 
         try {
           const config = ConfigGenerator.createBasicConfig();
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -2205,10 +2205,10 @@ model JsonTestModel {
 
             // Should contain z.json() for annotated field
             expect(content).toMatch(/metadata:\s*z\.json\(\)/);
-            
+
             // Should NOT contain z.unknown() for annotated field
             expect(content).not.toMatch(/metadata:.*z\.unknown\(\)/);
-            
+
             // Regular Json field should still use default handling
             expect(content).toMatch(/regularJson:.*z\.unknown\(\)/);
           }
@@ -2218,7 +2218,10 @@ model JsonTestModel {
           if (existsSync(modelsPath)) {
             const modelFiles = readFileSync(join(modelsPath, 'index.ts'), 'utf-8');
             if (modelFiles.includes('JsonTestModel')) {
-              const modelContent = readFileSync(join(modelsPath, 'JsonTestModel.schema.ts'), 'utf-8');
+              const modelContent = readFileSync(
+                join(modelsPath, 'JsonTestModel.schema.ts'),
+                'utf-8',
+              );
               expect(modelContent).toMatch(/metadata:\s*z\.json\(\)/);
             }
           }
@@ -2239,7 +2242,7 @@ model JsonTestModel {
             ...ConfigGenerator.createBasicConfig(),
             zodImportTarget: 'v4' as const,
           };
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -2283,12 +2286,14 @@ model EnumTestModel {
             const content = readFileSync(pureVariantPath, 'utf-8');
 
             // Should generate correct z.enum() syntax
-            expect(content).toMatch(/choice:\s*z\.enum\(\['option1',\s*'option2',\s*'option3'\]\)\.nullable\(\)/);
-            
+            expect(content).toMatch(
+              /choice:\s*z\.enum\(\['option1',\s*'option2',\s*'option3'\]\)\.nullable\(\)/,
+            );
+
             // Should NOT contain invalid z.string().enum() syntax
             expect(content).not.toMatch(/z\.string\(\)\.enum\(/);
             expect(content).not.toMatch(/z\.string\(\)z\.enum\(/);
-            
+
             // Regular string field should use normal string validation
             expect(content).toMatch(/regular:\s*z\.string\(\)\.nullable\(\)/);
           }
@@ -2298,8 +2303,13 @@ model EnumTestModel {
           if (existsSync(modelsPath)) {
             const modelFiles = readFileSync(join(modelsPath, 'index.ts'), 'utf-8');
             if (modelFiles.includes('EnumTestModel')) {
-              const modelContent = readFileSync(join(modelsPath, 'EnumTestModel.schema.ts'), 'utf-8');
-              expect(modelContent).toMatch(/choice:\s*z\.enum\(\['option1',\s*'option2',\s*'option3'\]\)\.nullish\(\)/);
+              const modelContent = readFileSync(
+                join(modelsPath, 'EnumTestModel.schema.ts'),
+                'utf-8',
+              );
+              expect(modelContent).toMatch(
+                /choice:\s*z\.enum\(\['option1',\s*'option2',\s*'option3'\]\)\.nullish\(\)/,
+              );
             }
           }
         } finally {
@@ -2319,7 +2329,7 @@ model EnumTestModel {
             ...ConfigGenerator.createBasicConfig(),
             zodImportTarget: 'v3' as const,
           };
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -2363,7 +2373,7 @@ model EnumV3TestModel {
 
             // Should still generate correct z.enum() syntax for v3
             expect(content).toMatch(/color:\s*z\.enum\(\['red',\s*'green',\s*'blue'\]\)/);
-            
+
             // Should NOT contain invalid z.string().enum() syntax
             expect(content).not.toMatch(/z\.string\(\)\.enum\(/);
           }
@@ -2381,7 +2391,7 @@ model EnumV3TestModel {
 
         try {
           const config = ConfigGenerator.createBasicConfig();
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -2427,8 +2437,10 @@ model CombinedTestModel {
 
             // Should have both annotations working correctly
             expect(content).toMatch(/settings:\s*z\.json\(\)/);
-            expect(content).toMatch(/status:\s*z\.enum\(\['pending',\s*'active',\s*'inactive'\]\)\.nullable\(\)/);
-            
+            expect(content).toMatch(
+              /status:\s*z\.enum\(\['pending',\s*'active',\s*'inactive'\]\)\.nullable\(\)/,
+            );
+
             // Should not have invalid syntax
             expect(content).not.toMatch(/z\.unknown\(\)z\.json\(\)/);
             expect(content).not.toMatch(/z\.string\(\)z\.enum\(/);
