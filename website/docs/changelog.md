@@ -9,8 +9,19 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.19.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.20.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.20.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.19.1...v1.20.0) (2025-09-11)
+
+### 🚀 Features
+
+* enhance [@zod](https://github.com/zod).json() and [@zod](https://github.com/zod).enum() support with comprehensive tests ([835f9da](https://github.com/omar-dulaimi/prisma-zod-generator/commit/835f9da026b02337f4cf8f749a3e10dfeecc89ff)), closes [#228](https://github.com/omar-dulaimi/prisma-zod-generator/issues/228)
+
+### 🐛 Bug Fixes
+
+* add support for [@zod](https://github.com/zod).json() and [@zod](https://github.com/zod).enum() annotations with Zod v4 compatibility ([e3172f9](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e3172f941f60ee71d7888d1088d54a5f56c37128))
+* resolve unused variable linting error ([7a80136](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7a8013643848357cffc73eb677092d42d08381eb))
 
 ## [1.19.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.19.0...v1.19.1) (2025-09-11)
 
@@ -797,7 +808,7 @@ For the complete version history including older releases, please see the [full 
 
 ## Version Support
 
-- **Current:** v1.19.x - Full support with new features and bug fixes
+- **Current:** v1.20.x - Full support with new features and bug fixes
 - **Previous:** Previous minor versions - Security and critical bug fixes only
 - **Legacy:** Older versions - Community support only
 
