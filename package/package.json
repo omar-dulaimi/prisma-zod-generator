@@ -1,6 +1,6 @@
 {
   "name": "prisma-zod-generator",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
@@ -44,6 +44,7 @@
     "test:features:coverage": "vitest --config vitest.config.mjs run --coverage tests/config.test.ts tests/filtering.test.ts tests/minimal-mode.test.ts tests/field-exclusion.test.ts tests/zod-comments.test.ts tests/pure-models.test.ts tests/schema-variants.test.ts tests/result-schemas.test.ts tests/circular-dependency-exclusion.ts",
     "test:features:config": "vitest --config vitest.config.mjs run tests/config.test.ts --reporter=default",
     "test:features:aggregate-groupby": "vitest --config vitest.config.mjs run tests/aggregate-groupby.test.ts --reporter=default",
+    "test:features:snake-case-fix": "vitest --config vitest.config.mjs run tests/snake-case-aggregate-fix.test.ts --reporter=default",
     "test:features:filtering": "vitest --config vitest.config.mjs run tests/filtering.test.ts --reporter=default",
     "test:features:minimal": "vitest --config vitest.config.mjs run tests/minimal-mode.test.ts --reporter=default",
     "test:features:exclusion": "vitest --config vitest.config.mjs run tests/field-exclusion.test.ts --reporter=default",

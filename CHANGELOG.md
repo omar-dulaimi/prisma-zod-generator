@@ -1,3 +1,9 @@
+## [1.19.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.19.0...v1.19.1) (2025-09-11)
+
+### 🐛 Bug Fixes
+
+* resolve snake_case aggregate input naming and add comprehensive tests ([b14380a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b14380a1ac4de60554829ca5df299569224fbc45))
+
 ## [1.19.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.18.8...v1.19.0) (2025-09-10)
 
 ### ⚠ BREAKING CHANGES
