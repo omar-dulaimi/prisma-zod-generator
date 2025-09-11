@@ -1,3 +1,14 @@
+## [1.20.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.19.1...v1.20.0) (2025-09-11)
+
+### 🚀 Features
+
+* enhance [@zod](https://github.com/zod).json() and [@zod](https://github.com/zod).enum() support with comprehensive tests ([835f9da](https://github.com/omar-dulaimi/prisma-zod-generator/commit/835f9da026b02337f4cf8f749a3e10dfeecc89ff)), closes [#228](https://github.com/omar-dulaimi/prisma-zod-generator/issues/228)
+
+### 🐛 Bug Fixes
+
+* add support for [@zod](https://github.com/zod).json() and [@zod](https://github.com/zod).enum() annotations with Zod v4 compatibility ([e3172f9](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e3172f941f60ee71d7888d1088d54a5f56c37128))
+* resolve unused variable linting error ([7a80136](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7a8013643848357cffc73eb677092d42d08381eb))
+
 ## [1.19.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.19.0...v1.19.1) (2025-09-11)
 
 ### 🐛 Bug Fixes
