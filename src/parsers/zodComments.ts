@@ -1185,7 +1185,7 @@ interface MethodMappingResult {
 function mapAnnotationToZodMethod(
   annotation: ParsedZodAnnotation,
   context: FieldCommentContext,
-  zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
+  _zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
 ): MethodMappingResult {
   const { method, parameters } = annotation;
 
