@@ -2151,4 +2151,293 @@ model TypeSafeTest {
       GENERATION_TIMEOUT,
     );
   });
+
+  describe('Issue #228: @zod.json() and @zod.enum() Support', () => {
+    it(
+      'should handle @zod.json() annotations for Json fields',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-228-json');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model JsonTestModel {
+  id         String @id @default(cuid())
+  /// @zod.json()
+  metadata   Json   @db.JsonB
+  regularJson Json
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check pure model variant
+          const pureVariantPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'JsonTestModel.pure.ts',
+          );
+
+          if (existsSync(pureVariantPath)) {
+            const content = readFileSync(pureVariantPath, 'utf-8');
+
+            // Should contain z.json() for annotated field
+            expect(content).toMatch(/metadata:\s*z\.json\(\)/);
+            
+            // Should NOT contain z.unknown() for annotated field
+            expect(content).not.toMatch(/metadata:.*z\.unknown\(\)/);
+            
+            // Regular Json field should still use default handling
+            expect(content).toMatch(/regularJson:.*z\.unknown\(\)/);
+          }
+
+          // Also check models directory
+          const modelsPath = join(testEnv.outputDir, 'schemas', 'models');
+          if (existsSync(modelsPath)) {
+            const modelFiles = readFileSync(join(modelsPath, 'index.ts'), 'utf-8');
+            if (modelFiles.includes('JsonTestModel')) {
+              const modelContent = readFileSync(join(modelsPath, 'JsonTestModel.schema.ts'), 'utf-8');
+              expect(modelContent).toMatch(/metadata:\s*z\.json\(\)/);
+            }
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle @zod.enum() annotations with correct Zod v4 syntax',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-228-enum');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            zodImportTarget: 'v4' as const,
+          };
+          
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" 
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model EnumTestModel {
+  id       String @id @default(cuid())
+  /// @zod.enum(["option1", "option2", "option3"])
+  choice   String?
+  regular  String?
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check pure model variant
+          const pureVariantPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'EnumTestModel.pure.ts',
+          );
+
+          if (existsSync(pureVariantPath)) {
+            const content = readFileSync(pureVariantPath, 'utf-8');
+
+            // Should generate correct z.enum() syntax
+            expect(content).toMatch(/choice:\s*z\.enum\(\['option1',\s*'option2',\s*'option3'\]\)\.nullable\(\)/);
+            
+            // Should NOT contain invalid z.string().enum() syntax
+            expect(content).not.toMatch(/z\.string\(\)\.enum\(/);
+            expect(content).not.toMatch(/z\.string\(\)z\.enum\(/);
+            
+            // Regular string field should use normal string validation
+            expect(content).toMatch(/regular:\s*z\.string\(\)\.nullable\(\)/);
+          }
+
+          // Also check models directory
+          const modelsPath = join(testEnv.outputDir, 'schemas', 'models');
+          if (existsSync(modelsPath)) {
+            const modelFiles = readFileSync(join(modelsPath, 'index.ts'), 'utf-8');
+            if (modelFiles.includes('EnumTestModel')) {
+              const modelContent = readFileSync(join(modelsPath, 'EnumTestModel.schema.ts'), 'utf-8');
+              expect(modelContent).toMatch(/choice:\s*z\.enum\(\['option1',\s*'option2',\s*'option3'\]\)\.nullish\(\)/);
+            }
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle @zod.enum() with Zod v3 compatibility',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-228-enum-v3');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            zodImportTarget: 'v3' as const,
+          };
+          
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model EnumV3TestModel {
+  id       String @id @default(cuid())
+  /// @zod.enum(["red", "green", "blue"])
+  color    String
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check pure model variant
+          const pureVariantPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'EnumV3TestModel.pure.ts',
+          );
+
+          if (existsSync(pureVariantPath)) {
+            const content = readFileSync(pureVariantPath, 'utf-8');
+
+            // Should still generate correct z.enum() syntax for v3
+            expect(content).toMatch(/color:\s*z\.enum\(\['red',\s*'green',\s*'blue'\]\)/);
+            
+            // Should NOT contain invalid z.string().enum() syntax
+            expect(content).not.toMatch(/z\.string\(\)\.enum\(/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should combine @zod.json() and @zod.enum() in same model',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-228-combined');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model CombinedTestModel {
+  id         String @id @default(cuid())
+  /// @zod.json()
+  settings   Json   @db.JsonB
+  /// @zod.enum(["pending", "active", "inactive"])
+  status     String?
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check pure model variant
+          const pureVariantPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'CombinedTestModel.pure.ts',
+          );
+
+          if (existsSync(pureVariantPath)) {
+            const content = readFileSync(pureVariantPath, 'utf-8');
+
+            // Should have both annotations working correctly
+            expect(content).toMatch(/settings:\s*z\.json\(\)/);
+            expect(content).toMatch(/status:\s*z\.enum\(\['pending',\s*'active',\s*'inactive'\]\)\.nullable\(\)/);
+            
+            // Should not have invalid syntax
+            expect(content).not.toMatch(/z\.unknown\(\)z\.json\(\)/);
+            expect(content).not.toMatch(/z\.string\(\)z\.enum\(/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });

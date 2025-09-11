@@ -99,6 +99,9 @@ export interface ZodIntegrationOptions {
 
   /** Custom base types for specific field types */
   customBaseTypes?: Record<string, string>;
+
+  /** Zod version target for version-specific handling */
+  zodVersion?: 'auto' | 'v3' | 'v4';
 }
 
 /**
@@ -222,6 +225,7 @@ function processFieldWithZodIntegration(
       baseType,
       parseResult.annotations,
       extractedComment.context,
+      options.zodVersion || 'auto',
     );
 
     if (schemaResult.isValid) {
