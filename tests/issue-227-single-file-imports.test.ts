@@ -125,16 +125,17 @@ model User {
           const schemasDir = join(testEnv.outputDir, 'schemas');
           const bundlePath = join(schemasDir, 'schemas.ts');
 
-          if (existsSync(bundlePath)) {
-            const content = readFileSync(bundlePath, 'utf-8');
+          // Explicitly assert that the bundle exists - test should fail loudly if generation failed
+          expect(existsSync(bundlePath)).toBeTruthy();
+          
+          const content = readFileSync(bundlePath, 'utf-8');
 
-            // Should either use clean @prisma/client or a relative path, but never node_modules paths
-            expect(content).not.toMatch(/node_modules.*@prisma.*client/);
-            expect(content).not.toMatch(/\.pnpm/);
+          // Should either use clean @prisma/client or a relative path, but never node_modules paths
+          expect(content).not.toMatch(/node_modules.*@prisma.*client/);
+          expect(content).not.toMatch(/\.pnpm/);
 
-            // Should have a Prisma import line
-            expect(content).toMatch(/import.*Prisma.*from/);
-          }
+          // Should have a Prisma import line
+          expect(content).toMatch(/import.*Prisma.*from/);
         } finally {
           await testEnv.cleanup();
         }
