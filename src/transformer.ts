@@ -2104,26 +2104,31 @@ export default class Transformer {
       // - requires at least one single unique OR one complete composite group
       // - enforces composite completeness when any field from a group is provided
       const refine = `.superRefine((obj, ctx) => {
-        const present = (k: string) => (obj as any)[k] != null;
+        const presentTop = (k: string) => (obj as any)[k] != null;
         const singles: string[] = ${singleUniqueJson} as string[];
         const groups: string[][] = ${compositeGroupsJson} as string[][];
 
-        const anySingle = Array.isArray(singles) && singles.length > 0 ? singles.some(present) : false;
+        const anySingle = Array.isArray(singles) && singles.length > 0 ? singles.some(presentTop) : false;
 
         let anyComposite = false;
-        if (Array.isArray(groups)) {
-          for (const g of groups as string[][]) {
-            if (!Array.isArray(g) || g.length === 0) continue;
-            const count = (g as string[]).filter(present).length;
-            if (count > 0 && count < g.length) {
-              for (const f of g as string[]) {
-                if (!present(f)) {
-                  ctx.addIssue({ code: 'custom', message: 'All fields of composite unique must be provided', path: [f] });
+        if (Array.isArray(groups) && groups.length > 0) {
+          // Iterate over nested composite selectors (e.g., { composite_key_name: { a: ..., b: ... } })
+          for (const [propKey, composite] of Object.entries(obj as Record<string, unknown>)) {
+            if (!composite || typeof composite !== 'object') continue;
+            for (const g of groups as string[][]) {
+              if (!Array.isArray(g) || g.length === 0) continue;
+              const presentInComposite = (k: string) => (composite as any)[k] != null;
+              const provided = (g as string[]).filter(presentInComposite).length;
+              if (provided > 0 && provided < g.length) {
+                for (const f of g as string[]) {
+                  if (!presentInComposite(f)) {
+                    ctx.addIssue({ code: 'custom', message: 'All fields of composite unique must be provided', path: [propKey, f] });
+                  }
                 }
               }
-            }
-            if (count === g.length && g.length > 0) {
-              anyComposite = true;
+              if (provided === g.length && g.length > 0) {
+                anyComposite = true;
+              }
             }
           }
         }
