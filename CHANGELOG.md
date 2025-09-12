@@ -1,3 +1,16 @@
+## [1.20.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.20.0...v1.20.1) (2025-09-12)
+
+### 🐛 Bug Fixes
+
+* enable constraint resolution for Zod v4 email syntax ([3ea22ca](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3ea22ca836873139a02c7c4030ce4275c4e9421b)), closes [#227](https://github.com/omar-dulaimi/prisma-zod-generator/issues/227)
+* improve Zod annotation detection for optional/nullable/nullish calls ([2f56c47](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2f56c471da84e22d06ae106affc76d681da89fb2))
+* resolve [@zod](https://github.com/zod) comment annotation parsing issues ([38c9186](https://github.com/omar-dulaimi/prisma-zod-generator/commit/38c91869ee829f0fc9a20b2a6c342ae114839aa4)), closes [#227](https://github.com/omar-dulaimi/prisma-zod-generator/issues/227) [#227](https://github.com/omar-dulaimi/prisma-zod-generator/issues/227)
+* resolve ESLint errors for Issue [#227](https://github.com/omar-dulaimi/prisma-zod-generator/issues/227) implementation ([8391aef](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8391aefdbf50d8992a07b8afb783a9fa957df9b5))
+
+### ⚡ Performance Improvements
+
+* optimize parallel test workers for low-end hardware ([db5b257](https://github.com/omar-dulaimi/prisma-zod-generator/commit/db5b25727a49f276fa2045e6fdcf1721ed0656e6))
+
 ## [1.20.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.19.1...v1.20.0) (2025-09-11)
 
 ### 🚀 Features
