@@ -10,7 +10,6 @@ import {
   extractFieldComments,
   parseZodAnnotations,
   generateCompleteZodSchema,
-  getBaseZodType,
   getBaseZodTypeForField,
   getRequiredImports,
   ExtractedFieldComment,
