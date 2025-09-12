@@ -1425,11 +1425,11 @@ export class PrismaTypeMapper {
         const shouldPreserveOptional =
           field.kind === 'object' ||
           (field.relationName && field.relationName.length > 0) ||
-          zodSchemaResult.schemaChain.includes('@zod.optional()');
+          /\.(optional|nullable|nullish)\(\)/.test(zodSchemaResult.schemaChain);
 
         const chainNoOptional = shouldPreserveOptional
-          ? zodSchemaResult.schemaChain // Keep user's .optional() calls
-          : zodSchemaResult.schemaChain.replace(/\.optional\(\)/g, ''); // Strip for scalar fields
+          ? zodSchemaResult.schemaChain // Keep user's .optional()/.nullable()/.nullish() calls
+          : zodSchemaResult.schemaChain.replace(/\.optional\(\)/g, ''); // Strip only .optional() for scalar fields, keep .nullable()/.nullish()
 
         // Check if the schema chain contains a replacement method (doesn't start with dot)
         const isReplacementSchema = !chainNoOptional.startsWith('.');
