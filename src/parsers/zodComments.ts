@@ -1116,15 +1116,17 @@ export function mapAnnotationsToZodSchema(
 
   try {
     const methodCalls: string[] = [];
+    const methodResults: MethodMappingResult[] = [];
 
     for (const annotation of annotations) {
       try {
-        const methodCall = mapAnnotationToZodMethod(annotation, context, zodVersion);
-        methodCalls.push(methodCall.methodCall);
+        const methodResult = mapAnnotationToZodMethod(annotation, context, zodVersion);
+        methodCalls.push(methodResult.methodCall);
+        methodResults.push(methodResult);
 
         // Add any required imports
-        if (methodCall.requiredImport) {
-          result.imports.add(methodCall.requiredImport);
+        if (methodResult.requiredImport) {
+          result.imports.add(methodResult.requiredImport);
         }
       } catch (error) {
         result.errors.push(
@@ -1136,20 +1138,30 @@ export function mapAnnotationsToZodSchema(
 
     // Join all method calls into a chain
     if (methodCalls.length > 0) {
-      // Check if any method call is a complete replacement (doesn't start with dot)
-      const hasReplacementMethod = methodCalls.some((call) => !call.startsWith('.'));
+      // Check if we have a base replacement method (like z.email() in v4)
+      const baseReplacements = methodResults.filter((result) => result.isBaseReplacement);
+      const regularReplacements = methodCalls.filter((call) => !call.startsWith('.') && 
+        !methodResults.find(r => r.methodCall === call)?.isBaseReplacement);
+      const chainMethods = methodCalls.filter((call) => call.startsWith('.'));
 
-      if (hasReplacementMethod) {
-        // If we have replacement methods, they should be the only content
-        const replacementMethods = methodCalls.filter((call) => !call.startsWith('.'));
+      if (baseReplacements.length > 0) {
+        // Handle base replacement (like z.email() in v4) with chaining
+        if (baseReplacements.length > 1) {
+          result.errors.push('Multiple base replacement methods detected - only one allowed per field');
+          result.isValid = false;
+        } else {
+          result.schemaChain = baseReplacements[0].methodCall + chainMethods.join('');
+        }
+      } else if (regularReplacements.length > 0) {
+        // Handle regular replacement methods (json, enum)
         const chainMethods = methodCalls.filter((call) => call.startsWith('.'));
 
-        if (replacementMethods.length > 1) {
+        if (regularReplacements.length > 1) {
           result.errors.push('Multiple replacement methods detected - only one allowed per field');
           result.isValid = false;
         } else {
           // Use the replacement method as base, then chain any additional methods
-          result.schemaChain = replacementMethods[0] + chainMethods.join('');
+          result.schemaChain = regularReplacements[0] + chainMethods.join('');
         }
       } else {
         // All are chaining methods, join normally
@@ -1172,6 +1184,7 @@ export function mapAnnotationsToZodSchema(
 interface MethodMappingResult {
   methodCall: string;
   requiredImport?: string;
+  isBaseReplacement?: boolean;
 }
 
 /**
@@ -1282,9 +1295,11 @@ function mapAnnotationToZodMethod(
     
     if (resolvedVersion === 'v4') {
       // In Zod v4, use z.email() as base type instead of z.string().email()
+      // Mark this as a base type replacement that can still be chained
       return {
         methodCall: 'z.email()',
         requiredImport: methodConfig.requiresImport,
+        isBaseReplacement: true,
       };
     }
     // For v3, fall through to regular chaining method below

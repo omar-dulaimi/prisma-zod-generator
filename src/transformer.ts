@@ -1420,13 +1420,23 @@ export default class Transformer {
           // Find the base type and add max constraint after it
           if (line.includes('z.string()')) {
             line = line.replace('z.string()', `z.string().max(${nativeMaxLength})`);
+          } else if (line.includes('z.email()')) {
+            // Handle Zod v4 email syntax - add max constraint after z.email()
+            line = line.replace('z.email()', `z.email().max(${nativeMaxLength})`);
           } else {
             // Handle cases where the string type is already transformed
             const baseStringMatch = line.match(/(z\.string\(\)[^.]*)/);
+            const baseEmailMatch = line.match(/(z\.email\(\)[^.]*)/);
             if (baseStringMatch) {
               line = line.replace(
                 baseStringMatch[1],
                 `${baseStringMatch[1]}.max(${nativeMaxLength})`,
+              );
+            } else if (baseEmailMatch) {
+              // Handle Zod v4 email with potential chaining
+              line = line.replace(
+                baseEmailMatch[1],
+                `${baseEmailMatch[1]}.max(${nativeMaxLength})`,
               );
             }
           }
@@ -1757,14 +1767,21 @@ export default class Transformer {
     // Remove all existing .max(number) constraints
     const withoutMax = validationString.replace(/\.max\(\d+\)/g, '');
 
-    // Add the new max constraint after z.string()
+    // Add the new max constraint after z.string() or z.email()
     if (withoutMax.includes('z.string()')) {
       return withoutMax.replace('z.string()', `z.string().max(${newMaxValue})`);
+    } else if (withoutMax.includes('z.email()')) {
+      // Handle Zod v4 email syntax
+      return withoutMax.replace('z.email()', `z.email().max(${newMaxValue})`);
     } else {
-      // Handle cases where string type is already transformed - add after the base type
+      // Handle cases where string/email type is already transformed - add after the base type
       const baseStringMatch = withoutMax.match(/(z\.string\(\)[^.]*)/);
+      const baseEmailMatch = withoutMax.match(/(z\.email\(\)[^.]*)/);
+      
       if (baseStringMatch) {
         return withoutMax.replace(baseStringMatch[1], `${baseStringMatch[1]}.max(${newMaxValue})`);
+      } else if (baseEmailMatch) {
+        return withoutMax.replace(baseEmailMatch[1], `${baseEmailMatch[1]}.max(${newMaxValue})`);
       }
     }
 
