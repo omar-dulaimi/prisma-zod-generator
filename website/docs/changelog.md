@@ -9,8 +9,15 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.20.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.20.2**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.20.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.20.1...v1.20.2) (2025-09-12)
+
+### 🐛 Bug Fixes
+
+* **variants:** do not treat relations as enums; add field-aware base types for [@zod](https://github.com/zod) integration and ensure variant enum imports use <Enum>Schema ([a236939](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a23693949cdbccdb78ab3beaef1033305197f5f9))
+* **whereUnique:** handle composite unique selectors nested under key names; superRefine now validates completeness inside nested objects and accepts composite PK/unique ([8ea437c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8ea437c46bc907c63b8376ab3b93752780e17e3c))
 
 ## [1.20.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.20.0...v1.20.1) (2025-09-12)
 
