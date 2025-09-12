@@ -1201,6 +1201,7 @@ function resolveZodVersion(zodVersion: 'auto' | 'v3' | 'v4'): 'v3' | 'v4' {
   // Auto-detect Zod version
   try {
     // Try to detect Zod version by loading zod package.json
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const zodPackage = require('zod/package.json');
     const version = zodPackage.version;
     
@@ -1208,15 +1209,16 @@ function resolveZodVersion(zodVersion: 'auto' | 'v3' | 'v4'): 'v3' | 'v4' {
       const majorVersion = parseInt(version.split('.')[0], 10);
       return majorVersion >= 4 ? 'v4' : 'v3';
     }
-  } catch (error) {
+  } catch {
     // If we can't load zod package.json, try alternative detection
     try {
       // Try to detect by checking if z.email() method exists as standalone
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const zod = require('zod');
       if (typeof zod.z?.email === 'function') {
         return 'v4';
       }
-    } catch (innerError) {
+    } catch {
       // Ignore inner detection errors
     }
   }

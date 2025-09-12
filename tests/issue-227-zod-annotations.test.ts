@@ -86,9 +86,9 @@ model Post {
             join(objectsDir, 'PostUpdateManyWithoutAuthorNestedInput.schema.ts'),
           ];
 
+          // Check if relationship field preserves .optional() - tested more thoroughly below
           for (const schemaPath of postsRelationSchemas) {
             if (existsSync(schemaPath)) {
-              const content = readFileSync(schemaPath, 'utf-8');
               // The .optional() should be preserved at the field level in parent schemas
               // This is tested more thoroughly in the relationship optional test below
             }
@@ -166,7 +166,6 @@ model Profile {
             'UserUpdateWithoutPostsInput.schema.ts',
           ];
 
-          let foundOptionalPosts = false;
           let foundOptionalProfile = false;
 
           for (const schemaFile of userSchemas) {
@@ -175,16 +174,13 @@ model Profile {
               const content = readFileSync(schemaPath, 'utf-8');
               
               // Check for optional relationship fields
-              if (content.includes('posts:') && content.match(/posts:.*\.optional\(\)/)) {
-                foundOptionalPosts = true;
-              }
               if (content.includes('profile:') && content.match(/profile:.*\.optional\(\)/)) {
                 foundOptionalProfile = true;
               }
             }
           }
 
-          // At least one of the schemas should have optional posts and profile
+          // At least one of the schemas should have optional profile
           // Note: Some schemas may not include all fields (e.g., UserCreateWithoutPostsInput won't have posts)
           expect(foundOptionalProfile).toBe(true);
           // Posts relationship might be handled differently in CRUD operations, check more broadly

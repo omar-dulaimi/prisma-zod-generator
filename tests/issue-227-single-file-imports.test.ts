@@ -247,6 +247,7 @@ model Post {
           }
 
           // Verify it's truly a single file
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
           const schemasFiles = require('fs').readdirSync(schemasDir).filter((f: string) => f.endsWith('.ts'));
           expect(schemasFiles).toHaveLength(1);
           expect(schemasFiles[0]).toBe('schemas.ts');
