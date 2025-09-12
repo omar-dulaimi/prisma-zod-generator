@@ -303,16 +303,17 @@ model TestModel {
           const schemasDir = join(testEnv.outputDir, 'schemas');
           const bundlePath = join(schemasDir, 'schemas.ts');
 
-          if (existsSync(bundlePath)) {
-            const content = readFileSync(bundlePath, 'utf-8');
+          // Explicitly assert that the bundle exists - test should fail loudly if generation failed
+          expect(existsSync(bundlePath)).toBe(true);
+          
+          const content = readFileSync(bundlePath, 'utf-8');
 
-            // Should not have the deeply nested pnpm path regardless
-            expect(content).not.toMatch(/\.pnpm/);
-            expect(content).not.toMatch(/node_modules.*@prisma.*client/);
+          // Should not have the deeply nested pnpm path regardless
+          expect(content).not.toMatch(/\.pnpm/);
+          expect(content).not.toMatch(/node_modules.*@prisma.*client/);
 
-            // Should have some form of Prisma import
-            expect(content).toMatch(/import.*Prisma.*from/);
-          }
+          // Should have some form of Prisma import
+          expect(content).toMatch(/import.*Prisma.*from/);
         } finally {
           await testEnv.cleanup();
         }
