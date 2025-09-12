@@ -165,8 +165,8 @@ export function detectZodAnnotations(comment: string): boolean {
     return false;
   }
 
-  // Look for @zod patterns (case-insensitive)
-  const zodPattern = /@zod\./i;
+  // Look for @zod patterns (case-insensitive) - allow optional whitespace between @zod and .
+  const zodPattern = /@zod\s*\./i;
   return zodPattern.test(comment);
 }
 
@@ -245,8 +245,8 @@ function validateParentheses(comment: string, context: FieldCommentContext): str
 function validateZodSyntax(comment: string, context: FieldCommentContext): string[] {
   const errors: string[] = [];
 
-  // Look for @zod annotations and validate basic structure
-  const zodMatches = comment.match(/@zod\.[a-zA-Z_][a-zA-Z0-9_]*(\([^)]*\))?/gi);
+  // Look for @zod annotations and validate basic structure - allow optional whitespace
+  const zodMatches = comment.match(/@zod\s*\.[a-zA-Z_][a-zA-Z0-9_]*(\([^)]*\))?/gi);
 
   if (zodMatches) {
     zodMatches.forEach((match, _index) => {
@@ -385,9 +385,9 @@ export function parseZodAnnotations(
         result.isValid = false;
       }
     } else {
-      // Handle simple @zod annotations
-      // Matches: @zod.methodName(), @zod.methodName(param), @zod.methodName(param1, param2)
-      const zodPattern = /@zod\.([a-zA-Z_][a-zA-Z0-9_]*)\s*(\([^)]*\))?/gi;
+      // Handle simple @zod annotations - allow optional whitespace between @zod and .
+      // Matches: @zod.methodName(), @zod .methodName(param), @zod.methodName(param1, param2)
+      const zodPattern = /@zod\s*\.([a-zA-Z_][a-zA-Z0-9_]*)\s*(\([^)]*\))?/gi;
 
       let match;
       while ((match = zodPattern.exec(comment)) !== null) {
@@ -1175,6 +1175,45 @@ interface MethodMappingResult {
 }
 
 /**
+ * Resolve the target Zod version for syntax generation
+ *
+ * @param zodVersion - Version specification ('auto', 'v3', or 'v4')
+ * @returns Resolved version ('v3' or 'v4')
+ */
+function resolveZodVersion(zodVersion: 'auto' | 'v3' | 'v4'): 'v3' | 'v4' {
+  if (zodVersion === 'v3' || zodVersion === 'v4') {
+    return zodVersion;
+  }
+
+  // Auto-detect Zod version
+  try {
+    // Try to detect Zod version by loading zod package.json
+    const zodPackage = require('zod/package.json');
+    const version = zodPackage.version;
+    
+    if (version) {
+      const majorVersion = parseInt(version.split('.')[0], 10);
+      return majorVersion >= 4 ? 'v4' : 'v3';
+    }
+  } catch (error) {
+    // If we can't load zod package.json, try alternative detection
+    try {
+      // Try to detect by checking if z.email() method exists as standalone
+      const zod = require('zod');
+      if (typeof zod.z?.email === 'function') {
+        return 'v4';
+      }
+    } catch (innerError) {
+      // Ignore inner detection errors
+    }
+  }
+
+  // Fallback to v3 if detection fails
+  console.warn('Failed to detect Zod version, defaulting to v3 syntax');
+  return 'v3';
+}
+
+/**
  * Map a single annotation to a Zod method call
  *
  * @param annotation - Parsed annotation
@@ -1185,7 +1224,7 @@ interface MethodMappingResult {
 function mapAnnotationToZodMethod(
   annotation: ParsedZodAnnotation,
   context: FieldCommentContext,
-  _zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
+  zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
 ): MethodMappingResult {
   const { method, parameters } = annotation;
 
@@ -1235,6 +1274,20 @@ function mapAnnotationToZodMethod(
       methodCall: `z.enum(${formattedParams})`,
       requiredImport: methodConfig.requiresImport,
     };
+  }
+
+  // Handle email method with Zod v4 compatibility
+  if (method === 'email') {
+    const resolvedVersion = resolveZodVersion(zodVersion);
+    
+    if (resolvedVersion === 'v4') {
+      // In Zod v4, use z.email() as base type instead of z.string().email()
+      return {
+        methodCall: 'z.email()',
+        requiredImport: methodConfig.requiresImport,
+      };
+    }
+    // For v3, fall through to regular chaining method below
   }
 
   // Generate the method call for regular chaining methods
