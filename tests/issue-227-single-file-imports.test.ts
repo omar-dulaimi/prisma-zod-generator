@@ -127,7 +127,7 @@ model User {
 
           // Explicitly assert that the bundle exists - test should fail loudly if generation failed
           expect(existsSync(bundlePath)).toBeTruthy();
-          
+
           const content = readFileSync(bundlePath, 'utf-8');
 
           // Should either use clean @prisma/client or a relative path, but never node_modules paths
@@ -305,7 +305,7 @@ model TestModel {
 
           // Explicitly assert that the bundle exists - test should fail loudly if generation failed
           expect(existsSync(bundlePath)).toBe(true);
-          
+
           const content = readFileSync(bundlePath, 'utf-8');
 
           // Should not have the deeply nested pnpm path regardless

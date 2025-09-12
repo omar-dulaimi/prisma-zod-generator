@@ -60,7 +60,7 @@ model Post {
 
           // Explicitly assert that the schema file exists - test should fail loudly if generation failed
           expect(existsSync(userCreatePath)).toBe(true);
-          
+
           const content = readFileSync(userCreatePath, 'utf-8');
 
           // Should handle spacing in @zod .min(2).max(50).trim()
@@ -237,7 +237,7 @@ model User {
 
           // Explicitly assert that the schema file exists - test should fail loudly if generation failed
           expect(existsSync(userCreatePath)).toBe(true);
-          
+
           const content = readFileSync(userCreatePath, 'utf-8');
 
           // Should use Zod v4 syntax z.email() instead of z.string().email()
@@ -331,7 +331,7 @@ model Profile {
 
           // Explicitly assert that the schema file exists - test should fail loudly if generation failed
           expect(existsSync(userCreatePath)).toBe(true);
-          
+
           const content = readFileSync(userCreatePath, 'utf-8');
 
           // Zod v4 email syntax
@@ -349,7 +349,7 @@ model Profile {
           const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
           // Explicitly assert that the schema file exists - test should fail loudly if generation failed
           expect(existsSync(postCreatePath)).toBe(true);
-          
+
           const postContent = readFileSync(postCreatePath, 'utf-8');
 
           // Spacing tolerance on Post model
