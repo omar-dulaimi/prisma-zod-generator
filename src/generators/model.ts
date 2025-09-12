@@ -1422,12 +1422,13 @@ export class PrismaTypeMapper {
       if (zodSchemaResult.schemaChain) {
         // Preserve user-defined .optional() calls for relationship fields or when user explicitly wants control
         // Only strip .optional() for scalar fields where optionality is handled by the field mapping logic
-        const shouldPreserveOptional = field.kind === 'object' || 
+        const shouldPreserveOptional =
+          field.kind === 'object' ||
           (field.relationName && field.relationName.length > 0) ||
           zodSchemaResult.schemaChain.includes('@zod.optional()');
-          
+
         const chainNoOptional = shouldPreserveOptional
-          ? zodSchemaResult.schemaChain  // Keep user's .optional() calls
+          ? zodSchemaResult.schemaChain // Keep user's .optional() calls
           : zodSchemaResult.schemaChain.replace(/\.optional\(\)/g, ''); // Strip for scalar fields
 
         // Check if the schema chain contains a replacement method (doesn't start with dot)

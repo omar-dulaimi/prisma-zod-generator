@@ -1,11 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import {
-  TestEnvironment,
-  ConfigGenerator,
-  GENERATION_TIMEOUT,
-} from './helpers';
+import { TestEnvironment, ConfigGenerator, GENERATION_TIMEOUT } from './helpers';
 
 describe('GitHub Issue #227 - Single File Mode Import Fixes', () => {
   describe('@prisma/client Import Path Fix', () => {
@@ -20,7 +16,7 @@ describe('GitHub Issue #227 - Single File Mode Import Fixes', () => {
             useMultipleFiles: false, // Enable single-file mode
           };
           const configPath = join(testEnv.testDir, 'config.json');
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -66,17 +62,17 @@ model Post {
 
           // Should have clean @prisma/client import
           expect(content).toMatch(/import type \{ Prisma \} from '@prisma\/client';/);
-          
+
           // Should NOT have deeply nested node_modules path
           expect(content).not.toMatch(/node_modules.*@prisma.*client/);
           expect(content).not.toMatch(/\.pnpm/);
-          
+
           // Should not contain any absolute paths to node_modules
           expect(content).not.toMatch(/\/node_modules\//);
-          
+
           // Verify the import is at the top of the file
           const lines = content.split('\n');
-          const importLine = lines.find(line => line.includes('import type { Prisma }'));
+          const importLine = lines.find((line) => line.includes('import type { Prisma }'));
           expect(importLine).toBeTruthy();
           expect(importLine).toBe("import type { Prisma } from '@prisma/client';");
         } finally {
@@ -97,7 +93,7 @@ model Post {
             useMultipleFiles: false,
           };
           const configPath = join(testEnv.testDir, 'config.json');
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -135,7 +131,7 @@ model User {
             // Should either use clean @prisma/client or a relative path, but never node_modules paths
             expect(content).not.toMatch(/node_modules.*@prisma.*client/);
             expect(content).not.toMatch(/\.pnpm/);
-            
+
             // Should have a Prisma import line
             expect(content).toMatch(/import.*Prisma.*from/);
           }
@@ -160,7 +156,7 @@ model User {
             pureModels: true,
           };
           const configPath = join(testEnv.testDir, 'config.json');
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -248,7 +244,9 @@ model Post {
 
           // Verify it's truly a single file
           // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const schemasFiles = require('fs').readdirSync(schemasDir).filter((f: string) => f.endsWith('.ts'));
+          const schemasFiles = require('fs')
+            .readdirSync(schemasDir)
+            .filter((f: string) => f.endsWith('.ts'));
           expect(schemasFiles).toHaveLength(1);
           expect(schemasFiles[0]).toBe('schemas.ts');
         } finally {
@@ -271,7 +269,7 @@ model Post {
             useMultipleFiles: false,
           };
           const configPath = join(testEnv.testDir, 'config.json');
-          
+
           // Create a schema with a path that contains 'node_modules' but shouldn't trigger the fix
           const schema = `
 generator client {
@@ -310,7 +308,7 @@ model TestModel {
             // Should not have the deeply nested pnpm path regardless
             expect(content).not.toMatch(/\.pnpm/);
             expect(content).not.toMatch(/node_modules.*@prisma.*client/);
-            
+
             // Should have some form of Prisma import
             expect(content).toMatch(/import.*Prisma.*from/);
           }

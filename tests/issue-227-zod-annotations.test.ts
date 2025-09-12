@@ -1,11 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import {
-  TestEnvironment,
-  ConfigGenerator,
-  GENERATION_TIMEOUT,
-} from './helpers';
+import { TestEnvironment, ConfigGenerator, GENERATION_TIMEOUT } from './helpers';
 
 describe('GitHub Issue #227 - @zod Comment Annotations Fixes', () => {
   describe('Spacing Sensitivity Fix', () => {
@@ -17,7 +13,7 @@ describe('GitHub Issue #227 - @zod Comment Annotations Fixes', () => {
         try {
           const config = ConfigGenerator.createBasicConfig();
           const configPath = join(testEnv.testDir, 'config.json');
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -110,7 +106,7 @@ model Post {
         try {
           const config = ConfigGenerator.createBasicConfig();
           const configPath = join(testEnv.testDir, 'config.json');
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -157,7 +153,7 @@ model Profile {
           await testEnv.runGeneration();
 
           const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
-          
+
           // Check User schemas that should have .optional() preserved
           const userSchemas = [
             'UserCreateInput.schema.ts',
@@ -172,7 +168,7 @@ model Profile {
             const schemaPath = join(objectsDir, schemaFile);
             if (existsSync(schemaPath)) {
               const content = readFileSync(schemaPath, 'utf-8');
-              
+
               // Check for optional relationship fields
               if (content.includes('profile:') && content.match(/profile:.*\.optional\(\)/)) {
                 foundOptionalProfile = true;
@@ -202,7 +198,7 @@ model Profile {
         try {
           const config = ConfigGenerator.createBasicConfig();
           const configPath = join(testEnv.testDir, 'config.json');
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -243,13 +239,13 @@ model User {
 
             // Should use Zod v4 syntax z.email() instead of z.string().email()
             expect(content).toMatch(/z\.email\(\)/);
-            
+
             // Should support chaining with z.email().max(100)
             expect(content).toMatch(/z\.email\(\)\.max\(100\)/);
-            
+
             // Should support complex chaining: z.email().max(100).trim().toLowerCase()
             expect(content).toMatch(/z\.email\(\)\.max\(100\)\.trim\(\)\.toLowerCase\(\)/);
-            
+
             // Should NOT use the old v3 syntax z.string().email()
             expect(content).not.toMatch(/z\.string\(\)\.email\(\)/);
           }
@@ -270,7 +266,7 @@ model User {
         try {
           const config = ConfigGenerator.createBasicConfig();
           const configPath = join(testEnv.testDir, 'config.json');
-          
+
           const schema = `
 generator client {
   provider = "prisma-client-js"
@@ -336,12 +332,12 @@ model Profile {
 
             // Zod v4 email syntax
             expect(content).toMatch(/z\.email\(\)\.max\(100\)\.trim\(\)\.toLowerCase\(\)/);
-            
+
             // Spacing tolerance
             expect(content).toMatch(/\.min\(2\)/);
             expect(content).toMatch(/\.max\(50\)/);
             expect(content).toMatch(/\.trim\(\)/);
-            
+
             // Relationship optionality preservation - check profile which should definitely be optional
             expect(content).toMatch(/profile:.*\.optional\(\)/);
             // Posts relationship might be handled differently in create operations

@@ -1777,7 +1777,7 @@ export default class Transformer {
       // Handle cases where string/email type is already transformed - add after the base type
       const baseStringMatch = withoutMax.match(/(z\.string\(\)[^.]*)/);
       const baseEmailMatch = withoutMax.match(/(z\.email\(\)[^.]*)/);
-      
+
       if (baseStringMatch) {
         return withoutMax.replace(baseStringMatch[1], `${baseStringMatch[1]}.max(${newMaxValue})`);
       } else if (baseEmailMatch) {

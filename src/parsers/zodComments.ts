@@ -1140,14 +1140,19 @@ export function mapAnnotationsToZodSchema(
     if (methodCalls.length > 0) {
       // Check if we have a base replacement method (like z.email() in v4)
       const baseReplacements = methodResults.filter((result) => result.isBaseReplacement);
-      const regularReplacements = methodCalls.filter((call) => !call.startsWith('.') && 
-        !methodResults.find(r => r.methodCall === call)?.isBaseReplacement);
+      const regularReplacements = methodCalls.filter(
+        (call) =>
+          !call.startsWith('.') &&
+          !methodResults.find((r) => r.methodCall === call)?.isBaseReplacement,
+      );
       const chainMethods = methodCalls.filter((call) => call.startsWith('.'));
 
       if (baseReplacements.length > 0) {
         // Handle base replacement (like z.email() in v4) with chaining
         if (baseReplacements.length > 1) {
-          result.errors.push('Multiple base replacement methods detected - only one allowed per field');
+          result.errors.push(
+            'Multiple base replacement methods detected - only one allowed per field',
+          );
           result.isValid = false;
         } else {
           result.schemaChain = baseReplacements[0].methodCall + chainMethods.join('');
@@ -1204,7 +1209,7 @@ function resolveZodVersion(zodVersion: 'auto' | 'v3' | 'v4'): 'v3' | 'v4' {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const zodPackage = require('zod/package.json');
     const version = zodPackage.version;
-    
+
     if (version) {
       const majorVersion = parseInt(version.split('.')[0], 10);
       return majorVersion >= 4 ? 'v4' : 'v3';
@@ -1294,7 +1299,7 @@ function mapAnnotationToZodMethod(
   // Handle email method with Zod v4 compatibility
   if (method === 'email') {
     const resolvedVersion = resolveZodVersion(zodVersion);
-    
+
     if (resolvedVersion === 'v4') {
       // In Zod v4, use z.email() as base type instead of z.string().email()
       // Mark this as a base type replacement that can still be chained
