@@ -1702,8 +1702,8 @@ export function getBaseZodType(fieldType: string, isOptional: boolean, isList: b
       baseType = 'z.instanceof(Uint8Array)'; // or custom bytes schema
       break;
     default:
-      // Enum or model type
-      baseType = `z.enum(${fieldType})`;
+      // Unknown complex type (enum or relation). Without field kind context use a safe fallback.
+      baseType = 'z.unknown()';
       break;
   }
 
@@ -1717,6 +1717,63 @@ export function getBaseZodType(fieldType: string, isOptional: boolean, isList: b
     baseType = `${baseType}.optional()`;
   }
 
+  return baseType;
+}
+
+/**
+ * Field-aware base type resolver to correctly handle enums vs relations.
+ */
+export function getBaseZodTypeForField(
+  field: import('@prisma/generator-helper').DMMF.Field,
+  isOptionalOverride?: boolean,
+): string {
+  const isOptional =
+    typeof isOptionalOverride === 'boolean' ? isOptionalOverride : !field.isRequired;
+
+  let baseType: string;
+  switch (field.type) {
+    case 'String':
+      baseType = 'z.string()';
+      break;
+    case 'Int':
+      baseType = 'z.number().int()';
+      break;
+    case 'Float':
+      baseType = 'z.number()';
+      break;
+    case 'Boolean':
+      baseType = 'z.boolean()';
+      break;
+    case 'DateTime':
+      baseType = 'z.date()';
+      break;
+    case 'BigInt':
+      baseType = 'z.bigint()';
+      break;
+    case 'Decimal':
+      baseType = 'z.number()';
+      break;
+    case 'Json':
+      baseType = 'z.unknown()';
+      break;
+    case 'Bytes':
+      baseType = 'z.instanceof(Uint8Array)';
+      break;
+    default:
+      if (field.kind === 'enum') {
+        baseType = `${String(field.type)}Schema`;
+      } else {
+        baseType = 'z.unknown()';
+      }
+      break;
+  }
+
+  if (field.isList) {
+    baseType = `z.array(${baseType})`;
+  }
+  if (isOptional) {
+    baseType = `${baseType}.optional()`;
+  }
   return baseType;
 }
 

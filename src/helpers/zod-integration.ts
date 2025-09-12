@@ -11,6 +11,7 @@ import {
   parseZodAnnotations,
   generateCompleteZodSchema,
   getBaseZodType,
+  getBaseZodTypeForField,
   getRequiredImports,
   ExtractedFieldComment,
 } from '../parsers/zodComments';
@@ -220,7 +221,7 @@ function processFieldWithZodIntegration(
     }
 
     // Generate Zod schema from annotations
-    const baseType = getBaseZodType(field.type, !field.isRequired, field.isList);
+    const baseType = getBaseZodTypeForField(field);
     const schemaResult = generateCompleteZodSchema(
       baseType,
       parseResult.annotations,
@@ -282,7 +283,7 @@ function createFallbackFieldInfo(field: DMMF.Field): EnhancedFieldInfo {
  * @returns Fallback Zod schema string
  */
 function generateFallbackSchema(field: DMMF.Field): string {
-  return getBaseZodType(field.type, !field.isRequired, field.isList);
+  return getBaseZodTypeForField(field);
 }
 
 /**

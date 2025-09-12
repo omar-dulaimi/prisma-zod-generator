@@ -1911,12 +1911,8 @@ function getZodTypeForField(field: DMMF.Field): string {
       baseType = 'number()'; // Simplified
       break;
     default:
-      // Handle enums and other custom types
-      if (field.kind === 'enum') {
-        baseType = `enum(${field.type})`;
-      } else {
-        baseType = 'unknown()';
-      }
+      // Treat non-scalar types (relations/objects) as unknown here; enums are handled by callers
+      baseType = 'unknown()';
       break;
   }
 
