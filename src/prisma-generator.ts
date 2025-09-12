@@ -371,19 +371,24 @@ export async function generate(options: GeneratorOptions) {
       const potentialClientOut = prismaClientGeneratorConfig?.output?.value as string | undefined;
       if (potentialClientOut && potentialClientOut !== '@prisma/client') {
         try {
-          let rel = path.relative(baseDir, potentialClientOut).replace(/\\/g, '/');
-          if (!rel || rel === '') {
+          // If potentialClientOut points to node_modules, use the standard @prisma/client import
+          if (potentialClientOut.includes('node_modules')) {
             setSingleFilePrismaImportPath('@prisma/client');
           } else {
-            // For the new prisma client generator, the public entry is the 'client' module
-            const provider =
-              Transformer.getPrismaClientProvider?.() ||
-              prismaClientGeneratorConfig?.provider?.value;
-            if (provider === 'prisma-client' && !/\/client\/?$/.test(rel)) {
-              rel = `${rel.replace(/\/$/, '')}/client`;
+            let rel = path.relative(baseDir, potentialClientOut).replace(/\\/g, '/');
+            if (!rel || rel === '') {
+              setSingleFilePrismaImportPath('@prisma/client');
+            } else {
+              // For the new prisma client generator, the public entry is the 'client' module
+              const provider =
+                Transformer.getPrismaClientProvider?.() ||
+                prismaClientGeneratorConfig?.provider?.value;
+              if (provider === 'prisma-client' && !/\/client\/?$/.test(rel)) {
+                rel = `${rel.replace(/\/$/, '')}/client`;
+              }
+              const importPath = rel.startsWith('.') || rel.startsWith('/') ? rel : `./${rel}`;
+              setSingleFilePrismaImportPath(importPath || '@prisma/client');
             }
-            const importPath = rel.startsWith('.') || rel.startsWith('/') ? rel : `./${rel}`;
-            setSingleFilePrismaImportPath(importPath || '@prisma/client');
           }
         } catch {
           // Fallback silently to default if relative computation fails

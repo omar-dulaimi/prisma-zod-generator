@@ -2114,7 +2114,8 @@ model TypeSafeTest {
             const content = readFileSync(pureVariantPath, 'utf-8');
 
             // All string method validations should come before .nullable()
-            expect(content).toMatch(/emailField.*\.min\(1\)\.max\(50\)\.email\(\)\.nullable\(\)/);
+            // Note: With Zod v4, z.email() is used as base type instead of z.string().email()
+            expect(content).toMatch(/emailField.*z\.email\(\)\.min\(1\)\.max\(50\)\.nullable\(\)/);
             expect(content).toMatch(
               /urlField.*\.url\(\)\.startsWith\("https:\/\/"\)\.nullable\(\)/,
             );

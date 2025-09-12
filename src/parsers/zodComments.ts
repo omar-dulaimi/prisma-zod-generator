@@ -165,8 +165,8 @@ export function detectZodAnnotations(comment: string): boolean {
     return false;
   }
 
-  // Look for @zod patterns (case-insensitive)
-  const zodPattern = /@zod\./i;
+  // Look for @zod patterns (case-insensitive) - allow optional whitespace between @zod and .
+  const zodPattern = /@zod\s*\./i;
   return zodPattern.test(comment);
 }
 
@@ -245,8 +245,8 @@ function validateParentheses(comment: string, context: FieldCommentContext): str
 function validateZodSyntax(comment: string, context: FieldCommentContext): string[] {
   const errors: string[] = [];
 
-  // Look for @zod annotations and validate basic structure
-  const zodMatches = comment.match(/@zod\.[a-zA-Z_][a-zA-Z0-9_]*(\([^)]*\))?/gi);
+  // Look for @zod annotations and validate basic structure - allow optional whitespace
+  const zodMatches = comment.match(/@zod\s*\.[a-zA-Z_][a-zA-Z0-9_]*(\([^)]*\))?/gi);
 
   if (zodMatches) {
     zodMatches.forEach((match, _index) => {
@@ -385,9 +385,9 @@ export function parseZodAnnotations(
         result.isValid = false;
       }
     } else {
-      // Handle simple @zod annotations
-      // Matches: @zod.methodName(), @zod.methodName(param), @zod.methodName(param1, param2)
-      const zodPattern = /@zod\.([a-zA-Z_][a-zA-Z0-9_]*)\s*(\([^)]*\))?/gi;
+      // Handle simple @zod annotations - allow optional whitespace between @zod and .
+      // Matches: @zod.methodName(), @zod .methodName(param), @zod.methodName(param1, param2)
+      const zodPattern = /@zod\s*\.([a-zA-Z_][a-zA-Z0-9_]*)\s*(\([^)]*\))?/gi;
 
       let match;
       while ((match = zodPattern.exec(comment)) !== null) {
@@ -1116,15 +1116,17 @@ export function mapAnnotationsToZodSchema(
 
   try {
     const methodCalls: string[] = [];
+    const methodResults: MethodMappingResult[] = [];
 
     for (const annotation of annotations) {
       try {
-        const methodCall = mapAnnotationToZodMethod(annotation, context, zodVersion);
-        methodCalls.push(methodCall.methodCall);
+        const methodResult = mapAnnotationToZodMethod(annotation, context, zodVersion);
+        methodCalls.push(methodResult.methodCall);
+        methodResults.push(methodResult);
 
         // Add any required imports
-        if (methodCall.requiredImport) {
-          result.imports.add(methodCall.requiredImport);
+        if (methodResult.requiredImport) {
+          result.imports.add(methodResult.requiredImport);
         }
       } catch (error) {
         result.errors.push(
@@ -1136,20 +1138,35 @@ export function mapAnnotationsToZodSchema(
 
     // Join all method calls into a chain
     if (methodCalls.length > 0) {
-      // Check if any method call is a complete replacement (doesn't start with dot)
-      const hasReplacementMethod = methodCalls.some((call) => !call.startsWith('.'));
+      // Check if we have a base replacement method (like z.email() in v4)
+      const baseReplacements = methodResults.filter((result) => result.isBaseReplacement);
+      const regularReplacements = methodCalls.filter(
+        (call) =>
+          !call.startsWith('.') &&
+          !methodResults.find((r) => r.methodCall === call)?.isBaseReplacement,
+      );
+      const chainMethods = methodCalls.filter((call) => call.startsWith('.'));
 
-      if (hasReplacementMethod) {
-        // If we have replacement methods, they should be the only content
-        const replacementMethods = methodCalls.filter((call) => !call.startsWith('.'));
+      if (baseReplacements.length > 0) {
+        // Handle base replacement (like z.email() in v4) with chaining
+        if (baseReplacements.length > 1) {
+          result.errors.push(
+            'Multiple base replacement methods detected - only one allowed per field',
+          );
+          result.isValid = false;
+        } else {
+          result.schemaChain = baseReplacements[0].methodCall + chainMethods.join('');
+        }
+      } else if (regularReplacements.length > 0) {
+        // Handle regular replacement methods (json, enum)
         const chainMethods = methodCalls.filter((call) => call.startsWith('.'));
 
-        if (replacementMethods.length > 1) {
+        if (regularReplacements.length > 1) {
           result.errors.push('Multiple replacement methods detected - only one allowed per field');
           result.isValid = false;
         } else {
           // Use the replacement method as base, then chain any additional methods
-          result.schemaChain = replacementMethods[0] + chainMethods.join('');
+          result.schemaChain = regularReplacements[0] + chainMethods.join('');
         }
       } else {
         // All are chaining methods, join normally
@@ -1172,6 +1189,48 @@ export function mapAnnotationsToZodSchema(
 interface MethodMappingResult {
   methodCall: string;
   requiredImport?: string;
+  isBaseReplacement?: boolean;
+}
+
+/**
+ * Resolve the target Zod version for syntax generation
+ *
+ * @param zodVersion - Version specification ('auto', 'v3', or 'v4')
+ * @returns Resolved version ('v3' or 'v4')
+ */
+function resolveZodVersion(zodVersion: 'auto' | 'v3' | 'v4'): 'v3' | 'v4' {
+  if (zodVersion === 'v3' || zodVersion === 'v4') {
+    return zodVersion;
+  }
+
+  // Auto-detect Zod version
+  try {
+    // Try to detect Zod version by loading zod package.json
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const zodPackage = require('zod/package.json');
+    const version = zodPackage.version;
+
+    if (version) {
+      const majorVersion = parseInt(version.split('.')[0], 10);
+      return majorVersion >= 4 ? 'v4' : 'v3';
+    }
+  } catch {
+    // If we can't load zod package.json, try alternative detection
+    try {
+      // Try to detect by checking if z.email() method exists as standalone
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const zod = require('zod');
+      if (typeof zod.z?.email === 'function') {
+        return 'v4';
+      }
+    } catch {
+      // Ignore inner detection errors
+    }
+  }
+
+  // Fallback to v3 if detection fails
+  console.warn('Failed to detect Zod version, defaulting to v3 syntax');
+  return 'v3';
 }
 
 /**
@@ -1185,7 +1244,7 @@ interface MethodMappingResult {
 function mapAnnotationToZodMethod(
   annotation: ParsedZodAnnotation,
   context: FieldCommentContext,
-  _zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
+  zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
 ): MethodMappingResult {
   const { method, parameters } = annotation;
 
@@ -1235,6 +1294,22 @@ function mapAnnotationToZodMethod(
       methodCall: `z.enum(${formattedParams})`,
       requiredImport: methodConfig.requiresImport,
     };
+  }
+
+  // Handle email method with Zod v4 compatibility
+  if (method === 'email') {
+    const resolvedVersion = resolveZodVersion(zodVersion);
+
+    if (resolvedVersion === 'v4') {
+      // In Zod v4, use z.email() as base type instead of z.string().email()
+      // Mark this as a base type replacement that can still be chained
+      return {
+        methodCall: 'z.email()',
+        requiredImport: methodConfig.requiresImport,
+        isBaseReplacement: true,
+      };
+    }
+    // For v3, fall through to regular chaining method below
   }
 
   // Generate the method call for regular chaining methods
