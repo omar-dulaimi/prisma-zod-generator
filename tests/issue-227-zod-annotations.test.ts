@@ -58,23 +58,24 @@ model Post {
           const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
           const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-          if (existsSync(userCreatePath)) {
-            const content = readFileSync(userCreatePath, 'utf-8');
+          // Explicitly assert that the schema file exists - test should fail loudly if generation failed
+          expect(existsSync(userCreatePath)).toBe(true);
+          
+          const content = readFileSync(userCreatePath, 'utf-8');
 
-            // Should handle spacing in @zod .min(2).max(50).trim()
-            expect(content).toMatch(/\.min\(2\)/);
-            expect(content).toMatch(/\.max\(50\)/);
-            expect(content).toMatch(/\.trim\(\)/);
+          // Should handle spacing in @zod .min(2).max(50).trim()
+          expect(content).toMatch(/\.min\(2\)/);
+          expect(content).toMatch(/\.max\(50\)/);
+          expect(content).toMatch(/\.trim\(\)/);
 
-            // Should handle no spacing in @zod.email()
-            expect(content).toMatch(/\.email\(\)/);
-            expect(content).toMatch(/\.max\(100\)/);
-            expect(content).toMatch(/\.toLowerCase\(\)/);
+          // Should handle no spacing in @zod.email()
+          expect(content).toMatch(/\.email\(\)/);
+          expect(content).toMatch(/\.max\(100\)/);
+          expect(content).toMatch(/\.toLowerCase\(\)/);
 
-            // Should handle spacing in @zod .min(0).max(120)
-            expect(content).toMatch(/\.min\(0\)/);
-            expect(content).toMatch(/\.max\(120\)/);
-          }
+          // Should handle spacing in @zod .min(0).max(120)
+          expect(content).toMatch(/\.min\(0\)/);
+          expect(content).toMatch(/\.max\(120\)/);
 
           // Check if relationship field preserves .optional()
           const postsRelationSchemas = [
@@ -234,21 +235,22 @@ model User {
           const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
           const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-          if (existsSync(userCreatePath)) {
-            const content = readFileSync(userCreatePath, 'utf-8');
+          // Explicitly assert that the schema file exists - test should fail loudly if generation failed
+          expect(existsSync(userCreatePath)).toBe(true);
+          
+          const content = readFileSync(userCreatePath, 'utf-8');
 
-            // Should use Zod v4 syntax z.email() instead of z.string().email()
-            expect(content).toMatch(/z\.email\(\)/);
+          // Should use Zod v4 syntax z.email() instead of z.string().email()
+          expect(content).toMatch(/z\.email\(\)/);
 
-            // Should support chaining with z.email().max(100)
-            expect(content).toMatch(/z\.email\(\)\.max\(100\)/);
+          // Should support chaining with z.email().max(100)
+          expect(content).toMatch(/z\.email\(\)\.max\(100\)/);
 
-            // Should support complex chaining: z.email().max(100).trim().toLowerCase()
-            expect(content).toMatch(/z\.email\(\)\.max\(100\)\.trim\(\)\.toLowerCase\(\)/);
+          // Should support complex chaining: z.email().max(100).trim().toLowerCase()
+          expect(content).toMatch(/z\.email\(\)\.max\(100\)\.trim\(\)\.toLowerCase\(\)/);
 
-            // Should NOT use the old v3 syntax z.string().email()
-            expect(content).not.toMatch(/z\.string\(\)\.email\(\)/);
-          }
+          // Should NOT use the old v3 syntax z.string().email()
+          expect(content).not.toMatch(/z\.string\(\)\.email\(\)/);
         } finally {
           await testEnv.cleanup();
         }
@@ -327,31 +329,33 @@ model Profile {
           const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
           const userCreatePath = join(objectsDir, 'UserCreateInput.schema.ts');
 
-          if (existsSync(userCreatePath)) {
-            const content = readFileSync(userCreatePath, 'utf-8');
+          // Explicitly assert that the schema file exists - test should fail loudly if generation failed
+          expect(existsSync(userCreatePath)).toBe(true);
+          
+          const content = readFileSync(userCreatePath, 'utf-8');
 
-            // Zod v4 email syntax
-            expect(content).toMatch(/z\.email\(\)\.max\(100\)\.trim\(\)\.toLowerCase\(\)/);
+          // Zod v4 email syntax
+          expect(content).toMatch(/z\.email\(\)\.max\(100\)\.trim\(\)\.toLowerCase\(\)/);
 
-            // Spacing tolerance
-            expect(content).toMatch(/\.min\(2\)/);
-            expect(content).toMatch(/\.max\(50\)/);
-            expect(content).toMatch(/\.trim\(\)/);
+          // Spacing tolerance
+          expect(content).toMatch(/\.min\(2\)/);
+          expect(content).toMatch(/\.max\(50\)/);
+          expect(content).toMatch(/\.trim\(\)/);
 
-            // Relationship optionality preservation - check profile which should definitely be optional
-            expect(content).toMatch(/profile:.*\.optional\(\)/);
-            // Posts relationship might be handled differently in create operations
-          }
+          // Relationship optionality preservation - check profile which should definitely be optional
+          expect(content).toMatch(/profile:.*\.optional\(\)/);
+          // Posts relationship might be handled differently in create operations
 
           const postCreatePath = join(objectsDir, 'PostCreateInput.schema.ts');
-          if (existsSync(postCreatePath)) {
-            const content = readFileSync(postCreatePath, 'utf-8');
+          // Explicitly assert that the schema file exists - test should fail loudly if generation failed
+          expect(existsSync(postCreatePath)).toBe(true);
+          
+          const postContent = readFileSync(postCreatePath, 'utf-8');
 
-            // Spacing tolerance on Post model
-            expect(content).toMatch(/\.min\(1\)/);
-            expect(content).toMatch(/\.max\(200\)/);
-            expect(content).toMatch(/\.min\(10\)/);
-          }
+          // Spacing tolerance on Post model
+          expect(postContent).toMatch(/\.min\(1\)/);
+          expect(postContent).toMatch(/\.max\(200\)/);
+          expect(postContent).toMatch(/\.min\(10\)/);
         } finally {
           await testEnv.cleanup();
         }
