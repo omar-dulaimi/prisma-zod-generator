@@ -488,13 +488,14 @@ export class PrismaTypeMapper {
         this.mapUnsupportedType(field, result);
       }
 
-      // Apply inline validation from @zod comments BEFORE list wrapper
-      this.applyInlineValidations(field, result, model.name);
-
-      // Apply list wrapper if needed
+      // Apply list wrapper if needed BEFORE inline validations
+      // This ensures @zod.nullable() applies to the array itself, not the elements
       if (field.isList) {
         this.applyListWrapper(result);
       }
+
+      // Apply inline validation from @zod comments AFTER list wrapper
+      this.applyInlineValidations(field, result, model.name);
 
       // Apply enhanced optionality handling
       const optionalityResult = this.determineFieldOptionality(field, model);
@@ -1348,6 +1349,7 @@ export class PrismaTypeMapper {
       return;
     }
 
+
     try {
       // Fast-path: support custom full schema replacement via @zod.custom.use(<expr>)
       // This captures the entire expression including any chained method calls after the parentheses
@@ -1467,6 +1469,7 @@ export class PrismaTypeMapper {
         zodSchemaResult.imports.forEach((imp) => {
           result.imports.add(imp);
         });
+
 
         // Mark as requiring special handling due to custom validations
         result.requiresSpecialHandling = true;
@@ -2242,10 +2245,9 @@ export class PrismaTypeMapper {
       const dotValidations = field.validations.filter((v) => v.trim().startsWith('.'));
       const commentValidations = field.validations.filter((v) => v.trim().startsWith('//'));
 
-      // Start from base without any optional/nullable modifiers, we'll re-apply per config
+      // Start from base without optional modifiers, but preserve nullable/nullish from @zod annotations
       const base = field.zodSchema
         .replace(/\.optional\(\)/g, '')
-        .replace(/\.nullable\(\)/g, '')
         .trimEnd();
       let modifierSuffix = '';
 
