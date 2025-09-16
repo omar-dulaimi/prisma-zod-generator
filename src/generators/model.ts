@@ -488,13 +488,14 @@ export class PrismaTypeMapper {
         this.mapUnsupportedType(field, result);
       }
 
-      // Apply inline validation from @zod comments BEFORE list wrapper
-      this.applyInlineValidations(field, result, model.name);
-
-      // Apply list wrapper if needed
+      // Apply list wrapper if needed BEFORE inline validations
+      // This ensures @zod.nullable() applies to the array itself, not the elements
       if (field.isList) {
         this.applyListWrapper(result);
       }
+
+      // Apply inline validation from @zod comments AFTER list wrapper
+      this.applyInlineValidations(field, result, model.name);
 
       // Apply enhanced optionality handling
       const optionalityResult = this.determineFieldOptionality(field, model);
@@ -2242,11 +2243,8 @@ export class PrismaTypeMapper {
       const dotValidations = field.validations.filter((v) => v.trim().startsWith('.'));
       const commentValidations = field.validations.filter((v) => v.trim().startsWith('//'));
 
-      // Start from base without any optional/nullable modifiers, we'll re-apply per config
-      const base = field.zodSchema
-        .replace(/\.optional\(\)/g, '')
-        .replace(/\.nullable\(\)/g, '')
-        .trimEnd();
+      // Start from base without optional modifiers, but preserve nullable/nullish from @zod annotations
+      const base = field.zodSchema.replace(/\.optional\(\)/g, '').trimEnd();
       let modifierSuffix = '';
 
       // Compute if user-provided dot validations already specify optionality

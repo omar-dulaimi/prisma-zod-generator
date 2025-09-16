@@ -2153,6 +2153,322 @@ model TypeSafeTest {
     );
   });
 
+  describe('@zod.nullable() Support', () => {
+    it(
+      'should handle @zod.nullable() on array fields',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-nullable-arrays');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            mode: 'minimal',
+            pureModels: true,
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model ArrayNullableTest {
+  id            Int      @id @default(autoincrement())
+  /// @zod.nullable()
+  tags          String[]
+  /// @zod.nullable()
+  categories    String[]
+  regularArray  String[]
+  /// This should work via @zod comment even though Prisma doesn't support String[]?
+  /// @zod.nullable()
+  commentArray  String[]
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check the generated model schema
+          const modelsPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'models',
+            'ArrayNullableTest.schema.ts',
+          );
+
+          if (existsSync(modelsPath)) {
+            const content = readFileSync(modelsPath, 'utf-8');
+
+            // Array itself should be nullable via @zod.nullable() comment
+            expect(content).toMatch(/tags:\s*z\.array\(z\.string\(\)\)\.nullable\(\)/);
+            expect(content).toMatch(/categories:\s*z\.array\(z\.string\(\)\)\.nullable\(\)/);
+            expect(content).toMatch(/commentArray:\s*z\.array\(z\.string\(\)\)\.nullable\(\)/);
+
+            // Regular array without @zod.nullable() should not be nullable
+            expect(content).toMatch(/regularArray:\s*z\.array\(z\.string\(\)\)/);
+            expect(content).not.toMatch(/regularArray.*\.nullable\(\)/);
+
+            // Should NOT have .nullable() on the string elements inside arrays
+            expect(content).not.toMatch(/z\.string\(\)\.nullable\(\).*array/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle @zod.nullable() on single fields',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-nullable-singles');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            mode: 'minimal',
+            pureModels: true,
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model SingleNullableTest {
+  id                Int      @id @default(autoincrement())
+  /// @zod.nullable()
+  name              String
+  /// @zod.nullable()
+  description       String?
+  /// @zod.nullable()
+  count             Int
+  /// @zod.nullable()
+  price             Float?
+  regularString     String
+  regularOptional   String?
+  regularInt        Int
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check the generated model schema
+          const modelsPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'models',
+            'SingleNullableTest.schema.ts',
+          );
+
+          if (existsSync(modelsPath)) {
+            const content = readFileSync(modelsPath, 'utf-8');
+
+            // Fields with @zod.nullable() should be nullable
+            expect(content).toMatch(/name:\s*z\.string\(\)\.nullable\(\)/);
+            expect(content).toMatch(/description:\s*z\.string\(\)\.nullable\(\)/);
+            expect(content).toMatch(/count:\s*z\.number\(\)\.int\(\)\.nullable\(\)/);
+            expect(content).toMatch(/price:\s*z\.number\(\)\.nullable\(\)/);
+
+            // Fields without @zod.nullable() should not be nullable (required fields)
+            expect(content).toMatch(/regularString:\s*z\.string\(\)/);
+            expect(content).not.toMatch(/regularString.*\.nullable\(\)/);
+            expect(content).toMatch(/regularInt:\s*z\.number\(\)\.int\(\)/);
+            expect(content).not.toMatch(/regularInt.*\.nullable\(\)/);
+
+            // Optional field without @zod.nullable() should still be nullable by default in pure model
+            expect(content).toMatch(/regularOptional:\s*z\.string\(\)\.nullable\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle @zod.nullable() combined with other validations on arrays',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-nullable-arrays-validations');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            mode: 'minimal',
+            pureModels: true,
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model ArrayValidationTest {
+  id                Int      @id @default(autoincrement())
+  /// @zod.min(1).max(10).nullable()
+  validatedArray    String[]
+  /// @zod.nullable().min(2)
+  anotherArray      String[]
+  /// Array element validation with nullable array
+  /// @zod.min(3).max(50).nullable()
+  stringArray       String[]
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check the generated model schema
+          const modelsPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'models',
+            'ArrayValidationTest.schema.ts',
+          );
+
+          if (existsSync(modelsPath)) {
+            const content = readFileSync(modelsPath, 'utf-8');
+
+            // Array validations should apply to the array itself, then make it nullable
+            expect(content).toMatch(
+              /validatedArray:\s*z\.array\(z\.string\(\)\)\.min\(1\)\.max\(10\)\.nullable\(\)/,
+            );
+            expect(content).toMatch(
+              /anotherArray:\s*z\.array\(z\.string\(\)\)\.min\(2\)\.nullable\(\)/,
+            );
+            expect(content).toMatch(
+              /stringArray:\s*z\.array\(z\.string\(\)\.min\(3\)\.max\(50\)\)\.nullable\(\)/,
+            );
+
+            // Should not have invalid syntax like nullable before validations
+            expect(content).not.toMatch(/\.nullable\(\)\.min/);
+            expect(content).not.toMatch(/\.nullable\(\)\.max/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle @zod.nullable() combined with other validations on single fields',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-nullable-singles-validations');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            mode: 'minimal',
+            pureModels: true,
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model SingleValidationTest {
+  id                Int      @id @default(autoincrement())
+  /// @zod.min(1).max(100).nullable()
+  validatedString   String
+  /// @zod.email().nullable()
+  emailField        String
+  /// @zod.positive().min(18).max(99).nullable()
+  ageField          Int
+  /// @zod.nullable().min(0).max(1000)
+  scoreField        Float
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check the generated model schema
+          const modelsPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'models',
+            'SingleValidationTest.schema.ts',
+          );
+
+          if (existsSync(modelsPath)) {
+            const content = readFileSync(modelsPath, 'utf-8');
+
+            // Validations should come first, then nullable
+            expect(content).toMatch(
+              /validatedString:\s*z\.string\(\)\.min\(1\)\.max\(100\)\.nullable\(\)/,
+            );
+            expect(content).toMatch(/emailField:\s*z\.email\(\)\.nullable\(\)/);
+            expect(content).toMatch(
+              /ageField:\s*z\.number\(\)\.int\(\)\.positive\(\)\.min\(18\)\.max\(99\)\.nullable\(\)/,
+            );
+            expect(content).toMatch(
+              /scoreField:\s*z\.number\(\)\.min\(0\)\.max\(1000\)\.nullable\(\)/,
+            );
+
+            // Should not have invalid syntax like nullable before validations
+            expect(content).not.toMatch(/\.nullable\(\)\.min/);
+            expect(content).not.toMatch(/\.nullable\(\)\.max/);
+            expect(content).not.toMatch(/\.nullable\(\)\.email/);
+            expect(content).not.toMatch(/\.nullable\(\)\.positive/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   describe('Issue #228: @zod.json() and @zod.enum() Support', () => {
     it(
       'should handle @zod.json() annotations for Json fields',
