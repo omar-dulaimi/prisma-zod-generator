@@ -1349,7 +1349,6 @@ export class PrismaTypeMapper {
       return;
     }
 
-
     try {
       // Fast-path: support custom full schema replacement via @zod.custom.use(<expr>)
       // This captures the entire expression including any chained method calls after the parentheses
@@ -1469,7 +1468,6 @@ export class PrismaTypeMapper {
         zodSchemaResult.imports.forEach((imp) => {
           result.imports.add(imp);
         });
-
 
         // Mark as requiring special handling due to custom validations
         result.requiresSpecialHandling = true;
@@ -2246,9 +2244,7 @@ export class PrismaTypeMapper {
       const commentValidations = field.validations.filter((v) => v.trim().startsWith('//'));
 
       // Start from base without optional modifiers, but preserve nullable/nullish from @zod annotations
-      const base = field.zodSchema
-        .replace(/\.optional\(\)/g, '')
-        .trimEnd();
+      const base = field.zodSchema.replace(/\.optional\(\)/g, '').trimEnd();
       let modifierSuffix = '';
 
       // Compute if user-provided dot validations already specify optionality

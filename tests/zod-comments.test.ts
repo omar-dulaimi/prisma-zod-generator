@@ -2200,8 +2200,13 @@ model ArrayNullableTest {
           await testEnv.runGeneration();
 
           // Check the generated model schema
-          const modelsPath = join(testEnv.outputDir, 'schemas', 'models', 'ArrayNullableTest.schema.ts');
-          
+          const modelsPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'models',
+            'ArrayNullableTest.schema.ts',
+          );
+
           if (existsSync(modelsPath)) {
             const content = readFileSync(modelsPath, 'utf-8');
 
@@ -2209,11 +2214,11 @@ model ArrayNullableTest {
             expect(content).toMatch(/tags:\s*z\.array\(z\.string\(\)\)\.nullable\(\)/);
             expect(content).toMatch(/categories:\s*z\.array\(z\.string\(\)\)\.nullable\(\)/);
             expect(content).toMatch(/commentArray:\s*z\.array\(z\.string\(\)\)\.nullable\(\)/);
-            
+
             // Regular array without @zod.nullable() should not be nullable
             expect(content).toMatch(/regularArray:\s*z\.array\(z\.string\(\)\)/);
             expect(content).not.toMatch(/regularArray.*\.nullable\(\)/);
-            
+
             // Should NOT have .nullable() on the string elements inside arrays
             expect(content).not.toMatch(/z\.string\(\)\.nullable\(\).*array/);
           }
@@ -2273,8 +2278,13 @@ model SingleNullableTest {
           await testEnv.runGeneration();
 
           // Check the generated model schema
-          const modelsPath = join(testEnv.outputDir, 'schemas', 'models', 'SingleNullableTest.schema.ts');
-          
+          const modelsPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'models',
+            'SingleNullableTest.schema.ts',
+          );
+
           if (existsSync(modelsPath)) {
             const content = readFileSync(modelsPath, 'utf-8');
 
@@ -2283,13 +2293,13 @@ model SingleNullableTest {
             expect(content).toMatch(/description:\s*z\.string\(\)\.nullable\(\)/);
             expect(content).toMatch(/count:\s*z\.number\(\)\.int\(\)\.nullable\(\)/);
             expect(content).toMatch(/price:\s*z\.number\(\)\.nullable\(\)/);
-            
+
             // Fields without @zod.nullable() should not be nullable (required fields)
             expect(content).toMatch(/regularString:\s*z\.string\(\)/);
             expect(content).not.toMatch(/regularString.*\.nullable\(\)/);
             expect(content).toMatch(/regularInt:\s*z\.number\(\)\.int\(\)/);
             expect(content).not.toMatch(/regularInt.*\.nullable\(\)/);
-            
+
             // Optional field without @zod.nullable() should still be nullable by default in pure model
             expect(content).toMatch(/regularOptional:\s*z\.string\(\)\.nullable\(\)/);
           }
@@ -2345,16 +2355,27 @@ model ArrayValidationTest {
           await testEnv.runGeneration();
 
           // Check the generated model schema
-          const modelsPath = join(testEnv.outputDir, 'schemas', 'models', 'ArrayValidationTest.schema.ts');
-          
+          const modelsPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'models',
+            'ArrayValidationTest.schema.ts',
+          );
+
           if (existsSync(modelsPath)) {
             const content = readFileSync(modelsPath, 'utf-8');
 
             // Array validations should apply to the array itself, then make it nullable
-            expect(content).toMatch(/validatedArray:\s*z\.array\(z\.string\(\)\)\.min\(1\)\.max\(10\)\.nullable\(\)/);
-            expect(content).toMatch(/anotherArray:\s*z\.array\(z\.string\(\)\)\.min\(2\)\.nullable\(\)/);
-            expect(content).toMatch(/stringArray:\s*z\.array\(z\.string\(\)\.min\(3\)\.max\(50\)\)\.nullable\(\)/);
-            
+            expect(content).toMatch(
+              /validatedArray:\s*z\.array\(z\.string\(\)\)\.min\(1\)\.max\(10\)\.nullable\(\)/,
+            );
+            expect(content).toMatch(
+              /anotherArray:\s*z\.array\(z\.string\(\)\)\.min\(2\)\.nullable\(\)/,
+            );
+            expect(content).toMatch(
+              /stringArray:\s*z\.array\(z\.string\(\)\.min\(3\)\.max\(50\)\)\.nullable\(\)/,
+            );
+
             // Should not have invalid syntax like nullable before validations
             expect(content).not.toMatch(/\.nullable\(\)\.min/);
             expect(content).not.toMatch(/\.nullable\(\)\.max/);
@@ -2412,17 +2433,28 @@ model SingleValidationTest {
           await testEnv.runGeneration();
 
           // Check the generated model schema
-          const modelsPath = join(testEnv.outputDir, 'schemas', 'models', 'SingleValidationTest.schema.ts');
-          
+          const modelsPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'models',
+            'SingleValidationTest.schema.ts',
+          );
+
           if (existsSync(modelsPath)) {
             const content = readFileSync(modelsPath, 'utf-8');
 
             // Validations should come first, then nullable
-            expect(content).toMatch(/validatedString:\s*z\.string\(\)\.min\(1\)\.max\(100\)\.nullable\(\)/);
+            expect(content).toMatch(
+              /validatedString:\s*z\.string\(\)\.min\(1\)\.max\(100\)\.nullable\(\)/,
+            );
             expect(content).toMatch(/emailField:\s*z\.email\(\)\.nullable\(\)/);
-            expect(content).toMatch(/ageField:\s*z\.number\(\)\.int\(\)\.positive\(\)\.min\(18\)\.max\(99\)\.nullable\(\)/);
-            expect(content).toMatch(/scoreField:\s*z\.number\(\)\.min\(0\)\.max\(1000\)\.nullable\(\)/);
-            
+            expect(content).toMatch(
+              /ageField:\s*z\.number\(\)\.int\(\)\.positive\(\)\.min\(18\)\.max\(99\)\.nullable\(\)/,
+            );
+            expect(content).toMatch(
+              /scoreField:\s*z\.number\(\)\.min\(0\)\.max\(1000\)\.nullable\(\)/,
+            );
+
             // Should not have invalid syntax like nullable before validations
             expect(content).not.toMatch(/\.nullable\(\)\.min/);
             expect(content).not.toMatch(/\.nullable\(\)\.max/);
