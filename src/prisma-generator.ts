@@ -2032,18 +2032,9 @@ async function generatePureModelSchemas(
   logger.debug('📦 Generating pure model schemas (naming experimental)');
 
   try {
-    const outputPath = Transformer.getOutputPath();
-    // Place pure models alongside the "schemas" folder so imports can use ../schemas/enums
-    // If outputPath already ends with "schemas", put models at its parent-level sibling
-    let modelsOutputPath = path.join(outputPath, 'models');
-    try {
-      const base = path.basename(outputPath);
-      if (base === 'schemas') {
-        modelsOutputPath = path.join(path.dirname(outputPath), 'models');
-      }
-    } catch {
-      // noop, fallback to default models path
-    }
+    // Place pure models under the schemas directory: <schemas>/models
+    // This aligns with tests and ensures enum imports can use '../enums/...'
+    const modelsOutputPath = path.join(Transformer.getSchemasPath(), 'models');
     const singleFileMode = isSingleFileEnabled();
 
     // Filter models based on configuration
@@ -2162,7 +2153,11 @@ async function generatePureModelSchemas(
         // Import paths are generated correctly by the model generator; no enum path rewrite needed
         // Remove accidental duplicate enum imports (defensive clean-up)
         content = content.replace(
-          /^(import { (\w+)Schema } from '..\/schemas\/enums\/\2\.schema';)\n\1/gm,
+          /^(import { (\w+)Schema } from '\.\.\/schemas\/enums\/\2\.schema';)\n\1/gm,
+          '$1',
+        );
+        content = content.replace(
+          /^(import { (\w+)Schema } from '\.\.\/enums\/\2\.schema';)\n\1/gm,
           '$1',
         );
         // Rename exported const & type if suffix customization used
