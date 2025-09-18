@@ -100,6 +100,7 @@ export class VariantImportExportManager {
   async generateBarrelExports(
     collections: ModelVariantCollection[],
     configs: Record<VariantType, BarrelExportConfig>,
+    importExtension: string = '',
   ): Promise<{
     files: Array<{
       path: string;
@@ -117,12 +118,17 @@ export class VariantImportExportManager {
     // Generate barrel export for each variant type
     for (const [variantType, config] of Object.entries(configs)) {
       const variant = variantType as VariantType;
-      const barrelFile = await this.generateVariantBarrelExport(collections, variant, config);
+      const barrelFile = await this.generateVariantBarrelExport(
+        collections,
+        variant,
+        config,
+        importExtension,
+      );
       generatedFiles.push(barrelFile);
     }
 
     // Generate main index file
-    const mainIndex = await this.generateMainIndexFile(generatedFiles);
+    const mainIndex = await this.generateMainIndexFile(generatedFiles, importExtension);
 
     return {
       files: generatedFiles,
@@ -137,6 +143,7 @@ export class VariantImportExportManager {
     collections: ModelVariantCollection[],
     variantType: VariantType,
     config: BarrelExportConfig,
+    importExtension: string = '',
   ): Promise<{ path: string; content: string; exports: string[] }> {
     const exports: ExportStatement[] = [];
     const allExports: string[] = [];
@@ -173,7 +180,7 @@ export class VariantImportExportManager {
     }
 
     // Generate file content
-    const content = this.generateBarrelFileContent(exports, variantType, config);
+    const content = this.generateBarrelFileContent(exports, variantType, config, importExtension);
     const formattedContent = await formatFile(content);
 
     const filePath = `${this.moduleResolutionConfig.baseUrl}/${variantType}.ts`;
@@ -193,6 +200,7 @@ export class VariantImportExportManager {
    */
   private async generateMainIndexFile(
     barrelFiles: Array<{ path: string; content: string; exports: string[] }>,
+    importExtension: string = '',
   ): Promise<{ path: string; content: string; exports: string[] }> {
     const exports: ExportStatement[] = [];
     const allExports: string[] = [];
@@ -211,7 +219,7 @@ export class VariantImportExportManager {
     });
 
     // Generate content
-    const content = this.generateMainIndexContent(exports);
+    const content = this.generateMainIndexContent(exports, importExtension);
     const formattedContent = await formatFile(content);
 
     const filePath = `${this.moduleResolutionConfig.baseUrl}/index.ts`;
@@ -399,6 +407,7 @@ export class VariantImportExportManager {
     exports: ExportStatement[],
     variantType: VariantType,
     config: BarrelExportConfig,
+    importExtension: string = '',
   ): string {
     const lines: string[] = [];
 
@@ -418,7 +427,9 @@ export class VariantImportExportManager {
     exports.forEach((exportStmt) => {
       if (exportStmt.moduleSpecifier) {
         const exportList = exportStmt.namedExports.join(', ');
-        lines.push(`export { ${exportList} } from '${exportStmt.moduleSpecifier}';`);
+        lines.push(
+          `export { ${exportList} } from '${exportStmt.moduleSpecifier}${importExtension}';`,
+        );
       }
     });
 
