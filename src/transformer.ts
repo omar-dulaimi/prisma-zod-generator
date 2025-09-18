@@ -964,7 +964,8 @@ export default class Transformer {
 
   static async generateIndex() {
     const indexPath = path.join(Transformer.getSchemasPath(), 'index.ts');
-    await writeIndexFile(indexPath);
+    const importExtension = Transformer.getImportFileExtension();
+    await writeIndexFile(indexPath, importExtension);
   }
 
   async generateEnumSchemas() {

@@ -467,8 +467,10 @@ export class VariantFileGenerationCoordinator {
     // Collect exports from all variants
     Object.entries(collection.variants).forEach(([_variantType, result]) => {
       if (result) {
+        const { Transformer } = require('../transformer');
+        const importExtension = Transformer.getImportFileExtension();
         imports.push(
-          `export { ${result.schemaName}, ${result.typeName} } from './${result.fileName.replace('.ts', '')}';`,
+          `export { ${result.schemaName}, ${result.typeName} } from './${result.fileName.replace('.ts', '')}${importExtension}';`,
         );
         exports.add(result.schemaName);
         exports.add(result.typeName);
@@ -509,8 +511,10 @@ export class VariantFileGenerationCoordinator {
       collections.forEach((collection) => {
         const variant = collection.variants[variantType];
         if (variant) {
+          const { Transformer } = require('../transformer');
+          const importExtension = Transformer.getImportFileExtension();
           variantExports.push(
-            `export { ${variant.schemaName}, ${variant.typeName} } from './${variantType}/${variant.fileName.replace('.ts', '')}';`,
+            `export { ${variant.schemaName}, ${variant.typeName} } from './${variantType}/${variant.fileName.replace('.ts', '')}${importExtension}';`,
           );
         }
       });
@@ -540,7 +544,11 @@ export class VariantFileGenerationCoordinator {
       ` * Generated at: ${new Date().toISOString()}`,
       ' */',
       '',
-      ...Object.values(VariantType).map((variant) => `export * from './${variant}';`),
+      ...Object.values(VariantType).map((variant) => {
+        const { Transformer } = require('../transformer');
+        const importExtension = Transformer.getImportFileExtension();
+        return `export * from './${variant}${importExtension}';`;
+      }),
       '',
     ].join('\n');
 

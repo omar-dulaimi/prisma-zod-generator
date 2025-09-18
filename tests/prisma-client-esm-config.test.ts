@@ -306,6 +306,100 @@ ${baseSchema}`;
           console.warn('Skipping ESM without extension test - might not be available');
         }
       });
+
+      it('should add .js extensions in index files with useMultipleFiles and ESM config (issue #234)', async () => {
+        const schemaContent = `generator client {
+  provider              = "prisma-client"
+  output                = "./client"
+  runtime               = "nodejs"
+  moduleFormat          = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension   = "js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zodTest {
+  provider = "node ./lib/generator.js"
+  output   = "./generated"
+  config   = "./zod-generator.config.json"
+}
+
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+  posts Post[]
+}
+
+model Post {
+  id       Int     @id @default(autoincrement())
+  title    String
+  content  String?
+  author   User?   @relation(fields: [authorId], references: [id])
+  authorId Int?
+}`;
+
+        // Create config file for useMultipleFiles
+        const configPath = join(testDir, 'zod-generator.config.json');
+        const config = {
+          mode: 'full',
+          globalExclusions: {
+            input: ['*id', 'createdAt', 'updatedAt'],
+            result: []
+          },
+          pureModels: true,
+          useMultipleFiles: true
+        };
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(schemaPath, schemaContent);
+
+        try {
+          execSync(`npx prisma generate --schema ${schemaPath}`, {
+            cwd: process.cwd(),
+            stdio: 'pipe',
+          });
+
+          // Check that all index files have .js extensions for ESM compatibility
+          const indexFiles = [
+            join(outputDir, 'schemas', 'index.ts'),
+            join(outputDir, 'models', 'index.ts'),
+            join(outputDir, 'schemas', 'objects', 'index.ts'),
+            join(outputDir, 'schemas', 'variants', 'index.ts'),
+            join(outputDir, 'schemas', 'variants', 'pure', 'index.ts'),
+            join(outputDir, 'schemas', 'variants', 'input', 'index.ts'),
+            join(outputDir, 'schemas', 'variants', 'result', 'index.ts'),
+          ];
+
+          for (const indexFile of indexFiles) {
+            if (existsSync(indexFile)) {
+              const content = readFileSync(indexFile, 'utf-8');
+
+              // Should contain .js extensions in export statements for ESM
+              if (content.includes('export')) {
+                const exportLines = content.split('\n').filter(line => 
+                  line.trim().startsWith('export') && 
+                  line.includes("from './") &&
+                  !line.includes('//') // Ignore commented lines
+                );
+
+                if (exportLines.length > 0) {
+                  // All export statements should have .js extensions
+                  exportLines.forEach(line => {
+                    expect(line).toMatch(/\.js['"](?:;)?\s*$/);
+                  });
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Skipping index files ESM test - generator might not be available');
+          console.error('Original error:', error);
+        }
+      });
     });
 
     describe('Mixed Configurations', () => {

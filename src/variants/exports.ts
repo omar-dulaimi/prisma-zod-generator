@@ -436,15 +436,19 @@ export class VariantImportExportManager {
     lines.push(' */');
     lines.push('');
 
+    // Get the import extension for ESM support
+    const { Transformer } = require('../transformer');
+    const importExtension = Transformer.getImportFileExtension();
+
     // Add re-exports
     exports.forEach((exportStmt) => {
       if (exportStmt.moduleSpecifier) {
         if (exportStmt.namespaceExport) {
           lines.push(
-            `export * as ${exportStmt.namespaceExport} from '${exportStmt.moduleSpecifier}';`,
+            `export * as ${exportStmt.namespaceExport} from '${exportStmt.moduleSpecifier}${importExtension}';`,
           );
         } else {
-          lines.push(`export * from '${exportStmt.moduleSpecifier}';`);
+          lines.push(`export * from '${exportStmt.moduleSpecifier}${importExtension}';`);
         }
       }
     });

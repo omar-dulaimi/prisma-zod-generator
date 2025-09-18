@@ -1202,7 +1202,8 @@ async function generateObjectsIndex() {
       entries = [];
     }
 
-    const exportLines = entries.map((base) => `export * from './${base}';`);
+    const importExtension = Transformer.getImportFileExtension();
+    const exportLines = entries.map((base) => `export * from './${base}${importExtension}';`);
     const content = [
       '/**',
       ' * Object Schemas Index',
@@ -1257,7 +1258,8 @@ async function updateIndexWithVariants(config: CustomGeneratorConfig) {
   // Regenerate the main index file to include all exports
   // Use the same path resolution as the transformer to avoid path mismatches
   const indexPath = path.join(Transformer.getSchemasPath(), 'index.ts');
-  await writeIndexFile(indexPath);
+  const importExtension = Transformer.getImportFileExtension();
+  await writeIndexFile(indexPath, importExtension);
 
   logger.debug('📦 Updated main index to include variants export');
 }
@@ -1632,7 +1634,8 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
             : '';
           const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
-          exportLines.push(`export { ${schemaName} } from './${fileBase}';`);
+          const importExtension = Transformer.getImportFileExtension();
+          exportLines.push(`export { ${schemaName} } from './${fileBase}${importExtension}';`);
         }
       }
 
@@ -1756,7 +1759,8 @@ async function generateVariantType(
     // Write file
     await writeFileSafely(filePath, schemaContent);
 
-    exports.push(`export { ${schemaName} } from './${model.name}.${variantName}';`);
+    const importExtension = Transformer.getImportFileExtension();
+    exports.push(`export { ${schemaName} } from './${model.name}.${variantName}${importExtension}';`);
   }
 
   // Generate variant index file
@@ -1928,7 +1932,8 @@ function getZodTypeForField(field: DMMF.Field): string {
  * Generate main variants index file
  */
 async function generateVariantsIndex(variantNames: string[], outputPath: string) {
-  const exports = variantNames.map((variant) => `export * from './${variant}';`);
+  const importExtension = Transformer.getImportFileExtension();
+  const exports = variantNames.map((variant) => `export * from './${variant}${importExtension}';`);
 
   const indexContent = [
     '/**',
@@ -2164,7 +2169,8 @@ async function generatePureModelSchemas(
         ...Array.from(schemaCollection.schemas.keys()).map((modelName) => {
           const { fileName, schemaExport } = buildNames(modelName);
           const base = fileName.replace(/\.ts$/, '');
-          return `export { ${schemaExport} } from './${base}';`;
+          const importExtension = Transformer.getImportFileExtension();
+          return `export { ${schemaExport} } from './${base}${importExtension}';`;
         }),
         '',
       ].join('\n');
