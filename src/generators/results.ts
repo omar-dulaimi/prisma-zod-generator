@@ -4,6 +4,7 @@
  */
 
 import { DMMF } from '@prisma/generator-helper';
+import { GeneratorConfig } from '../config/parser';
 
 /**
  * Prisma operation types that return results
@@ -92,9 +93,10 @@ export interface ResultGenerationContext {
 export class ResultSchemaGenerator {
   private generatedSchemas: Map<string, GeneratedResultSchema> = new Map();
   private baseModelSchemas: Map<string, string> = new Map();
+  private config: GeneratorConfig;
 
-  constructor() {
-    // Initialize with base configurations
+  constructor(config: GeneratorConfig) {
+    this.config = config;
   }
 
   /**
@@ -552,19 +554,60 @@ ${allFields.join(',\n')}
   }
 
   private mapPrismaTypeToZod(field: DMMF.Field): string {
+    const isJsonSchemaCompatible = this.config.jsonSchemaCompatible;
+    
+    // Handle JSON Schema compatibility mapping
+    if (isJsonSchemaCompatible) {
+      switch (field.type) {
+        case 'DateTime':
+          const dateTimeFormat = this.config.jsonSchemaOptions?.dateTimeFormat || 'isoString';
+          if (dateTimeFormat === 'isoDate') {
+            return field.isList 
+              ? 'z.array(z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date"))'
+              : 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
+          } else {
+            return field.isList 
+              ? 'z.array(z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime"))'
+              : 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
+          }
+        case 'BigInt':
+          const bigIntFormat = this.config.jsonSchemaOptions?.bigIntFormat || 'string';
+          if (bigIntFormat === 'string') {
+            return field.isList 
+              ? 'z.array(z.string().regex(/^\\d+$/, "Invalid bigint string"))'
+              : 'z.string().regex(/^\\d+$/, "Invalid bigint string")';
+          } else {
+            return field.isList 
+              ? 'z.array(z.number().int())'
+              : 'z.number().int()';
+          }
+        case 'Bytes':
+          const bytesFormat = this.config.jsonSchemaOptions?.bytesFormat || 'base64String';
+          if (bytesFormat === 'base64String') {
+            return field.isList 
+              ? 'z.array(z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string"))'
+              : 'z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")';
+          } else {
+            return field.isList 
+              ? 'z.array(z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string"))'
+              : 'z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")';
+          }
+      }
+    }
+    
     const typeMap: Record<string, string> = {
       String: 'z.string()',
       Int: 'z.number().int()',
       Float: 'z.number()',
       Boolean: 'z.boolean()',
       DateTime: 'z.date()',
-      Json: 'z.unknown()',
+      Json: isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()',
       Bytes: 'z.instanceof(Uint8Array)',
       Decimal: 'z.number()', // or z.string() depending on configuration
       BigInt: 'z.bigint()',
     };
 
-    const baseType = typeMap[field.type] || 'z.unknown()';
+    const baseType = typeMap[field.type] || (isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()');
 
     // Handle arrays
     if (field.isList) {

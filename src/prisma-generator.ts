@@ -476,6 +476,15 @@ export async function generate(options: GeneratorOptions) {
       validationResult.suggestions.forEach((suggestion) => logger.debug(`  - ${suggestion}`));
     }
 
+    // JSON Schema compatibility mode notification
+    if (generatorConfig.jsonSchemaCompatible) {
+      logger.debug('[prisma-zod-generator] ℹ️ JSON Schema compatibility mode enabled');
+      logger.debug('[prisma-zod-generator]   - DateTime fields: string regex validation (no runtime conversion)');
+      logger.debug('[prisma-zod-generator]   - BigInt fields: string or number representation');
+      logger.debug('[prisma-zod-generator]   - All transforms removed for z.toJSONSchema() compatibility');
+      logger.debug('[prisma-zod-generator]   - Test with: z.toJSONSchema(YourSchema)');
+    }
+
     // Merge backward compatibility options with new configuration
     // Priority: 1. Legacy generator options, 2. New config file options (addSelectType/addIncludeType)
     // Resolve dual-export controls with proper precedence:
@@ -1882,6 +1891,16 @@ export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaNam
 function getZodTypeForField(field: DMMF.Field): string {
   let baseType: string;
 
+  // Check for JSON Schema compatibility mode
+  let cfg: any = null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular import
+    const transformer = require('./transformer').default;
+    cfg = transformer.getGeneratorConfig?.();
+  } catch {
+    /* ignore */
+  }
+
   switch (field.type) {
     case 'String':
       baseType = 'string()';
@@ -1896,23 +1915,58 @@ function getZodTypeForField(field: DMMF.Field): string {
       baseType = 'boolean()';
       break;
     case 'DateTime':
-      baseType = 'date()';
+      if (cfg?.jsonSchemaCompatible) {
+        const format = cfg.jsonSchemaOptions?.dateTimeFormat || 'isoString';
+        if (format === 'isoDate') {
+          baseType = 'string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
+        } else {
+          baseType = 'string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
+        }
+      } else {
+        baseType = 'date()';
+      }
       break;
     case 'Json':
-      baseType = 'unknown()';
+      if (cfg?.jsonSchemaCompatible) {
+        baseType = 'any()';
+      } else {
+        baseType = 'unknown()';
+      }
       break;
     case 'Bytes':
-      baseType = 'instanceof(Uint8Array)';
+      if (cfg?.jsonSchemaCompatible) {
+        const format = cfg.jsonSchemaOptions?.bytesFormat || 'base64String';
+        if (format === 'base64String') {
+          baseType = 'string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")';
+        } else {
+          baseType = 'string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")';
+        }
+      } else {
+        baseType = 'instanceof(Uint8Array)';
+      }
       break;
     case 'BigInt':
-      baseType = 'bigint()';
+      if (cfg?.jsonSchemaCompatible) {
+        const format = cfg.jsonSchemaOptions?.bigIntFormat || 'string';
+        if (format === 'string') {
+          baseType = 'string().regex(/^\\d+$/, "Invalid bigint string")';
+        } else {
+          baseType = 'number().int()'; // Note: May lose precision for very large numbers
+        }
+      } else {
+        baseType = 'bigint()';
+      }
       break;
     case 'Decimal':
       baseType = 'number()'; // Simplified
       break;
     default:
       // Treat non-scalar types (relations/objects) as unknown here; enums are handled by callers
-      baseType = 'unknown()';
+      if (cfg?.jsonSchemaCompatible) {
+        baseType = 'any()';
+      } else {
+        baseType = 'unknown()';
+      }
       break;
   }
 
@@ -1998,6 +2052,8 @@ async function generatePureModelSchemas(
     const typeMapper = new PrismaTypeMapper({
       provider,
       zodImportTarget: config.zodImportTarget,
+      jsonSchemaCompatible: config.jsonSchemaCompatible,
+      jsonSchemaOptions: config.jsonSchemaOptions,
     });
 
     // Detect circular dependencies if the option is enabled

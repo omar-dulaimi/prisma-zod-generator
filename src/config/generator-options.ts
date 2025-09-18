@@ -23,6 +23,12 @@ export interface ExtendedGeneratorOptions {
   pureModelsExcludeCircularRelations?: boolean; // When pureModelsIncludeRelations is true, exclude circular relations (default false)
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString'; // DateTime scalar strategy
   dateTimeSplitStrategy?: boolean; // Split default: inputs=coerce, pure/results=date when dateTimeStrategy is unset
+  jsonSchemaCompatible?: boolean; // Generate schemas compatible with z.toJSONSchema()
+  jsonSchemaOptions?: {
+    dateTimeFormat?: 'isoString' | 'isoDate';
+    bigIntFormat?: 'string' | 'number';
+    bytesFormat?: 'base64String' | 'hexString';
+  };
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish'; // How to handle optional fields
 
   // Existing options (for backward compatibility)
@@ -101,6 +107,12 @@ export function parseGeneratorOptions(
     options.dateTimeSplitStrategy = parseBoolean(
       generatorConfig.dateTimeSplitStrategy,
       'dateTimeSplitStrategy',
+    );
+  }
+  if (generatorConfig.jsonSchemaCompatible !== undefined) {
+    options.jsonSchemaCompatible = parseBoolean(
+      generatorConfig.jsonSchemaCompatible,
+      'jsonSchemaCompatible',
     );
   }
   if (generatorConfig.optionalFieldBehavior !== undefined) {
@@ -363,6 +375,12 @@ export function generatorOptionsToConfigOverrides(
   if (options.dateTimeSplitStrategy !== undefined) {
     overrides.dateTimeSplitStrategy = options.dateTimeSplitStrategy;
   }
+  if (options.jsonSchemaCompatible !== undefined) {
+    overrides.jsonSchemaCompatible = options.jsonSchemaCompatible;
+  }
+  if (options.jsonSchemaOptions) {
+    overrides.jsonSchemaOptions = options.jsonSchemaOptions;
+  }
   if (options.optionalFieldBehavior) {
     overrides.optionalFieldBehavior = options.optionalFieldBehavior;
   }
@@ -387,6 +405,12 @@ export interface GeneratorConfigOverrides {
   pureModelsExcludeCircularRelations?: boolean;
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
   dateTimeSplitStrategy?: boolean;
+  jsonSchemaCompatible?: boolean;
+  jsonSchemaOptions?: {
+    dateTimeFormat?: 'isoString' | 'isoDate';
+    bigIntFormat?: 'string' | 'number';
+    bytesFormat?: 'base64String' | 'hexString';
+  };
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
   variants?: {
     pure?: { enabled?: boolean };

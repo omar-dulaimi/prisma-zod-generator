@@ -1239,14 +1239,36 @@ export default class Transformer {
       } else if (inputType.type === 'Float' || inputType.type === 'Decimal') {
         result.push(this.wrapWithZodValidators('z.number()', field, inputType));
       } else if (inputType.type === 'BigInt') {
-        result.push(this.wrapWithZodValidators('z.bigint()', field, inputType));
+        const cfg = Transformer.getGeneratorConfig();
+        let bigintExpr = 'z.bigint()';
+        
+        // JSON Schema compatibility mode overrides normal behavior
+        if (cfg?.jsonSchemaCompatible) {
+          const format = cfg.jsonSchemaOptions?.bigIntFormat || 'string';
+          if (format === 'string') {
+            bigintExpr = 'z.string().regex(/^\\d+$/, "Invalid bigint string")';
+          } else {
+            bigintExpr = 'z.number().int()'; // Note: May lose precision for very large numbers
+          }
+        }
+        
+        result.push(this.wrapWithZodValidators(bigintExpr, field, inputType));
       } else if (inputType.type === 'DateTime') {
         // Apply configurable DateTime strategy
         const cfg = Transformer.getGeneratorConfig();
         const target = (cfg?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
         let dateExpr = 'z.date()';
 
-        if (cfg?.dateTimeStrategy === 'coerce') {
+        // JSON Schema compatibility mode overrides all other strategies
+        if (cfg?.jsonSchemaCompatible) {
+          const format = cfg.jsonSchemaOptions?.dateTimeFormat || 'isoString';
+          if (format === 'isoDate') {
+            dateExpr = 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
+          } else {
+            // isoString - no transform for JSON Schema compatibility
+            dateExpr = 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
+          }
+        } else if (cfg?.dateTimeStrategy === 'coerce') {
           dateExpr = 'z.coerce.date()';
         } else if (cfg?.dateTimeStrategy === 'isoString') {
           // For v4, use the modern z.iso.datetime() API, otherwise use regex validation
@@ -1277,7 +1299,20 @@ export default class Transformer {
       } else if (inputType.type === 'True') {
         result.push(this.wrapWithZodValidators('z.literal(true)', field, inputType));
       } else if (inputType.type === 'Bytes') {
-        result.push(this.wrapWithZodValidators('z.instanceof(Uint8Array)', field, inputType));
+        const cfg = Transformer.getGeneratorConfig();
+        let bytesExpr = 'z.instanceof(Uint8Array)';
+        
+        // JSON Schema compatibility mode overrides normal behavior
+        if (cfg?.jsonSchemaCompatible) {
+          const format = cfg.jsonSchemaOptions?.bytesFormat || 'base64String';
+          if (format === 'base64String') {
+            bytesExpr = 'z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")';
+          } else {
+            bytesExpr = 'z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")';
+          }
+        }
+        
+        result.push(this.wrapWithZodValidators(bytesExpr, field, inputType));
       } else {
         const isEnum = inputType.location === 'enumTypes';
 
@@ -3272,7 +3307,11 @@ export default class Transformer {
       return;
     }
 
-    const resultGenerator = new ResultSchemaGenerator();
+    const generatorConfig = Transformer.getGeneratorConfig();
+    if (!generatorConfig) {
+      throw new Error('Generator config not available for result schema generation');
+    }
+    const resultGenerator = new ResultSchemaGenerator(generatorConfig);
 
     const opSuffix = (op: string): string => {
       switch (op) {
