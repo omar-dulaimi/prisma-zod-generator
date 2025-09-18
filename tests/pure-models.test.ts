@@ -1114,9 +1114,9 @@ model User {
             expect(content).toMatch(/export const.*UserSchema/);
             expect(content).toMatch(/z\.object\(\{/);
 
-            // Should compose all aspects for email field
+            // Should compose all aspects for email field (support both v3 and v4 syntax)
             expect(content).toMatch(
-              /email:[\s\S]*z\.string\(\)[\s\S]*\.email\(\)[\s\S]*\.toLowerCase\(\)/,
+              /email:[\s\S]*(?:z\.string\(\)[\s\S]*\.email\(\)|z\.email\(\))[\s\S]*\.toLowerCase\(\)/,
             );
 
             // Should compose optionality with validation for name
