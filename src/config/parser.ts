@@ -53,11 +53,11 @@ export interface GeneratorConfig {
    */
   dateTimeSplitStrategy?: boolean;
 
-  /** 
+  /**
    * Generate schemas compatible with z.toJSONSchema() for API documentation.
    * When enabled, overrides dateTimeStrategy and removes transforms.
    * Trade-off: No runtime type conversion (strings instead of Date objects).
-   * Default: false 
+   * Default: false
    */
   jsonSchemaCompatible?: boolean;
 

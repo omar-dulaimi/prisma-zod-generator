@@ -2,26 +2,21 @@ import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import {
-  ConfigGenerator,
-  GENERATION_TIMEOUT,
-  TestEnvironment,
-} from './helpers';
+import { ConfigGenerator, GENERATION_TIMEOUT, TestEnvironment } from './helpers';
 
 /**
  * Test suite for JSON Schema compatibility feature (GitHub Issue #236)
- * 
+ *
  * This tests the ability to use z.toJSONSchema() with generated schemas
  * when jsonSchemaCompatible is enabled in the configuration.
  */
 describe('JSON Schema Compatibility', () => {
-  
   describe('Pure Model Schemas with JSON Schema Compatibility', () => {
     it(
       'should generate pure model schemas that work with z.toJSONSchema()',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('json-schema-pure-models');
-        
+
         try {
           const config = {
             ...ConfigGenerator.createBasicConfig(),
@@ -116,32 +111,34 @@ model User {
           // Import and test Planet pure model
           const planetModule = await import(join(variantsDir, 'Planet.pure.ts'));
           const PlanetModelSchema = planetModule.PlanetModelSchema;
-          
+
           expect(() => {
             const jsonSchema = z.toJSONSchema(PlanetModelSchema);
             expect(jsonSchema).toBeDefined();
             expect(jsonSchema.type).toBe('object');
             expect(jsonSchema.properties).toBeDefined();
-            
+
             // Verify DateTime fields use string patterns
             expect(jsonSchema.properties.createdAt.type).toBe('string');
-            expect(jsonSchema.properties.createdAt.pattern).toContain('\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}');
+            expect(jsonSchema.properties.createdAt.pattern).toContain(
+              '\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}',
+            );
           }).not.toThrow();
 
           // Import and test Post pure model
           const postModule = await import(join(variantsDir, 'Post.pure.ts'));
           const PostModelSchema = postModule.PostModelSchema;
-          
+
           expect(() => {
             const jsonSchema = z.toJSONSchema(PostModelSchema);
             expect(jsonSchema).toBeDefined();
             expect(jsonSchema.type).toBe('object');
             expect(jsonSchema.properties).toBeDefined();
-            
+
             // Verify BigInt fields use string patterns
             expect(jsonSchema.properties.likes.type).toBe('string');
             expect(jsonSchema.properties.likes.pattern).toContain('\\d+');
-            
+
             // Verify Bytes fields use string patterns (could be nullable)
             if (jsonSchema.properties.bytes.anyOf) {
               expect(jsonSchema.properties.bytes.anyOf[0].type).toBe('string');
@@ -155,19 +152,18 @@ model User {
           // Import and test User pure model
           const userModule = await import(join(variantsDir, 'User.pure.ts'));
           const UserModelSchema = userModule.UserModelSchema;
-          
+
           expect(() => {
             const jsonSchema = z.toJSONSchema(UserModelSchema);
             expect(jsonSchema).toBeDefined();
             expect(jsonSchema.type).toBe('object');
             expect(jsonSchema.properties).toBeDefined();
           }).not.toThrow();
-
         } finally {
           await testEnv.cleanup();
         }
       },
-      GENERATION_TIMEOUT
+      GENERATION_TIMEOUT,
     );
   });
 
@@ -176,7 +172,7 @@ model User {
       'should generate input schemas that work with z.toJSONSchema()',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('json-schema-input-variants');
-        
+
         try {
           const config = {
             ...ConfigGenerator.createBasicConfig(),
@@ -299,12 +295,11 @@ model User {
               }, `Failed to convert ${name} to JSON Schema`).not.toThrow();
             }
           });
-
         } finally {
           await testEnv.cleanup();
         }
       },
-      GENERATION_TIMEOUT
+      GENERATION_TIMEOUT,
     );
   });
 
@@ -313,7 +308,7 @@ model User {
       'should generate result schemas that work with z.toJSONSchema()',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('json-schema-result-variants');
-        
+
         try {
           const config = {
             ...ConfigGenerator.createBasicConfig(),
@@ -437,12 +432,11 @@ model User {
               }, `Failed to convert ${name} to JSON Schema`).not.toThrow();
             }
           });
-
         } finally {
           await testEnv.cleanup();
         }
       },
-      GENERATION_TIMEOUT
+      GENERATION_TIMEOUT,
     );
   });
 
@@ -451,7 +445,7 @@ model User {
       'should generate all schema types with complete JSON Schema compatibility',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('json-schema-integration');
-        
+
         try {
           const config = {
             ...ConfigGenerator.createBasicConfig(),
@@ -535,7 +529,7 @@ model User {
             pureModels: 0,
             inputSchemas: 0,
             resultSchemas: 0,
-            total: 0
+            total: 0,
           };
 
           const variantsDir = join(testEnv.outputDir, 'schemas', 'variants');
@@ -543,7 +537,7 @@ model User {
           // Test all pure models
           const pureDir = join(variantsDir, 'pure');
           const pureFiles = ['Planet.pure.ts', 'Post.pure.ts', 'User.pure.ts'];
-          
+
           for (const file of pureFiles) {
             const filePath = join(pureDir, file);
             if (existsSync(filePath)) {
@@ -561,7 +555,7 @@ model User {
           // Test all input variants
           const inputDir = join(variantsDir, 'input');
           const inputFiles = ['Planet.input.ts', 'Post.input.ts', 'User.input.ts'];
-          
+
           for (const file of inputFiles) {
             const filePath = join(inputDir, file);
             if (existsSync(filePath)) {
@@ -579,7 +573,7 @@ model User {
           // Test all result variants
           const resultDir = join(variantsDir, 'result');
           const resultFiles = ['Planet.result.ts', 'Post.result.ts', 'User.result.ts'];
-          
+
           for (const file of resultFiles) {
             const filePath = join(resultDir, file);
             if (existsSync(filePath)) {
@@ -599,17 +593,16 @@ model User {
           expect(testResults.inputSchemas).toBeGreaterThan(0);
           expect(testResults.resultSchemas).toBeGreaterThan(0);
           expect(testResults.total).toBeGreaterThan(5);
-          
+
           console.log(`✅ Successfully converted ${testResults.total} schemas to JSON Schema`);
           console.log(`   - Pure Models: ${testResults.pureModels}`);
           console.log(`   - Input Schemas: ${testResults.inputSchemas}`);
           console.log(`   - Result Schemas: ${testResults.resultSchemas}`);
-
         } finally {
           await testEnv.cleanup();
         }
       },
-      GENERATION_TIMEOUT
+      GENERATION_TIMEOUT,
     );
   });
 
@@ -618,7 +611,7 @@ model User {
       'should work with different JSON Schema targets and conversion options',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('json-schema-conversion-options');
-        
+
         try {
           const config = {
             ...ConfigGenerator.createBasicConfig(),
@@ -681,11 +674,11 @@ model Post {
           await testEnv.runGeneration();
 
           const variantsDir = join(testEnv.outputDir, 'schemas', 'variants', 'pure');
-          
+
           // Test different JSON Schema conversion options
           const planetModule = await import(join(variantsDir, 'Planet.pure.ts'));
           const PlanetModelSchema = planetModule.PlanetModelSchema;
-          
+
           // Test with default config options (should be jsonSchema2020-12)
           expect(() => {
             const jsonSchema = z.toJSONSchema(PlanetModelSchema);
@@ -695,8 +688,8 @@ model Post {
 
           // Test with different configuration options
           expect(() => {
-            const jsonSchema = z.toJSONSchema(PlanetModelSchema, { 
-              unrepresentable: 'any'
+            const jsonSchema = z.toJSONSchema(PlanetModelSchema, {
+              unrepresentable: 'any',
             });
             expect(jsonSchema).toBeDefined();
             expect(jsonSchema.type).toBe('object');
@@ -704,9 +697,9 @@ model Post {
 
           // Test with strict mode
           expect(() => {
-            const jsonSchema = z.toJSONSchema(PlanetModelSchema, { 
+            const jsonSchema = z.toJSONSchema(PlanetModelSchema, {
               unrepresentable: 'any',
-              reused: 'inline'
+              reused: 'inline',
             });
             expect(jsonSchema).toBeDefined();
             expect(jsonSchema.type).toBe('object');
@@ -715,20 +708,19 @@ model Post {
           // Test with different unrepresentable handling
           const postModule = await import(join(variantsDir, 'Post.pure.ts'));
           const PostModelSchema = postModule.PostModelSchema;
-          
+
           expect(() => {
-            const jsonSchema = z.toJSONSchema(PostModelSchema, { 
-              unrepresentable: 'any'
+            const jsonSchema = z.toJSONSchema(PostModelSchema, {
+              unrepresentable: 'any',
             });
             expect(jsonSchema).toBeDefined();
             expect(jsonSchema.properties).toBeDefined();
           }).not.toThrow();
-
         } finally {
           await testEnv.cleanup();
         }
       },
-      GENERATION_TIMEOUT
+      GENERATION_TIMEOUT,
     );
   });
 
@@ -737,7 +729,7 @@ model Post {
       'should generate schemas suitable for OpenAPI documentation',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('json-schema-openapi');
-        
+
         try {
           const config = {
             ...ConfigGenerator.createBasicConfig(),
@@ -815,17 +807,17 @@ model Post {
           const pureDir = join(testEnv.outputDir, 'schemas', 'variants', 'pure');
           const userModule = await import(join(pureDir, 'User.pure.ts'));
           const postModule = await import(join(pureDir, 'Post.pure.ts'));
-          
+
           const UserModelSchema = userModule.UserModelSchema;
           const PostModelSchema = postModule.PostModelSchema;
 
           // Generate JSON schemas suitable for APIs
-          const userJsonSchema = z.toJSONSchema(UserModelSchema, { 
-            unrepresentable: 'any'
+          const userJsonSchema = z.toJSONSchema(UserModelSchema, {
+            unrepresentable: 'any',
           });
-          
-          const postJsonSchema = z.toJSONSchema(PostModelSchema, { 
-            unrepresentable: 'any'
+
+          const postJsonSchema = z.toJSONSchema(PostModelSchema, {
+            unrepresentable: 'any',
           });
 
           // Verify JSON Schema compatibility for API use
@@ -843,33 +835,32 @@ model Post {
           // Test input schemas for API request validation
           const inputDir = join(testEnv.outputDir, 'schemas', 'variants', 'input');
           const userInputModule = await import(join(inputDir, 'User.input.ts'));
-          
+
           // Find a create input schema
-          const createInputSchema = Object.entries(userInputModule).find(([name]) => 
-            name.includes('CreateInput') && !name.includes('Unchecked')
+          const createInputSchema = Object.entries(userInputModule).find(
+            ([name]) => name.includes('CreateInput') && !name.includes('Unchecked'),
           )?.[1] as z.ZodSchema;
 
           if (createInputSchema) {
             const createInputJsonSchema = z.toJSONSchema(createInputSchema, {
-              unrepresentable: 'any'
+              unrepresentable: 'any',
             });
-            
+
             expect(createInputJsonSchema.type).toBe('object');
             expect(createInputJsonSchema.properties).toBeDefined();
           }
-
         } finally {
           await testEnv.cleanup();
         }
       },
-      GENERATION_TIMEOUT
+      GENERATION_TIMEOUT,
     );
 
     it(
       'should handle edge cases and error scenarios gracefully',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('json-schema-edge-cases');
-        
+
         try {
           const config = {
             ...ConfigGenerator.createBasicConfig(),
@@ -926,36 +917,38 @@ model EdgeCaseModel {
 
           const variantsDir = join(testEnv.outputDir, 'schemas', 'variants', 'pure');
           const edgeCaseFilePath = join(variantsDir, 'EdgeCaseModel.pure.ts');
-          
+
           // Check if the file exists first
-          expect(existsSync(edgeCaseFilePath), `EdgeCaseModel pure file should exist: ${edgeCaseFilePath}`).toBe(true);
-          
+          expect(
+            existsSync(edgeCaseFilePath),
+            `EdgeCaseModel pure file should exist: ${edgeCaseFilePath}`,
+          ).toBe(true);
+
           const edgeCaseModule = await import(edgeCaseFilePath);
           const EdgeCaseModelSchema = edgeCaseModule.EdgeCaseModelModelSchema;
-          
+
           expect(EdgeCaseModelSchema).toBeDefined();
 
           // Test that all field types convert properly
           expect(() => {
             const jsonSchema = z.toJSONSchema(EdgeCaseModelSchema, {
-              unrepresentable: 'any'
+              unrepresentable: 'any',
             });
-            
+
             expect(jsonSchema.type).toBe('object');
             expect(jsonSchema.properties).toBeDefined();
-            
+
             // Check required vs optional field handling
             const props = jsonSchema.properties;
             expect(props.requiredString.type).toBe('string');
             expect(props.requiredDate.type).toBe('string'); // DateTime as string
             expect(props.requiredBigInt.type).toBe('string'); // BigInt as string
             expect(props.requiredBytes.type).toBe('string'); // Bytes as string
-            
+
             // Optional fields should handle null properly
             if (props.optionalString.anyOf) {
               expect(props.optionalString.anyOf).toContainEqual({ type: 'null' });
             }
-            
           }).not.toThrow();
 
           // Test different conversion options
@@ -964,17 +957,16 @@ model EdgeCaseModel {
           }).not.toThrow();
 
           expect(() => {
-            z.toJSONSchema(EdgeCaseModelSchema, { 
+            z.toJSONSchema(EdgeCaseModelSchema, {
               unrepresentable: 'any',
-              reused: 'inline'
+              reused: 'inline',
             });
           }).not.toThrow();
-
         } finally {
           await testEnv.cleanup();
         }
       },
-      GENERATION_TIMEOUT
+      GENERATION_TIMEOUT,
     );
   });
 });

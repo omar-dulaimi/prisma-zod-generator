@@ -557,7 +557,7 @@ export class PrismaTypeMapper {
         } catch {
           /* ignore */
         }
-        
+
         if (cfg?.jsonSchemaCompatible) {
           const format = cfg.jsonSchemaOptions?.bigIntFormat || 'string';
           if (format === 'string') {
@@ -565,7 +565,9 @@ export class PrismaTypeMapper {
             result.additionalValidations.push('// BigInt as string for JSON Schema compatibility');
           } else {
             result.zodSchema = 'z.number().int()';
-            result.additionalValidations.push('// BigInt as number for JSON Schema compatibility (may lose precision)');
+            result.additionalValidations.push(
+              '// BigInt as number for JSON Schema compatibility (may lose precision)',
+            );
           }
         } else {
           result.zodSchema = 'z.bigint()';
@@ -714,16 +716,21 @@ export class PrismaTypeMapper {
       /* ignore */
     }
 
-    // JSON Schema compatibility mode overrides all other strategies  
+    // JSON Schema compatibility mode overrides all other strategies
     if (cfg?.jsonSchemaCompatible) {
       const format = cfg.jsonSchemaOptions?.dateTimeFormat || 'isoString';
       if (format === 'isoDate') {
         result.zodSchema = 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
-        result.additionalValidations.push('// DateTime as ISO date string for JSON Schema compatibility');
+        result.additionalValidations.push(
+          '// DateTime as ISO date string for JSON Schema compatibility',
+        );
       } else {
         // isoString - no transform for JSON Schema compatibility
-        result.zodSchema = 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
-        result.additionalValidations.push('// DateTime as ISO string for JSON Schema compatibility');
+        result.zodSchema =
+          'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
+        result.additionalValidations.push(
+          '// DateTime as ISO string for JSON Schema compatibility',
+        );
       }
       return;
     }
@@ -828,13 +835,11 @@ export class PrismaTypeMapper {
         break;
       case 'record':
         if (jsonConfig.allowNull) {
-          result.zodSchema = isJsonSchemaCompatible 
-            ? 'z.record(z.any()).nullable()' 
+          result.zodSchema = isJsonSchemaCompatible
+            ? 'z.record(z.any()).nullable()'
             : 'z.record(z.unknown()).nullable()';
         } else {
-          result.zodSchema = isJsonSchemaCompatible 
-            ? 'z.record(z.any())' 
-            : 'z.record(z.unknown())';
+          result.zodSchema = isJsonSchemaCompatible ? 'z.record(z.any())' : 'z.record(z.unknown())';
         }
         break;
       case 'any':
@@ -907,12 +912,14 @@ export class PrismaTypeMapper {
     } catch {
       /* ignore */
     }
-    
+
     if (cfg?.jsonSchemaCompatible) {
       const format = cfg.jsonSchemaOptions?.bytesFormat || 'base64String';
       if (format === 'base64String') {
         result.zodSchema = 'z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")';
-        result.additionalValidations.push('// Bytes as base64 string for JSON Schema compatibility');
+        result.additionalValidations.push(
+          '// Bytes as base64 string for JSON Schema compatibility',
+        );
       } else {
         result.zodSchema = 'z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")';
         result.additionalValidations.push('// Bytes as hex string for JSON Schema compatibility');
@@ -1522,7 +1529,8 @@ export class PrismaTypeMapper {
             const recordMatch = chainNoOptional.match(/\.record\(([^)]*)\)/);
             if (recordMatch) {
               const isJsonSchemaCompatible = this.config.jsonSchemaCompatible;
-              const recordParam = recordMatch[1] || (isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()');
+              const recordParam =
+                recordMatch[1] || (isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()');
               // Build a base z.record(...) and append the remaining chain without the .record(...) segment
               const remainingChain = chainNoOptional.replace(/\.record\([^)]*\)/, '');
               result.zodSchema = `z.record(${recordParam})${remainingChain}`;

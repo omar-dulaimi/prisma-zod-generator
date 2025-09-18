@@ -1241,7 +1241,7 @@ export default class Transformer {
       } else if (inputType.type === 'BigInt') {
         const cfg = Transformer.getGeneratorConfig();
         let bigintExpr = 'z.bigint()';
-        
+
         // JSON Schema compatibility mode overrides normal behavior
         if (cfg?.jsonSchemaCompatible) {
           const format = cfg.jsonSchemaOptions?.bigIntFormat || 'string';
@@ -1251,7 +1251,7 @@ export default class Transformer {
             bigintExpr = 'z.number().int()'; // Note: May lose precision for very large numbers
           }
         }
-        
+
         result.push(this.wrapWithZodValidators(bigintExpr, field, inputType));
       } else if (inputType.type === 'DateTime') {
         // Apply configurable DateTime strategy
@@ -1266,7 +1266,8 @@ export default class Transformer {
             dateExpr = 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
           } else {
             // isoString - no transform for JSON Schema compatibility
-            dateExpr = 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
+            dateExpr =
+              'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
           }
         } else if (cfg?.dateTimeStrategy === 'coerce') {
           dateExpr = 'z.coerce.date()';
@@ -1301,7 +1302,7 @@ export default class Transformer {
       } else if (inputType.type === 'Bytes') {
         const cfg = Transformer.getGeneratorConfig();
         let bytesExpr = 'z.instanceof(Uint8Array)';
-        
+
         // JSON Schema compatibility mode overrides normal behavior
         if (cfg?.jsonSchemaCompatible) {
           const format = cfg.jsonSchemaOptions?.bytesFormat || 'base64String';
@@ -1311,7 +1312,7 @@ export default class Transformer {
             bytesExpr = 'z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")';
           }
         }
-        
+
         result.push(this.wrapWithZodValidators(bytesExpr, field, inputType));
       } else {
         const isEnum = inputType.location === 'enumTypes';

@@ -555,46 +555,44 @@ ${allFields.join(',\n')}
 
   private mapPrismaTypeToZod(field: DMMF.Field): string {
     const isJsonSchemaCompatible = this.config.jsonSchemaCompatible;
-    
+
     // Handle JSON Schema compatibility mapping
     if (isJsonSchemaCompatible) {
       switch (field.type) {
         case 'DateTime':
           const dateTimeFormat = this.config.jsonSchemaOptions?.dateTimeFormat || 'isoString';
           if (dateTimeFormat === 'isoDate') {
-            return field.isList 
+            return field.isList
               ? 'z.array(z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date"))'
               : 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
           } else {
-            return field.isList 
+            return field.isList
               ? 'z.array(z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime"))'
               : 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
           }
         case 'BigInt':
           const bigIntFormat = this.config.jsonSchemaOptions?.bigIntFormat || 'string';
           if (bigIntFormat === 'string') {
-            return field.isList 
+            return field.isList
               ? 'z.array(z.string().regex(/^\\d+$/, "Invalid bigint string"))'
               : 'z.string().regex(/^\\d+$/, "Invalid bigint string")';
           } else {
-            return field.isList 
-              ? 'z.array(z.number().int())'
-              : 'z.number().int()';
+            return field.isList ? 'z.array(z.number().int())' : 'z.number().int()';
           }
         case 'Bytes':
           const bytesFormat = this.config.jsonSchemaOptions?.bytesFormat || 'base64String';
           if (bytesFormat === 'base64String') {
-            return field.isList 
+            return field.isList
               ? 'z.array(z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string"))'
               : 'z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")';
           } else {
-            return field.isList 
+            return field.isList
               ? 'z.array(z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string"))'
               : 'z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")';
           }
       }
     }
-    
+
     const typeMap: Record<string, string> = {
       String: 'z.string()',
       Int: 'z.number().int()',

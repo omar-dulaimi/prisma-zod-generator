@@ -479,9 +479,13 @@ export async function generate(options: GeneratorOptions) {
     // JSON Schema compatibility mode notification
     if (generatorConfig.jsonSchemaCompatible) {
       logger.debug('[prisma-zod-generator] ℹ️ JSON Schema compatibility mode enabled');
-      logger.debug('[prisma-zod-generator]   - DateTime fields: string regex validation (no runtime conversion)');
+      logger.debug(
+        '[prisma-zod-generator]   - DateTime fields: string regex validation (no runtime conversion)',
+      );
       logger.debug('[prisma-zod-generator]   - BigInt fields: string or number representation');
-      logger.debug('[prisma-zod-generator]   - All transforms removed for z.toJSONSchema() compatibility');
+      logger.debug(
+        '[prisma-zod-generator]   - All transforms removed for z.toJSONSchema() compatibility',
+      );
       logger.debug('[prisma-zod-generator]   - Test with: z.toJSONSchema(YourSchema)');
     }
 
@@ -1920,7 +1924,8 @@ function getZodTypeForField(field: DMMF.Field): string {
         if (format === 'isoDate') {
           baseType = 'string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
         } else {
-          baseType = 'string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
+          baseType =
+            'string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
         }
       } else {
         baseType = 'date()';
