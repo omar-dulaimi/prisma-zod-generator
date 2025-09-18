@@ -9,8 +9,26 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.20.4**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.21.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.21.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.20.4...v1.21.0) (2025-09-18)
+
+### 🚀 Features
+
+* **generator:** add JSON Schema compatibility mode ([ada87fc](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ada87fc99f8626213805d5157d31256d1d7c5277)), closes [#236](https://github.com/omar-dulaimi/prisma-zod-generator/issues/236)
+* **json-schema:** enhance validation patterns and add type safety ([e7fbb62](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e7fbb62be35e669a3dce4fe58fe955a07b0f244e))
+
+### 🐛 Bug Fixes
+
+* **config:** address CodeRabbitAI review feedback ([258ee75](https://github.com/omar-dulaimi/prisma-zod-generator/commit/258ee750491bb6ca1d53e9b6cc35652ec69d589b))
+* **pure-models:** restore optionalFieldBehavior respect and enhance zod comments ([057eb25](https://github.com/omar-dulaimi/prisma-zod-generator/commit/057eb2543ad908f80ef9014f0baef11f2d8ed452))
+* **pure-models:** standardize file organization and improve import deduplication ([880ae6c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/880ae6c62c0ac3e4ee275cc6c26019acc2cb209f))
+* **scripts:** correct test coverage command file extension ([bd109ce](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bd109ce6d751f048abcd88a7661bbc238b5082cc))
+
+### 📚 Documentation
+
+* **config:** add JSON Schema compatibility documentation ([d2b3c96](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d2b3c96202cc1cecc204eeeae0fd40bbcec2ebc1))
 
 ## [1.20.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.20.3...v1.20.4) (2025-09-18)
 
@@ -843,7 +861,7 @@ For the complete version history including older releases, please see the [full 
 
 ## Version Support
 
-- **Current:** v1.20.x - Full support with new features and bug fixes
+- **Current:** v1.21.x - Full support with new features and bug fixes
 - **Previous:** Previous minor versions - Security and critical bug fixes only
 - **Legacy:** Older versions - Community support only
 
