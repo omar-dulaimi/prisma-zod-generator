@@ -219,7 +219,7 @@ When changing `dateTimeStrategy`, regenerate your schemas and update consuming c
 
 ## Related Configuration
 
-- [`pureModels`](./modes.md#pure-models): When enabled, affects pure model DateTime fields
+- [`pureModels`](./modes.md): When enabled, affects pure model DateTime fields
 - [`variants`](./variants.md): Controls which schema variants include DateTime strategy
 - [`optionalFieldBehavior`](./optional-fields.md): May affect nullable DateTime fields
 

@@ -35,7 +35,7 @@
 
 ### 🐛 Bug Fixes
 
-* **variants:** do not treat relations as enums; add field-aware base types for [@zod](https://github.com/zod) integration and ensure variant enum imports use <Enum>Schema ([a236939](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a23693949cdbccdb78ab3beaef1033305197f5f9))
+* **variants:** do not treat relations as enums; add field-aware base types for [@zod](https://github.com/zod) integration and ensure variant enum imports use `<Enum>Schema` ([a236939](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a23693949cdbccdb78ab3beaef1033305197f5f9))
 * **whereUnique:** handle composite unique selectors nested under key names; superRefine now validates completeness inside nested objects and accepts composite PK/unique ([8ea437c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8ea437c46bc907c63b8376ab3b93752780e17e3c))
 
 ## [1.20.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.20.0...v1.20.1) (2025-09-12)

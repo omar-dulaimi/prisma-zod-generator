@@ -360,6 +360,6 @@ DEBUG_PRISMA_ZOD=1 prisma generate
 
 ## Related
 
-- [DateTime Strategy](/config/datetime-strategy) - Configure DateTime handling
-- [Variants](/config/variants) - Schema variant configuration  
+- [DateTime Strategy](./datetime-strategy) - Configure DateTime handling
+- [Variants](./variants) - Schema variant configuration  
 - [Zod JSON Schema Documentation](https://zod.dev/json-schema) - Official Zod JSON Schema docs
