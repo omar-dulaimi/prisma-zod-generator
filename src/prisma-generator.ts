@@ -1933,7 +1933,14 @@ function getZodTypeForField(field: DMMF.Field): string {
  */
 async function generateVariantsIndex(variantNames: string[], outputPath: string) {
   const importExtension = Transformer.getImportFileExtension();
-  const exports = variantNames.map((variant) => `export * from './${variant}${importExtension}';`);
+  const exports = variantNames.map((variant) => {
+    // For ESM, we need to import from the index file in the subdirectory
+    if (importExtension) {
+      return `export * from './${variant}/index${importExtension}';`;
+    } else {
+      return `export * from './${variant}';`;
+    }
+  });
 
   const indexContent = [
     '/**',
