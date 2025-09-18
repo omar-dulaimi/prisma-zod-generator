@@ -221,11 +221,16 @@ function parseJsonObjectOption(value: string, optionName: string): Record<string
   }
   try {
     const obj = JSON.parse(value);
-    if (obj && typeof obj === 'object' && !Array.isArray(obj)) return obj as Record<string, unknown>;
+    if (obj && typeof obj === 'object' && !Array.isArray(obj))
+      return obj as Record<string, unknown>;
   } catch {
     // fall through
   }
-  throw new GeneratorOptionError(optionName, value, `${optionName} must be a valid JSON object string`);
+  throw new GeneratorOptionError(
+    optionName,
+    value,
+    `${optionName} must be a valid JSON object string`,
+  );
 }
 
 /**
