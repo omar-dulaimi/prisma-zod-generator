@@ -426,7 +426,7 @@ export class VariantImportExportManager {
     return lines.join('\n');
   }
 
-  private generateMainIndexContent(exports: ExportStatement[]): string {
+  private generateMainIndexContent(exports: ExportStatement[], importExtension: string = ''): string {
     const lines: string[] = [];
 
     lines.push('/**');
@@ -435,10 +435,6 @@ export class VariantImportExportManager {
     lines.push(` * Generated at: ${new Date().toISOString()}`);
     lines.push(' */');
     lines.push('');
-
-    // Get the import extension for ESM support
-    const { Transformer } = require('../transformer');
-    const importExtension = Transformer.getImportFileExtension();
 
     // Add re-exports
     exports.forEach((exportStmt) => {

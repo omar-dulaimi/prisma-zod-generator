@@ -98,6 +98,7 @@ export class VariantFileGenerationCoordinator {
   async generateAllVariants(
     models: DMMF.Model[],
     options: GenerationCoordinationOptions = {},
+    importExtension: string = '',
   ): Promise<{
     collections: ModelVariantCollection[];
     statistics: GenerationStatistics;
@@ -122,7 +123,7 @@ export class VariantFileGenerationCoordinator {
       if (options.parallelGeneration) {
         // Generate models in parallel
         const promises = models.map((model) =>
-          this.generateModelVariants(model, options, progress),
+          this.generateModelVariants(model, options, progress, importExtension),
         );
         const results = await Promise.allSettled(promises);
 
@@ -140,7 +141,7 @@ export class VariantFileGenerationCoordinator {
             progress.currentModel = model.name;
             this.notifyProgress(progress);
 
-            const collection = await this.generateModelVariants(model, options, progress);
+            const collection = await this.generateModelVariants(model, options, progress, importExtension);
             collections.push(collection);
 
             progress.processedModels++;
@@ -159,7 +160,7 @@ export class VariantFileGenerationCoordinator {
 
       // Generate index files if requested
       if (options.generateIndexFiles) {
-        await this.generateIndexFiles(collections, options);
+        await this.generateIndexFiles(collections, options, importExtension);
       }
 
       // Validate dependencies if requested
@@ -188,6 +189,7 @@ export class VariantFileGenerationCoordinator {
     model: DMMF.Model,
     options: GenerationCoordinationOptions = {},
     progress?: GenerationProgress,
+    importExtension: string = '',
   ): Promise<ModelVariantCollection> {
     const enabledVariants = options.enabledVariants || Object.values(VariantType);
     const modelStartTime = Date.now();
@@ -255,7 +257,7 @@ export class VariantFileGenerationCoordinator {
     }
 
     // Generate model index file
-    collection.indexFile = this.generateModelIndexFile(collection);
+    collection.indexFile = this.generateModelIndexFile(collection, importExtension);
 
     // Calculate cross-variant references
     this.calculateCrossVariantReferences(collection);
@@ -456,7 +458,7 @@ export class VariantFileGenerationCoordinator {
   /**
    * Generate model index file
    */
-  private generateModelIndexFile(collection: ModelVariantCollection): {
+  private generateModelIndexFile(collection: ModelVariantCollection, importExtension: string = ''): {
     fileName: string;
     content: string;
     exports: Set<string>;
@@ -467,8 +469,6 @@ export class VariantFileGenerationCoordinator {
     // Collect exports from all variants
     Object.entries(collection.variants).forEach(([_variantType, result]) => {
       if (result) {
-        const { Transformer } = require('../transformer');
-        const importExtension = Transformer.getImportFileExtension();
         imports.push(
           `export { ${result.schemaName}, ${result.typeName} } from './${result.fileName.replace('.ts', '')}${importExtension}';`,
         );
@@ -501,6 +501,7 @@ export class VariantFileGenerationCoordinator {
   private async generateIndexFiles(
     collections: ModelVariantCollection[],
     options: GenerationCoordinationOptions,
+    importExtension: string = '',
   ): Promise<void> {
     const outputDir = options.outputDirectory || './generated/schemas';
 
@@ -511,8 +512,6 @@ export class VariantFileGenerationCoordinator {
       collections.forEach((collection) => {
         const variant = collection.variants[variantType];
         if (variant) {
-          const { Transformer } = require('../transformer');
-          const importExtension = Transformer.getImportFileExtension();
           variantExports.push(
             `export { ${variant.schemaName}, ${variant.typeName} } from './${variantType}/${variant.fileName.replace('.ts', '')}${importExtension}';`,
           );
@@ -545,8 +544,6 @@ export class VariantFileGenerationCoordinator {
       ' */',
       '',
       ...Object.values(VariantType).map((variant) => {
-        const { Transformer } = require('../transformer');
-        const importExtension = Transformer.getImportFileExtension();
         return `export * from './${variant}${importExtension}';`;
       }),
       '',
