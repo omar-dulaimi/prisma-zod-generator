@@ -28,14 +28,14 @@ function normalizePath(path: string) {
   return prefix + segs.join('/');
 }
 
-export const writeIndexFile = async (indexPath: string) => {
+export const writeIndexFile = async (indexPath: string, importExtension: string = '') => {
   const rows = Array.from(indexExports).map((filePath) => {
     let relativePath = path.relative(path.dirname(indexPath), filePath);
     if (relativePath.endsWith('.ts')) {
       relativePath = relativePath.slice(0, relativePath.lastIndexOf('.ts'));
     }
     const normalized = normalizePath(relativePath);
-    return `export * from './${normalized}'`;
+    return `export * from './${normalized}${importExtension}'`;
   });
   // Additionally, ensure directory-level exports for common folders if their index.ts was not added explicitly
   const dirExports: string[] = [];
@@ -47,7 +47,7 @@ export const writeIndexFile = async (indexPath: string) => {
       const fs = await import('fs');
       if (fs.existsSync(dirIndex)) {
         const rel = normalizePath(path.relative(baseDir, dirIndex).replace(/\.ts$/, ''));
-        const line = `export * from './${rel}'`;
+        const line = `export * from './${rel}${importExtension}'`;
         if (!rows.includes(line)) dirExports.push(line);
       }
     } catch {
@@ -60,7 +60,7 @@ export const writeIndexFile = async (indexPath: string) => {
     const variantsIndex = path.join(baseDir, 'variants', 'index.ts');
     if (fs.existsSync(variantsIndex)) {
       const rel = normalizePath(path.relative(baseDir, variantsIndex).replace(/\.ts$/, ''));
-      const line = `export * from './${rel}'`;
+      const line = `export * from './${rel}${importExtension}'`;
       if (!rows.includes(line) && !dirExports.includes(line)) dirExports.push(line);
     }
   } catch {
