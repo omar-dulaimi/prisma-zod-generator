@@ -174,6 +174,16 @@ export const ConfigurationSchema: JSONSchema7 = {
           default: 'base64String',
           description: 'Format for Bytes fields in JSON Schema compatible mode',
         },
+        conversionOptions: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            unrepresentable: { type: 'string', enum: ['throw', 'any'], default: 'any' },
+            cycles: { type: 'string', enum: ['ref', 'throw'], default: 'throw' },
+            reused: { type: 'string', enum: ['inline', 'ref'], default: 'inline' },
+          },
+          description: 'Options forwarded to z.toJSONSchema()',
+        },
       },
       additionalProperties: false,
       description: 'Options for JSON Schema compatibility mode',

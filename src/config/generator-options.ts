@@ -28,6 +28,11 @@ export interface ExtendedGeneratorOptions {
     dateTimeFormat?: 'isoString' | 'isoDate';
     bigIntFormat?: 'string' | 'number';
     bytesFormat?: 'base64String' | 'hexString';
+    conversionOptions?: {
+      unrepresentable?: 'throw' | 'any';
+      cycles?: 'ref' | 'throw';
+      reused?: 'inline' | 'ref';
+    };
   };
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish'; // How to handle optional fields
 
@@ -115,6 +120,12 @@ export function parseGeneratorOptions(
       'jsonSchemaCompatible',
     );
   }
+  if (generatorConfig.jsonSchemaOptions !== undefined) {
+    options.jsonSchemaOptions = parseJsonObjectOption(
+      generatorConfig.jsonSchemaOptions,
+      'jsonSchemaOptions',
+    );
+  }
   if (generatorConfig.optionalFieldBehavior !== undefined) {
     const v = generatorConfig.optionalFieldBehavior;
     if (!['optional', 'nullable', 'nullish'].includes(v)) {
@@ -199,6 +210,22 @@ function parseBoolean(value: string, optionName: string): boolean {
       `${optionName} must be "true" or "false", got "${value}"`,
     );
   }
+}
+
+/**
+ * Parse JSON object option
+ */
+function parseJsonObjectOption(value: string, optionName: string): Record<string, unknown> {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new GeneratorOptionError(optionName, value, `${optionName} must be a JSON string`);
+  }
+  try {
+    const obj = JSON.parse(value);
+    if (obj && typeof obj === 'object' && !Array.isArray(obj)) return obj as Record<string, unknown>;
+  } catch {
+    // fall through
+  }
+  throw new GeneratorOptionError(optionName, value, `${optionName} must be a valid JSON object string`);
 }
 
 /**
