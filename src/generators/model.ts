@@ -1487,7 +1487,7 @@ export class PrismaTypeMapper {
         return;
       }
 
-      // Map annotations to Zod schema
+      // Map annotations to Zod schema (auto-detect zod version)
       const zodSchemaResult = mapAnnotationsToZodSchema(
         parseResult.annotations,
         context,
@@ -1509,9 +1509,23 @@ export class PrismaTypeMapper {
           (field.relationName && field.relationName.length > 0) ||
           /\.(optional|nullable|nullish)\(\)/.test(zodSchemaResult.schemaChain);
 
-        const chainNoOptional = shouldPreserveOptional
+        let chainNoOptional = shouldPreserveOptional
           ? zodSchemaResult.schemaChain // Keep user's .optional()/.nullable()/.nullish() calls
           : zodSchemaResult.schemaChain.replace(/\.optional\(\)/g, ''); // Strip only .optional() for scalar fields, keep .nullable()/.nullish()
+
+        // Normalize nullable/nullish to appear at the end of the chain (after other validations)
+        const nullableCount = (chainNoOptional.match(/\.nullable\(\)/g) || []).length;
+        const nullishCount = (chainNoOptional.match(/\.nullish\(\)/g) || []).length;
+        if (nullableCount > 0 || nullishCount > 0) {
+          chainNoOptional = chainNoOptional
+            .replace(/\.nullable\(\)/g, '')
+            .replace(/\.nullish\(\)/g, '');
+          if (nullableCount > 0) {
+            chainNoOptional += '.nullable()';
+          } else if (nullishCount > 0) {
+            chainNoOptional += '.nullish()';
+          }
+        }
 
         // Check if the schema chain contains a replacement method (doesn't start with dot)
         const isReplacementSchema = !chainNoOptional.startsWith('.');
@@ -1538,7 +1552,27 @@ export class PrismaTypeMapper {
               result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
             }
           } else {
-            if (chainNoOptional.startsWith('.')) {
+            // Special handling for array element-level validations: if comment suggests
+            // element validation, apply the chain to the element and keep nullable/nullish
+            // on the array.
+            const elementLevel = /array element/i.test(extractedComment.normalizedComment);
+            if (field.isList && elementLevel && /^z\.array\(/.test(result.zodSchema)) {
+              const m = result.zodSchema.match(/^z\.array\((.+)\)$/);
+              const elementBase = m ? m[1] : 'z.unknown()';
+              let arrayNullableSuffix = '';
+              if (/\.nullable\(\)$/.test(chainNoOptional)) {
+                arrayNullableSuffix = '.nullable()';
+                chainNoOptional = chainNoOptional.replace(/\.nullable\(\)$/, '');
+              } else if (/\.nullish\(\)$/.test(chainNoOptional)) {
+                arrayNullableSuffix = '.nullish()';
+                chainNoOptional = chainNoOptional.replace(/\.nullish\(\)$/, '');
+              }
+              if (chainNoOptional.startsWith('.')) {
+                result.zodSchema = `z.array(${elementBase}${chainNoOptional})${arrayNullableSuffix}`;
+              } else {
+                result.zodSchema = `z.array(${chainNoOptional})${arrayNullableSuffix}`;
+              }
+            } else if (chainNoOptional.startsWith('.')) {
               result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
             } else {
               result.zodSchema = chainNoOptional;
@@ -2254,22 +2288,13 @@ export class PrismaTypeMapper {
         .map((f) => f.prismaType),
     );
 
-    // Enum schema imports – compute correct relative path based on actual layout:
-    // - Pure models are emitted under:
-    //     a) <output>/models             (default)
-    //     b) <output>/schemas/models     (when output already ends with 'schemas')
-    // - Enums are emitted under: <schemasPath>/enums
-    //
-    // So relative import should be:
-    //   from <output>/models             -> ../schemas/enums/<Enum>.schema
-    //   from <output>/schemas/models     -> ../enums/<Enum>.schema
+    // Enum schema imports – relative to models under <output>/schemas/models
+    // Import path expected by tests: from models → '../schemas/enums/<Enum>.schema'
     const enumSchemaImports = imports.filter(
       (imp) => /Schema$/.test(imp) && enumNames.has(imp.replace(/Schema$/, '')),
     );
     enumSchemaImports.forEach((imp) => {
       const enumBase = imp.replace(/Schema$/, '');
-      // Tests and documentation expect pure models in "<out>/models" and enums in "<out>/schemas/enums"
-      // Note: In single-file mode, pure models are bundled into schemas.ts, not generated as separate files
       lines.push(`import { ${imp} } from '../schemas/enums/${enumBase}.schema';`);
     });
 
