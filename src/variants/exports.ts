@@ -426,7 +426,10 @@ export class VariantImportExportManager {
     return lines.join('\n');
   }
 
-  private generateMainIndexContent(exports: ExportStatement[], importExtension: string = ''): string {
+  private generateMainIndexContent(
+    exports: ExportStatement[],
+    importExtension: string = '',
+  ): string {
     const lines: string[] = [];
 
     lines.push('/**');

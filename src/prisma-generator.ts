@@ -1760,7 +1760,9 @@ async function generateVariantType(
     await writeFileSafely(filePath, schemaContent);
 
     const importExtension = Transformer.getImportFileExtension();
-    exports.push(`export { ${schemaName} } from './${model.name}.${variantName}${importExtension}';`);
+    exports.push(
+      `export { ${schemaName} } from './${model.name}.${variantName}${importExtension}';`,
+    );
   }
 
   // Generate variant index file

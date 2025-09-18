@@ -141,7 +141,12 @@ export class VariantFileGenerationCoordinator {
             progress.currentModel = model.name;
             this.notifyProgress(progress);
 
-            const collection = await this.generateModelVariants(model, options, progress, importExtension);
+            const collection = await this.generateModelVariants(
+              model,
+              options,
+              progress,
+              importExtension,
+            );
             collections.push(collection);
 
             progress.processedModels++;
@@ -458,7 +463,10 @@ export class VariantFileGenerationCoordinator {
   /**
    * Generate model index file
    */
-  private generateModelIndexFile(collection: ModelVariantCollection, importExtension: string = ''): {
+  private generateModelIndexFile(
+    collection: ModelVariantCollection,
+    importExtension: string = '',
+  ): {
     fileName: string;
     content: string;
     exports: Set<string>;

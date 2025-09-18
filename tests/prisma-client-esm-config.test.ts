@@ -349,10 +349,10 @@ model Post {
           mode: 'full',
           globalExclusions: {
             input: ['*id', 'createdAt', 'updatedAt'],
-            result: []
+            result: [],
           },
           pureModels: true,
-          useMultipleFiles: true
+          useMultipleFiles: true,
         };
         writeFileSync(configPath, JSON.stringify(config, null, 2));
         writeFileSync(schemaPath, schemaContent);
@@ -380,15 +380,16 @@ model Post {
 
               // Should contain .js extensions in export statements for ESM
               if (content.includes('export')) {
-                const exportLines = content.split('\n').filter(line => 
-                  line.trim().startsWith('export') && 
-                  line.includes("from './") &&
-                  !line.includes('//') // Ignore commented lines
+                const exportLines = content.split('\n').filter(
+                  (line) =>
+                    line.trim().startsWith('export') &&
+                    line.includes("from './") &&
+                    !line.includes('//'), // Ignore commented lines
                 );
 
                 if (exportLines.length > 0) {
                   // All export statements should have .js extensions
-                  exportLines.forEach(line => {
+                  exportLines.forEach((line) => {
                     expect(line).toMatch(/\.js['"](?:;)?\s*$/);
                   });
                 }
