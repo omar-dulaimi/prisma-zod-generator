@@ -476,6 +476,19 @@ export async function generate(options: GeneratorOptions) {
       validationResult.suggestions.forEach((suggestion) => logger.debug(`  - ${suggestion}`));
     }
 
+    // JSON Schema compatibility mode notification
+    if (generatorConfig.jsonSchemaCompatible) {
+      logger.debug('[prisma-zod-generator] ℹ️ JSON Schema compatibility mode enabled');
+      logger.debug(
+        '[prisma-zod-generator]   - DateTime fields: string regex validation (no runtime conversion)',
+      );
+      logger.debug('[prisma-zod-generator]   - BigInt fields: string or number representation');
+      logger.debug(
+        '[prisma-zod-generator]   - All transforms removed for z.toJSONSchema() compatibility',
+      );
+      logger.debug('[prisma-zod-generator]   - Test with: z.toJSONSchema(YourSchema)');
+    }
+
     // Merge backward compatibility options with new configuration
     // Priority: 1. Legacy generator options, 2. New config file options (addSelectType/addIncludeType)
     // Resolve dual-export controls with proper precedence:
@@ -1888,6 +1901,16 @@ export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaNam
 function getZodTypeForField(field: DMMF.Field): string {
   let baseType: string;
 
+  // Check for JSON Schema compatibility mode
+  let cfg: any = null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular import
+    const transformer = require('./transformer').default;
+    cfg = transformer.getGeneratorConfig?.();
+  } catch {
+    /* ignore */
+  }
+
   switch (field.type) {
     case 'String':
       baseType = 'string()';
@@ -1902,23 +1925,59 @@ function getZodTypeForField(field: DMMF.Field): string {
       baseType = 'boolean()';
       break;
     case 'DateTime':
-      baseType = 'date()';
+      if (cfg?.jsonSchemaCompatible) {
+        const format = cfg.jsonSchemaOptions?.dateTimeFormat || 'isoString';
+        if (format === 'isoDate') {
+          baseType = 'string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
+        } else {
+          baseType =
+            'string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
+        }
+      } else {
+        baseType = 'date()';
+      }
       break;
     case 'Json':
-      baseType = 'unknown()';
+      if (cfg?.jsonSchemaCompatible) {
+        baseType = 'any()';
+      } else {
+        baseType = 'unknown()';
+      }
       break;
     case 'Bytes':
-      baseType = 'instanceof(Uint8Array)';
+      if (cfg?.jsonSchemaCompatible) {
+        const format = cfg.jsonSchemaOptions?.bytesFormat || 'base64String';
+        if (format === 'base64String') {
+          baseType = 'string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")';
+        } else {
+          baseType = 'string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")';
+        }
+      } else {
+        baseType = 'instanceof(Uint8Array)';
+      }
       break;
     case 'BigInt':
-      baseType = 'bigint()';
+      if (cfg?.jsonSchemaCompatible) {
+        const format = cfg.jsonSchemaOptions?.bigIntFormat || 'string';
+        if (format === 'string') {
+          baseType = 'string().regex(/^\\d+$/, "Invalid bigint string")';
+        } else {
+          baseType = 'number().int()'; // Note: May lose precision for very large numbers
+        }
+      } else {
+        baseType = 'bigint()';
+      }
       break;
     case 'Decimal':
       baseType = 'number()'; // Simplified
       break;
     default:
       // Treat non-scalar types (relations/objects) as unknown here; enums are handled by callers
-      baseType = 'unknown()';
+      if (cfg?.jsonSchemaCompatible) {
+        baseType = 'any()';
+      } else {
+        baseType = 'unknown()';
+      }
       break;
   }
 
@@ -1973,18 +2032,9 @@ async function generatePureModelSchemas(
   logger.debug('📦 Generating pure model schemas (naming experimental)');
 
   try {
-    const outputPath = Transformer.getOutputPath();
-    // Place pure models alongside the "schemas" folder so imports can use ../schemas/enums
-    // If outputPath already ends with "schemas", put models at its parent-level sibling
-    let modelsOutputPath = path.join(outputPath, 'models');
-    try {
-      const base = path.basename(outputPath);
-      if (base === 'schemas') {
-        modelsOutputPath = path.join(path.dirname(outputPath), 'models');
-      }
-    } catch {
-      // noop, fallback to default models path
-    }
+    // Place pure models under the schemas directory: <schemas>/models
+    // This aligns with tests and ensures enum imports can use '../enums/...'
+    const modelsOutputPath = path.join(Transformer.getSchemasPath(), 'models');
     const singleFileMode = isSingleFileEnabled();
 
     // Filter models based on configuration
@@ -2012,6 +2062,8 @@ async function generatePureModelSchemas(
     const typeMapper = new PrismaTypeMapper({
       provider,
       zodImportTarget: config.zodImportTarget,
+      jsonSchemaCompatible: config.jsonSchemaCompatible,
+      jsonSchemaOptions: config.jsonSchemaOptions,
     });
 
     // Detect circular dependencies if the option is enabled
@@ -2101,7 +2153,11 @@ async function generatePureModelSchemas(
         // Import paths are generated correctly by the model generator; no enum path rewrite needed
         // Remove accidental duplicate enum imports (defensive clean-up)
         content = content.replace(
-          /^(import { (\w+)Schema } from '..\/schemas\/enums\/\2\.schema';)\n\1/gm,
+          /^(import { (\w+)Schema } from '\.\.\/schemas\/enums\/\2\.schema';)\n\1/gm,
+          '$1',
+        );
+        content = content.replace(
+          /^(import { (\w+)Schema } from '\.\.\/enums\/\2\.schema';)\n\1/gm,
           '$1',
         );
         // Rename exported const & type if suffix customization used

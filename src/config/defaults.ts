@@ -52,6 +52,17 @@ export class DefaultConfigurationManager {
       pureModelsExcludeCircularRelations: false,
       dateTimeStrategy: 'date',
       dateTimeSplitStrategy: true,
+      jsonSchemaCompatible: false,
+      jsonSchemaOptions: {
+        dateTimeFormat: 'isoString',
+        bigIntFormat: 'string',
+        bytesFormat: 'base64String',
+        conversionOptions: {
+          unrepresentable: 'any',
+          cycles: 'throw',
+          reused: 'inline',
+        },
+      },
       optionalFieldBehavior: 'nullish',
       naming: {
         preset: 'default',

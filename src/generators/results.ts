@@ -4,6 +4,8 @@
  */
 
 import { DMMF } from '@prisma/generator-helper';
+import { GeneratorConfig } from '../config/parser';
+import { getDefaultConfiguration } from '../config/defaults';
 
 /**
  * Prisma operation types that return results
@@ -92,9 +94,34 @@ export interface ResultGenerationContext {
 export class ResultSchemaGenerator {
   private generatedSchemas: Map<string, GeneratedResultSchema> = new Map();
   private baseModelSchemas: Map<string, string> = new Map();
+  private config: GeneratorConfig;
+  // Safe accessors for JSON Schema compatibility flags/options to avoid strict type coupling
+  private isJsonSchemaModeEnabled(): boolean {
+    const cfg = this.config as unknown as { jsonSchemaCompatible?: boolean };
+    return !!cfg?.jsonSchemaCompatible;
+  }
 
-  constructor() {
-    // Initialize with base configurations
+  private getJsonSchemaOptions(): {
+    dateTimeFormat?: 'isoString' | 'isoDate';
+    bigIntFormat?: 'string' | 'number';
+    bytesFormat?: 'base64String' | 'hexString';
+  } {
+    const cfg = this.config as unknown as {
+      jsonSchemaOptions?: {
+        dateTimeFormat?: 'isoString' | 'isoDate';
+        bigIntFormat?: 'string' | 'number';
+        bytesFormat?: 'base64String' | 'hexString';
+      };
+    };
+    return (cfg?.jsonSchemaOptions ?? {}) as {
+      dateTimeFormat?: 'isoString' | 'isoDate';
+      bigIntFormat?: 'string' | 'number';
+      bytesFormat?: 'base64String' | 'hexString';
+    };
+  }
+
+  constructor(config?: GeneratorConfig) {
+    this.config = config ?? getDefaultConfiguration();
   }
 
   /**
@@ -552,19 +579,61 @@ ${allFields.join(',\n')}
   }
 
   private mapPrismaTypeToZod(field: DMMF.Field): string {
+    const isJsonSchemaCompatible = this.isJsonSchemaModeEnabled();
+
+    // Handle JSON Schema compatibility mapping
+    if (isJsonSchemaCompatible) {
+      switch (field.type) {
+        case 'DateTime':
+          const { dateTimeFormat } = this.getJsonSchemaOptions();
+          const dtFormat = dateTimeFormat || 'isoString';
+          if (dtFormat === 'isoDate') {
+            return field.isList
+              ? 'z.array(z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date"))'
+              : 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
+          } else {
+            return field.isList
+              ? 'z.array(z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime"))'
+              : 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
+          }
+        case 'BigInt':
+          const { bigIntFormat } = this.getJsonSchemaOptions();
+          const biFormat = bigIntFormat || 'string';
+          if (biFormat === 'string') {
+            return field.isList
+              ? 'z.array(z.string().regex(/^\\d+$/, "Invalid bigint string"))'
+              : 'z.string().regex(/^\\d+$/, "Invalid bigint string")';
+          } else {
+            return field.isList ? 'z.array(z.number().int())' : 'z.number().int()';
+          }
+        case 'Bytes':
+          const { bytesFormat } = this.getJsonSchemaOptions();
+          const bFormat = bytesFormat || 'base64String';
+          if (bFormat === 'base64String') {
+            return field.isList
+              ? 'z.array(z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string"))'
+              : 'z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")';
+          } else {
+            return field.isList
+              ? 'z.array(z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string"))'
+              : 'z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")';
+          }
+      }
+    }
+
     const typeMap: Record<string, string> = {
       String: 'z.string()',
       Int: 'z.number().int()',
       Float: 'z.number()',
       Boolean: 'z.boolean()',
       DateTime: 'z.date()',
-      Json: 'z.unknown()',
+      Json: isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()',
       Bytes: 'z.instanceof(Uint8Array)',
       Decimal: 'z.number()', // or z.string() depending on configuration
       BigInt: 'z.bigint()',
     };
 
-    const baseType = typeMap[field.type] || 'z.unknown()';
+    const baseType = typeMap[field.type] || (isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()');
 
     // Handle arrays
     if (field.isList) {

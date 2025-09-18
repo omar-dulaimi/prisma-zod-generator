@@ -53,6 +53,33 @@ export interface GeneratorConfig {
    */
   dateTimeSplitStrategy?: boolean;
 
+  /**
+   * Generate schemas compatible with z.toJSONSchema() for API documentation.
+   * When enabled, overrides dateTimeStrategy and removes transforms.
+   * Trade-off: No runtime type conversion (strings instead of Date objects).
+   * Default: false
+   */
+  jsonSchemaCompatible?: boolean;
+
+  /** Options for JSON Schema compatibility mode */
+  jsonSchemaOptions?: {
+    /** Format for DateTime fields. Default: 'isoString' */
+    dateTimeFormat?: 'isoString' | 'isoDate';
+    /** Format for BigInt fields. Default: 'string' */
+    bigIntFormat?: 'string' | 'number';
+    /** Format for Bytes fields. Default: 'base64String' */
+    bytesFormat?: 'base64String' | 'hexString';
+    /** JSON Schema conversion options to use with z.toJSONSchema() */
+    conversionOptions?: {
+      /** How to handle unrepresentable types. Default: 'any' */
+      unrepresentable?: 'throw' | 'any';
+      /** How to handle circular references. Default: 'throw' */
+      cycles?: 'ref' | 'throw';
+      /** How to handle reused schemas. Default: 'inline' */
+      reused?: 'inline' | 'ref';
+    };
+  };
+
   /** How to handle optional fields in Zod schemas. Default: 'nullish' */
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
 

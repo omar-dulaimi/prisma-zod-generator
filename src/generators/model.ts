@@ -41,6 +41,14 @@ export interface TypeMappingConfig {
 
   /** Zod import target for version-specific behavior */
   zodImportTarget?: 'auto' | 'v3' | 'v4';
+  /** Whether to generate JSON Schema compatible schemas */
+  jsonSchemaCompatible?: boolean;
+  /** JSON Schema compatibility options */
+  jsonSchemaOptions?: {
+    dateTimeFormat?: 'isoString' | 'isoDate';
+    bigIntFormat?: 'string' | 'number';
+    bytesFormat?: 'base64String' | 'hexString';
+  };
 
   /** Complex type configuration */
   complexTypes: {
@@ -513,9 +521,10 @@ export class PrismaTypeMapper {
     } catch (error) {
       // Fallback to string type on mapping error
       console.warn(`Failed to map field ${field.name} of type ${field.type}:`, error);
-      result.zodSchema = 'z.unknown()';
+      const isJsonSchemaCompatible = this.config.jsonSchemaCompatible;
+      result.zodSchema = isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()';
       result.additionalValidations.push(
-        `// Warning: Failed to map type ${field.type}, using unknown`,
+        `// Warning: Failed to map type ${field.type}, using ${isJsonSchemaCompatible ? 'any' : 'unknown'}`,
       );
     }
 
@@ -539,9 +548,32 @@ export class PrismaTypeMapper {
         break;
 
       case 'BigInt':
-        result.zodSchema = 'z.bigint()';
-        if (this.config.validateBigInt) {
-          result.additionalValidations.push('// BigInt validation enabled');
+        // Check for JSON Schema compatibility mode
+        let cfg: any = null;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular import
+          const transformer = require('../transformer').default;
+          cfg = transformer.getGeneratorConfig?.();
+        } catch {
+          /* ignore */
+        }
+
+        if (cfg?.jsonSchemaCompatible) {
+          const format = cfg.jsonSchemaOptions?.bigIntFormat || 'string';
+          if (format === 'string') {
+            result.zodSchema = 'z.string().regex(/^\\d+$/, "Invalid bigint string")';
+            result.additionalValidations.push('// BigInt as string for JSON Schema compatibility');
+          } else {
+            result.zodSchema = 'z.number().int()';
+            result.additionalValidations.push(
+              '// BigInt as number for JSON Schema compatibility (may lose precision)',
+            );
+          }
+        } else {
+          result.zodSchema = 'z.bigint()';
+          if (this.config.validateBigInt) {
+            result.additionalValidations.push('// BigInt validation enabled');
+          }
         }
         break;
 
@@ -672,15 +704,35 @@ export class PrismaTypeMapper {
     const dateTimeConfig = this.config.complexTypes.dateTime;
     // Respect global generator dateTimeStrategy if available
     let strategy: 'date' | 'coerce' | 'isoString' = 'date';
+    let cfg: any = null;
     try {
       // Lazy load transformer to avoid circular import at module load
 
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular import at module top level
       const transformer = require('../transformer').default;
-      const cfg = transformer.getGeneratorConfig?.();
+      cfg = transformer.getGeneratorConfig?.();
       if (cfg?.dateTimeStrategy) strategy = cfg.dateTimeStrategy;
     } catch {
       /* ignore */
+    }
+
+    // JSON Schema compatibility mode overrides all other strategies
+    if (cfg?.jsonSchemaCompatible) {
+      const format = cfg.jsonSchemaOptions?.dateTimeFormat || 'isoString';
+      if (format === 'isoDate') {
+        result.zodSchema = 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
+        result.additionalValidations.push(
+          '// DateTime as ISO date string for JSON Schema compatibility',
+        );
+      } else {
+        // isoString - no transform for JSON Schema compatibility
+        result.zodSchema =
+          'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
+        result.additionalValidations.push(
+          '// DateTime as ISO string for JSON Schema compatibility',
+        );
+      }
+      return;
     }
 
     if (strategy === 'isoString') {
@@ -775,23 +827,26 @@ export class PrismaTypeMapper {
    */
   private mapJsonType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const jsonConfig = this.config.complexTypes.json;
+    const isJsonSchemaCompatible = this.config.jsonSchemaCompatible;
 
     switch (this.config.jsonMode) {
       case 'unknown':
-        result.zodSchema = 'z.unknown()';
+        result.zodSchema = isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()';
         break;
       case 'record':
         if (jsonConfig.allowNull) {
-          result.zodSchema = 'z.record(z.unknown()).nullable()';
+          result.zodSchema = isJsonSchemaCompatible
+            ? 'z.record(z.any()).nullable()'
+            : 'z.record(z.unknown()).nullable()';
         } else {
-          result.zodSchema = 'z.record(z.unknown())';
+          result.zodSchema = isJsonSchemaCompatible ? 'z.record(z.any())' : 'z.record(z.unknown())';
         }
         break;
       case 'any':
         result.zodSchema = 'z.any()';
         break;
       default:
-        result.zodSchema = 'z.unknown()';
+        result.zodSchema = isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()';
         break;
     }
 
@@ -847,6 +902,30 @@ export class PrismaTypeMapper {
    */
   private mapBytesType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const bytesConfig = this.config.complexTypes.bytes;
+
+    // Check for JSON Schema compatibility mode first
+    let cfg: any = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular import
+      const transformer = require('../transformer').default;
+      cfg = transformer.getGeneratorConfig?.();
+    } catch {
+      /* ignore */
+    }
+
+    if (cfg?.jsonSchemaCompatible) {
+      const format = cfg.jsonSchemaOptions?.bytesFormat || 'base64String';
+      if (format === 'base64String') {
+        result.zodSchema = 'z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")';
+        result.additionalValidations.push(
+          '// Bytes as base64 string for JSON Schema compatibility',
+        );
+      } else {
+        result.zodSchema = 'z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")';
+        result.additionalValidations.push('// Bytes as hex string for JSON Schema compatibility');
+      }
+      return;
+    }
 
     // For better compatibility with consumers and tests, prefer base64 string mapping by default
     if (bytesConfig.useBase64 !== false) {
@@ -985,7 +1064,8 @@ export class PrismaTypeMapper {
       }
     } else {
       // Non-relation object type (shouldn't happen in normal Prisma schemas)
-      result.zodSchema = 'z.unknown()';
+      const isJsonSchemaCompatible = this.config.jsonSchemaCompatible;
+      result.zodSchema = isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()';
       result.additionalValidations.push(`// Unknown object type: ${relatedModelName}`);
     }
   }
@@ -994,7 +1074,8 @@ export class PrismaTypeMapper {
    * Handle unsupported field types
    */
   private mapUnsupportedType(field: DMMF.Field, result: FieldTypeMappingResult): void {
-    result.zodSchema = 'z.unknown()';
+    const isJsonSchemaCompatible = this.config.jsonSchemaCompatible;
+    result.zodSchema = isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()';
     result.additionalValidations.push(`// Unsupported field kind: ${field.kind}`);
     console.warn(`Unsupported field kind: ${field.kind} for field ${field.name}`);
   }
@@ -1406,7 +1487,7 @@ export class PrismaTypeMapper {
         return;
       }
 
-      // Map annotations to Zod schema
+      // Map annotations to Zod schema (auto-detect zod version)
       const zodSchemaResult = mapAnnotationsToZodSchema(
         parseResult.annotations,
         context,
@@ -1428,9 +1509,23 @@ export class PrismaTypeMapper {
           (field.relationName && field.relationName.length > 0) ||
           /\.(optional|nullable|nullish)\(\)/.test(zodSchemaResult.schemaChain);
 
-        const chainNoOptional = shouldPreserveOptional
+        let chainNoOptional = shouldPreserveOptional
           ? zodSchemaResult.schemaChain // Keep user's .optional()/.nullable()/.nullish() calls
           : zodSchemaResult.schemaChain.replace(/\.optional\(\)/g, ''); // Strip only .optional() for scalar fields, keep .nullable()/.nullish()
+
+        // Normalize nullable/nullish to appear at the end of the chain (after other validations)
+        const nullableCount = (chainNoOptional.match(/\.nullable\(\)/g) || []).length;
+        const nullishCount = (chainNoOptional.match(/\.nullish\(\)/g) || []).length;
+        if (nullableCount > 0 || nullishCount > 0) {
+          chainNoOptional = chainNoOptional
+            .replace(/\.nullable\(\)/g, '')
+            .replace(/\.nullish\(\)/g, '');
+          if (nullableCount > 0) {
+            chainNoOptional += '.nullable()';
+          } else if (nullishCount > 0) {
+            chainNoOptional += '.nullish()';
+          }
+        }
 
         // Check if the schema chain contains a replacement method (doesn't start with dot)
         const isReplacementSchema = !chainNoOptional.startsWith('.');
@@ -1447,7 +1542,9 @@ export class PrismaTypeMapper {
           if (field.type === 'Json' && /\.record\(/.test(chainNoOptional)) {
             const recordMatch = chainNoOptional.match(/\.record\(([^)]*)\)/);
             if (recordMatch) {
-              const recordParam = recordMatch[1] || 'z.unknown()';
+              const isJsonSchemaCompatible = this.config.jsonSchemaCompatible;
+              const recordParam =
+                recordMatch[1] || (isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()');
               // Build a base z.record(...) and append the remaining chain without the .record(...) segment
               const remainingChain = chainNoOptional.replace(/\.record\([^)]*\)/, '');
               result.zodSchema = `z.record(${recordParam})${remainingChain}`;
@@ -1455,7 +1552,27 @@ export class PrismaTypeMapper {
               result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
             }
           } else {
-            if (chainNoOptional.startsWith('.')) {
+            // Special handling for array element-level validations: if comment suggests
+            // element validation, apply the chain to the element and keep nullable/nullish
+            // on the array.
+            const elementLevel = /array element/i.test(extractedComment.normalizedComment);
+            if (field.isList && elementLevel && /^z\.array\(/.test(result.zodSchema)) {
+              const m = result.zodSchema.match(/^z\.array\((.+)\)$/);
+              const elementBase = m ? m[1] : 'z.unknown()';
+              let arrayNullableSuffix = '';
+              if (/\.nullable\(\)$/.test(chainNoOptional)) {
+                arrayNullableSuffix = '.nullable()';
+                chainNoOptional = chainNoOptional.replace(/\.nullable\(\)$/, '');
+              } else if (/\.nullish\(\)$/.test(chainNoOptional)) {
+                arrayNullableSuffix = '.nullish()';
+                chainNoOptional = chainNoOptional.replace(/\.nullish\(\)$/, '');
+              }
+              if (chainNoOptional.startsWith('.')) {
+                result.zodSchema = `z.array(${elementBase}${chainNoOptional})${arrayNullableSuffix}`;
+              } else {
+                result.zodSchema = `z.array(${chainNoOptional})${arrayNullableSuffix}`;
+              }
+            } else if (chainNoOptional.startsWith('.')) {
               result.zodSchema = `${result.zodSchema}${chainNoOptional}`;
             } else {
               result.zodSchema = chainNoOptional;
@@ -2010,10 +2127,11 @@ export class PrismaTypeMapper {
       } catch (error) {
         console.error(`Failed to process field ${field.name} in model ${model.name}:`, error);
         // Add error field with fallback
+        const isJsonSchemaCompatible = this.config.jsonSchemaCompatible;
         composition.fields.push({
           fieldName: field.name,
           prismaType: field.type,
-          zodSchema: 'z.unknown()',
+          zodSchema: isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()',
           documentation: `// Error processing field: ${error instanceof Error ? error.message : String(error)}`,
           validations: [`// Failed to process ${field.type} field`],
           imports: new Set(['z']),
@@ -2170,22 +2288,13 @@ export class PrismaTypeMapper {
         .map((f) => f.prismaType),
     );
 
-    // Enum schema imports – compute correct relative path based on actual layout:
-    // - Pure models are emitted under:
-    //     a) <output>/models             (default)
-    //     b) <output>/schemas/models     (when output already ends with 'schemas')
-    // - Enums are emitted under: <schemasPath>/enums
-    //
-    // So relative import should be:
-    //   from <output>/models             -> ../schemas/enums/<Enum>.schema
-    //   from <output>/schemas/models     -> ../enums/<Enum>.schema
+    // Enum schema imports – relative to models under <output>/schemas/models
+    // Import path expected by tests: from models → '../schemas/enums/<Enum>.schema'
     const enumSchemaImports = imports.filter(
       (imp) => /Schema$/.test(imp) && enumNames.has(imp.replace(/Schema$/, '')),
     );
     enumSchemaImports.forEach((imp) => {
       const enumBase = imp.replace(/Schema$/, '');
-      // Tests and documentation expect pure models in "<out>/models" and enums in "<out>/schemas/enums"
-      // Note: In single-file mode, pure models are bundled into schemas.ts, not generated as separate files
       lines.push(`import { ${imp} } from '../schemas/enums/${enumBase}.schema';`);
     });
 

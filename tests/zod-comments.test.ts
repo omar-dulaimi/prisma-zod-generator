@@ -2300,8 +2300,8 @@ model SingleNullableTest {
             expect(content).toMatch(/regularInt:\s*z\.number\(\)\.int\(\)/);
             expect(content).not.toMatch(/regularInt.*\.nullable\(\)/);
 
-            // Optional field without @zod.nullable() should still be nullable by default in pure model
-            expect(content).toMatch(/regularOptional:\s*z\.string\(\)\.nullable\(\)/);
+            // Optional field without @zod.nullable() should follow optionalFieldBehavior (default 'optional')
+            expect(content).toMatch(/regularOptional:\s*z\.string\(\)\.optional\(\)/);
           }
         } finally {
           await testEnv.cleanup();

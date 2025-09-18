@@ -147,6 +147,47 @@ export const ConfigurationSchema: JSONSchema7 = {
       description:
         'When true and dateTimeStrategy is unset, use coerce for input schemas and date for pure/result schemas (split strategy)',
     },
+    jsonSchemaCompatible: {
+      type: 'boolean',
+      default: false,
+      description:
+        'Generate schemas compatible with z.toJSONSchema() for API documentation. When enabled, overrides dateTimeStrategy and removes transforms. Trade-off: No runtime type conversion.',
+    },
+    jsonSchemaOptions: {
+      type: 'object',
+      properties: {
+        dateTimeFormat: {
+          type: 'string',
+          enum: ['isoString', 'isoDate'],
+          default: 'isoString',
+          description: 'Format for DateTime fields in JSON Schema compatible mode',
+        },
+        bigIntFormat: {
+          type: 'string',
+          enum: ['string', 'number'],
+          default: 'string',
+          description: 'Format for BigInt fields in JSON Schema compatible mode',
+        },
+        bytesFormat: {
+          type: 'string',
+          enum: ['base64String', 'hexString'],
+          default: 'base64String',
+          description: 'Format for Bytes fields in JSON Schema compatible mode',
+        },
+        conversionOptions: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            unrepresentable: { type: 'string', enum: ['throw', 'any'], default: 'any' },
+            cycles: { type: 'string', enum: ['ref', 'throw'], default: 'throw' },
+            reused: { type: 'string', enum: ['inline', 'ref'], default: 'inline' },
+          },
+          description: 'Options forwarded to z.toJSONSchema()',
+        },
+      },
+      additionalProperties: false,
+      description: 'Options for JSON Schema compatibility mode',
+    },
     addSelectType: {
       type: 'boolean',
       default: false,
