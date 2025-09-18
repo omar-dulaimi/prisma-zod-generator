@@ -5,6 +5,7 @@
 
 import { DMMF } from '@prisma/generator-helper';
 import { GeneratorConfig } from '../config/parser';
+import { getDefaultConfiguration } from '../config/defaults';
 
 /**
  * Prisma operation types that return results
@@ -94,9 +95,33 @@ export class ResultSchemaGenerator {
   private generatedSchemas: Map<string, GeneratedResultSchema> = new Map();
   private baseModelSchemas: Map<string, string> = new Map();
   private config: GeneratorConfig;
+  // Safe accessors for JSON Schema compatibility flags/options to avoid strict type coupling
+  private isJsonSchemaModeEnabled(): boolean {
+    const cfg = this.config as unknown as { jsonSchemaCompatible?: boolean };
+    return !!cfg?.jsonSchemaCompatible;
+  }
 
-  constructor(config: GeneratorConfig) {
-    this.config = config;
+  private getJsonSchemaOptions(): {
+    dateTimeFormat?: 'isoString' | 'isoDate';
+    bigIntFormat?: 'string' | 'number';
+    bytesFormat?: 'base64String' | 'hexString';
+  } {
+    const cfg = this.config as unknown as {
+      jsonSchemaOptions?: {
+        dateTimeFormat?: 'isoString' | 'isoDate';
+        bigIntFormat?: 'string' | 'number';
+        bytesFormat?: 'base64String' | 'hexString';
+      };
+    };
+    return (cfg?.jsonSchemaOptions ?? {}) as {
+      dateTimeFormat?: 'isoString' | 'isoDate';
+      bigIntFormat?: 'string' | 'number';
+      bytesFormat?: 'base64String' | 'hexString';
+    };
+  }
+
+  constructor(config?: GeneratorConfig) {
+    this.config = config ?? getDefaultConfiguration();
   }
 
   /**
@@ -554,14 +579,15 @@ ${allFields.join(',\n')}
   }
 
   private mapPrismaTypeToZod(field: DMMF.Field): string {
-    const isJsonSchemaCompatible = this.config.jsonSchemaCompatible;
+    const isJsonSchemaCompatible = this.isJsonSchemaModeEnabled();
 
     // Handle JSON Schema compatibility mapping
     if (isJsonSchemaCompatible) {
       switch (field.type) {
         case 'DateTime':
-          const dateTimeFormat = this.config.jsonSchemaOptions?.dateTimeFormat || 'isoString';
-          if (dateTimeFormat === 'isoDate') {
+          const { dateTimeFormat } = this.getJsonSchemaOptions();
+          const dtFormat = dateTimeFormat || 'isoString';
+          if (dtFormat === 'isoDate') {
             return field.isList
               ? 'z.array(z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date"))'
               : 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
@@ -571,8 +597,9 @@ ${allFields.join(',\n')}
               : 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
           }
         case 'BigInt':
-          const bigIntFormat = this.config.jsonSchemaOptions?.bigIntFormat || 'string';
-          if (bigIntFormat === 'string') {
+          const { bigIntFormat } = this.getJsonSchemaOptions();
+          const biFormat = bigIntFormat || 'string';
+          if (biFormat === 'string') {
             return field.isList
               ? 'z.array(z.string().regex(/^\\d+$/, "Invalid bigint string"))'
               : 'z.string().regex(/^\\d+$/, "Invalid bigint string")';
@@ -580,8 +607,9 @@ ${allFields.join(',\n')}
             return field.isList ? 'z.array(z.number().int())' : 'z.number().int()';
           }
         case 'Bytes':
-          const bytesFormat = this.config.jsonSchemaOptions?.bytesFormat || 'base64String';
-          if (bytesFormat === 'base64String') {
+          const { bytesFormat } = this.getJsonSchemaOptions();
+          const bFormat = bytesFormat || 'base64String';
+          if (bFormat === 'base64String') {
             return field.isList
               ? 'z.array(z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string"))'
               : 'z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")';

@@ -1,7 +1,7 @@
 import type { ConnectorType, DMMF as PrismaDMMF } from '@prisma/generator-helper';
 import path from 'path';
-import { GeneratorConfig } from './config/parser';
-import ResultSchemaGenerator from './generators/results';
+import type { GeneratorConfig as ZodGeneratorConfig } from './config/parser';
+import { ResultSchemaGenerator } from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
@@ -42,7 +42,33 @@ export default class Transformer {
   private static prismaClientConfig: Record<string, unknown> = {};
   private static isGenerateSelect: boolean = false;
   private static isGenerateInclude: boolean = false;
-  private static generatorConfig: GeneratorConfig | null = null;
+  private static generatorConfig: ZodGeneratorConfig | null = null;
+  // Lightweight helpers to safely access optional JSON Schema compatibility settings
+  private static isJsonSchemaModeEnabled(): boolean {
+    const cfg = this.getGeneratorConfig() as unknown as {
+      jsonSchemaCompatible?: boolean;
+    } | null;
+    return !!cfg?.jsonSchemaCompatible;
+  }
+
+  private static getJsonSchemaOptions(): {
+    dateTimeFormat?: 'isoString' | 'isoDate';
+    bigIntFormat?: 'string' | 'number';
+    bytesFormat?: 'base64String' | 'hexString';
+  } {
+    const cfg = this.getGeneratorConfig() as unknown as {
+      jsonSchemaOptions?: {
+        dateTimeFormat?: 'isoString' | 'isoDate';
+        bigIntFormat?: 'string' | 'number';
+        bytesFormat?: 'base64String' | 'hexString';
+      };
+    } | null;
+    return (cfg?.jsonSchemaOptions ?? {}) as {
+      dateTimeFormat?: 'isoString' | 'isoDate';
+      bigIntFormat?: 'string' | 'number';
+      bytesFormat?: 'base64String' | 'hexString';
+    };
+  }
   // Dual schema export configuration
   private static exportTypedSchemas: boolean = true; // Export z.ZodType<Prisma.Type> versions (type-safe)
   private static exportZodSchemas: boolean = true; // Export pure Zod versions (method-friendly)
@@ -82,11 +108,11 @@ export default class Transformer {
     this.isGenerateInclude = isGenerateInclude;
   }
   // Configuration setters
-  static setGeneratorConfig(config: GeneratorConfig) {
+  static setGeneratorConfig(config: ZodGeneratorConfig) {
     this.generatorConfig = config;
   }
 
-  static getGeneratorConfig(): GeneratorConfig | null {
+  static getGeneratorConfig(): ZodGeneratorConfig | null {
     return this.generatorConfig;
   }
 
@@ -382,7 +408,7 @@ export default class Transformer {
     models?: PrismaDMMF.Model[],
     schemaName?: string,
   ): PrismaDMMF.SchemaArg[] {
-    const config = (this.getGeneratorConfig() || {}) as GeneratorConfig & {
+    const config = (this.getGeneratorConfig() || {}) as ZodGeneratorConfig & {
       minimalOperations?: string[];
     };
     const strictCreateInputs = config.strictCreateInputs !== false; // default true
@@ -1240,14 +1266,15 @@ export default class Transformer {
       } else if (inputType.type === 'Float' || inputType.type === 'Decimal') {
         result.push(this.wrapWithZodValidators('z.number()', field, inputType));
       } else if (inputType.type === 'BigInt') {
-        const cfg = Transformer.getGeneratorConfig();
         let bigintExpr = 'z.bigint()';
 
         // JSON Schema compatibility mode overrides normal behavior
-        if (cfg?.jsonSchemaCompatible) {
-          const format = cfg.jsonSchemaOptions?.bigIntFormat || 'string';
+        if (Transformer.isJsonSchemaModeEnabled()) {
+          const { bigIntFormat } = Transformer.getJsonSchemaOptions();
+          const format = bigIntFormat || 'string';
           if (format === 'string') {
-            bigintExpr = 'z.string().regex(/^\\d+$/, "Invalid bigint string")';
+            // Allow optional leading minus for negative bigint strings
+            bigintExpr = 'z.string().regex(/^-?\\d+$/, "Invalid bigint string")';
           } else {
             bigintExpr = 'z.number().int()'; // Note: May lose precision for very large numbers
           }
@@ -1261,14 +1288,15 @@ export default class Transformer {
         let dateExpr = 'z.date()';
 
         // JSON Schema compatibility mode overrides all other strategies
-        if (cfg?.jsonSchemaCompatible) {
-          const format = cfg.jsonSchemaOptions?.dateTimeFormat || 'isoString';
+        if (Transformer.isJsonSchemaModeEnabled()) {
+          const { dateTimeFormat } = Transformer.getJsonSchemaOptions();
+          const format = dateTimeFormat || 'isoString';
           if (format === 'isoDate') {
             dateExpr = 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Invalid ISO date")';
           } else {
-            // isoString - no transform for JSON Schema compatibility
+            // isoString - validate RFC3339 date-time (optional fraction, timezone offsets)
             dateExpr =
-              'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
+              'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/, "Invalid RFC3339 date-time")';
           }
         } else if (cfg?.dateTimeStrategy === 'coerce') {
           dateExpr = 'z.coerce.date()';
@@ -1301,16 +1329,19 @@ export default class Transformer {
       } else if (inputType.type === 'True') {
         result.push(this.wrapWithZodValidators('z.literal(true)', field, inputType));
       } else if (inputType.type === 'Bytes') {
-        const cfg = Transformer.getGeneratorConfig();
         let bytesExpr = 'z.instanceof(Uint8Array)';
 
         // JSON Schema compatibility mode overrides normal behavior
-        if (cfg?.jsonSchemaCompatible) {
-          const format = cfg.jsonSchemaOptions?.bytesFormat || 'base64String';
+        if (Transformer.isJsonSchemaModeEnabled()) {
+          const { bytesFormat } = Transformer.getJsonSchemaOptions();
+          const format = bytesFormat || 'base64String';
           if (format === 'base64String') {
-            bytesExpr = 'z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")';
+            // Proper 4-char blocks with valid terminal padding
+            bytesExpr =
+              'z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}(?:==)?|[A-Za-z0-9+/]{3}=)?$/, "Invalid base64 string")';
           } else {
-            bytesExpr = 'z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")';
+            // Even number of hex chars
+            bytesExpr = 'z.string().regex(/^(?:[0-9a-fA-F]{2})+$/, "Invalid hex string")';
           }
         }
 
@@ -1483,11 +1514,22 @@ export default class Transformer {
 
     if (inputType.isList) {
       if (inputType.type === 'DateTime') {
-        // For DateTime lists, support both Date and ISO datetime arrays
-        const config = Transformer.getGeneratorConfig();
-        const target = (config?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
-        const datetimeValidator = target === 'v4' ? 'z.iso.datetime()' : 'z.string().datetime()';
-        line = `z.union([z.date().array(), ${datetimeValidator}.array()])`;
+        // In JSON Schema compatibility mode, Date is not representable; use string[]
+        if (Transformer.isJsonSchemaModeEnabled()) {
+          const { dateTimeFormat } = Transformer.getJsonSchemaOptions();
+          const format = dateTimeFormat || 'isoString';
+          const strExpr =
+            format === 'isoDate'
+              ? 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/,"Invalid ISO date")'
+              : 'z.string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/,"Invalid RFC3339 date-time")';
+          line = `${strExpr}.array()`;
+        } else {
+          // For DateTime lists, support both Date and ISO datetime arrays
+          const cfg = Transformer.getGeneratorConfig();
+          const target = (cfg?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
+          const datetimeValidator = target === 'v4' ? 'z.iso.datetime()' : 'z.string().datetime()';
+          line = `z.union([z.date().array(), ${datetimeValidator}.array()])`;
+        }
       } else {
         // Append array() only once to avoid duplication
         if (!line.includes('.array()')) {
@@ -2010,7 +2052,7 @@ export default class Transformer {
         // Determine correct Prisma type binding (some inputs use a *Type suffix)
         let prismaType = this.resolvePrismaTypeForObject(exportName);
         // Optionally wrap with Omit<> when strictCreateInputs=false and fields were excluded on Create-like inputs
-        const config = (Transformer.getGeneratorConfig() || {}) as GeneratorConfig;
+        const config = (Transformer.getGeneratorConfig() || {}) as ZodGeneratorConfig;
         const strictCreateInputs = config.strictCreateInputs !== false; // default true
         const isInputVariant = Transformer.determineSchemaVariant(name) === 'input';
         const isCreateLike = [
