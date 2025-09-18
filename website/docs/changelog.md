@@ -9,8 +9,17 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.20.3**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.20.4**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.20.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.20.3...v1.20.4) (2025-09-18)
+
+### 🐛 Bug Fixes
+
+*  align variant export manager with ESM index extension handling ([33f6d22](https://github.com/omar-dulaimi/prisma-zod-generator/commit/33f6d228b11ae9720b812173db59e590b93b376a))
+* **generator:** support ESM .js extensions in index files with useMultipleFiles ([7109157](https://github.com/omar-dulaimi/prisma-zod-generator/commit/71091577ac7d784a721b6a4b656a1b2bfefac2a6)), closes [#234](https://github.com/omar-dulaimi/prisma-zod-generator/issues/234)
+* resolve circular dependency issues in variants generator ([530cc22](https://github.com/omar-dulaimi/prisma-zod-generator/commit/530cc22a6114bef1248e144d4e8d898076b43df1))
+* **variants:** correct ESM import paths for directory-based variant exports ([0a7e529](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0a7e529607093582e2e06698c4b915663e499302))
 
 ## [1.20.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.20.2...v1.20.3) (2025-09-16)
 

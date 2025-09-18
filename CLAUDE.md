@@ -70,3 +70,17 @@ The generator creates schemas in the output directory (default: `./generated/sch
 - The `package/` directory contains the packaged version for distribution
 - Generator options can be configured in the Prisma schema generator block
 - Test schemas are generated in `prisma/generated/schemas/` for development/testing
+
+## Contribution Workflow
+
+- Package manager: always use `pnpm`.
+- Formatting & linting: run `pnpm format` then `pnpm lint` before pushing; commit any resulting changes.
+- Conventional Commits with scope: `type(scope): subject`.
+  - Choose `type` based on impact: `feat`, `fix`, `docs`, `refactor`, `chore`, `style`, etc.
+  - Example: `fix(variants): include .js in ESM index imports`.
+- Commit in small, logical units and add/update tests for behavior changes.
+- Pull requests: use the preinstalled GitHub CLI with a Markdown body file.
+  - Create a new body file (e.g., `.github/PR_BODY.md`) containing: Summary, Problem, Fix, Validation, and linked issues (e.g., `Fixes #234`).
+  - Open the PR: `gh pr create --base master --head <branch> --title "fix(scope): concise title" --body-file .github/PR_BODY.md`.
+  - Prefer keeping PR body files untracked unless explicitly requested.
+-. Ensure `pnpm build`, `pnpm test`, `pnpm format:check`, and `pnpm lint` succeed prior to push/PR.
