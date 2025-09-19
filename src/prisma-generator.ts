@@ -1865,7 +1865,12 @@ async function generateVariantSchemaContent(
 
       // Fallback to basic type generation
       const isEnum = field.kind === 'enum';
-      const base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
+      let base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
+
+      // Handle arrays - wrap with .array() if field is a list
+      if (field.isList) {
+        base = `${base}.array()`;
+      }
 
       // Apply consistent optional/nullable patterns based on Prisma behavior:
       // - Database stores NULL for optional fields (never undefined)
