@@ -9,8 +9,19 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.21.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.21.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.21.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.21.0...v1.21.1) (2025-09-19)
+
+### 🐛 Bug Fixes
+
+* **models:** correct enum import paths from models/ to enums/ ([d6a41a3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d6a41a33419d79b6e54c2f921a4aadb37cf299ef))
+* **variants:** add missing .array() wrapper for enum arrays in variant schemas ([674133e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/674133e594040da8c893ca890a3189ec78a2b76b)), closes [#245](https://github.com/omar-dulaimi/prisma-zod-generator/issues/245)
+
+### 📚 Documentation
+
+* fix MDX compilation errors and broken links in documentation ([596e5d1](https://github.com/omar-dulaimi/prisma-zod-generator/commit/596e5d1c029fccb7cfbb09cad7c83509d9e49ece))
 
 ## [1.21.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.20.4...v1.21.0) (2025-09-18)
 
