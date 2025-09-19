@@ -2295,7 +2295,7 @@ export class PrismaTypeMapper {
     );
     enumSchemaImports.forEach((imp) => {
       const enumBase = imp.replace(/Schema$/, '');
-      lines.push(`import { ${imp} } from '../schemas/enums/${enumBase}.schema';`);
+      lines.push(`import { ${imp} } from '../enums/${enumBase}.schema';`);
     });
 
     // Related model schema imports (exclude current schema + enums)
