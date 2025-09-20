@@ -224,7 +224,7 @@ const Home: React.FC = () => {
             >
               <Link
                 className="pz-btn pz-btn-primary"
-                to="/docs/next/intro/quick-start"
+                to="/docs/intro/quick-start"
                 style={{
                   background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
                   boxShadow:
@@ -238,7 +238,7 @@ const Home: React.FC = () => {
                 </span>
                 <span>Get Started</span>
               </Link>
-              <Link className="pz-btn pz-btn-secondary" to="/docs/next/config/precedence">
+              <Link className="pz-btn pz-btn-secondary" to="/docs/config/precedence">
                 <span className="pz-btn-icon" aria-hidden="true">
                   ⚙️
                 </span>
@@ -730,7 +730,7 @@ const Home: React.FC = () => {
               </p>
               <Link
                 className="pz-btn pz-btn-secondary"
-                to="/docs/next/usage-patterns"
+                to="/docs/usage-patterns"
                 style={{
                   width: '100%',
                   justifyContent: 'center',
@@ -913,17 +913,17 @@ const Home: React.FC = () => {
           >
             <Link
               className="pz-btn pz-btn-primary"
-              to="/docs/next/usage-patterns"
+              to="/docs/usage-patterns"
               style={{
                 background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
               }}
             >
               📚 Usage Patterns
             </Link>
-            <Link className="pz-btn pz-btn-secondary" to="/docs/next/reference/faq">
+            <Link className="pz-btn pz-btn-secondary" to="/docs/reference/faq">
               ❓ FAQ
             </Link>
-            <Link className="pz-btn pz-btn-ghost" to="/docs/next/reference/logging-debug">
+            <Link className="pz-btn pz-btn-ghost" to="/docs/reference/logging-debug">
               🐛 Debug Logging
             </Link>
           </div>

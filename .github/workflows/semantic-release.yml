@@ -66,9 +66,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A \
-            website/versioned_docs \
-            website/versioned_sidebars \
-            website/versions.json \
             website/docs/changelog.md \
             package.json \
             pnpm-lock.yaml \

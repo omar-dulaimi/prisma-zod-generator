@@ -13,8 +13,3 @@ Build:
 npm run docs:build
 ```
 
-Version snapshot:
-
-```bash
-npm run docs:version 1.0.5
-```
