@@ -1,3 +1,13 @@
+## [1.21.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.21.1...v1.21.2) (2025-09-20)
+
+### 🐛 Bug Fixes
+
+* **ci:** remove auto-docs-version step from semantic-release workflow ([380a9d0](https://github.com/omar-dulaimi/prisma-zod-generator/commit/380a9d0b1bd24f57bce184df9c3eed6fbb1e77b3))
+
+### 📚 Documentation
+
+* remove Docusaurus versioning system ([3277384](https://github.com/omar-dulaimi/prisma-zod-generator/commit/327738414a3f47e84eb7fb05d71f1c62d053622c))
+
 ## [1.21.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.21.0...v1.21.1) (2025-09-19)
 
 ### 🐛 Bug Fixes

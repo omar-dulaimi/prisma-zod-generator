@@ -1,6 +1,6 @@
 {
   "name": "prisma-zod-generator",
-  "version": "1.21.1",
+  "version": "1.21.2",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
@@ -82,8 +82,7 @@
     "docs:dev": "cd website && pnpm run dev",
     "docs:build": "cd website && pnpm run build",
     "docs:serve": "cd website && pnpm run serve",
-    "docs:version": "cd website && pnpm run version",
-    "postrelease": "node scripts/auto-docs-version.mjs && cd website && node scripts/sync-changelog.js"
+    "postrelease": "cd website && node scripts/sync-changelog.js"
   },
   "author": {
     "name": "Omar Dulaimi",
