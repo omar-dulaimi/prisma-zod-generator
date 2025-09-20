@@ -48,11 +48,6 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: pnpm run release
 
-      - name: Version docs for new release
-        env:
-          DOCS_VERSION_ON_PATCH: '1'
-        run: node scripts/auto-docs-version.mjs
-
       - name: Sync changelog to docs
         run: cd website && node scripts/sync-changelog.js
 
