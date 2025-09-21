@@ -1,3 +1,13 @@
+## [1.21.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.21.2...v1.21.3) (2025-09-21)
+
+### 🐛 Bug Fixes
+
+* **generator:** include unused enums in schema generation ([cde6d5e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cde6d5eda71b6680ac7ef0e719024024a0ca4630)), closes [#247](https://github.com/omar-dulaimi/prisma-zod-generator/issues/247)
+
+### ♻️ Code Refactoring
+
+* address CodeRabbit review feedback ([3468ffe](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3468ffe81a3f4d59865fe6c38f992d84d56828cd))
+
 ## [1.21.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.21.1...v1.21.2) (2025-09-20)
 
 ### 🐛 Bug Fixes
