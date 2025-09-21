@@ -337,10 +337,14 @@ export async function generate(options: GeneratorOptions) {
     );
     const enumTypes = prismaClientDmmf.schema.enumTypes;
     const models: DMMF.Model[] = [...prismaClientDmmf.datamodel.models];
+
+
     const mutableModelOperations = [...modelOperations];
     const mutableEnumTypes = {
       model: enumTypes.model ? [...enumTypes.model] : undefined,
       prisma: [...enumTypes.prisma],
+      // Add datamodel enums that might be missing from schema.enumTypes
+      datamodel: [...prismaClientDmmf.datamodel.enums],
     };
     const hiddenModels: string[] = [];
     const hiddenFields: string[] = [];
@@ -402,7 +406,20 @@ export async function generate(options: GeneratorOptions) {
       // Determine explicit enum emission (default true)
       const emitEnums = generatorConfig.emit?.enums !== false;
       if (emitEnums) {
-        await generateEnumSchemas(mutableEnumTypes.prisma, mutableEnumTypes.model ?? []);
+        // Include datamodel enums to capture unused enums that don't appear in schema.enumTypes
+        // Transform datamodel enums to match schema enum structure
+        const transformedDatamodelEnums = mutableEnumTypes.datamodel
+          .filter(datamodelEnum => !(mutableEnumTypes.model?.some(schemaEnum => schemaEnum.name === datamodelEnum.name)))
+          .map(datamodelEnum => ({
+            name: datamodelEnum.name,
+            values: datamodelEnum.values.map(v => v.name)
+          }));
+
+        const allModelEnums = [
+          ...(mutableEnumTypes.model ?? []),
+          ...transformedDatamodelEnums
+        ];
+        await generateEnumSchemas(mutableEnumTypes.prisma, allModelEnums);
       } else {
         logger.debug(
           '[prisma-zod-generator] \u23ED\uFE0F  emit.enums=false (skipping enum schemas)',

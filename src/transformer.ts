@@ -1021,14 +1021,19 @@ export default class Transformer {
    * Check if an enum schema should be generated based on enabled models
    */
   private isEnumSchemaEnabled(enumName: string): boolean {
-    // Extract model name from enum names like "PostScalarFieldEnum" -> "Post"
+    // Always generate user-defined enums and Prisma built-in enums
+    // Only filter model-specific generated enums based on model configuration
+
+    // Check if this is a model-specific enum (like PostScalarFieldEnum)
     const modelName = this.extractModelNameFromEnum(enumName);
 
     if (modelName) {
+      // This is a model-specific enum, check if the model is enabled
       return Transformer.isModelEnabled(modelName);
     }
 
-    // If we can't determine the model, generate the enum (default behavior)
+    // For all other enums (user-defined enums like Status, Role, and Prisma built-ins),
+    // always generate them regardless of model configuration
     return true;
   }
 
