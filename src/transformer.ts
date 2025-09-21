@@ -1021,24 +1021,35 @@ export default class Transformer {
    * Check if an enum schema should be generated based on enabled models
    */
   private isEnumSchemaEnabled(enumName: string): boolean {
-    // Extract model name from enum names like "PostScalarFieldEnum" -> "Post"
+    // Always generate user-defined enums and Prisma built-in enums
+    // Only filter model-specific generated enums based on model configuration
+
+    // Check if this is a model-specific enum (like PostScalarFieldEnum)
     const modelName = this.extractModelNameFromEnum(enumName);
 
     if (modelName) {
+      // This is a model-specific enum, check if the model is enabled
       return Transformer.isModelEnabled(modelName);
     }
 
-    // If we can't determine the model, generate the enum (default behavior)
+    // For all other enums (user-defined enums like Status, Role, and Prisma built-ins),
+    // always generate them regardless of model configuration
     return true;
   }
+
+  /**
+   * Shared regex patterns for model-specific enum detection
+   */
+  private static readonly modelEnumPatterns = [
+    /^(\w+)ScalarFieldEnum$/,
+    /^(\w+)OrderByRelevanceFieldEnum$/,
+  ];
 
   /**
    * Extract model name from enum name
    */
   private extractModelNameFromEnum(enumName: string): string | null {
-    const patterns = [/^(\w+)ScalarFieldEnum$/, /^(\w+)OrderByRelevanceFieldEnum$/];
-
-    for (const pattern of patterns) {
+    for (const pattern of Transformer.modelEnumPatterns) {
       const match = enumName.match(pattern);
       if (match) {
         return match[1];
@@ -1053,21 +1064,15 @@ export default class Transformer {
    * For model-related enums, use Pascal case model names consistently
    */
   private normalizeEnumName(enumName: string): string | null {
-    // Handle ScalarFieldEnum patterns
-    const scalarFieldMatch = enumName.match(/^(.+)ScalarFieldEnum$/);
-    if (scalarFieldMatch) {
-      const modelName = scalarFieldMatch[1];
-      // Convert model name to Pascal case and rebuild enum name
-      const pascalModelName = this.getPascalCaseModelName(modelName);
-      return `${pascalModelName}ScalarFieldEnum`;
-    }
-
-    // Handle other enum patterns in the future if needed
-    const orderByRelevanceMatch = enumName.match(/^(.+)OrderByRelevanceFieldEnum$/);
-    if (orderByRelevanceMatch) {
-      const modelName = orderByRelevanceMatch[1];
-      const pascalModelName = this.getPascalCaseModelName(modelName);
-      return `${pascalModelName}OrderByRelevanceFieldEnum`;
+    // Use shared patterns to detect and normalize model-specific enums
+    for (const pattern of Transformer.modelEnumPatterns) {
+      const match = enumName.match(pattern);
+      if (match) {
+        const modelName = match[1];
+        const pascalModelName = this.getPascalCaseModelName(modelName);
+        // Rebuild enum name with normalized model name
+        return enumName.replace(modelName, pascalModelName);
+      }
     }
 
     // Return null for non-model-related enums to use original name
