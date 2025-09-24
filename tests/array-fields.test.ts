@@ -513,6 +513,82 @@ model ComprehensiveArrayModel {
     );
   });
 
+  describe('Issue #252 Double Array Bug Test', () => {
+    it(
+      'should not generate double array() calls like z.array(z.string()).array()',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-252-double-array');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            variants: {
+              pure: { enabled: true },
+              input: { enabled: true },
+              result: { enabled: true },
+            },
+          };
+
+          // Recreate the exact schema from Issue #252
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output = "./generated/schemas"
+  config = "./config.json"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://test:test@localhost:5432/test"
+}
+
+model TestModel {
+  id     String @id @default(uuid())
+  myList String[]
+}`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Test all three variant files for the bug
+          const variantFiles = [
+            join(testEnv.outputDir, 'schemas', 'variants', 'pure', 'TestModel.pure.ts'),
+            join(testEnv.outputDir, 'schemas', 'variants', 'input', 'TestModel.input.ts'),
+            join(testEnv.outputDir, 'schemas', 'variants', 'result', 'TestModel.result.ts'),
+          ];
+
+          variantFiles.forEach((filePath) => {
+            expect(existsSync(filePath), `Variant file should exist: ${filePath}`).toBe(true);
+
+            if (existsSync(filePath)) {
+              const content = readFileSync(filePath, 'utf-8');
+
+              // Should contain correct single array wrapping
+              expect(content).toContain('myList: z.array(z.string())');
+
+              // Should NOT contain the double array bug pattern
+              expect(content).not.toMatch(/myList:\s*z\.array\(z\.string\(\)\)\.array\(\)/);
+              expect(content).not.toContain('.array().array()');
+
+              // Should not contain any double .array() patterns
+              expect(content).not.toMatch(/\.array\(\)\.array\(\)/);
+            }
+          });
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   describe('Issue #174 Regression Test', () => {
     it(
       'should specifically test the exact case from Issue #174',

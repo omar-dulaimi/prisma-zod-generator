@@ -1875,7 +1875,10 @@ async function generateVariantSchemaContent(
 
       // Handle arrays - wrap with .array() if field is a list
       if (field.isList) {
-        base = `${base}.array()`;
+        // Avoid double array wrapping by checking if already wrapped
+        if (!base.includes('z.array(') && !base.includes('.array()')) {
+          base = `${base}.array()`;
+        }
       }
 
       // Apply consistent optional/nullable patterns based on Prisma behavior:
