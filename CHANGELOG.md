@@ -1,3 +1,9 @@
+## [1.21.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.21.3...v1.21.4) (2025-09-25)
+
+### 🐛 Bug Fixes
+
+* **variants:** prevent double array wrapping for scalar array fields ([5b1eb67](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5b1eb6728cfdfd2ac6d7687c331c31da343e5377))
+
 ## [1.21.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.21.2...v1.21.3) (2025-09-21)
 
 ### 🐛 Bug Fixes
