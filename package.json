@@ -129,7 +129,7 @@
     "expect-type": "^1.2.2",
     "husky": "^9.1.7",
     "prisma": "^6.16.2",
-    "semantic-release": "^24.2.8",
+    "semantic-release": "^24.2.9",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
