@@ -104,3 +104,106 @@ export function applyPattern(
     pattern,
   );
 }
+
+// Enhanced pattern application for all types
+export function applyUniversalPattern(pattern: string, tokens: Record<string, string>): string {
+  return Object.keys(tokens).reduce(
+    (acc, token) => acc.replace(new RegExp(token.replace(/[{}]/g, '\\$&'), 'g'), tokens[token]),
+    pattern,
+  );
+}
+
+// Enum naming resolution
+export interface EnumNamingResolved {
+  filePattern: string;
+  exportNamePattern: string;
+}
+
+export function resolveEnumNaming(config: GeneratorConfig | null | undefined): EnumNamingResolved {
+  const naming = safeGetNaming(config);
+  const enumConfig = naming?.enum;
+
+  return {
+    filePattern: enumConfig?.filePattern || '{Enum}.schema.ts',
+    exportNamePattern: enumConfig?.exportNamePattern || '{Enum}Schema',
+  };
+}
+
+// Input naming resolution
+export interface InputNamingResolved {
+  filePattern: string;
+  exportNamePattern: string;
+}
+
+export function resolveInputNaming(
+  config: GeneratorConfig | null | undefined,
+): InputNamingResolved {
+  const naming = safeGetNaming(config);
+  const inputConfig = naming?.input;
+
+  return {
+    filePattern: inputConfig?.filePattern || '{InputType}.schema.ts',
+    exportNamePattern: inputConfig?.exportNamePattern || '{Model}{InputType}ObjectSchema',
+  };
+}
+
+// Schema naming resolution
+export interface SchemaNamingResolved {
+  filePattern: string;
+  exportNamePattern: string;
+}
+
+export function resolveSchemaNaming(
+  config: GeneratorConfig | null | undefined,
+): SchemaNamingResolved {
+  const naming = safeGetNaming(config);
+  const schemaConfig = naming?.schema;
+
+  return {
+    filePattern: schemaConfig?.filePattern || '{operation}{Model}.schema.ts',
+    exportNamePattern: schemaConfig?.exportNamePattern || '{Model}{Operation}Schema',
+  };
+}
+
+// Unified pattern application function
+export function generateFileName(
+  pattern: string,
+  modelName: string,
+  operation?: string,
+  inputType?: string,
+  enumName?: string,
+): string {
+  const tokens: Record<string, string> = {
+    '{Model}': modelName,
+    '{model}': modelName.charAt(0).toLowerCase() + modelName.slice(1),
+    '{camel}': modelName.charAt(0).toLowerCase() + modelName.slice(1),
+    '{kebab}': modelName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
+    '{Operation}': operation || '',
+    '{operation}': operation ? operation.charAt(0).toLowerCase() + operation.slice(1) : '',
+    '{InputType}': inputType || '',
+    '{Enum}': enumName || '',
+    '{enum}': enumName ? enumName.charAt(0).toLowerCase() + enumName.slice(1) : '',
+  };
+
+  return applyUniversalPattern(pattern, tokens);
+}
+
+export function generateExportName(
+  pattern: string,
+  modelName: string,
+  operation?: string,
+  inputType?: string,
+  enumName?: string,
+): string {
+  const tokens: Record<string, string> = {
+    '{Model}': modelName,
+    '{model}': modelName.charAt(0).toLowerCase() + modelName.slice(1),
+    '{Operation}': operation || '',
+    '{operation}': operation ? operation.charAt(0).toLowerCase() + operation.slice(1) : '',
+    '{InputType}': inputType || '',
+    '{Enum}': enumName || '',
+    '{enum}': enumName ? enumName.charAt(0).toLowerCase() + enumName.slice(1) : '',
+  };
+
+  return applyUniversalPattern(pattern, tokens);
+}

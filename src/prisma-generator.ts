@@ -1820,12 +1820,47 @@ async function generateVariantSchemaContent(
   let enumImportLines = '';
   if (enumTypes.length > 0) {
     const importExtension = Transformer.getImportFileExtension();
-    enumImportLines =
-      enumTypes
-        .map(
-          (name) => `import { ${name}Schema } from '../../enums/${name}.schema${importExtension}';`,
-        )
-        .join('\n') + '\n';
+    try {
+      const { resolveEnumNaming, generateFileName, generateExportName } = await import(
+        './utils/namingResolver'
+      );
+      const enumNaming = resolveEnumNaming(config);
+      enumImportLines =
+        enumTypes
+          .map((name) => {
+            const fileName = generateFileName(
+              enumNaming.filePattern,
+              name,
+              undefined,
+              undefined,
+              name,
+            );
+            const exportName = generateExportName(
+              enumNaming.exportNamePattern,
+              name,
+              undefined,
+              undefined,
+              name,
+            );
+            const importPath = fileName.replace(/\.ts$/, '');
+            // Only use alias if the export name differs from the expected import name
+            if (exportName === `${name}Schema`) {
+              return `import { ${exportName} } from '../../enums/${importPath}${importExtension}';`;
+            } else {
+              return `import { ${exportName} as ${name}Schema } from '../../enums/${importPath}${importExtension}';`;
+            }
+          })
+          .join('\n') + '\n';
+    } catch {
+      // Fallback to default naming
+      enumImportLines =
+        enumTypes
+          .map(
+            (name) =>
+              `import { ${name}Schema } from '../../enums/${name}.schema${importExtension}';`,
+          )
+          .join('\n') + '\n';
+    }
   }
 
   // Get enhanced models with @zod annotation processing

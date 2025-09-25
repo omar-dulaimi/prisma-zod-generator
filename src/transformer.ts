@@ -1000,18 +1000,37 @@ export default class Transformer {
 
       // Filter out enum schemas for disabled models
       if (this.isEnumSchemaEnabled(name)) {
+        // Use enum naming configuration
+        const { resolveEnumNaming, generateFileName, generateExportName } = await import(
+          './utils/namingResolver'
+        );
+        const enumNamingConfig = resolveEnumNaming(Transformer.getGeneratorConfig());
+
         // Normalize enum name for consistent file naming and exports
         const normalizedEnumName = this.normalizeEnumName(name);
-        const fileName = normalizedEnumName || name;
-        const schemaName = normalizedEnumName || name;
+        const enumName = normalizedEnumName || name;
+
+        const fileName = generateFileName(
+          enumNamingConfig.filePattern,
+          enumName, // Use enum name as model name for naming pattern
+          undefined, // No operation
+          undefined, // No input type
+          enumName,
+        );
+
+        const schemaExportName = generateExportName(
+          enumNamingConfig.exportNamePattern,
+          enumName, // Use enum name as model name for naming pattern
+          undefined, // No operation
+          undefined, // No input type
+          enumName,
+        );
 
         await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `enums/${fileName}.schema.ts`),
-          `${this.generateImportZodStatement()}\n${this.generateExportSchemaStatement(
-            `${schemaName}`,
-            // Use single-quoted values for enum array representation to match tests
-            `z.enum([${values.map((v) => `'${v}'`).join(', ')}])`,
-          )}\n\nexport type ${schemaName} = z.infer<typeof ${schemaName}Schema>;`,
+          path.join(Transformer.getSchemasPath(), `enums/${fileName}`),
+          `${this.generateImportZodStatement()}\n` +
+            `export const ${schemaExportName} = z.enum([${values.map((v) => `'${v}'`).join(', ')}])\n\n` +
+            `export type ${enumName} = z.infer<typeof ${schemaExportName}>;`,
         );
       }
     }
@@ -1137,10 +1156,24 @@ export default class Transformer {
   async generateObjectSchema() {
     const zodObjectSchemaFields = this.generateObjectSchemaFields();
     const objectSchema = this.prepareObjectSchema(zodObjectSchemaFields);
-    const objectSchemaName = this.resolveObjectSchemaName();
+
+    // Use input naming configuration for input objects
+    const { resolveInputNaming, generateFileName } = await import('./utils/namingResolver');
+    const inputNamingConfig = resolveInputNaming(Transformer.getGeneratorConfig());
+
+    // Extract model name and input type from the object name
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    const inputType = this.name;
+
+    const fileName = generateFileName(
+      inputNamingConfig.filePattern,
+      modelName || 'Unknown',
+      undefined, // No operation
+      inputType,
+    );
 
     await writeFileSafely(
-      path.join(Transformer.getSchemasPath(), `objects/${objectSchemaName}.schema.ts`),
+      path.join(Transformer.getSchemasPath(), `objects/${fileName}`),
       objectSchema,
     );
   }
@@ -2046,6 +2079,30 @@ export default class Transformer {
         exportName = name.replace('Args', '');
       }
     }
+
+    // Use input naming configuration if available
+    try {
+      const config = Transformer.getGeneratorConfig();
+      const inputNamingConfig = config?.naming?.input;
+      if (inputNamingConfig?.exportNamePattern) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { generateExportName } = require('./utils/namingResolver');
+        const modelName = Transformer.extractModelNameFromContext(this.name);
+        const inputType = this.name;
+
+        const customExportName = generateExportName(
+          inputNamingConfig.exportNamePattern,
+          modelName || 'Unknown',
+          undefined,
+          inputType,
+        );
+        if (customExportName) {
+          exportName = customExportName.replace(/ObjectSchema$|Schema$/, ''); // Remove suffixes that will be added back
+        }
+      }
+    } catch {
+      // Fallback to default naming if there's an error
+    }
     // Build dual exports: a typed Prisma-bound schema and a pure Zod schema
     // Always export the typed name as `${exportName}ObjectSchema` for compatibility
     const lines: string[] = [];
@@ -2561,8 +2618,24 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName)}FindUniqueArgs`,
           );
 
+          // Use schema naming configuration for operation schemas
+          let schemaFileName = `${findUnique}.schema.ts`;
+          try {
+            const { resolveSchemaNaming, generateFileName } = await import(
+              './utils/namingResolver'
+            );
+            const schemaNamingConfig = resolveSchemaNaming(Transformer.getGeneratorConfig());
+            schemaFileName = generateFileName(
+              schemaNamingConfig.filePattern,
+              modelName,
+              'FindUnique',
+            );
+          } catch {
+            // Fallback to default naming if there's an error
+          }
+
           await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${findUnique}.schema.ts`),
+            path.join(Transformer.getSchemasPath(), schemaFileName),
             schemaContent + dualExports,
           );
         }
@@ -2591,8 +2664,24 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName)}FindUniqueOrThrowArgs`,
           );
 
+          // Use schema naming configuration for findUniqueOrThrow operation schemas
+          let findUniqueOrThrowFileName = `findUniqueOrThrow${modelName}.schema.ts`;
+          try {
+            const { resolveSchemaNaming, generateFileName } = await import(
+              './utils/namingResolver'
+            );
+            const schemaNamingConfig = resolveSchemaNaming(Transformer.getGeneratorConfig());
+            findUniqueOrThrowFileName = generateFileName(
+              schemaNamingConfig.filePattern,
+              modelName,
+              'FindUniqueOrThrow',
+            );
+          } catch {
+            // Fallback to default naming if there's an error
+          }
+
           await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `findUniqueOrThrow${modelName}.schema.ts`),
+            path.join(Transformer.getSchemasPath(), findUniqueOrThrowFileName),
             schemaContent + dualExports,
           );
         }
@@ -2785,8 +2874,24 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName)}FindManyArgs`,
           );
 
+          // Use schema naming configuration for findMany operation schemas
+          let findManyFileName = `${findMany}.schema.ts`;
+          try {
+            const { resolveSchemaNaming, generateFileName } = await import(
+              './utils/namingResolver'
+            );
+            const schemaNamingConfig = resolveSchemaNaming(Transformer.getGeneratorConfig());
+            findManyFileName = generateFileName(
+              schemaNamingConfig.filePattern,
+              modelName,
+              'FindMany',
+            );
+          } catch {
+            // Fallback to default naming if there's an error
+          }
+
           await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${findMany}.schema.ts`),
+            path.join(Transformer.getSchemasPath(), findManyFileName),
             schemaContent + dualExports,
           );
         }
@@ -2863,8 +2968,24 @@ export default class Transformer {
             dataUnion = `z.union([${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)}])`;
           }
 
+          // Use schema naming configuration for createOne operation schemas
+          let createOneFileName = `${createOne}.schema.ts`;
+          try {
+            const { resolveSchemaNaming, generateFileName } = await import(
+              './utils/namingResolver'
+            );
+            const schemaNamingConfig = resolveSchemaNaming(Transformer.getGeneratorConfig());
+            createOneFileName = generateFileName(
+              schemaNamingConfig.filePattern,
+              modelName,
+              'CreateOne',
+            );
+          } catch {
+            // Fallback to default naming if there's an error
+          }
+
           await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${createOne}.schema.ts`),
+            path.join(Transformer.getSchemasPath(), createOneFileName),
             `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
               `${modelName}CreateOne`,
               `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion}  })`,
@@ -3967,9 +4088,32 @@ ${selectFields.join(',\n')}
   ): string {
     const exports: string[] = [];
 
+    // Use schema naming configuration if available
+    let baseExportName = `${modelName}${operationType}`;
+    try {
+      const config = Transformer.getGeneratorConfig();
+      const schemaNamingConfig = config?.naming?.schema;
+      if (schemaNamingConfig?.exportNamePattern) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { generateExportName } = require('./utils/namingResolver');
+        const customExportName = generateExportName(
+          schemaNamingConfig.exportNamePattern,
+          modelName,
+          operationType,
+        );
+        if (customExportName) {
+          baseExportName = customExportName;
+        }
+      }
+    } catch {
+      // Fallback to default naming if there's an error
+    }
+
     // Generate typed schema (perfect inference, no methods) - KEEP PRISMA TYPING
     if (Transformer.exportTypedSchemas) {
-      const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
+      const typedName = baseExportName.endsWith('Schema')
+        ? baseExportName
+        : `${baseExportName}${Transformer.typedSchemaSuffix}`;
       exports.push(
         `export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition} as unknown as z.ZodType<${prismaType}>;`,
       );
@@ -3977,7 +4121,7 @@ ${selectFields.join(',\n')}
 
     // Generate Zod schema (methods available, loose inference)
     if (Transformer.exportZodSchemas) {
-      const zodName = `${modelName}${operationType}${Transformer.zodSchemaSuffix}`;
+      const zodName = `${baseExportName}${Transformer.zodSchemaSuffix}`;
       exports.push(`export const ${zodName} = ${schemaDefinition};`);
     }
 

@@ -2289,13 +2289,49 @@ export class PrismaTypeMapper {
     );
 
     // Enum schema imports – relative to models under <output>/schemas/models
-    // Import path expected by tests: from models → '../schemas/enums/<Enum>.schema'
+    // Use enum naming configuration to generate correct import paths
     const enumSchemaImports = imports.filter(
       (imp) => /Schema$/.test(imp) && enumNames.has(imp.replace(/Schema$/, '')),
     );
     enumSchemaImports.forEach((imp) => {
       const enumBase = imp.replace(/Schema$/, '');
-      lines.push(`import { ${imp} } from '../enums/${enumBase}.schema';`);
+      try {
+        const {
+          resolveEnumNaming,
+          generateFileName,
+          generateExportName,
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+        } = require('../utils/namingResolver');
+        const enumNaming = resolveEnumNaming(transformer.config);
+        const enumFileName = generateFileName(
+          enumNaming.filePattern,
+          enumBase,
+          undefined,
+          undefined,
+          enumBase,
+        );
+        const actualExportName = generateExportName(
+          enumNaming.exportNamePattern,
+          enumBase,
+          undefined,
+          undefined,
+          enumBase,
+        );
+        // Remove .ts extension for import
+        const importPath = enumFileName.replace(/\.ts$/, '');
+        // Use the actual export name from config instead of assuming 'Schema' suffix
+        // Only use alias if the export name differs from the expected import name
+        if (actualExportName === imp) {
+          lines.push(`import { ${actualExportName} } from '../enums/${importPath}';`);
+        } else {
+          lines.push(`import { ${actualExportName} as ${imp} } from '../enums/${importPath}';`);
+        }
+      } catch (_error) {
+        // Log the error for debugging
+        console.error(`Failed to resolve enum naming for ${enumBase}:`, _error);
+        // Fallback to default naming if there's an error
+        lines.push(`import { ${imp} } from '../enums/${enumBase}.schema';`);
+      }
     });
 
     // Related model schema imports (exclude current schema + enums)

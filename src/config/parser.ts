@@ -154,6 +154,27 @@ export interface GeneratorConfig {
       /** Emit legacy alias exports (e.g. UserModel) */
       legacyAliases?: boolean;
     };
+    /** CRUD operation schema naming overrides */
+    schema?: {
+      /** File name pattern, tokens: {Model} {model} {camel} {kebab}; must end with .ts */
+      filePattern?: string;
+      /** Pattern for export variable name. Tokens: {Model} {model} {Operation} */
+      exportNamePattern?: string;
+    };
+    /** Input object naming overrides */
+    input?: {
+      /** File name pattern, tokens: {Model} {model} {camel} {kebab} {InputType}; must end with .ts */
+      filePattern?: string;
+      /** Pattern for export variable name. Tokens: {Model} {model} {InputType} */
+      exportNamePattern?: string;
+    };
+    /** Enum naming overrides */
+    enum?: {
+      /** File name pattern, tokens: {Enum} {enum} {camel} {kebab}; must end with .ts */
+      filePattern?: string;
+      /** Pattern for export variable name. Tokens: {Enum} {enum} */
+      exportNamePattern?: string;
+    };
   };
 
   /**
