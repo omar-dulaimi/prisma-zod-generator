@@ -103,8 +103,8 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@24.5.2)(jiti@2.5.1)(tsx@4.20.5)
       zod:
-        specifier: ^4.1.9
-        version: 4.1.9
+        specifier: ^4.1.11
+        version: 4.1.11
 
 packages:
 
@@ -2573,8 +2573,8 @@ packages:
     resolution: {integrity: sha512-CzhO+pFNo8ajLM2d2IW/R93ipy99LWjtwblvC1RsoSUMZgyLbYFr221TnSNT7GjGdYui6P459mw9JH/g/zW2ug==}
     engines: {node: '>=18'}
 
-  zod@4.1.9:
-    resolution: {integrity: sha512-HI32jTq0AUAC125z30E8bQNz0RQ+9Uc+4J7V97gLYjZVKRjeydPgGt6dvQzFrav7MYOUGFqqOGiHpA/fdbd0cQ==}
+  zod@4.1.11:
+    resolution: {integrity: sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg==}
 
 snapshots:
 
@@ -4960,4 +4960,4 @@ snapshots:
 
   yoctocolors@2.1.2: {}
 
-  zod@4.1.9: {}
+  zod@4.1.11: {}
