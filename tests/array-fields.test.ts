@@ -513,6 +513,122 @@ model ComprehensiveArrayModel {
     );
   });
 
+  describe('Scalar and Enum Arrays Integration', () => {
+    it(
+      'should correctly handle both scalar arrays and enum arrays without double array wrapping',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('scalar-enum-arrays-integration');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            variants: {
+              pure: { enabled: true },
+              input: { enabled: true },
+              result: { enabled: true },
+            },
+          };
+
+          // Schema with both scalar arrays and enum arrays
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output = "./generated/schemas"
+  config = "./config.json"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://test:test@localhost:5432/test"
+}
+
+model Map {
+  key        String   @id
+  value      String
+  myList     String[]
+  myEnumList myEnum[] @default([Value1, Value2, Value3, Value4])
+}
+
+enum myEnum {
+  Value2
+  Value1
+  Value4
+  Value3
+}`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const variantsDir = join(testEnv.outputDir, 'schemas', 'variants');
+
+          // Test pure variant
+          const pureFile = join(variantsDir, 'pure', 'Map.pure.ts');
+          expect(existsSync(pureFile), 'Map pure variant should exist').toBe(true);
+
+          if (existsSync(pureFile)) {
+            const content = readFileSync(pureFile, 'utf-8');
+
+            // Scalar arrays should use z.array(z.type()) - not double wrapped
+            expect(content).toContain('myList: z.array(z.string())');
+
+            // Enum arrays should use EnumSchema.array()
+            expect(content).toContain('myEnumList: myEnumSchema.array()');
+
+            // Should NOT contain double array wrapping patterns
+            expect(content).not.toContain('z.array(z.string()).array()');
+            expect(content).not.toContain('myEnumSchema.array().array()');
+
+            // Regular fields should remain correct
+            expect(content).toContain('key: z.string()');
+            expect(content).toContain('value: z.string()');
+          }
+
+          // Test input variant
+          const inputFile = join(variantsDir, 'input', 'Map.input.ts');
+          expect(existsSync(inputFile), 'Map input variant should exist').toBe(true);
+
+          if (existsSync(inputFile)) {
+            const content = readFileSync(inputFile, 'utf-8');
+
+            // Should have correct array types
+            expect(content).toContain('myList: z.array(z.string())');
+            expect(content).toContain('myEnumList: myEnumSchema.array()');
+
+            // Should NOT have double array wrapping
+            expect(content).not.toContain('z.array(z.string()).array()');
+            expect(content).not.toContain('myEnumSchema.array().array()');
+          }
+
+          // Test result variant
+          const resultFile = join(variantsDir, 'result', 'Map.result.ts');
+          expect(existsSync(resultFile), 'Map result variant should exist').toBe(true);
+
+          if (existsSync(resultFile)) {
+            const content = readFileSync(resultFile, 'utf-8');
+
+            // Should have correct array types
+            expect(content).toContain('myList: z.array(z.string())');
+            expect(content).toContain('myEnumList: myEnumSchema.array()');
+
+            // Should NOT have double array wrapping
+            expect(content).not.toContain('z.array(z.string()).array()');
+            expect(content).not.toContain('myEnumSchema.array().array()');
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   describe('Issue #174 Regression Test', () => {
     it(
       'should specifically test the exact case from Issue #174',

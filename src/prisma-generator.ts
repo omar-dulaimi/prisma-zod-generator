@@ -1873,8 +1873,8 @@ async function generateVariantSchemaContent(
       const isEnum = field.kind === 'enum';
       let base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
 
-      // Handle arrays - wrap with .array() if field is a list
-      if (field.isList) {
+      // Handle arrays - only add .array() for enums, scalar fields already handled by getZodTypeForField
+      if (field.isList && isEnum) {
         base = `${base}.array()`;
       }
 
