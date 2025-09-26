@@ -2400,7 +2400,11 @@ export default class Transformer {
   /**
    * Generate enum import honoring naming.enum patterns, aliasing to stable identifiers.
    */
-  private generateEnumImport(enumName: string, expectedAlias?: string): string {
+  private generateEnumImport(
+    enumName: string,
+    expectedAlias?: string,
+    from: 'objects' | 'root' = 'objects',
+  ): string {
     try {
       const cfg = resolveEnumNaming(Transformer.getGeneratorConfig());
 
@@ -2418,18 +2422,20 @@ export default class Transformer {
       );
 
       const ext = this.getImportFileExtension();
+      const baseDir = from === 'objects' ? '../enums' : './enums';
       const finalAlias = expectedAlias || `${enumName}Schema`;
 
       // Only use alias if export name differs from expected alias
       if (exportName === finalAlias) {
-        return `import { ${exportName} } from '../enums/${base}${ext}'`;
+        return `import { ${exportName} } from '${baseDir}/${base}${ext}'`;
       } else {
-        return `import { ${exportName} as ${finalAlias} } from '../enums/${base}${ext}'`;
+        return `import { ${exportName} as ${finalAlias} } from '${baseDir}/${base}${ext}'`;
       }
     } catch (error) {
       // Fallback to legacy naming
       console.warn('Failed to generate custom enum import for', enumName, error);
-      return `import { ${enumName}Schema } from '../enums/${enumName}.schema${this.getImportFileExtension()}'`;
+      const baseDir = from === 'objects' ? '../enums' : './enums';
+      return `import { ${enumName}Schema } from '${baseDir}/${enumName}.schema${this.getImportFileExtension()}'`;
     }
   }
 
@@ -2872,6 +2878,7 @@ export default class Transformer {
             this.generateEnumImport(
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              'root',
             ),
           ];
 
@@ -2930,6 +2937,7 @@ export default class Transformer {
             this.generateEnumImport(
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              'root',
             ),
           ];
 
@@ -2988,6 +2996,7 @@ export default class Transformer {
             this.generateEnumImport(
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              'root',
             ),
           ];
 
@@ -3380,6 +3389,7 @@ export default class Transformer {
             this.generateEnumImport(
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              'root',
             ),
             this.generateInputImport(
               `${this.getAggregateInputName(modelName, 'CountAggregateInput')}`,
