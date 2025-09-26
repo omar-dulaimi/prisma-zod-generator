@@ -7,6 +7,13 @@ import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
 import { TransformerParams } from './types';
 import { logger } from './utils/logger';
+import {
+  resolveInputNaming,
+  generateFileName,
+  generateExportName,
+  resolveSchemaNaming,
+  resolveEnumNaming,
+} from './utils/naming-resolver';
 import type { GeneratedManifest } from './utils/safeOutputManagement';
 import { writeFileSafely } from './utils/writeFileSafely';
 import { addIndexExport, writeIndexFile } from './utils/writeIndexFile';
@@ -43,6 +50,7 @@ export default class Transformer {
   private static isGenerateSelect: boolean = false;
   private static isGenerateInclude: boolean = false;
   private static generatorConfig: ZodGeneratorConfig | null = null;
+  private static usedSchemaFilePaths = new Map<string, { modelName: string; operation: string }>();
   // Lightweight helpers to safely access optional JSON Schema compatibility settings
   private static isJsonSchemaModeEnabled(): boolean {
     const cfg = this.getGeneratorConfig() as unknown as {
@@ -731,6 +739,11 @@ export default class Transformer {
 
       // Pure model schemas (variant schemas)
       /^(\w+)ModelSchema$/,
+
+      // Generic CreateMany relationship patterns (placed at end to avoid interference)
+      // These handle cases like PostCreateManyUserInputEnvelope -> extract User
+      /^\w+CreateMany(\w+)InputEnvelope$/,
+      /^\w+CreateMany(\w+)Input$/,
     ];
 
     for (const pattern of patterns) {
@@ -1000,18 +1013,34 @@ export default class Transformer {
 
       // Filter out enum schemas for disabled models
       if (this.isEnumSchemaEnabled(name)) {
+        // Use enum naming configuration
+        const enumNamingConfig = resolveEnumNaming(Transformer.getGeneratorConfig());
+
         // Normalize enum name for consistent file naming and exports
         const normalizedEnumName = this.normalizeEnumName(name);
-        const fileName = normalizedEnumName || name;
-        const schemaName = normalizedEnumName || name;
+        const enumName = normalizedEnumName || name;
+
+        const fileName = generateFileName(
+          enumNamingConfig.filePattern,
+          enumName, // Use enum name as model name for naming pattern
+          undefined, // No operation
+          undefined, // No input type
+          enumName,
+        );
+
+        const schemaExportName = generateExportName(
+          enumNamingConfig.exportNamePattern,
+          enumName, // Use enum name as model name for naming pattern
+          undefined, // No operation
+          undefined, // No input type
+          enumName,
+        );
 
         await writeFileSafely(
-          path.join(Transformer.getSchemasPath(), `enums/${fileName}.schema.ts`),
-          `${this.generateImportZodStatement()}\n${this.generateExportSchemaStatement(
-            `${schemaName}`,
-            // Use single-quoted values for enum array representation to match tests
-            `z.enum([${values.map((v) => `'${v}'`).join(', ')}])`,
-          )}\n\nexport type ${schemaName} = z.infer<typeof ${schemaName}Schema>;`,
+          path.join(Transformer.getSchemasPath(), `enums/${fileName}`),
+          `${this.generateImportZodStatement()}\n` +
+            `export const ${schemaExportName} = z.enum([${values.map((v) => `'${v}'`).join(', ')}])\n\n` +
+            `export type ${enumName} = z.infer<typeof ${schemaExportName}>;`,
         );
       }
     }
@@ -1137,10 +1166,24 @@ export default class Transformer {
   async generateObjectSchema() {
     const zodObjectSchemaFields = this.generateObjectSchemaFields();
     const objectSchema = this.prepareObjectSchema(zodObjectSchemaFields);
-    const objectSchemaName = this.resolveObjectSchemaName();
+
+    // Use input naming configuration for input objects
+    const inputNamingConfig = resolveInputNaming(Transformer.getGeneratorConfig());
+
+    // Extract model name and input type from the object name
+    // Use input type as fallback to prevent filename collisions
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    const inputType = this.name;
+
+    const fileName = generateFileName(
+      inputNamingConfig.filePattern,
+      modelName || inputType,
+      undefined, // No operation
+      inputType,
+    );
 
     await writeFileSafely(
-      path.join(Transformer.getSchemasPath(), `objects/${objectSchemaName}.schema.ts`),
+      path.join(Transformer.getSchemasPath(), `objects/${fileName}`),
       objectSchema,
     );
   }
@@ -2046,6 +2089,29 @@ export default class Transformer {
         exportName = name.replace('Args', '');
       }
     }
+
+    // Use input naming configuration if available
+    try {
+      const config = Transformer.getGeneratorConfig();
+      const inputNamingConfig = config?.naming?.input;
+      if (inputNamingConfig?.exportNamePattern) {
+        const modelName = Transformer.extractModelNameFromContext(this.name);
+        const inputType = this.name;
+
+        const customExportName = generateExportName(
+          inputNamingConfig.exportNamePattern,
+          modelName || inputType,
+          undefined,
+          inputType,
+        );
+        if (customExportName) {
+          // Remove schema suffixes from the export variable name; keep Prisma binding independent.
+          exportName = customExportName.replace(/ObjectSchema$|Schema$/, '');
+        }
+      }
+    } catch {
+      // Fallback to default naming if there's an error
+    }
     // Build dual exports: a typed Prisma-bound schema and a pure Zod schema
     // Always export the typed name as `${exportName}ObjectSchema` for compatibility
     const lines: string[] = [];
@@ -2054,8 +2120,9 @@ export default class Transformer {
 
     if (Transformer.exportTypedSchemas) {
       if (supportsPrismaType) {
-        // Determine correct Prisma type binding (some inputs use a *Type suffix)
-        let prismaType = this.resolvePrismaTypeForObject(exportName);
+        // Determine correct Prisma type binding from the intrinsic input name (this.name)
+        const prismaBase = this.name;
+        let prismaType = this.resolvePrismaTypeForObject(prismaBase);
         // Optionally wrap with Omit<> when strictCreateInputs=false and fields were excluded on Create-like inputs
         const config = (Transformer.getGeneratorConfig() || {}) as ZodGeneratorConfig;
         const strictCreateInputs = config.strictCreateInputs !== false; // default true
@@ -2069,7 +2136,7 @@ export default class Transformer {
           /^(\w+)UncheckedCreateWithout\w+Input$/,
           /^(\w+)CreateOrConnectWithout\w+Input$/,
           /^(\w+)CreateNested(?:One|Many)Without\w+Input$/,
-        ].some((re) => re.test(exportName));
+        ].some((re) => re.test(this.name));
         const excludedNames = this.lastExcludedFieldNames || [];
         if (
           !strictCreateInputs &&
@@ -2299,6 +2366,204 @@ export default class Transformer {
   }
 
   /**
+   * Resolve an input object import honoring naming.input patterns, aliasing to stable identifiers.
+   */
+  private generateInputImport(
+    inputTypeName: string,
+    from: 'objects' | 'results' = 'objects',
+  ): string {
+    try {
+      const cfg = resolveInputNaming(Transformer.getGeneratorConfig());
+
+      // Extract model name - fallback to inputTypeName if extraction fails
+      const model = Transformer.extractModelNameFromContext(inputTypeName) || inputTypeName;
+
+      // Generate the file name using the custom pattern
+      const file = generateFileName(cfg.filePattern, model, undefined, inputTypeName);
+      const base = file.replace(/\.ts$/, '');
+
+      // Generate export name using the custom pattern - this already includes the full name
+      const resolvedExportName =
+        generateExportName(cfg.exportNamePattern, model, undefined, inputTypeName) || inputTypeName;
+      const exportBase = resolvedExportName.replace(/ObjectSchema$|Schema$/, '');
+      const importName = Transformer.exportTypedSchemas
+        ? `${exportBase}ObjectSchema`
+        : `${exportBase}Object${Transformer.zodSchemaSuffix}`;
+
+      // Create alias using the original input type name for consistency
+      const alias = Transformer.exportTypedSchemas
+        ? `${inputTypeName}ObjectSchema`
+        : `${inputTypeName}Object${Transformer.zodSchemaSuffix}`;
+
+      const ext = this.getImportFileExtension();
+      const baseDir = from === 'objects' ? './objects' : '../objects';
+      return `import { ${importName} as ${alias} } from '${baseDir}/${base}${ext}'`;
+    } catch (error) {
+      // Log error for debugging and fallback to legacy naming
+      logger.warn('Failed to generate custom input import for', inputTypeName, error);
+      const baseDir = from === 'objects' ? 'root' : 'results';
+      // Use pattern-aware object input import helper as a fallback
+      return this.generateObjectInputImport(inputTypeName as string, baseDir as any);
+    }
+  }
+
+  /**
+   * Generate enum import honoring naming.enum patterns, aliasing to stable identifiers.
+   */
+  private generateEnumImport(
+    enumName: string,
+    expectedAlias?: string,
+    from: 'objects' | 'root' = 'objects',
+  ): string {
+    try {
+      const cfg = resolveEnumNaming(Transformer.getGeneratorConfig());
+
+      // Generate the file name using the custom pattern
+      const file = generateFileName(cfg.filePattern, enumName, undefined, undefined, enumName);
+      const base = file.replace(/\.ts$/, '');
+
+      // Generate export name using the custom pattern
+      const exportName = generateExportName(
+        cfg.exportNamePattern,
+        enumName,
+        undefined,
+        undefined,
+        enumName,
+      );
+
+      const ext = this.getImportFileExtension();
+      const baseDir = from === 'objects' ? '../enums' : './enums';
+      const finalAlias = expectedAlias || `${enumName}Schema`;
+
+      // Only use alias if export name differs from expected alias
+      if (exportName === finalAlias) {
+        return `import { ${exportName} } from '${baseDir}/${base}${ext}'`;
+      } else {
+        return `import { ${exportName} as ${finalAlias} } from '${baseDir}/${base}${ext}'`;
+      }
+    } catch (error) {
+      // Fallback to legacy naming
+      logger.warn('Failed to generate custom enum import for', enumName, error);
+      const baseDir = from === 'objects' ? '../enums' : './enums';
+      return `import { ${enumName}Schema } from '${baseDir}/${enumName}.schema${this.getImportFileExtension()}'`;
+    }
+  }
+
+  /**
+   * Generate input import for object schemas honoring naming.input patterns.
+   * Similar to generateInputImport but for object-to-object imports using './' prefix.
+   */
+  private generateObjectInputImport(
+    inputTypeName: string,
+    from: 'objects' | 'root' | 'results' = 'objects',
+  ): string {
+    try {
+      const cfg = resolveInputNaming(Transformer.getGeneratorConfig());
+
+      // Extract model name - fallback to inputTypeName if extraction fails
+      const model = Transformer.extractModelNameFromContext(inputTypeName) || inputTypeName;
+
+      // Generate the file name using the custom pattern
+      const file = generateFileName(cfg.filePattern, model, undefined, inputTypeName);
+      const base = file.replace(/\.ts$/, '');
+
+      // Generate export name using the custom pattern
+      const resolvedExportName =
+        generateExportName(cfg.exportNamePattern, model, undefined, inputTypeName) || inputTypeName;
+      const exportBase = resolvedExportName.replace(/ObjectSchema$|Schema$/, '');
+      const importName = Transformer.exportTypedSchemas
+        ? `${exportBase}ObjectSchema`
+        : `${exportBase}Object${Transformer.zodSchemaSuffix}`;
+
+      // Create alias using the original input type name for consistency
+      const alias = Transformer.exportTypedSchemas
+        ? `${inputTypeName}ObjectSchema`
+        : `${inputTypeName}Object${Transformer.zodSchemaSuffix}`;
+
+      const ext = this.getImportFileExtension();
+      const baseDir = from === 'objects' ? '.' : from === 'root' ? './objects' : '../objects';
+      return `import { ${importName} as ${alias} } from '${baseDir}/${base}${ext}'`;
+    } catch (error) {
+      // Log error for debugging and fallback to legacy naming
+      logger.warn('Failed to generate custom object input import for', inputTypeName, error);
+      const schemaName = Transformer.exportTypedSchemas
+        ? `${inputTypeName}ObjectSchema`
+        : `${inputTypeName}Object${Transformer.zodSchemaSuffix}`;
+      const baseDir = from === 'objects' ? '.' : from === 'root' ? './objects' : '../objects';
+      return `import { ${schemaName} } from '${baseDir}/${inputTypeName}.schema${this.getImportFileExtension()}'`;
+    }
+  }
+
+  /**
+   * Generate schema file name with collision detection and custom naming support
+   */
+  private static generateSchemaFileName(modelName: string, operation: string): string {
+    let fileName = `${operation}${modelName}.schema.ts`; // Default fallback
+
+    try {
+      const schemaNamingConfig = resolveSchemaNaming(Transformer.getGeneratorConfig());
+      fileName = generateFileName(schemaNamingConfig.filePattern, modelName, operation);
+    } catch {
+      // Use fallback naming
+    }
+
+    return fileName;
+  }
+
+  /**
+   * Check for and handle file path collisions
+   */
+  private static checkSchemaFileCollision(
+    filePath: string,
+    modelName: string,
+    operation: string,
+  ): void {
+    const existingOperation = this.usedSchemaFilePaths.get(filePath);
+
+    if (existingOperation) {
+      const errorMsg =
+        `Schema file collision detected: Both "${existingOperation.modelName}.${existingOperation.operation}" and "${modelName}.${operation}" would generate file "${filePath}". ` +
+        `This will cause operations to overwrite each other. ` +
+        `Consider including {Operation} in your schema.filePattern (e.g., "{kebab}-{operation}-schema.ts") to avoid collisions.`;
+
+      logger.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    // Register this path as used
+    this.usedSchemaFilePaths.set(filePath, { modelName, operation });
+  }
+
+  /**
+   * Generate schema file with collision detection and consistent naming
+   */
+  private static async writeSchemaFile(
+    modelName: string,
+    operation: string,
+    content: string,
+  ): Promise<void> {
+    const fileName = this.generateSchemaFileName(modelName, operation);
+    const fullPath = path.join(Transformer.getSchemasPath(), fileName);
+
+    // Check for collisions
+    this.checkSchemaFileCollision(fullPath, modelName, operation);
+
+    // Write the file (avoid double index updates; we handle export add explicitly)
+    await writeFileSafely(fullPath, content, false);
+
+    // Add to index exports
+    addIndexExport(fullPath);
+    logger.debug(`✅ Generated schema: ${fileName}`);
+  }
+
+  /**
+   * Clear collision detection state (called at start of generation)
+   */
+  static clearSchemaFileCollisions(): void {
+    this.usedSchemaFilePaths.clear();
+  }
+
+  /**
    * Generate import statement with validation - only if target will be generated
    */
   static generateValidatedImportStatement(
@@ -2390,25 +2655,51 @@ export default class Transformer {
       .map((name) => {
         const { isModelQueryType, modelName, queryName } = this.checkIsModelQueryType(name);
         if (isModelQueryType) {
-          return `import { ${this.resolveModelQuerySchemaName(
-            modelName as string,
-            queryName as string,
-          )} } from '../${queryName}${modelName}.schema${importExtension}'`;
+          try {
+            // Use naming resolver to get custom patterns
+            const schemaCfg = resolveSchemaNaming(Transformer.getGeneratorConfig());
+
+            // Generate filename using custom pattern
+            const op =
+              (queryName as string).charAt(0).toUpperCase() + (queryName as string).slice(1);
+            const fileName = generateFileName(schemaCfg.filePattern, modelName as string, op);
+            const baseName = fileName.replace(/\.ts$/, '');
+
+            // Generate export name using custom pattern
+            const exportName = generateExportName(
+              schemaCfg.exportNamePattern,
+              modelName as string,
+              op,
+            );
+
+            // Use the resolved export name, but alias to what resolveModelQuerySchemaName expects for compatibility
+            const aliasName = this.resolveModelQuerySchemaName(
+              modelName as string,
+              queryName as string,
+            );
+
+            return `import { ${exportName} as ${aliasName} } from '../${baseName}${importExtension}'`;
+          } catch {
+            // Fallback to legacy hardcoded naming if naming resolver fails
+            const op =
+              (queryName as string).charAt(0).toUpperCase() + (queryName as string).slice(1);
+            return `import { ${this.resolveModelQuerySchemaName(
+              modelName as string,
+              queryName as string,
+            )} } from '../${op}${modelName}.schema${importExtension}'`;
+          }
         } else if (Transformer.enumNames.includes(name)) {
           const normalized = this.normalizeEnumName(name);
           if (normalized && normalized !== name) {
-            // Import normalized file/export and alias to the original enum identifier (only when different)
-            return `import { ${normalized}Schema as ${name}Schema } from '../enums/${normalized}.schema${importExtension}'`;
+            // Use naming resolver for normalized enum imports with original name as alias
+            return this.generateEnumImport(normalized, `${name}Schema`);
           } else {
-            // Use original name without aliasing
-            return `import { ${name}Schema } from '../enums/${name}.schema${importExtension}'`;
+            // Use naming resolver for regular enum imports
+            return this.generateEnumImport(name);
           }
         } else {
-          // Choose the appropriate schema name based on export settings
-          const schemaName = Transformer.exportTypedSchemas
-            ? `${name}ObjectSchema`
-            : `${name}Object${Transformer.zodSchemaSuffix}`;
-          return `import { ${schemaName} } from './${name}.schema${importExtension}'`;
+          // Use naming resolver for input object imports
+          return this.generateObjectInputImport(name);
         }
       })
       .join(';\r\n');
@@ -2478,6 +2769,9 @@ export default class Transformer {
     // Log model filtering information
     Transformer.logModelFiltering(this.models);
 
+    // Clear schema file collision tracking at start of generation
+    Transformer.clearSchemaFileCollisions();
+
     for (const modelOperation of this.modelOperations) {
       try {
         const {
@@ -2542,10 +2836,7 @@ export default class Transformer {
           const imports = [
             selectImport,
             includeImport,
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-              `./objects/${modelName}WhereUniqueInput.schema`,
-            ),
+            this.generateInputImport(`${modelName}WhereUniqueInput`),
           ];
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
@@ -2561,10 +2852,8 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName)}FindUniqueArgs`,
           );
 
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${findUnique}.schema.ts`),
-            schemaContent + dualExports,
-          );
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(modelName, 'FindUnique', schemaContent + dualExports);
         }
 
         // Generate findUniqueOrThrow schema (same as findUnique but with error-throwing behavior)
@@ -2572,10 +2861,7 @@ export default class Transformer {
           const imports = [
             selectImport,
             includeImport,
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-              `./objects/${modelName}WhereUniqueInput.schema`,
-            ),
+            this.generateInputImport(`${modelName}WhereUniqueInput`),
           ];
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
@@ -2591,31 +2877,27 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName)}FindUniqueOrThrowArgs`,
           );
 
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `findUniqueOrThrow${modelName}.schema.ts`),
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(
+            modelName,
+            'FindUniqueOrThrow',
             schemaContent + dualExports,
           );
         }
 
         if (Transformer.isOperationEnabled(modelName, 'findFirst')) {
-          const fileBase = findFirst ?? `findFirst${modelName}`;
           const shouldInline = this.shouldInlineSelectSchema(model);
 
           // Build imports based on aggressive inlining strategy
           const baseImports = [
             includeImport, // Include always external
             orderByImport,
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-              `./objects/${modelName}WhereInput.schema`,
-            ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-              `./objects/${modelName}WhereUniqueInput.schema`,
-            ),
-            this.generateImportStatement(
+            this.generateInputImport(`${modelName}WhereInput`),
+            this.generateInputImport(`${modelName}WhereUniqueInput`),
+            this.generateEnumImport(
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
-              `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
+              'root',
             ),
           ];
 
@@ -2657,10 +2939,8 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName)}FindFirstArgs`,
           );
 
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${fileBase}.schema.ts`),
-            schemaContent + dualExports,
-          );
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(modelName, 'FindFirst', schemaContent + dualExports);
         }
 
         // Generate findFirstOrThrow schema (same as findFirst but with error-throwing behavior)
@@ -2671,17 +2951,12 @@ export default class Transformer {
           const baseImports = [
             includeImport, // Include always external
             orderByImport,
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-              `./objects/${modelName}WhereInput.schema`,
-            ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-              `./objects/${modelName}WhereUniqueInput.schema`,
-            ),
-            this.generateImportStatement(
+            this.generateInputImport(`${modelName}WhereInput`),
+            this.generateInputImport(`${modelName}WhereUniqueInput`),
+            this.generateEnumImport(
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
-              `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
+              'root',
             ),
           ];
 
@@ -2720,8 +2995,10 @@ export default class Transformer {
             schemaObjectDefinition,
             `Prisma.${this.getPrismaTypeName(modelName)}FindFirstOrThrowArgs`,
           );
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `findFirstOrThrow${modelName}.schema.ts`),
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(
+            modelName,
+            'FindFirstOrThrow',
             schemaContent + dualExports,
           );
         }
@@ -2733,17 +3010,12 @@ export default class Transformer {
           const baseImports = [
             includeImport, // Include always external
             orderByImport,
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-              `./objects/${modelName}WhereInput.schema`,
-            ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-              `./objects/${modelName}WhereUniqueInput.schema`,
-            ),
-            this.generateImportStatement(
+            this.generateInputImport(`${modelName}WhereInput`),
+            this.generateInputImport(`${modelName}WhereUniqueInput`),
+            this.generateEnumImport(
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
-              `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
+              'root',
             ),
           ];
 
@@ -2785,10 +3057,8 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName)}FindManyArgs`,
           );
 
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${findMany}.schema.ts`),
-            schemaContent + dualExports,
-          );
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(modelName, 'FindMany', schemaContent + dualExports);
         }
 
         // Generate count schema aligned with Prisma <Model>CountArgs
@@ -2796,19 +3066,10 @@ export default class Transformer {
           // Build imports
           const imports = [
             orderByImport,
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-              `./objects/${modelName}WhereInput.schema`,
-            ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-              `./objects/${modelName}WhereUniqueInput.schema`,
-            ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(modelName, 'CountAggregateInput')}`,
-              ),
-              `./objects/${this.getAggregateInputName(modelName, 'CountAggregateInput')}.schema`,
+            this.generateInputImport(`${modelName}WhereInput`),
+            this.generateInputImport(`${modelName}WhereUniqueInput`),
+            this.generateInputImport(
+              `${this.getAggregateInputName(modelName, 'CountAggregateInput')}`,
             ),
           ];
 
@@ -2826,10 +3087,8 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName)}CountArgs`,
           );
 
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `count${modelName}.schema.ts`),
-            schemaContent + dualExports,
-          );
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(modelName, 'Count', schemaContent + dualExports);
         }
 
         if (createOne && Transformer.isOperationEnabled(modelName, 'createOne')) {
@@ -2841,35 +3100,33 @@ export default class Transformer {
           let dataUnion;
           if (isMinimalMode) {
             // In minimal mode, prefer UncheckedCreateInput to avoid relation field issues
-            imports.push(
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`),
-                `./objects/${modelName}UncheckedCreateInput.schema`,
-              ),
-            );
+            imports.push(this.generateInputImport(`${modelName}UncheckedCreateInput`));
             dataUnion = Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`);
           } else {
             // In full mode, use both CreateInput and UncheckedCreateInput
             imports.push(
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}CreateInput`),
-                `./objects/${modelName}CreateInput.schema`,
-              ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`),
-                `./objects/${modelName}UncheckedCreateInput.schema`,
-              ),
+              this.generateInputImport(`${modelName}CreateInput`),
+              this.generateInputImport(`${modelName}UncheckedCreateInput`),
             );
             dataUnion = `z.union([${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)}])`;
           }
 
-          await writeFileSafely(
-            path.join(Transformer.getSchemasPath(), `${createOne}.schema.ts`),
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}CreateOne`,
-              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion}  })`,
-            )}`,
+          // Add Prisma type import for explicit type binding
+          const crudDir = Transformer.getSchemasPath();
+          const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+          const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+          // Generate dual schema exports for CreateOne operation
+          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion} }).strict()`;
+          const dualExports = this.generateDualSchemaExports(
+            modelName,
+            'CreateOne',
+            schemaObjectDefinition,
+            `Prisma.${this.getPrismaTypeName(modelName)}CreateArgs`,
           );
+
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(modelName, 'CreateOne', schemaContent + dualExports);
         }
 
         if (createMany && Transformer.isOperationEnabled(modelName, 'createMany')) {
@@ -2877,23 +3134,28 @@ export default class Transformer {
           if (cfg?.mode === 'minimal') {
             logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createMany`);
           } else {
-            const imports = [
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}CreateManyInput`),
-                `./objects/${modelName}CreateManyInput.schema`,
-              ),
-            ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${createMany}.schema.ts`),
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}CreateMany`,
-                `z.object({ data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
-                  Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
-                    ? 'skipDuplicates: z.boolean().optional()'
-                    : ''
-                } })`,
-              )}`,
+            const imports = [this.generateInputImport(`${modelName}CreateManyInput`)];
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for CreateMany operation
+            const schemaObjectDefinition = `z.object({ data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
+              Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
+                ? 'skipDuplicates: z.boolean().optional()'
+                : ''
+            } }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
+              modelName,
+              'CreateMany',
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}CreateManyArgs`,
             );
+
+            // Use the standardized schema file generation with collision detection
+            await Transformer.writeSchemaFile(modelName, 'CreateMany', schemaContent + dualExports);
           }
         }
 
@@ -2903,23 +3165,31 @@ export default class Transformer {
           if (cfg?.mode === 'minimal') {
             logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createManyAndReturn`);
           } else {
-            const imports = [
-              selectImport,
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}CreateManyInput`),
-                `./objects/${modelName}CreateManyInput.schema`,
-              ),
-            ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `createManyAndReturn${modelName}.schema.ts`),
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}CreateManyAndReturn`,
-                `z.object({ ${selectZodSchemaLine} data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
-                  Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
-                    ? 'skipDuplicates: z.boolean().optional()'
-                    : ''
-                } }).strict()`,
-              )}`,
+            const imports = [selectImport, this.generateInputImport(`${modelName}CreateManyInput`)];
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for CreateManyAndReturn operation
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
+              Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
+                ? 'skipDuplicates: z.boolean().optional()'
+                : ''
+            } }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
+              modelName,
+              'CreateManyAndReturn',
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}CreateManyAndReturnArgs`,
+            );
+
+            // Use the standardized schema file generation with collision detection
+            await Transformer.writeSchemaFile(
+              modelName,
+              'CreateManyAndReturn',
+              schemaContent + dualExports,
             );
           }
         }
@@ -2934,35 +3204,51 @@ export default class Transformer {
               const imports = [
                 selectImport,
                 includeImport,
-                this.generateImportStatement(
-                  Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-                  `./objects/${modelName}WhereUniqueInput.schema`,
-                ),
+                this.generateInputImport(`${modelName}WhereUniqueInput`),
               ];
-              await writeFileSafely(
-                path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
-                `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                  `${modelName}DeleteOne`,
-                  `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
-                )}`,
+
+              // Add Prisma type import for explicit type binding
+              const crudDir = Transformer.getSchemasPath();
+              const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+              const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+              // Generate dual schema exports for DeleteOne operation
+              const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+              const dualExports = this.generateDualSchemaExports(
+                modelName,
+                'DeleteOne',
+                schemaObjectDefinition,
+                `Prisma.${this.getPrismaTypeName(modelName)}DeleteArgs`,
+              );
+
+              await Transformer.writeSchemaFile(
+                modelName,
+                'DeleteOne',
+                schemaContent + dualExports,
               );
             }
           } else {
             const imports = [
               selectImport,
               includeImport,
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-                `./objects/${modelName}WhereUniqueInput.schema`,
-              ),
+              this.generateInputImport(`${modelName}WhereUniqueInput`),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}DeleteOne`,
-                `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
-              )}`,
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for DeleteOne operation
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
+              modelName,
+              'DeleteOne',
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}DeleteArgs`,
             );
+
+            await Transformer.writeSchemaFile(modelName, 'DeleteOne', schemaContent + dualExports);
           }
         }
 
@@ -2971,19 +3257,23 @@ export default class Transformer {
           if (cfg?.mode === 'minimal') {
             logger.debug(`⏭️  Minimal mode: skipping ${modelName}.deleteMany`);
           } else {
-            const imports = [
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-                `./objects/${modelName}WhereInput.schema`,
-              ),
-            ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${deleteMany}.schema.ts`),
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}DeleteMany`,
-                `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  })`,
-              )}`,
+            const imports = [this.generateInputImport(`${modelName}WhereInput`)];
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for DeleteMany operation
+            const schemaObjectDefinition = `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
+              modelName,
+              'DeleteMany',
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}DeleteManyArgs`,
             );
+
+            await Transformer.writeSchemaFile(modelName, 'DeleteMany', schemaContent + dualExports);
           }
         }
 
@@ -2998,51 +3288,55 @@ export default class Transformer {
               const imports = [
                 selectImport,
                 includeImport,
-                this.generateImportStatement(
-                  Transformer.getObjectSchemaName(`${modelName}UpdateInput`),
-                  `./objects/${modelName}UpdateInput.schema`,
-                ),
-                this.generateImportStatement(
-                  Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`),
-                  `./objects/${modelName}UncheckedUpdateInput.schema`,
-                ),
-                this.generateImportStatement(
-                  Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-                  `./objects/${modelName}WhereUniqueInput.schema`,
-                ),
+                this.generateInputImport(`${modelName}UpdateInput`),
+                this.generateInputImport(`${modelName}UncheckedUpdateInput`),
+                this.generateInputImport(`${modelName}WhereUniqueInput`),
               ];
-              await writeFileSafely(
-                path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
-                `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                  `${modelName}UpdateOne`,
-                  `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
-                )}`,
+
+              // Add Prisma type import for explicit type binding
+              const crudDir = Transformer.getSchemasPath();
+              const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+              const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+              // Generate dual schema exports for UpdateOne operation
+              const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+              const dualExports = this.generateDualSchemaExports(
+                modelName,
+                'UpdateOne',
+                schemaObjectDefinition,
+                `Prisma.${this.getPrismaTypeName(modelName)}UpdateArgs`,
+              );
+
+              await Transformer.writeSchemaFile(
+                modelName,
+                'UpdateOne',
+                schemaContent + dualExports,
               );
             }
           } else {
             const imports = [
               selectImport,
               includeImport,
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}UpdateInput`),
-                `./objects/${modelName}UpdateInput.schema`,
-              ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`),
-                `./objects/${modelName}UncheckedUpdateInput.schema`,
-              ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-                `./objects/${modelName}WhereUniqueInput.schema`,
-              ),
+              this.generateInputImport(`${modelName}UpdateInput`),
+              this.generateInputImport(`${modelName}UncheckedUpdateInput`),
+              this.generateInputImport(`${modelName}WhereUniqueInput`),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}UpdateOne`,
-                `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
-              )}`,
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for UpdateOne operation
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
+              modelName,
+              'UpdateOne',
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}UpdateArgs`,
             );
+
+            await Transformer.writeSchemaFile(modelName, 'UpdateOne', schemaContent + dualExports);
           }
         }
 
@@ -3052,22 +3346,25 @@ export default class Transformer {
             logger.debug(`⏭️  Minimal mode: skipping ${modelName}.updateMany`);
           } else {
             const imports = [
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`),
-                `./objects/${modelName}UpdateManyMutationInput.schema`,
-              ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-                `./objects/${modelName}WhereInput.schema`,
-              ),
+              this.generateInputImport(`${modelName}UpdateManyMutationInput`),
+              this.generateInputImport(`${modelName}WhereInput`),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${updateMany}.schema.ts`),
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}UpdateMany`,
-                `z.object({ data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  })`,
-              )}`,
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for UpdateMany operation
+            const schemaObjectDefinition = `z.object({ data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
+              modelName,
+              'UpdateMany',
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}UpdateManyArgs`,
             );
+
+            await Transformer.writeSchemaFile(modelName, 'UpdateMany', schemaContent + dualExports);
           }
         }
 
@@ -3079,21 +3376,28 @@ export default class Transformer {
           } else {
             const imports = [
               selectImport,
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`),
-                `./objects/${modelName}UpdateManyMutationInput.schema`,
-              ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-                `./objects/${modelName}WhereInput.schema`,
-              ),
+              this.generateInputImport(`${modelName}UpdateManyMutationInput`),
+              this.generateInputImport(`${modelName}WhereInput`),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `updateManyAndReturn${modelName}.schema.ts`),
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}UpdateManyAndReturn`,
-                `z.object({ ${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  }).strict()`,
-              )}`,
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for UpdateManyAndReturn operation
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
+              modelName,
+              'UpdateManyAndReturn',
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}UpdateManyAndReturnArgs`,
+            );
+
+            await Transformer.writeSchemaFile(
+              modelName,
+              'UpdateManyAndReturn',
+              schemaContent + dualExports,
             );
           }
         }
@@ -3106,70 +3410,49 @@ export default class Transformer {
             const imports = [
               selectImport,
               includeImport,
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-                `./objects/${modelName}WhereUniqueInput.schema`,
-              ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}CreateInput`),
-                `./objects/${modelName}CreateInput.schema`,
-              ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`),
-                `./objects/${modelName}UncheckedCreateInput.schema`,
-              ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}UpdateInput`),
-                `./objects/${modelName}UpdateInput.schema`,
-              ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`),
-                `./objects/${modelName}UncheckedUpdateInput.schema`,
-              ),
+              this.generateInputImport(`${modelName}WhereUniqueInput`),
+              this.generateInputImport(`${modelName}CreateInput`),
+              this.generateInputImport(`${modelName}UncheckedCreateInput`),
+              this.generateInputImport(`${modelName}UpdateInput`),
+              this.generateInputImport(`${modelName}UncheckedUpdateInput`),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${upsertOne}.schema.ts`),
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}Upsert`,
-                `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ])  })`,
-              )}`,
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for UpsertOne operation
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ]) }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
+              modelName,
+              'UpsertOne',
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}UpsertArgs`,
             );
+
+            await Transformer.writeSchemaFile(modelName, 'UpsertOne', schemaContent + dualExports);
           }
         }
 
         if (aggregate && Transformer.isOperationEnabled(modelName, 'aggregate')) {
           const imports = [
             orderByImport,
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-              `./objects/${modelName}WhereInput.schema`,
-            ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`),
-              `./objects/${modelName}WhereUniqueInput.schema`,
-            ),
+            this.generateInputImport(`${modelName}WhereInput`),
+            this.generateInputImport(`${modelName}WhereUniqueInput`),
           ];
           const aggregateOperations = [];
 
           // All models support count, min, max operations - no complex detection needed
           imports.push(
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(modelName, 'CountAggregateInput')}`,
-              ),
-              `./objects/${this.getAggregateInputName(modelName, 'CountAggregateInput')}.schema`,
+            this.generateInputImport(
+              `${this.getAggregateInputName(modelName, 'CountAggregateInput')}`,
             ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(modelName, 'MinAggregateInput')}`,
-              ),
-              `./objects/${this.getAggregateInputName(modelName, 'MinAggregateInput')}.schema`,
+            this.generateInputImport(
+              `${this.getAggregateInputName(modelName, 'MinAggregateInput')}`,
             ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(modelName, 'MaxAggregateInput')}`,
-              ),
-              `./objects/${this.getAggregateInputName(modelName, 'MaxAggregateInput')}.schema`,
+            this.generateInputImport(
+              `${this.getAggregateInputName(modelName, 'MaxAggregateInput')}`,
             ),
           );
 
@@ -3177,17 +3460,11 @@ export default class Transformer {
           const hasNumericFields = this.modelHasNumericFields(modelName);
           if (hasNumericFields) {
             imports.push(
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(
-                  `${this.getAggregateInputName(modelName, 'AvgAggregateInput')}`,
-                ),
-                `./objects/${this.getAggregateInputName(modelName, 'AvgAggregateInput')}.schema`,
+              this.generateInputImport(
+                `${this.getAggregateInputName(modelName, 'AvgAggregateInput')}`,
               ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(
-                  `${this.getAggregateInputName(modelName, 'SumAggregateInput')}`,
-                ),
-                `./objects/${this.getAggregateInputName(modelName, 'SumAggregateInput')}.schema`,
+              this.generateInputImport(
+                `${this.getAggregateInputName(modelName, 'SumAggregateInput')}`,
               ),
             );
           }
@@ -3206,10 +3483,6 @@ export default class Transformer {
             );
           }
 
-          const aggregateFilePath = path.join(
-            Transformer.getSchemasPath(),
-            `${aggregate}.schema.ts`,
-          );
           // Add Prisma type import for explicit type binding
           const crudDirAggregate = Transformer.getSchemasPath();
           const prismaImportPathAggregate = Transformer.resolvePrismaImportPath(crudDirAggregate);
@@ -3226,47 +3499,28 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName, 'Aggregate')}AggregateArgs`,
           );
 
-          await writeFileSafely(aggregateFilePath, schemaContent + dualExports);
-          // Add to index exports
-          addIndexExport(aggregateFilePath);
-          logger.debug(`✅ Added aggregate schema to index: ${aggregate}.schema.ts`);
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(modelName, 'Aggregate', schemaContent + dualExports);
         }
 
         if (groupBy && Transformer.isOperationEnabled(modelName, 'groupBy')) {
           const imports = [
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}WhereInput`),
-              `./objects/${modelName}WhereInput.schema`,
-            ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`),
-              `./objects/${modelName}OrderByWithAggregationInput.schema`,
-            ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`),
-              `./objects/${modelName}ScalarWhereWithAggregatesInput.schema`,
-            ),
-            this.generateImportStatement(
+            this.generateInputImport(`${modelName}WhereInput`),
+            this.generateInputImport(`${modelName}OrderByWithAggregationInput`),
+            this.generateInputImport(`${modelName}ScalarWhereWithAggregatesInput`),
+            this.generateEnumImport(
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
-              `./enums/${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.schema`,
+              'root',
             ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(modelName, 'CountAggregateInput')}`,
-              ),
-              `./objects/${this.getAggregateInputName(modelName, 'CountAggregateInput')}.schema`,
+            this.generateInputImport(
+              `${this.getAggregateInputName(modelName, 'CountAggregateInput')}`,
             ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(modelName, 'MinAggregateInput')}`,
-              ),
-              `./objects/${this.getAggregateInputName(modelName, 'MinAggregateInput')}.schema`,
+            this.generateInputImport(
+              `${this.getAggregateInputName(modelName, 'MinAggregateInput')}`,
             ),
-            this.generateImportStatement(
-              Transformer.getObjectSchemaName(
-                `${this.getAggregateInputName(modelName, 'MaxAggregateInput')}`,
-              ),
-              `./objects/${this.getAggregateInputName(modelName, 'MaxAggregateInput')}.schema`,
+            this.generateInputImport(
+              `${this.getAggregateInputName(modelName, 'MaxAggregateInput')}`,
             ),
           ];
 
@@ -3274,21 +3528,14 @@ export default class Transformer {
           const hasNumericFieldsForGroupBy = this.modelHasNumericFields(modelName);
           if (hasNumericFieldsForGroupBy) {
             imports.push(
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(
-                  `${this.getAggregateInputName(modelName, 'AvgAggregateInput')}`,
-                ),
-                `./objects/${this.getAggregateInputName(modelName, 'AvgAggregateInput')}.schema`,
+              this.generateInputImport(
+                `${this.getAggregateInputName(modelName, 'AvgAggregateInput')}`,
               ),
-              this.generateImportStatement(
-                Transformer.getObjectSchemaName(
-                  `${this.getAggregateInputName(modelName, 'SumAggregateInput')}`,
-                ),
-                `./objects/${this.getAggregateInputName(modelName, 'SumAggregateInput')}.schema`,
+              this.generateInputImport(
+                `${this.getAggregateInputName(modelName, 'SumAggregateInput')}`,
               ),
             );
           }
-          const groupByFilePath = path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`);
           // Add Prisma type import for explicit type binding
           const crudDirGroupBy = Transformer.getSchemasPath();
           const prismaImportPathGroupBy = Transformer.resolvePrismaImportPath(crudDirGroupBy);
@@ -3323,10 +3570,8 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName)}GroupByArgs`,
           );
 
-          await writeFileSafely(groupByFilePath, schemaContent + dualExports);
-          // Add to index exports
-          addIndexExport(groupByFilePath);
-          logger.debug(`✅ Added groupBy schema to index: ${groupBy}.schema.ts`);
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(modelName, 'GroupBy', schemaContent + dualExports);
         }
       } catch (err) {
         // Log error with contextual information before continuing to next model
@@ -3430,8 +3675,16 @@ export default class Transformer {
         // Only add other imports if they're actually referenced in the schema
         if (resultSchema.dependencies && resultSchema.dependencies.length > 0) {
           resultSchema.dependencies.forEach((dep: string) => {
+            // Derive input base from common exported identifiers
+            const base = dep
+              .replace(/(ObjectSchema|ObjectZodSchema|Schema)$/, '')
+              .replace(/(Select|Include)$/, '$1'); // keep Select/Include tokens
+            const isSelectOrInclude =
+              /(Select|Include)(ObjectSchema|ObjectZodSchema|Schema)?$/.test(dep);
             imports.push(
-              this.generateImportStatement(dep, `../objects/${dep.replace('Schema', '')}.schema`),
+              isSelectOrInclude
+                ? this.generateObjectInputImport(base, 'results')
+                : this.generateInputImport(base, 'results'),
             );
           });
         }
@@ -3442,6 +3695,7 @@ export default class Transformer {
 
     // Generate consolidated index file for all result schemas
     const resultIndexPath = path.join(Transformer.getSchemasPath(), 'results', 'index.ts');
+    const importExtension = Transformer.getImportFileExtension();
     const allExports: string[] = [];
 
     // Collect all result schema exports for all processed models
@@ -3458,7 +3712,7 @@ export default class Transformer {
       const resultSchemas = resultGenerator.generateAllResultSchemas(model);
       for (const resultSchema of resultSchemas) {
         allExports.push(
-          `export { ${resultSchema.schemaName} } from './${model.name}${opSuffix(resultSchema.operationType as unknown as string)}Result.schema';`,
+          `export { ${resultSchema.schemaName} } from './${model.name}${opSuffix(resultSchema.operationType as unknown as string)}Result.schema${importExtension}';`,
         );
       }
     }
@@ -3519,8 +3773,11 @@ export default class Transformer {
   static parseImportStatement(
     importStatement: string,
   ): { importName: string; importPath: string; relatedModel?: string } | null {
-    // Match import pattern: import { ImportName } from 'path'
-    const match = importStatement.match(/import\s*\{\s*(\w+)\s*\}\s*from\s*['"]([^'"]+)['"]/);
+    // Support: import { X } from '...'; import { X as Y } from '...'; import type { X as Y } from '...'; default imports as fallback
+    const match =
+      importStatement.match(
+        /import\s*(?:type\s*)?\{\s*(\w+)(?:\s+as\s+\w+)?\s*\}\s*from\s*['"]([^'"]+)['"]/,
+      ) || importStatement.match(/import\s*(?:type\s*)?(\w+)\s*from\s*['"]([^'"]+)['"]/);
     if (!match) {
       return null;
     }
@@ -3820,23 +4077,11 @@ export default class Transformer {
     Transformer.logRelationshipPreservation(model);
 
     const selectImport = Transformer.shouldGenerateSelectSchema(model)
-      ? this.generateSmartImportStatement(
-          Transformer.exportTypedSchemas
-            ? `${modelName}SelectObjectSchema`
-            : `${modelName}SelectObject${Transformer.zodSchemaSuffix}`,
-          `./objects/${modelName}Select.schema`,
-          modelName,
-        )
+      ? this.generateObjectInputImport(`${modelName}Select`, 'root')
       : '';
 
     const includeImport = Transformer.shouldGenerateIncludeSchema(model)
-      ? this.generateSmartImportStatement(
-          Transformer.exportTypedSchemas
-            ? `${modelName}IncludeObjectSchema`
-            : `${modelName}IncludeObject${Transformer.zodSchemaSuffix}`,
-          `./objects/${modelName}Include.schema`,
-          modelName,
-        )
+      ? this.generateObjectInputImport(`${modelName}Include`, 'root')
       : '';
 
     let selectZodSchemaLine = '';
@@ -3885,10 +4130,7 @@ export default class Transformer {
       modelOrderBy = `${modelName}OrderByWithRelationInput`;
     }
 
-    const orderByImport = this.generateImportStatement(
-      Transformer.getObjectSchemaName(modelOrderBy),
-      `./objects/${modelOrderBy}.schema`,
-    );
+    const orderByImport = this.generateInputImport(modelOrderBy);
     const orderByZodSchemaLine = `orderBy: z.union([${Transformer.getObjectSchemaName(modelOrderBy)}, ${Transformer.getObjectSchemaName(modelOrderBy)}.array()]).optional(),`;
 
     return { orderByImport, orderByZodSchemaLine };
@@ -3967,9 +4209,30 @@ ${selectFields.join(',\n')}
   ): string {
     const exports: string[] = [];
 
+    // Use schema naming configuration if available
+    let baseExportName = `${modelName}${operationType}`;
+    try {
+      const config = Transformer.getGeneratorConfig();
+      const schemaNamingConfig = config?.naming?.schema;
+      if (schemaNamingConfig?.exportNamePattern) {
+        const customExportName = generateExportName(
+          schemaNamingConfig.exportNamePattern,
+          modelName,
+          operationType,
+        );
+        if (customExportName) {
+          baseExportName = customExportName;
+        }
+      }
+    } catch {
+      // Fallback to default naming if there's an error
+    }
+
     // Generate typed schema (perfect inference, no methods) - KEEP PRISMA TYPING
     if (Transformer.exportTypedSchemas) {
-      const typedName = `${modelName}${operationType}${Transformer.typedSchemaSuffix}`;
+      const typedName = baseExportName.endsWith('Schema')
+        ? baseExportName
+        : `${baseExportName}${Transformer.typedSchemaSuffix}`;
       exports.push(
         `export const ${typedName}: z.ZodType<${prismaType}> = ${schemaDefinition} as unknown as z.ZodType<${prismaType}>;`,
       );
@@ -3977,7 +4240,7 @@ ${selectFields.join(',\n')}
 
     // Generate Zod schema (methods available, loose inference)
     if (Transformer.exportZodSchemas) {
-      const zodName = `${modelName}${operationType}${Transformer.zodSchemaSuffix}`;
+      const zodName = `${baseExportName}${Transformer.zodSchemaSuffix}`;
       exports.push(`export const ${zodName} = ${schemaDefinition};`);
     }
 

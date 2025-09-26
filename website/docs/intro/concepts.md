@@ -36,4 +36,10 @@ You can also define **array-based custom variants** with suffix, exclusions, and
 
 **Circular Dependency Resolution**: When `pureModelsIncludeRelations` is enabled, `pureModelsExcludeCircularRelations` can intelligently exclude problematic bidirectional relations to avoid TypeScript circular dependency errors while preserving foreign keys.
 
-**Naming Presets** drive file & export shapes for pure models (`naming.preset` + overrides). See reference page.
+**Naming Customization** drives file & export shapes across all schema types:
+- **Pure Models**: `naming.preset` + `naming.pureModel` overrides
+- **CRUD Schemas**: `naming.schema` for operation file/export patterns
+- **Input Objects**: `naming.input` for input type file/export patterns
+- **Enums**: `naming.enum` for enum file/export patterns
+
+See the [naming configuration page](/docs/config/naming) for complete documentation.

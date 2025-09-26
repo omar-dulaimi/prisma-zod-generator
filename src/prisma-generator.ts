@@ -745,8 +745,32 @@ async function generateEnumSchemas(
   modelSchemaEnum: DMMF.SchemaEnum[],
 ) {
   const enumTypes = [...prismaSchemaEnum, ...modelSchemaEnum];
-  const enumNames = enumTypes.map((enumItem) => enumItem.name);
-  Transformer.enumNames = enumNames ?? [];
+  // Include both raw and normalized enum names so import/name checks work
+  const rawEnumNames = enumTypes.map((e) => e.name);
+
+  // Mirror Transformer.normalizeEnumName logic locally to avoid surfacing private APIs
+  const modelEnumPatterns = [/^(\w+)ScalarFieldEnum$/, /^(\w+)OrderByRelevanceFieldEnum$/];
+  const toPascalCase = (modelName: string): string =>
+    modelName
+      .replace(/[_-\s]+(.)?/g, (_: string, c: string) => (c ? c.toUpperCase() : ''))
+      .replace(/^\w/, (c) => c.toUpperCase());
+  const normalizeEnumNameForRegistry = (name: string): string | null => {
+    for (const pattern of modelEnumPatterns) {
+      const match = name.match(pattern);
+      if (match) {
+        const modelName = match[1];
+        return name.replace(modelName, toPascalCase(modelName));
+      }
+    }
+    return null;
+  };
+
+  const normalizedEnumNames = enumTypes
+    .map((e) => normalizeEnumNameForRegistry(e.name) ?? e.name)
+    .filter(Boolean) as string[];
+
+  const combinedEnumNames = Array.from(new Set([...rawEnumNames, ...normalizedEnumNames]));
+  Transformer.enumNames = combinedEnumNames;
   const transformer = new Transformer({
     enumTypes,
   });
@@ -1209,12 +1233,12 @@ async function generateObjectsIndex() {
       await fs.mkdir(objectsDir, { recursive: true });
     } catch {}
 
-    // Read all .schema.ts files in objects directory
+    // Read all .ts files in objects directory (excluding index)
     let entries: string[] = [];
     try {
       const dirents = await fs.readdir(objectsDir, { withFileTypes: true });
       entries = dirents
-        .filter((d) => d.isFile() && d.name.endsWith('.schema.ts'))
+        .filter((d) => d.isFile() && d.name.endsWith('.ts') && d.name !== 'index.ts')
         .map((d) => d.name.replace(/\.ts$/, ''));
     } catch {
       // If reading fails, skip creating index content
@@ -1646,14 +1670,35 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
           // Use Transformer import strategy to match zodImportTarget
           const zImport = new Transformer({}).generateImportZodStatement();
           const enumImportBase = placeAtRoot ? './enums' : '../enums';
+          const importExtension = Transformer.getImportFileExtension();
+          const enumNaming = (await import('./utils/naming-resolver')).resolveEnumNaming(config);
+          const { generateFileName, generateExportName } = await import('./utils/naming-resolver');
           const enumSchemaImports = enumTypes.length
             ? enumTypes
-                .map((n) => `import { ${n}Schema } from '${enumImportBase}/${n}.schema';`)
+                .map((n) => {
+                  const fileName = generateFileName(
+                    enumNaming.filePattern,
+                    n,
+                    undefined,
+                    undefined,
+                    n,
+                  );
+                  const base = fileName.replace(/\.ts$/, '');
+                  const exportName = generateExportName(
+                    enumNaming.exportNamePattern,
+                    n,
+                    undefined,
+                    undefined,
+                    n,
+                  );
+                  return exportName === `${n}Schema`
+                    ? `import { ${exportName} } from '${enumImportBase}/${base}${importExtension}';`
+                    : `import { ${exportName} as ${n}Schema } from '${enumImportBase}/${base}${importExtension}';`;
+                })
                 .join('\n') + '\n'
             : '';
           const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
-          const importExtension = Transformer.getImportFileExtension();
           exportLines.push(`export { ${schemaName} } from './${fileBase}${importExtension}';`);
         }
       }
@@ -1820,12 +1865,47 @@ async function generateVariantSchemaContent(
   let enumImportLines = '';
   if (enumTypes.length > 0) {
     const importExtension = Transformer.getImportFileExtension();
-    enumImportLines =
-      enumTypes
-        .map(
-          (name) => `import { ${name}Schema } from '../../enums/${name}.schema${importExtension}';`,
-        )
-        .join('\n') + '\n';
+    try {
+      const { resolveEnumNaming, generateFileName, generateExportName } = await import(
+        './utils/naming-resolver'
+      );
+      const enumNaming = resolveEnumNaming(config);
+      enumImportLines =
+        enumTypes
+          .map((name) => {
+            const fileName = generateFileName(
+              enumNaming.filePattern,
+              name,
+              undefined,
+              undefined,
+              name,
+            );
+            const exportName = generateExportName(
+              enumNaming.exportNamePattern,
+              name,
+              undefined,
+              undefined,
+              name,
+            );
+            const importPath = fileName.replace(/\.ts$/, '');
+            // Only use alias if the export name differs from the expected import name
+            if (exportName === `${name}Schema`) {
+              return `import { ${exportName} } from '../../enums/${importPath}${importExtension}';`;
+            } else {
+              return `import { ${exportName} as ${name}Schema } from '../../enums/${importPath}${importExtension}';`;
+            }
+          })
+          .join('\n') + '\n';
+    } catch {
+      // Fallback to default naming
+      enumImportLines =
+        enumTypes
+          .map(
+            (name) =>
+              `import { ${name}Schema } from '../../enums/${name}.schema${importExtension}';`,
+          )
+          .join('\n') + '\n';
+    }
   }
 
   // Get enhanced models with @zod annotation processing
@@ -2135,7 +2215,7 @@ async function generatePureModelSchemas(
     // Generate pure model schemas
     const schemaCollection = typeMapper.generateSchemaCollection(filteredModels);
 
-    const { resolvePureModelNaming, applyPattern } = await import('./utils/namingResolver');
+    const { resolvePureModelNaming, applyPattern } = await import('./utils/naming-resolver');
     const namingResolved = resolvePureModelNaming(config);
     const {
       filePattern,
@@ -2163,14 +2243,21 @@ async function generatePureModelSchemas(
         logger.debug(`[pure-models] Preparing ${modelName} -> file ${fileName}`);
         // Import paths are generated correctly by the model generator; no enum path rewrite needed
         // Remove accidental duplicate enum imports (defensive clean-up)
-        content = content.replace(
-          /^(import { (\w+)Schema } from '\.\.\/schemas\/enums\/\2\.schema';)\n\1/gm,
-          '$1',
-        );
-        content = content.replace(
-          /^(import { (\w+)Schema } from '\.\.\/enums\/\2\.schema';)\n\1/gm,
-          '$1',
-        );
+        {
+          const importExtension = Transformer.getImportFileExtension();
+          const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const escExt = escapeRegExp(importExtension);
+          const dupSchemasEnums = new RegExp(
+            `^(import { (\\w+)Schema } from '\\\\.\\\\.\\\/schemas\\\/enums\\\/\\2\\.schema${escExt}';)\\n\\1`,
+            'gm',
+          );
+          content = content.replace(dupSchemasEnums, '$1');
+          const dupEnums = new RegExp(
+            `^(import { (\\w+)Schema } from '\\\\.\\\\.\\\/enums\\\/\\2\\.schema${escExt}';)\\n\\1`,
+            'gm',
+          );
+          content = content.replace(dupEnums, '$1');
+        }
         // Rename exported const & type if suffix customization used
         if (
           schemaSuffix !== 'Schema' ||
@@ -2181,34 +2268,29 @@ async function generatePureModelSchemas(
           const defaultConstRegex = new RegExp(`export const ${modelName}Schema`, 'g');
           content = content.replace(defaultConstRegex, `export const ${schemaExport}`);
           // Replace inferred type export line
-          // Avoid naming conflicts with enum types by dynamically checking
-          const resolveModelTypeName = (name: string): string => {
-            // Dynamically get enum names from the transformer to avoid hardcoding
-            let enumNames: string[] = [];
+          // Compute desired type name from suffix, then guard collisions with enum names
+          const enumNames: string[] = (() => {
             try {
-              enumNames = Transformer.enumNames || [];
+              return Transformer.enumNames || [];
             } catch {
-              // Fallback: if we can't get enum names, use conservative approach
-              enumNames = [];
+              return [];
             }
-
-            const defaultTypeName = `${name}Type`;
-            return enumNames.includes(defaultTypeName) ? name : defaultTypeName;
-          };
-
-          const safeTypeName = resolveModelTypeName(modelName);
+          })();
+          const desiredTypeName = `${modelName}${typeSuffix}`;
+          const finalTypeName = enumNames.includes(desiredTypeName)
+            ? `${modelName}Type`
+            : desiredTypeName;
           const defaultTypeRegex = new RegExp(
             `export type ${modelName}Type = z.infer<typeof ${modelName}Schema>;`,
             'g',
           );
           content = content.replace(
             defaultTypeRegex,
-            `export type ${safeTypeName}${typeSuffix && typeSuffix !== 'Type' ? typeSuffix : ''} = z.infer<typeof ${schemaExport}>;`,
+            `export type ${finalTypeName} = z.infer<typeof ${schemaExport}>;`,
           );
           // If legacy alias requested, add it after primary export
           if (legacyAliases) {
-            const safeTypeName = resolveModelTypeName(modelName);
-            content += `\n// Legacy aliases\nexport const ${modelName}Schema = ${schemaExport};\nexport type ${safeTypeName} = z.infer<typeof ${schemaExport}>;`;
+            content += `\n// Legacy aliases\nexport const ${modelName}Schema = ${schemaExport};\nexport type ${modelName}Type = z.infer<typeof ${schemaExport}>;`;
           }
         } else if (legacyAliases) {
           content += `\n// Legacy aliases\nexport const ${modelName}Model = ${modelName}Schema;`;

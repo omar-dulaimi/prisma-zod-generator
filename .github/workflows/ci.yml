@@ -48,7 +48,7 @@ jobs:
           # Non-code: docs site, markdown/docs, recipes, images/assets, and workflow config
           DOCS_ONLY=true
           if [ -n "$CHANGED" ]; then
-            if echo "$CHANGED" | grep -Ev '^(website/|README\.md$|CHANGELOG\.md$|CONFIG_REFERENCE\.md$|FILTERING\.md$|CLAUDE\.md$|LICENSE$|zodSchemas\.png$|recipes/|\.github/workflows/)' >/dev/null 2>&1; then
+            if echo "$CHANGED" | grep -Ev '^(website/|README\.md$|CHANGELOG\.md$|CLAUDE\.md$|LICENSE$|zodSchemas\.png$|recipes/|\.github/workflows/)' >/dev/null 2>&1; then
               DOCS_ONLY=false
             fi
           fi

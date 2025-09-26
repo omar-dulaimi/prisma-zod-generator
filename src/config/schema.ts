@@ -132,6 +132,71 @@ export const ConfigurationSchema: JSONSchema7 = {
             },
           },
         },
+        schema: {
+          type: 'object',
+          additionalProperties: false,
+          description: 'Overrides for CRUD operation schema file and symbol naming',
+          properties: {
+            filePattern: {
+              type: 'string',
+              minLength: 3,
+              maxLength: 80,
+              description:
+                'Pattern for schema file names. Tokens: {Model}, {model}, {camel}, {kebab}. Must end with .ts',
+              pattern: '.*\\.ts$',
+            },
+            exportNamePattern: {
+              type: 'string',
+              minLength: 0,
+              maxLength: 80,
+              description:
+                'Pattern for schema export variable. Tokens: {Model}, {model}, {Operation}.',
+            },
+          },
+        },
+        input: {
+          type: 'object',
+          additionalProperties: false,
+          description: 'Overrides for input object file and symbol naming',
+          properties: {
+            filePattern: {
+              type: 'string',
+              minLength: 3,
+              maxLength: 80,
+              description:
+                'Pattern for input file names. Tokens: {Model}, {model}, {camel}, {kebab}, {InputType}. Must end with .ts',
+              pattern: '.*\\.ts$',
+            },
+            exportNamePattern: {
+              type: 'string',
+              minLength: 0,
+              maxLength: 80,
+              description:
+                'Pattern for input export variable. Tokens: {Model}, {model}, {InputType}.',
+            },
+          },
+        },
+        enum: {
+          type: 'object',
+          additionalProperties: false,
+          description: 'Overrides for enum file and symbol naming',
+          properties: {
+            filePattern: {
+              type: 'string',
+              minLength: 3,
+              maxLength: 80,
+              description:
+                'Pattern for enum file names. Tokens: {Enum}, {enum}, {camel}, {kebab}. Must end with .ts',
+              pattern: '.*\\.ts$',
+            },
+            exportNamePattern: {
+              type: 'string',
+              minLength: 0,
+              maxLength: 80,
+              description: 'Pattern for enum export variable. Tokens: {Enum}, {enum}.',
+            },
+          },
+        },
       },
     },
     dateTimeStrategy: {

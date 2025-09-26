@@ -3,18 +3,144 @@ id: naming
 title: Naming & Presets
 ---
 
+## Pure Model Naming
+
 Pure model naming resolved by `resolvePureModelNaming`:
 
-Presets:
+### Presets:
 
 - `default`: `{Model}.schema.ts`, export `{Model}Schema` / type `{Model}Type`.
 - `zod-prisma`: same as default + legacy aliases.
 - `zod-prisma-types`: file `{Model}.schema.ts`, export `{Model}` (no suffixes), legacy aliases.
 - `legacy-model-suffix`: `{Model}.model.ts`, export `{Model}Model`.
 
-Overrides via `naming.pureModel`:
+### Overrides via `naming.pureModel`:
 
 - `filePattern` (`{Model}.schema.ts`, supports tokens `{Model}{SchemaSuffix}` etc.)
 - `schemaSuffix`, `typeSuffix`, `exportNamePattern`, `legacyAliases`.
 
 Relation import rewriting adapts when using `.model` pattern.
+
+## Schema Naming (CRUD Operations)
+
+Schema naming resolved by `resolveSchemaNaming`:
+
+### Default Patterns:
+- `filePattern`: `{operation}{Model}.schema.ts`
+- `exportNamePattern`: `{Model}{Operation}Schema`
+
+### Examples:
+- `findManyUser.schema.ts` with export `UserFindManySchema`
+- `createOnePost.schema.ts` with export `PostCreateOneSchema`
+
+### Overrides via `naming.schema`:
+```json
+{
+  "naming": {
+    "schema": {
+      "filePattern": "{kebab}-{operation}-{model}.schema.ts",
+      "exportNamePattern": "{Model}{Operation}ValidationSchema"
+    }
+  }
+}
+```
+Note: If your `filePattern` omits an operation token, multiple operations for the same model may collide. The generator detects and errors on such collisions; include {operation} or {Operation} to avoid them.
+
+### Available Tokens:
+- `{Model}`: PascalCase model name (e.g., `User`, `BlogPost`)
+- `{model}`: camelCase model name (e.g., `user`, `blogPost`)
+- `{kebab}`: kebab-case model name (e.g., `user`, `blog-post`)
+- `{Operation}`: PascalCase operation (e.g., `FindMany`, `CreateOne`)
+- `{operation}`: camelCase operation (e.g., `findMany`, `createOne`)
+
+## Input Object Naming
+
+Input object naming resolved by `resolveInputNaming`:
+
+### Default Patterns:
+- `filePattern`: `{InputType}.schema.ts`
+- `exportNamePattern`: `{Model}{InputType}ObjectSchema`
+
+### Examples:
+- `UserWhereInput.schema.ts` with export `UserWhereInputObjectSchema`
+- `PostCreateInput.schema.ts` with export `PostCreateInputObjectSchema`
+
+### Overrides via `naming.input`:
+```json
+{
+  "naming": {
+    "input": {
+      "filePattern": "{InputType}Validator.schema.ts",
+      "exportNamePattern": "{InputType}ValidatorSchema"
+    }
+  }
+}
+```
+
+### Available Tokens:
+- `{Model}`: PascalCase model name extracted from input type
+- `{model}`: camelCase model name
+- `{InputType}`: Full input type name (e.g., `UserWhereInput`, `PostCreateInput`)
+
+**Note**: When your pattern includes a model token (`{Model}` or `{model}`) together with `{InputType}`, duplicate model prefixes are automatically stripped for both export names and file names to avoid results like `UserUserWhereInput*`.
+
+## Enum Naming
+
+Enum naming resolved by `resolveEnumNaming`:
+
+### Default Patterns:
+- `filePattern`: `{Enum}.schema.ts`
+- `exportNamePattern`: `{Enum}Schema`
+
+### Examples:
+- `Role.schema.ts` with export `RoleSchema`
+- `UserStatus.schema.ts` with export `UserStatusSchema`
+
+### Overrides via `naming.enum`:
+```json
+{
+  "naming": {
+    "enum": {
+      "filePattern": "{Enum}Validator.schema.ts",
+      "exportNamePattern": "{Enum}ValidatorSchema"
+    }
+  }
+}
+```
+
+### Available Tokens:
+- `{Enum}`: PascalCase enum name (e.g., `Role`, `UserStatus`)
+- `{enum}`: camelCase enum name (e.g., `role`, `userStatus`)
+- `{camel}`: camelCase alias (same as `{enum}` for enums)
+
+## Complete Configuration Example
+
+```json
+{
+  "naming": {
+    "preset": "default",
+    "pureModel": {
+      "filePattern": "{Model}.model.ts",
+      "exportNamePattern": "{Model}Model"
+    },
+    "schema": {
+      "filePattern": "{operation}-{kebab}.schema.ts",
+      "exportNamePattern": "{Model}{Operation}ValidationSchema"
+    },
+    "input": {
+      "filePattern": "inputs/{InputType}.schema.ts",
+      "exportNamePattern": "{InputType}Schema"
+    },
+    "enum": {
+      "filePattern": "enums/{Enum}.enum.ts",
+      "exportNamePattern": "{Enum}EnumSchema"
+    }
+  }
+}
+```
+
+This would generate:
+- Pure models: `User.model.ts` → `UserModel`
+- Schemas: `findMany-user.schema.ts` → `UserFindManyValidationSchema`
+- Inputs: `inputs/UserWhereInput.schema.ts` → `UserWhereInputSchema`
+- Enums: `enums/Role.enum.ts` → `RoleEnumSchema`

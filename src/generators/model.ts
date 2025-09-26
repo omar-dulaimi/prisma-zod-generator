@@ -2275,11 +2275,15 @@ export class PrismaTypeMapper {
 
     // Get naming configuration for proper import path generation
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { resolvePureModelNaming, applyPattern } = require('../utils/namingResolver');
+    const { resolvePureModelNaming, applyPattern } = require('../utils/naming-resolver');
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const transformer = require('../transformer').default;
     const config = transformer.getGeneratorConfig?.();
     const namingResolved = resolvePureModelNaming(config);
+    const ext =
+      typeof transformer.getImportFileExtension === 'function'
+        ? transformer.getImportFileExtension()
+        : '';
 
     // Identify enum fields by validation marker added in mapEnumType ("// Enum type:")
     const enumNames = new Set(
@@ -2289,13 +2293,51 @@ export class PrismaTypeMapper {
     );
 
     // Enum schema imports – relative to models under <output>/schemas/models
-    // Import path expected by tests: from models → '../schemas/enums/<Enum>.schema'
+    // Use enum naming configuration to generate correct import paths
     const enumSchemaImports = imports.filter(
       (imp) => /Schema$/.test(imp) && enumNames.has(imp.replace(/Schema$/, '')),
     );
     enumSchemaImports.forEach((imp) => {
       const enumBase = imp.replace(/Schema$/, '');
-      lines.push(`import { ${imp} } from '../enums/${enumBase}.schema';`);
+      try {
+        const {
+          resolveEnumNaming,
+          generateFileName,
+          generateExportName,
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+        } = require('../utils/naming-resolver');
+        const enumNaming = resolveEnumNaming(transformer.config);
+        const enumFileName = generateFileName(
+          enumNaming.filePattern,
+          enumBase,
+          undefined,
+          undefined,
+          enumBase,
+        );
+        const actualExportName = generateExportName(
+          enumNaming.exportNamePattern,
+          enumBase,
+          undefined,
+          undefined,
+          enumBase,
+        );
+        // Remove .ts extension for import base
+        const importPath = enumFileName.replace(/\.ts$/, '');
+        // Use the actual export name from config instead of assuming 'Schema' suffix
+        // Only use alias if the export name differs from the expected import name
+        if (actualExportName === imp) {
+          lines.push(`import { ${actualExportName} } from '../enums/${importPath}${ext}';`);
+        } else {
+          lines.push(
+            `import { ${actualExportName} as ${imp} } from '../enums/${importPath}${ext}';`,
+          );
+        }
+      } catch (_error) {
+        // Log the error for debugging
+        console.error(`Failed to resolve enum naming for ${enumBase}:`, _error);
+        // Fallback to default naming if there's an error
+        lines.push(`import { ${imp} } from '../enums/${enumBase}.schema${ext}';`);
+      }
     });
 
     // Related model schema imports (exclude current schema + enums)
@@ -2316,10 +2358,9 @@ export class PrismaTypeMapper {
         namingResolved.typeSuffix,
       );
 
-      // Remove file extension for import path
+      // Remove file extension for import path base and append configured extension
       const importPath = fileName.replace(/\.(ts|js)$/, '');
-
-      lines.push(`import { ${schemaImport} } from './${importPath}';`);
+      lines.push(`import { ${schemaImport} } from './${importPath}${ext}';`);
     });
 
     return lines;

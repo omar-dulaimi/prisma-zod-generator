@@ -7,7 +7,8 @@ sidebar_label: What is it?
 Generate strongly-typed, configurable Zod schemas directly from your Prisma schema (DMMF). Supports:
 
 - Multiple schema variants (pure / input / result) and custom variant arrays
-- Pure model schemas with customizable naming presets
+- Pure model schemas with customizable naming presets and patterns
+- CRUD schema, input object, and enum naming customization
 - Minimal, full, and custom generation modes
 - Fine-grained model / operation / field filtering with wildcard patterns
 - Emission controls (enums, objects, CRUD, variants, pure models, results)
