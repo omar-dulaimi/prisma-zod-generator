@@ -99,10 +99,7 @@ export function applyPattern(
     '{SchemaSuffix}': schemaSuffix,
     '{TypeSuffix}': typeSuffix,
   };
-  return Object.keys(tokens).reduce(
-    (acc, t) => acc.replace(new RegExp(t, 'g'), tokens[t]),
-    pattern,
-  );
+  return applyUniversalPattern(pattern, tokens);
 }
 
 // Enhanced pattern application for all types
