@@ -745,8 +745,32 @@ async function generateEnumSchemas(
   modelSchemaEnum: DMMF.SchemaEnum[],
 ) {
   const enumTypes = [...prismaSchemaEnum, ...modelSchemaEnum];
-  const enumNames = enumTypes.map((enumItem) => enumItem.name);
-  Transformer.enumNames = enumNames ?? [];
+  // Include both raw and normalized enum names so import/name checks work
+  const rawEnumNames = enumTypes.map((e) => e.name);
+
+  // Mirror Transformer.normalizeEnumName logic locally to avoid surfacing private APIs
+  const modelEnumPatterns = [/^(\w+)ScalarFieldEnum$/, /^(\w+)OrderByRelevanceFieldEnum$/];
+  const toPascalCase = (modelName: string): string =>
+    modelName
+      .replace(/[_-\s]+(.)?/g, (_: string, c: string) => (c ? c.toUpperCase() : ''))
+      .replace(/^\w/, (c) => c.toUpperCase());
+  const normalizeEnumNameForRegistry = (name: string): string | null => {
+    for (const pattern of modelEnumPatterns) {
+      const match = name.match(pattern);
+      if (match) {
+        const modelName = match[1];
+        return name.replace(modelName, toPascalCase(modelName));
+      }
+    }
+    return null;
+  };
+
+  const normalizedEnumNames = enumTypes
+    .map((e) => normalizeEnumNameForRegistry(e.name) ?? e.name)
+    .filter(Boolean) as string[];
+
+  const combinedEnumNames = Array.from(new Set([...rawEnumNames, ...normalizedEnumNames]));
+  Transformer.enumNames = combinedEnumNames;
   const transformer = new Transformer({
     enumTypes,
   });
