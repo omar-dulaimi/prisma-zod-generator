@@ -13,7 +13,7 @@
     "gen-example:debug": "tsc && DEBUG_PRISMA_ZOD=1 pnpm prisma generate",
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "pnpm update && pnpm run check-uncommitted && ./package.sh && cd package && pnpm publish",
-    "test": "vitest --config vitest.config.mjs | tee generation-output.txt",
+    "test": "vitest --config vitest.config.mjs",
     "test:watch": "vitest --config vitest.config.mjs --watch",
     "test:basic": "vitest --config vitest.config.mjs run tests/generated-schema.test.ts --reporter=default",
     "test:coverage": "vitest --config vitest.config.mjs run --coverage",

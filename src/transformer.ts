@@ -2099,7 +2099,8 @@ export default class Transformer {
           inputType,
         );
         if (customExportName) {
-          exportName = customExportName.replace(/ObjectSchema$|Schema$/, ''); // Remove suffixes that will be added back
+          // Remove schema suffixes from the export variable name; keep Prisma binding independent.
+          exportName = customExportName.replace(/ObjectSchema$|Schema$/, '');
         }
       }
     } catch {
@@ -2113,8 +2114,9 @@ export default class Transformer {
 
     if (Transformer.exportTypedSchemas) {
       if (supportsPrismaType) {
-        // Determine correct Prisma type binding (some inputs use a *Type suffix)
-        let prismaType = this.resolvePrismaTypeForObject(exportName);
+        // Determine correct Prisma type binding from the intrinsic input name (this.name)
+        const prismaBase = this.name;
+        let prismaType = this.resolvePrismaTypeForObject(prismaBase);
         // Optionally wrap with Omit<> when strictCreateInputs=false and fields were excluded on Create-like inputs
         const config = (Transformer.getGeneratorConfig() || {}) as ZodGeneratorConfig;
         const strictCreateInputs = config.strictCreateInputs !== false; // default true
@@ -2128,7 +2130,7 @@ export default class Transformer {
           /^(\w+)UncheckedCreateWithout\w+Input$/,
           /^(\w+)CreateOrConnectWithout\w+Input$/,
           /^(\w+)CreateNested(?:One|Many)Without\w+Input$/,
-        ].some((re) => re.test(exportName));
+        ].some((re) => re.test(this.name));
         const excludedNames = this.lastExcludedFieldNames || [];
         if (
           !strictCreateInputs &&
