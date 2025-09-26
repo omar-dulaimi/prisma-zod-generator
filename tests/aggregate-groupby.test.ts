@@ -321,11 +321,17 @@ model TextOnlyModel {
         // Check if AvgAggregateInput and SumAggregateInput exist (they shouldn't for text-only models)
         const avgInputPath = path.join(
           testDirNoNumeric,
-          'generated/objects/TextOnlyModelAvgAggregateInput.schema.ts',
+          'generated',
+          'schemas',
+          'objects',
+          'TextOnlyModelAvgAggregateInput.schema.ts',
         );
         const sumInputPath = path.join(
           testDirNoNumeric,
-          'generated/objects/TextOnlyModelSumAggregateInput.schema.ts',
+          'generated',
+          'schemas',
+          'objects',
+          'TextOnlyModelSumAggregateInput.schema.ts',
         );
 
         // These files may or may not exist depending on Prisma's behavior, but if they do,
