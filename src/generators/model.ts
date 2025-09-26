@@ -2280,9 +2280,10 @@ export class PrismaTypeMapper {
     const transformer = require('../transformer').default;
     const config = transformer.getGeneratorConfig?.();
     const namingResolved = resolvePureModelNaming(config);
-    const ext = typeof transformer.getImportFileExtension === 'function'
-      ? transformer.getImportFileExtension()
-      : '';
+    const ext =
+      typeof transformer.getImportFileExtension === 'function'
+        ? transformer.getImportFileExtension()
+        : '';
 
     // Identify enum fields by validation marker added in mapEnumType ("// Enum type:")
     const enumNames = new Set(
@@ -2327,7 +2328,9 @@ export class PrismaTypeMapper {
         if (actualExportName === imp) {
           lines.push(`import { ${actualExportName} } from '../enums/${importPath}${ext}';`);
         } else {
-          lines.push(`import { ${actualExportName} as ${imp} } from '../enums/${importPath}${ext}';`);
+          lines.push(
+            `import { ${actualExportName} as ${imp} } from '../enums/${importPath}${ext}';`,
+          );
         }
       } catch (_error) {
         // Log the error for debugging

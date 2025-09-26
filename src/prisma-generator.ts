@@ -1649,7 +1649,10 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
           const importExtension = Transformer.getImportFileExtension();
           const enumSchemaImports = enumTypes.length
             ? enumTypes
-                .map((n) => `import { ${n}Schema } from '${enumImportBase}/${n}.schema${importExtension}';`)
+                .map(
+                  (n) =>
+                    `import { ${n}Schema } from '${enumImportBase}/${n}.schema${importExtension}';`,
+                )
                 .join('\n') + '\n'
             : '';
           const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
