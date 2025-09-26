@@ -251,9 +251,16 @@ model TestModel {
           // Check that aggregate/groupBy operations include avg/sum for numeric fields
           const aggregatePath = path.join(
             providerTestDir,
-            'generated/aggregateTestModel.schema.ts',
+            'generated',
+            'schemas',
+            'aggregateTestModel.schema.ts',
           );
-          const groupByPath = path.join(providerTestDir, 'generated/groupByTestModel.schema.ts');
+          const groupByPath = path.join(
+            providerTestDir,
+            'generated',
+            'schemas',
+            'groupByTestModel.schema.ts',
+          );
 
           if (fs.existsSync(aggregatePath)) {
             const aggregateContent = fs.readFileSync(aggregatePath, 'utf-8');
