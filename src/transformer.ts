@@ -3154,8 +3154,9 @@ export default class Transformer {
                   `./objects/${modelName}WhereUniqueInput.schema`,
                 ),
               ];
-              await writeFileSafely(
-                path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
+              await Transformer.writeSchemaFile(
+                modelName,
+                'DeleteOne',
                 `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
                   `${modelName}DeleteOne`,
                   `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
@@ -3171,8 +3172,9 @@ export default class Transformer {
                 `./objects/${modelName}WhereUniqueInput.schema`,
               ),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${deleteOne}.schema.ts`),
+            await Transformer.writeSchemaFile(
+              modelName,
+              'DeleteOne',
               `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
                 `${modelName}DeleteOne`,
                 `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
@@ -3192,8 +3194,9 @@ export default class Transformer {
                 `./objects/${modelName}WhereInput.schema`,
               ),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${deleteMany}.schema.ts`),
+            await Transformer.writeSchemaFile(
+              modelName,
+              'DeleteMany',
               `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
                 `${modelName}DeleteMany`,
                 `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  })`,
@@ -3220,8 +3223,9 @@ export default class Transformer {
                   `./objects/${modelName}WhereUniqueInput.schema`,
                 ),
               ];
-              await writeFileSafely(
-                path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
+              await Transformer.writeSchemaFile(
+                modelName,
+                'UpdateOne',
                 `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
                   `${modelName}UpdateOne`,
                   `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
@@ -3245,8 +3249,9 @@ export default class Transformer {
                 `./objects/${modelName}WhereUniqueInput.schema`,
               ),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${updateOne}.schema.ts`),
+            await Transformer.writeSchemaFile(
+              modelName,
+              'UpdateOne',
               `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
                 `${modelName}UpdateOne`,
                 `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
@@ -3267,8 +3272,9 @@ export default class Transformer {
                 `./objects/${modelName}WhereInput.schema`,
               ),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${updateMany}.schema.ts`),
+            await Transformer.writeSchemaFile(
+              modelName,
+              'UpdateMany',
               `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
                 `${modelName}UpdateMany`,
                 `z.object({ data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  })`,
@@ -3291,8 +3297,9 @@ export default class Transformer {
                 `./objects/${modelName}WhereInput.schema`,
               ),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `updateManyAndReturn${modelName}.schema.ts`),
+            await Transformer.writeSchemaFile(
+              modelName,
+              'UpdateManyAndReturn',
               `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
                 `${modelName}UpdateManyAndReturn`,
                 `z.object({ ${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  }).strict()`,
@@ -3315,8 +3322,9 @@ export default class Transformer {
               this.generateInputImport(`${modelName}UpdateInput`),
               this.generateInputImport(`${modelName}UncheckedUpdateInput`),
             ];
-            await writeFileSafely(
-              path.join(Transformer.getSchemasPath(), `${upsertOne}.schema.ts`),
+            await Transformer.writeSchemaFile(
+              modelName,
+              'UpsertOne',
               `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
                 `${modelName}Upsert`,
                 `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ])  })`,
@@ -3373,10 +3381,6 @@ export default class Transformer {
             );
           }
 
-          const aggregateFilePath = path.join(
-            Transformer.getSchemasPath(),
-            `${aggregate}.schema.ts`,
-          );
           // Add Prisma type import for explicit type binding
           const crudDirAggregate = Transformer.getSchemasPath();
           const prismaImportPathAggregate = Transformer.resolvePrismaImportPath(crudDirAggregate);
@@ -3393,10 +3397,8 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName, 'Aggregate')}AggregateArgs`,
           );
 
-          await writeFileSafely(aggregateFilePath, schemaContent + dualExports);
-          // Add to index exports
-          addIndexExport(aggregateFilePath);
-          logger.debug(`✅ Added aggregate schema to index: ${aggregate}.schema.ts`);
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(modelName, 'Aggregate', schemaContent + dualExports);
         }
 
         if (groupBy && Transformer.isOperationEnabled(modelName, 'groupBy')) {
@@ -3431,7 +3433,6 @@ export default class Transformer {
               ),
             );
           }
-          const groupByFilePath = path.join(Transformer.getSchemasPath(), `${groupBy}.schema.ts`);
           // Add Prisma type import for explicit type binding
           const crudDirGroupBy = Transformer.getSchemasPath();
           const prismaImportPathGroupBy = Transformer.resolvePrismaImportPath(crudDirGroupBy);
@@ -3466,10 +3467,8 @@ export default class Transformer {
             `Prisma.${this.getPrismaTypeName(modelName)}GroupByArgs`,
           );
 
-          await writeFileSafely(groupByFilePath, schemaContent + dualExports);
-          // Add to index exports
-          addIndexExport(groupByFilePath);
-          logger.debug(`✅ Added groupBy schema to index: ${groupBy}.schema.ts`);
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(modelName, 'GroupBy', schemaContent + dualExports);
         }
       } catch (err) {
         // Log error with contextual information before continuing to next model

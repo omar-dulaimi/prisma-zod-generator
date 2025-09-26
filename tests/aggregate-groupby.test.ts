@@ -60,8 +60,18 @@ model Post {
 
   describe('Aggregate Operations', () => {
     test('should include _avg and _sum aggregate imports', () => {
-      const userAggregatePath = path.join(testDir, 'generated/aggregateUser.schema.ts');
-      const postAggregatePath = path.join(testDir, 'generated/aggregatePost.schema.ts');
+      const userAggregatePath = path.join(
+        testDir,
+        'generated',
+        'schemas',
+        'aggregateUser.schema.ts',
+      );
+      const postAggregatePath = path.join(
+        testDir,
+        'generated',
+        'schemas',
+        'aggregatePost.schema.ts',
+      );
 
       expect(fs.existsSync(userAggregatePath)).toBe(true);
       expect(fs.existsSync(postAggregatePath)).toBe(true);
@@ -87,8 +97,18 @@ model Post {
     });
 
     test('should include _avg and _sum fields in aggregate schema objects', () => {
-      const userAggregatePath = path.join(testDir, 'generated/aggregateUser.schema.ts');
-      const postAggregatePath = path.join(testDir, 'generated/aggregatePost.schema.ts');
+      const userAggregatePath = path.join(
+        testDir,
+        'generated',
+        'schemas',
+        'aggregateUser.schema.ts',
+      );
+      const postAggregatePath = path.join(
+        testDir,
+        'generated',
+        'schemas',
+        'aggregatePost.schema.ts',
+      );
 
       const userAggregateContent = fs.readFileSync(userAggregatePath, 'utf-8');
       const postAggregateContent = fs.readFileSync(postAggregatePath, 'utf-8');
@@ -103,8 +123,20 @@ model Post {
     });
 
     test('should generate valid aggregate input schemas with numeric fields', () => {
-      const userAvgPath = path.join(testDir, 'generated/objects/UserAvgAggregateInput.schema.ts');
-      const postSumPath = path.join(testDir, 'generated/objects/PostSumAggregateInput.schema.ts');
+      const userAvgPath = path.join(
+        testDir,
+        'generated',
+        'schemas',
+        'objects',
+        'UserAvgAggregateInput.schema.ts',
+      );
+      const postSumPath = path.join(
+        testDir,
+        'generated',
+        'schemas',
+        'objects',
+        'PostSumAggregateInput.schema.ts',
+      );
 
       expect(fs.existsSync(userAvgPath)).toBe(true);
       expect(fs.existsSync(postSumPath)).toBe(true);
@@ -127,8 +159,8 @@ model Post {
 
   describe('GroupBy Operations', () => {
     test('should include _avg and _sum aggregate imports', () => {
-      const userGroupByPath = path.join(testDir, 'generated/groupByUser.schema.ts');
-      const postGroupByPath = path.join(testDir, 'generated/groupByPost.schema.ts');
+      const userGroupByPath = path.join(testDir, 'generated', 'schemas', 'groupByUser.schema.ts');
+      const postGroupByPath = path.join(testDir, 'generated', 'schemas', 'groupByPost.schema.ts');
 
       expect(fs.existsSync(userGroupByPath)).toBe(true);
       expect(fs.existsSync(postGroupByPath)).toBe(true);
@@ -154,8 +186,8 @@ model Post {
     });
 
     test('should include _avg and _sum fields in groupBy schema objects', () => {
-      const userGroupByPath = path.join(testDir, 'generated/groupByUser.schema.ts');
-      const postGroupByPath = path.join(testDir, 'generated/groupByPost.schema.ts');
+      const userGroupByPath = path.join(testDir, 'generated', 'schemas', 'groupByUser.schema.ts');
+      const postGroupByPath = path.join(testDir, 'generated', 'schemas', 'groupByPost.schema.ts');
 
       const userGroupByContent = fs.readFileSync(userGroupByPath, 'utf-8');
       const postGroupByContent = fs.readFileSync(postGroupByPath, 'utf-8');
