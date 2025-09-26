@@ -195,12 +195,21 @@ export function generateExportName(
   inputType?: string,
   enumName?: string,
 ): string {
+  // If pattern contains both {Model} and {InputType}, and inputType starts with modelName,
+  // strip the model name from inputType to avoid duplication
+  let processedInputType = inputType || '';
+  if (pattern.includes('{Model}') && pattern.includes('{InputType}') && inputType && modelName) {
+    if (inputType.startsWith(modelName)) {
+      processedInputType = inputType.substring(modelName.length);
+    }
+  }
+
   const tokens: Record<string, string> = {
     '{Model}': modelName,
     '{model}': modelName.charAt(0).toLowerCase() + modelName.slice(1),
-    '{Operation}': operation || '',
+    '{Operation}': operation ? operation.charAt(0).toUpperCase() + operation.slice(1) : '',
     '{operation}': operation ? operation.charAt(0).toLowerCase() + operation.slice(1) : '',
-    '{InputType}': inputType || '',
+    '{InputType}': processedInputType,
     '{Enum}': enumName || '',
     '{enum}': enumName ? enumName.charAt(0).toLowerCase() + enumName.slice(1) : '',
   };
