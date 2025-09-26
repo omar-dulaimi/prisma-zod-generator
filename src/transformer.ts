@@ -2398,7 +2398,7 @@ export default class Transformer {
   /**
    * Generate enum import honoring naming.enum patterns, aliasing to stable identifiers.
    */
-  private generateEnumImport(enumName: string): string {
+  private generateEnumImport(enumName: string, expectedAlias?: string): string {
     try {
       const cfg = resolveEnumNaming(Transformer.getGeneratorConfig());
 
@@ -2416,7 +2416,14 @@ export default class Transformer {
       );
 
       const ext = this.getImportFileExtension();
-      return `import { ${exportName} as ${enumName}Schema } from '../enums/${base}${ext}'`;
+      const finalAlias = expectedAlias || `${enumName}Schema`;
+
+      // Only use alias if export name differs from expected alias
+      if (exportName === finalAlias) {
+        return `import { ${exportName} } from '../enums/${base}${ext}'`;
+      } else {
+        return `import { ${exportName} as ${finalAlias} } from '../enums/${base}${ext}'`;
+      }
     } catch (error) {
       // Fallback to legacy naming
       console.warn('Failed to generate custom enum import for', enumName, error);
@@ -2657,8 +2664,8 @@ export default class Transformer {
         } else if (Transformer.enumNames.includes(name)) {
           const normalized = this.normalizeEnumName(name);
           if (normalized && normalized !== name) {
-            // Use naming resolver for normalized enum imports
-            return this.generateEnumImport(normalized);
+            // Use naming resolver for normalized enum imports with original name as alias
+            return this.generateEnumImport(normalized, `${name}Schema`);
           } else {
             // Use naming resolver for regular enum imports
             return this.generateEnumImport(name);
