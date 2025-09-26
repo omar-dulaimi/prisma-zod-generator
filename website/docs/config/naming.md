@@ -81,7 +81,7 @@ Input object naming resolved by `resolveInputNaming`:
 - `{model}`: camelCase model name
 - `{InputType}`: Full input type name (e.g., `UserWhereInput`, `PostCreateInput`)
 
-**Note**: When both `{Model}` and `{InputType}` tokens are used, duplicate model prefixes are automatically stripped to avoid names like `UserUserWhereInputObjectSchema`.
+**Note**: For export names, when both `{Model}` and `{InputType}` tokens are used, duplicate model prefixes are automatically stripped to avoid names like `UserUserWhereInputObjectSchema`. File names do not apply this stripping.
 
 ## Enum Naming
 
