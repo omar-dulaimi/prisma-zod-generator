@@ -48,7 +48,7 @@ export function resolvePureModelNaming(
 ): PureModelNamingResolved {
   const naming = safeGetNaming(config);
   const presetName = naming?.preset;
-  const lookupKey = presetName ? presetName.trim() : presetName;
+  const lookupKey = presetName ? presetName.trim().toLowerCase() : presetName;
   let base: PureModelNamingResolved =
     lookupKey && PRESET_MAP[lookupKey]
       ? { ...PRESET_MAP[lookupKey] }
@@ -61,7 +61,7 @@ export function resolvePureModelNaming(
           preset: 'default',
         };
   // Defensive: explicitly handle legacy-model-suffix in case map lookup fails due to unexpected input normalization
-  if (presetName === 'legacy-model-suffix' && (!base || base.preset !== 'legacy-model-suffix')) {
+  if (lookupKey === 'legacy-model-suffix' && (!base || base.preset !== 'legacy-model-suffix')) {
     base = { ...PRESET_MAP['legacy-model-suffix'] };
   }
   const overrides: Partial<PureModelNamingOverrides> = naming?.pureModel || {};

@@ -3950,23 +3950,11 @@ export default class Transformer {
     Transformer.logRelationshipPreservation(model);
 
     const selectImport = Transformer.shouldGenerateSelectSchema(model)
-      ? this.generateSmartImportStatement(
-          Transformer.exportTypedSchemas
-            ? `${modelName}SelectObjectSchema`
-            : `${modelName}SelectObject${Transformer.zodSchemaSuffix}`,
-          `./objects/${modelName}Select.schema`,
-          modelName,
-        )
+      ? this.generateObjectInputImport(`${modelName}Select`, 'root')
       : '';
 
     const includeImport = Transformer.shouldGenerateIncludeSchema(model)
-      ? this.generateSmartImportStatement(
-          Transformer.exportTypedSchemas
-            ? `${modelName}IncludeObjectSchema`
-            : `${modelName}IncludeObject${Transformer.zodSchemaSuffix}`,
-          `./objects/${modelName}Include.schema`,
-          modelName,
-        )
+      ? this.generateObjectInputImport(`${modelName}Include`, 'root')
       : '';
 
     let selectZodSchemaLine = '';
