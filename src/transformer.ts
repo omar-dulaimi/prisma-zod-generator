@@ -2383,11 +2383,12 @@ export default class Transformer {
       const base = file.replace(/\.ts$/, '');
 
       // Generate export name using the custom pattern - this already includes the full name
-      const exportName =
+      const resolvedExportName =
         generateExportName(cfg.exportNamePattern, model, undefined, inputTypeName) || inputTypeName;
-
-      // Don't double-append suffixes - the exportName already includes them from the pattern
-      const importName = exportName;
+      const exportBase = resolvedExportName.replace(/ObjectSchema$|Schema$/, '');
+      const importName = Transformer.exportTypedSchemas
+        ? `${exportBase}ObjectSchema`
+        : `${exportBase}Object${Transformer.zodSchemaSuffix}`;
 
       // Create alias using the original input type name for consistency
       const alias = Transformer.exportTypedSchemas
@@ -2467,8 +2468,12 @@ export default class Transformer {
       const base = file.replace(/\.ts$/, '');
 
       // Generate export name using the custom pattern
-      const exportName =
+      const resolvedExportName =
         generateExportName(cfg.exportNamePattern, model, undefined, inputTypeName) || inputTypeName;
+      const exportBase = resolvedExportName.replace(/ObjectSchema$|Schema$/, '');
+      const importName = Transformer.exportTypedSchemas
+        ? `${exportBase}ObjectSchema`
+        : `${exportBase}Object${Transformer.zodSchemaSuffix}`;
 
       // Create alias using the original input type name for consistency
       const alias = Transformer.exportTypedSchemas
@@ -2477,7 +2482,7 @@ export default class Transformer {
 
       const ext = this.getImportFileExtension();
       const baseDir = from === 'objects' ? '.' : from === 'root' ? './objects' : '../objects';
-      return `import { ${exportName} as ${alias} } from '${baseDir}/${base}${ext}'`;
+      return `import { ${importName} as ${alias} } from '${baseDir}/${base}${ext}'`;
     } catch (error) {
       // Log error for debugging and fallback to legacy naming
       logger.warn('Failed to generate custom object input import for', inputTypeName, error);
