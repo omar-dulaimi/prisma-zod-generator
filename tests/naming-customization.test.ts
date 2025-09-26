@@ -298,8 +298,9 @@ describe('Naming Customization (experimental)', () => {
     const env = await TestEnvironment.createTestEnv('naming-custom-schema');
     try {
       const config = {
+        pureModels: true, // Enable pure models to generate UserSchema
         naming: {
-          schema: {
+          pureModel: {
             filePattern: '{kebab}-schema.ts',
             exportNamePattern: '{Model}Schema',
           },
@@ -313,16 +314,16 @@ describe('Naming Customization (experimental)', () => {
       ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
 
       await env.runGeneration();
-      const schemasDir = join(env.outputDir, 'schemas');
+      const modelsDir = join(env.outputDir, 'schemas', 'models');
 
-      // Check that schema files are generated with correct naming
+      // Check that schema files are generated with correct naming in models directory
       const schemaFiles = (await import('fs'))
-        .readdirSync(schemasDir)
+        .readdirSync(modelsDir)
         .filter((f) => f.endsWith('-schema.ts'));
       expect(schemaFiles.length).toBeGreaterThan(0);
 
       // Check one specific schema file
-      const userSchemaFile = join(schemasDir, 'user-schema.ts');
+      const userSchemaFile = join(modelsDir, 'user-schema.ts');
       if (existsSync(userSchemaFile)) {
         const content = readFileSync(userSchemaFile, 'utf-8');
         expect(content).toMatch(/export const UserSchema/);
