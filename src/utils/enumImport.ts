@@ -5,7 +5,7 @@
 import path from 'path';
 
 /**
- * Compute a relative import path (without extension) from a variant schema directory
+ * Compute a relative import path (optionally with extension) from a variant schema directory
  * (e.g., schemas/variants/pure) to the enums directory (schemas/enums).
  */
 export function computeEnumImportPath(
@@ -16,7 +16,7 @@ export function computeEnumImportPath(
 ): string {
   const rel = path.relative(fromVariantDirAbs, enumsDirAbs).replace(/\\/g, '/');
   const base = rel.startsWith('.') ? rel : `./${rel}`;
-  return `${base}/${enumName}.schema${ext}`;
+  return path.posix.join(base, `${enumName}.schema${ext}`);
 }
 
 /**
