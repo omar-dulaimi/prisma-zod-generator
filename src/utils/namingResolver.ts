@@ -207,6 +207,7 @@ export function generateExportName(
   const tokens: Record<string, string> = {
     '{Model}': modelName,
     '{model}': modelName.charAt(0).toLowerCase() + modelName.slice(1),
+    '{kebab}': modelName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
     '{Operation}': operation ? operation.charAt(0).toUpperCase() + operation.slice(1) : '',
     '{operation}': operation ? operation.charAt(0).toLowerCase() + operation.slice(1) : '',
     '{InputType}': processedInputType,
