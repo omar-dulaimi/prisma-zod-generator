@@ -13,6 +13,8 @@ import {
   VariantType,
 } from '../types/variants';
 import { formatFile } from '../utils/formatFile';
+import { resolveEnumNaming, generateFileName, generateExportName } from '../utils/namingResolver';
+import Transformer from '../transformer';
 import { NamingResult, VariantNamingSystem } from '../utils/naming';
 import { writeFileSafely } from '../utils/writeFileSafely';
 import { VariantConfigurationManager } from './config';
@@ -447,10 +449,44 @@ export class VariantFileGenerationCoordinator {
           customizedContent = customizedContent.replace(
             /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,
             (match) => {
-              const importLines = missingEnumImports
-                .map((name) => `import { ${name}Schema } from '../enums/${name}.schema';`)
-                .join('\n');
-              return `${match}\n${importLines}`;
+              try {
+                const cfg = Transformer.getGeneratorConfig?.();
+                const enumNaming = resolveEnumNaming(cfg);
+                const ext = Transformer.getImportFileExtension();
+
+                const importLines = missingEnumImports
+                  .map((name) => {
+                    const fileName = generateFileName(
+                      enumNaming.filePattern,
+                      name,
+                      undefined,
+                      undefined,
+                      name,
+                    );
+                    const base = fileName.replace(/\.ts$/, '');
+                    const exportName = generateExportName(
+                      enumNaming.exportNamePattern,
+                      name,
+                      undefined,
+                      undefined,
+                      name,
+                    );
+                    // Only alias when export name differs from expected <Enum>Schema
+                    if (exportName === `${name}Schema`) {
+                      return `import { ${exportName} } from '../enums/${base}${ext}';`;
+                    } else {
+                      return `import { ${exportName} as ${name}Schema } from '../enums/${base}${ext}';`;
+                    }
+                  })
+                  .join('\n');
+                return `${match}\n${importLines}`;
+              } catch {
+                // Fallback to legacy hardcoded schema names if naming resolution fails
+                const importLines = missingEnumImports
+                  .map((name) => `import { ${name}Schema } from '../enums/${name}.schema';`)
+                  .join('\n');
+                return `${match}\n${importLines}`;
+              }
             },
           );
         }
