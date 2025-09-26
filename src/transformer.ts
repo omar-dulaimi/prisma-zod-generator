@@ -12,6 +12,7 @@ import {
   generateFileName,
   generateExportName,
   resolveSchemaNaming,
+  resolveEnumNaming,
 } from './utils/namingResolver';
 import type { GeneratedManifest } from './utils/safeOutputManagement';
 import { writeFileSafely } from './utils/writeFileSafely';
@@ -1008,9 +1009,6 @@ export default class Transformer {
       // Filter out enum schemas for disabled models
       if (this.isEnumSchemaEnabled(name)) {
         // Use enum naming configuration
-        const { resolveEnumNaming, generateFileName, generateExportName } = await import(
-          './utils/namingResolver'
-        );
         const enumNamingConfig = resolveEnumNaming(Transformer.getGeneratorConfig());
 
         // Normalize enum name for consistent file naming and exports
@@ -2398,6 +2396,71 @@ export default class Transformer {
   }
 
   /**
+   * Generate enum import honoring naming.enum patterns, aliasing to stable identifiers.
+   */
+  private generateEnumImport(enumName: string): string {
+    try {
+      const cfg = resolveEnumNaming(Transformer.getGeneratorConfig());
+
+      // Generate the file name using the custom pattern
+      const file = generateFileName(cfg.filePattern, enumName, undefined, undefined, enumName);
+      const base = file.replace(/\.ts$/, '');
+
+      // Generate export name using the custom pattern
+      const exportName = generateExportName(
+        cfg.exportNamePattern,
+        enumName,
+        undefined,
+        undefined,
+        enumName,
+      );
+
+      const ext = this.getImportFileExtension();
+      return `import { ${exportName} as ${enumName}Schema } from '../enums/${base}${ext}'`;
+    } catch (error) {
+      // Fallback to legacy naming
+      console.warn('Failed to generate custom enum import for', enumName, error);
+      return `import { ${enumName}Schema } from '../enums/${enumName}.schema${this.getImportFileExtension()}'`;
+    }
+  }
+
+  /**
+   * Generate input import for object schemas honoring naming.input patterns.
+   * Similar to generateInputImport but for object-to-object imports using './' prefix.
+   */
+  private generateObjectInputImport(inputTypeName: string): string {
+    try {
+      const cfg = resolveInputNaming(Transformer.getGeneratorConfig());
+
+      // Extract model name - fallback to inputTypeName if extraction fails
+      const model = Transformer.extractModelNameFromContext(inputTypeName) || inputTypeName;
+
+      // Generate the file name using the custom pattern
+      const file = generateFileName(cfg.filePattern, model, undefined, inputTypeName);
+      const base = file.replace(/\.ts$/, '');
+
+      // Generate export name using the custom pattern
+      const exportName =
+        generateExportName(cfg.exportNamePattern, model, undefined, inputTypeName) || inputTypeName;
+
+      // Create alias using the original input type name for consistency
+      const alias = Transformer.exportTypedSchemas
+        ? `${inputTypeName}ObjectSchema`
+        : `${inputTypeName}Object${Transformer.zodSchemaSuffix}`;
+
+      const ext = this.getImportFileExtension();
+      return `import { ${exportName} as ${alias} } from './${base}${ext}'`;
+    } catch (error) {
+      // Log error for debugging and fallback to legacy naming
+      console.warn('Failed to generate custom object input import for', inputTypeName, error);
+      const schemaName = Transformer.exportTypedSchemas
+        ? `${inputTypeName}ObjectSchema`
+        : `${inputTypeName}Object${Transformer.zodSchemaSuffix}`;
+      return `import { ${schemaName} } from './${inputTypeName}.schema${this.getImportFileExtension()}'`;
+    }
+  }
+
+  /**
    * Generate schema file name with collision detection and custom naming support
    */
   private static generateSchemaFileName(modelName: string, operation: string): string {
@@ -2594,18 +2657,15 @@ export default class Transformer {
         } else if (Transformer.enumNames.includes(name)) {
           const normalized = this.normalizeEnumName(name);
           if (normalized && normalized !== name) {
-            // Import normalized file/export and alias to the original enum identifier (only when different)
-            return `import { ${normalized}Schema as ${name}Schema } from '../enums/${normalized}.schema${importExtension}'`;
+            // Use naming resolver for normalized enum imports
+            return this.generateEnumImport(normalized);
           } else {
-            // Use original name without aliasing
-            return `import { ${name}Schema } from '../enums/${name}.schema${importExtension}'`;
+            // Use naming resolver for regular enum imports
+            return this.generateEnumImport(name);
           }
         } else {
-          // Choose the appropriate schema name based on export settings
-          const schemaName = Transformer.exportTypedSchemas
-            ? `${name}ObjectSchema`
-            : `${name}Object${Transformer.zodSchemaSuffix}`;
-          return `import { ${schemaName} } from './${name}.schema${importExtension}'`;
+          // Use naming resolver for input object imports
+          return this.generateObjectInputImport(name);
         }
       })
       .join(';\r\n');
