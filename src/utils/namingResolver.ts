@@ -178,7 +178,8 @@ export function generateFileName(
     '{model}': modelName.charAt(0).toLowerCase() + modelName.slice(1),
     '{camel}': modelName.charAt(0).toLowerCase() + modelName.slice(1),
     '{kebab}': modelName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
-    '{Operation}': operation || '',
+    // Normalize operation tokens to mirror generateExportName semantics
+    '{Operation}': operation ? operation.charAt(0).toUpperCase() + operation.slice(1) : '',
     '{operation}': operation ? operation.charAt(0).toLowerCase() + operation.slice(1) : '',
     '{InputType}': inputType || '',
     '{Enum}': enumName || '',

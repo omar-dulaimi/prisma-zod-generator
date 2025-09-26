@@ -2635,19 +2635,12 @@ export default class Transformer {
             const schemaCfg = resolveSchemaNaming(Transformer.getGeneratorConfig());
 
             // Generate filename using custom pattern
-            const fileName = generateFileName(
-              schemaCfg.filePattern,
-              modelName as string,
-              queryName as string,
-            );
+            const op = (queryName as string).charAt(0).toUpperCase() + (queryName as string).slice(1);
+            const fileName = generateFileName(schemaCfg.filePattern, modelName as string, op);
             const baseName = fileName.replace(/\.ts$/, '');
 
             // Generate export name using custom pattern
-            const exportName = generateExportName(
-              schemaCfg.exportNamePattern,
-              modelName as string,
-              queryName as string,
-            );
+            const exportName = generateExportName(schemaCfg.exportNamePattern, modelName as string, op);
 
             // Use the resolved export name, but alias to what resolveModelQuerySchemaName expects for compatibility
             const aliasName = this.resolveModelQuerySchemaName(
@@ -2658,10 +2651,11 @@ export default class Transformer {
             return `import { ${exportName} as ${aliasName} } from '../${baseName}${importExtension}'`;
           } catch {
             // Fallback to legacy hardcoded naming if naming resolver fails
+            const op = (queryName as string).charAt(0).toUpperCase() + (queryName as string).slice(1);
             return `import { ${this.resolveModelQuerySchemaName(
               modelName as string,
               queryName as string,
-            )} } from '../${queryName}${modelName}.schema${importExtension}'`;
+            )} } from '../${op}${modelName}.schema${importExtension}'`;
           }
         } else if (Transformer.enumNames.includes(name)) {
           const normalized = this.normalizeEnumName(name);
