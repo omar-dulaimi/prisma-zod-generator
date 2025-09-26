@@ -9,8 +9,49 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.21.4**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.22.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.22.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.21.4...v1.22.0) (2025-09-26)
+
+### 🚀 Features
+
+* **naming:** add custom naming patterns for schemas, inputs, and enums ([fe9f3df](https://github.com/omar-dulaimi/prisma-zod-generator/commit/fe9f3dfefad8acb4444c0b7fe147204a3ba121c2))
+* **naming:** dedupe file names when patterns include model+InputType; extend export dedupe and document behavior ([53fc283](https://github.com/omar-dulaimi/prisma-zod-generator/commit/53fc283f8a327bf611df1966276f65d45bf476ee))
+
+### 🐛 Bug Fixes
+
+* **import:** enhance parseImportStatement to handle alias and type imports ([260cf18](https://github.com/omar-dulaimi/prisma-zod-generator/commit/260cf182a7b3b8919319ec1885a85318684fd6db))
+* **import:** resolve import/export name mismatch causing compilation failures ([d3c321d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d3c321dc3ceb956eedea9c9aa7a66c6819136bce))
+* **naming-resolver:** use applyUniversalPattern to avoid regex quirks with brace tokens ([2607486](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2607486231447117266ee8a216478138c97d4181))
+* **naming:** avoid redundant aliasing in enum imports ([66b67ab](https://github.com/omar-dulaimi/prisma-zod-generator/commit/66b67ab28a22a4ecabb999ae0a983f0351f53963))
+* **naming:** honor custom schema patterns in import generation ([6ab60a6](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6ab60a66ce64e46cdb6e55e5228a81c093999323))
+* **naming:** normalize {Operation} to PascalCase in schema filenames and imports ([b0e34f3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b0e34f34907813699a5f472c4b5a507818f6aa46))
+* **naming:** replace Unknown fallback with inputType to prevent filename collisions ([2eef15e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2eef15e08ee038458279d78478ea7755d4917607))
+* **naming:** resolve duplicate model prefixes and operation casing in custom naming patterns ([9b029ae](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9b029aed26ce095ea0cac450970eeab4d59ecf45))
+* **naming:** synchronize import paths with custom schema patterns and prevent file collisions ([196d949](https://github.com/omar-dulaimi/prisma-zod-generator/commit/196d949909fb2bc3f7fbd1e205c91207a1ccbd79))
+* **naming:** wire enum and input imports through naming resolvers ([384ebb4](https://github.com/omar-dulaimi/prisma-zod-generator/commit/384ebb489af3e57a662ef5a0c19e1aa0d707054b))
+* **prisma-generator:** escape dynamic import extension in dedupe regex to ensure deterministic matching ([cb814e8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cb814e8443d249fc00209412bbd1195a6b89e4af))
+* **prisma-generator:** include normalized enum names in registry to match normalized schema exports ([5ee7d8c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5ee7d8c0e7dbda7d36f55b4bf847ec0657bd785b))
+* **schema:** unify CRUD export naming to honor custom exportNamePattern consistently ([d87eeb6](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d87eeb6b83ee6aedad6eb58aab5c294f7d1dac2c))
+* **transformer): use enum/input resolvers and ESM extensions for imports; refactor(utils): rename namingResolver.ts to naming-resolver.ts; fix(generators): append configured extensions to imports; fix(variants): include extension in fallback and regex; fix(prisma-generator): add extension to enum imports and dedupe; fix(results:** include extension in results index exports ([49492d9](https://github.com/omar-dulaimi/prisma-zod-generator/commit/49492d95bee3f2ec1355d0e63a1a5325b5483cd0))
+* **transformer:** bind Prisma types from intrinsic input name, not customized export name ([b67c361](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b67c36172b359f4a09758a99467c352665d2c09d))
+* **transformer:** correct enum import base path for CRUD schema files (./enums vs ../enums); ensure path resolves in test:basic ([1a14617](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1a146178376f84f3a42921688240e935f024d120))
+* **transformer:** route CRUD/Aggregate/GroupBy writes through canonical writer with collision guard; update tests to schemas path ([04925eb](https://github.com/omar-dulaimi/prisma-zod-generator/commit/04925eb90e018e3d9f045e0b15cfe653b6a797b3))
+* **transformer:** switch to logger.warn, make input import helper base-aware, avoid brittle path replace for results deps, and prevent double index addition ([cc48360](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cc48360dc7570e9af9cb3587d3232be65561ae7c))
+* **utils:** normalize constructed enum import paths with posix.join in generated import lines ([06cea0d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/06cea0d6d26db2b979b818aa62fa4df2a75ea20c))
+* **utils:** normalize enum import paths with posix join and use brace-safe universal pattern applier ([491e5c7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/491e5c7126067f5dc9d323eaeaa89e68b9d3d658))
+* **variants:** use enum constant (VariantType.PURE) instead of string literal for variant check ([73ec877](https://github.com/omar-dulaimi/prisma-zod-generator/commit/73ec8774e1345ee790d2ed87fd88cba70c7474fb))
+* **variants:** use pattern-aware enum imports in variant files and honor ESM file extensions ([a9df6de](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a9df6de20527db67039a90c9229e8b2dd96d0548))
+
+### ♻️ Code Refactoring
+
+* **naming:** rename enumImport.ts to enum-import.ts and improve naming consistency ([2e956ad](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2e956ad74225313fa9fb0db8a043983186997bad))
+
+### 📚 Documentation
+
+* **naming:** clarify duplicate prefix stripping applies only to export names ([dcd886f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/dcd886f6d215255f82dc6a52400d5b16cd3fd62a))
+* **naming:** complete naming patterns documentation and add missing kebab token ([6b23a03](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6b23a037e0f06fe285141f64f7fcba8fa4db641e))
 
 ## [1.21.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.21.3...v1.21.4) (2025-09-25)
 
@@ -898,7 +939,7 @@ For the complete version history including older releases, please see the [full 
 
 ## Version Support
 
-- **Current:** v1.21.x - Full support with new features and bug fixes
+- **Current:** v1.22.x - Full support with new features and bug fixes
 - **Previous:** Previous minor versions - Security and critical bug fixes only
 - **Legacy:** Older versions - Community support only
 
