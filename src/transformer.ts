@@ -3111,15 +3111,22 @@ export default class Transformer {
             dataUnion = `z.union([${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)}])`;
           }
 
-          // Use the standardized schema file generation with collision detection
-          await Transformer.writeSchemaFile(
+          // Add Prisma type import for explicit type binding
+          const crudDir = Transformer.getSchemasPath();
+          const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+          const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+          // Generate dual schema exports for CreateOne operation
+          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion} }).strict()`;
+          const dualExports = this.generateDualSchemaExports(
             modelName,
             'CreateOne',
-            `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-              `${modelName}CreateOne`,
-              `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion}  })`,
-            )}`,
+            schemaObjectDefinition,
+            `Prisma.${this.getPrismaTypeName(modelName)}CreateArgs`,
           );
+
+          // Use the standardized schema file generation with collision detection
+          await Transformer.writeSchemaFile(modelName, 'CreateOne', schemaContent + dualExports);
         }
 
         if (createMany && Transformer.isOperationEnabled(modelName, 'createMany')) {
@@ -3128,19 +3135,27 @@ export default class Transformer {
             logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createMany`);
           } else {
             const imports = [this.generateInputImport(`${modelName}CreateManyInput`)];
-            // Use the standardized schema file generation with collision detection
-            await Transformer.writeSchemaFile(
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for CreateMany operation
+            const schemaObjectDefinition = `z.object({ data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
+              Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
+                ? 'skipDuplicates: z.boolean().optional()'
+                : ''
+            } }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
               modelName,
               'CreateMany',
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}CreateMany`,
-                `z.object({ data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
-                  Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
-                    ? 'skipDuplicates: z.boolean().optional()'
-                    : ''
-                } })`,
-              )}`,
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}CreateManyArgs`,
             );
+
+            // Use the standardized schema file generation with collision detection
+            await Transformer.writeSchemaFile(modelName, 'CreateMany', schemaContent + dualExports);
           }
         }
 
@@ -3151,18 +3166,30 @@ export default class Transformer {
             logger.debug(`⏭️  Minimal mode: skipping ${modelName}.createManyAndReturn`);
           } else {
             const imports = [selectImport, this.generateInputImport(`${modelName}CreateManyInput`)];
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for CreateManyAndReturn operation
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
+              Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
+                ? 'skipDuplicates: z.boolean().optional()'
+                : ''
+            } }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
+              modelName,
+              'CreateManyAndReturn',
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}CreateManyAndReturnArgs`,
+            );
+
             // Use the standardized schema file generation with collision detection
             await Transformer.writeSchemaFile(
               modelName,
               'CreateManyAndReturn',
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}CreateManyAndReturn`,
-                `z.object({ ${selectZodSchemaLine} data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
-                  Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
-                    ? 'skipDuplicates: z.boolean().optional()'
-                    : ''
-                } }).strict()`,
-              )}`,
+              schemaContent + dualExports,
             );
           }
         }
@@ -3179,13 +3206,25 @@ export default class Transformer {
                 includeImport,
                 this.generateInputImport(`${modelName}WhereUniqueInput`),
               ];
+
+              // Add Prisma type import for explicit type binding
+              const crudDir = Transformer.getSchemasPath();
+              const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+              const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+              // Generate dual schema exports for DeleteOne operation
+              const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+              const dualExports = this.generateDualSchemaExports(
+                modelName,
+                'DeleteOne',
+                schemaObjectDefinition,
+                `Prisma.${this.getPrismaTypeName(modelName)}DeleteArgs`,
+              );
+
               await Transformer.writeSchemaFile(
                 modelName,
                 'DeleteOne',
-                `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                  `${modelName}DeleteOne`,
-                  `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
-                )}`,
+                schemaContent + dualExports,
               );
             }
           } else {
@@ -3194,14 +3233,22 @@ export default class Transformer {
               includeImport,
               this.generateInputImport(`${modelName}WhereUniqueInput`),
             ];
-            await Transformer.writeSchemaFile(
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for DeleteOne operation
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
               modelName,
               'DeleteOne',
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}DeleteOne`,
-                `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
-              )}`,
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}DeleteArgs`,
             );
+
+            await Transformer.writeSchemaFile(modelName, 'DeleteOne', schemaContent + dualExports);
           }
         }
 
@@ -3211,14 +3258,22 @@ export default class Transformer {
             logger.debug(`⏭️  Minimal mode: skipping ${modelName}.deleteMany`);
           } else {
             const imports = [this.generateInputImport(`${modelName}WhereInput`)];
-            await Transformer.writeSchemaFile(
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for DeleteMany operation
+            const schemaObjectDefinition = `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
               modelName,
               'DeleteMany',
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}DeleteMany`,
-                `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  })`,
-              )}`,
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}DeleteManyArgs`,
             );
+
+            await Transformer.writeSchemaFile(modelName, 'DeleteMany', schemaContent + dualExports);
           }
         }
 
@@ -3237,13 +3292,25 @@ export default class Transformer {
                 this.generateInputImport(`${modelName}UncheckedUpdateInput`),
                 this.generateInputImport(`${modelName}WhereUniqueInput`),
               ];
+
+              // Add Prisma type import for explicit type binding
+              const crudDir = Transformer.getSchemasPath();
+              const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+              const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+              // Generate dual schema exports for UpdateOne operation
+              const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+              const dualExports = this.generateDualSchemaExports(
+                modelName,
+                'UpdateOne',
+                schemaObjectDefinition,
+                `Prisma.${this.getPrismaTypeName(modelName)}UpdateArgs`,
+              );
+
               await Transformer.writeSchemaFile(
                 modelName,
                 'UpdateOne',
-                `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                  `${modelName}UpdateOne`,
-                  `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
-                )}`,
+                schemaContent + dualExports,
               );
             }
           } else {
@@ -3254,14 +3321,22 @@ export default class Transformer {
               this.generateInputImport(`${modelName}UncheckedUpdateInput`),
               this.generateInputImport(`${modelName}WhereUniqueInput`),
             ];
-            await Transformer.writeSchemaFile(
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for UpdateOne operation
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpdateOne',
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}UpdateOne`,
-                `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}  })`,
-              )}`,
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}UpdateArgs`,
             );
+
+            await Transformer.writeSchemaFile(modelName, 'UpdateOne', schemaContent + dualExports);
           }
         }
 
@@ -3274,14 +3349,22 @@ export default class Transformer {
               this.generateInputImport(`${modelName}UpdateManyMutationInput`),
               this.generateInputImport(`${modelName}WhereInput`),
             ];
-            await Transformer.writeSchemaFile(
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for UpdateMany operation
+            const schemaObjectDefinition = `z.object({ data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpdateMany',
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}UpdateMany`,
-                `z.object({ data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  })`,
-              )}`,
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}UpdateManyArgs`,
             );
+
+            await Transformer.writeSchemaFile(modelName, 'UpdateMany', schemaContent + dualExports);
           }
         }
 
@@ -3296,13 +3379,25 @@ export default class Transformer {
               this.generateInputImport(`${modelName}UpdateManyMutationInput`),
               this.generateInputImport(`${modelName}WhereInput`),
             ];
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for UpdateManyAndReturn operation
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
+              modelName,
+              'UpdateManyAndReturn',
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}UpdateManyAndReturnArgs`,
+            );
+
             await Transformer.writeSchemaFile(
               modelName,
               'UpdateManyAndReturn',
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}UpdateManyAndReturn`,
-                `z.object({ ${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()  }).strict()`,
-              )}`,
+              schemaContent + dualExports,
             );
           }
         }
@@ -3321,14 +3416,22 @@ export default class Transformer {
               this.generateInputImport(`${modelName}UpdateInput`),
               this.generateInputImport(`${modelName}UncheckedUpdateInput`),
             ];
-            await Transformer.writeSchemaFile(
+
+            // Add Prisma type import for explicit type binding
+            const crudDir = Transformer.getSchemasPath();
+            const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
+            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+
+            // Generate dual schema exports for UpsertOne operation
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ]) }).strict()`;
+            const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpsertOne',
-              `${this.generateImportStatements(imports)}${this.generateExportSchemaStatement(
-                `${modelName}Upsert`,
-                `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ])  })`,
-              )}`,
+              schemaObjectDefinition,
+              `Prisma.${this.getPrismaTypeName(modelName)}UpsertArgs`,
             );
+
+            await Transformer.writeSchemaFile(modelName, 'UpsertOne', schemaContent + dualExports);
           }
         }
 
@@ -3572,7 +3675,17 @@ export default class Transformer {
         // Only add other imports if they're actually referenced in the schema
         if (resultSchema.dependencies && resultSchema.dependencies.length > 0) {
           resultSchema.dependencies.forEach((dep: string) => {
-            imports.push(this.generateInputImport(dep.replace('Schema', ''), 'results'));
+            // Derive input base from common exported identifiers
+            const base = dep
+              .replace(/(ObjectSchema|ObjectZodSchema|Schema)$/, '')
+              .replace(/(Select|Include)$/, '$1'); // keep Select/Include tokens
+            const isSelectOrInclude =
+              /(Select|Include)(ObjectSchema|ObjectZodSchema|Schema)?$/.test(dep);
+            imports.push(
+              isSelectOrInclude
+                ? this.generateObjectInputImport(base, 'results')
+                : this.generateInputImport(base, 'results'),
+            );
           });
         }
 
