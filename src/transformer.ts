@@ -2558,10 +2558,39 @@ export default class Transformer {
       .map((name) => {
         const { isModelQueryType, modelName, queryName } = this.checkIsModelQueryType(name);
         if (isModelQueryType) {
-          return `import { ${this.resolveModelQuerySchemaName(
-            modelName as string,
-            queryName as string,
-          )} } from '../${queryName}${modelName}.schema${importExtension}'`;
+          try {
+            // Use naming resolver to get custom patterns
+            const schemaCfg = resolveSchemaNaming(Transformer.getGeneratorConfig());
+
+            // Generate filename using custom pattern
+            const fileName = generateFileName(
+              schemaCfg.filePattern,
+              modelName as string,
+              queryName as string,
+            );
+            const baseName = fileName.replace(/\.ts$/, '');
+
+            // Generate export name using custom pattern
+            const exportName = generateExportName(
+              schemaCfg.exportNamePattern,
+              modelName as string,
+              queryName as string,
+            );
+
+            // Use the resolved export name, but alias to what resolveModelQuerySchemaName expects for compatibility
+            const aliasName = this.resolveModelQuerySchemaName(
+              modelName as string,
+              queryName as string,
+            );
+
+            return `import { ${exportName} as ${aliasName} } from '../${baseName}${importExtension}'`;
+          } catch {
+            // Fallback to legacy hardcoded naming if naming resolver fails
+            return `import { ${this.resolveModelQuerySchemaName(
+              modelName as string,
+              queryName as string,
+            )} } from '../${queryName}${modelName}.schema${importExtension}'`;
+          }
         } else if (Transformer.enumNames.includes(name)) {
           const normalized = this.normalizeEnumName(name);
           if (normalized && normalized !== name) {
