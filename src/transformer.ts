@@ -3655,8 +3655,11 @@ export default class Transformer {
   static parseImportStatement(
     importStatement: string,
   ): { importName: string; importPath: string; relatedModel?: string } | null {
-    // Match import pattern: import { ImportName } from 'path'
-    const match = importStatement.match(/import\s*\{\s*(\w+)\s*\}\s*from\s*['"]([^'"]+)['"]/);
+    // Support: import { X } from '...'; import { X as Y } from '...'; import type { X as Y } from '...'; default imports as fallback
+    const match =
+      importStatement.match(
+        /import\s*(?:type\s*)?\{\s*(\w+)(?:\s+as\s+\w+)?\s*\}\s*from\s*['"]([^'"]+)['"]/,
+      ) || importStatement.match(/import\s*(?:type\s*)?(\w+)\s*from\s*['"]([^'"]+)['"]/);
     if (!match) {
       return null;
     }
