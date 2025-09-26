@@ -739,6 +739,11 @@ export default class Transformer {
 
       // Pure model schemas (variant schemas)
       /^(\w+)ModelSchema$/,
+
+      // Generic CreateMany relationship patterns (placed at end to avoid interference)
+      // These handle cases like PostCreateManyUserInputEnvelope -> extract User
+      /^\w+CreateMany(\w+)InputEnvelope$/,
+      /^\w+CreateMany(\w+)Input$/,
     ];
 
     for (const pattern of patterns) {
@@ -1166,12 +1171,13 @@ export default class Transformer {
     const inputNamingConfig = resolveInputNaming(Transformer.getGeneratorConfig());
 
     // Extract model name and input type from the object name
+    // Use input type as fallback to prevent filename collisions
     const modelName = Transformer.extractModelNameFromContext(this.name);
     const inputType = this.name;
 
     const fileName = generateFileName(
       inputNamingConfig.filePattern,
-      modelName || 'Unknown',
+      modelName || inputType,
       undefined, // No operation
       inputType,
     );
@@ -2094,7 +2100,7 @@ export default class Transformer {
 
         const customExportName = generateExportName(
           inputNamingConfig.exportNamePattern,
-          modelName || 'Unknown',
+          modelName || inputType,
           undefined,
           inputType,
         );
