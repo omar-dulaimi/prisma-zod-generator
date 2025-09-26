@@ -376,7 +376,7 @@ export class VariantFileGenerationCoordinator {
     const enumUsageRe = /z\.(?:enum|nativeEnum)\(([_A-Za-z][_A-Za-z0-9]*)\)/g;
     const usedEnumNames: string[] = [];
 
-    if (context.variant === 'pure') {
+    if (context.variant === VariantType.PURE) {
       // Variant base content currently uses generated enum schemas (RoleSchema). Convert them back to native enum usage.
       // 1. Detect imports of generated enum schemas and extract enum names.
       const enumSchemaImportRe =
