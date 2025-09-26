@@ -31,6 +31,9 @@ export function generateEnumSchemaImportLines(
   if (!enumNames.length) return '';
   const upSegments = Array(depthFromVariantDir).fill('..').join('/');
   return enumNames
-    .map((e) => `import { ${e}Schema } from '${upSegments}/schemas/enums/${e}.schema${ext}';`)
+    .map((e) => {
+      const p = path.posix.join(upSegments, 'schemas', 'enums', `${e}.schema${ext}`);
+      return `import { ${e}Schema } from '${p}';`;
+    })
     .join('\n');
 }
