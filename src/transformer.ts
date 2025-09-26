@@ -2362,7 +2362,10 @@ export default class Transformer {
   /**
    * Resolve an input object import honoring naming.input patterns, aliasing to stable identifiers.
    */
-  private generateInputImport(inputTypeName: string): string {
+  private generateInputImport(
+    inputTypeName: string,
+    from: 'objects' | 'results' = 'objects',
+  ): string {
     try {
       const cfg = resolveInputNaming(Transformer.getGeneratorConfig());
 
@@ -2386,14 +2389,14 @@ export default class Transformer {
         : `${inputTypeName}Object${Transformer.zodSchemaSuffix}`;
 
       const ext = this.getImportFileExtension();
-      return `import { ${importName} as ${alias} } from './objects/${base}${ext}'`;
+      const baseDir = from === 'objects' ? './objects' : '../objects';
+      return `import { ${importName} as ${alias} } from '${baseDir}/${base}${ext}'`;
     } catch (error) {
       // Log error for debugging and fallback to legacy naming
-      console.warn('Failed to generate custom input import for', inputTypeName, error);
-      return this.generateImportStatement(
-        Transformer.getObjectSchemaName(inputTypeName),
-        `./objects/${inputTypeName}.schema`,
-      );
+      logger.warn('Failed to generate custom input import for', inputTypeName, error);
+      const baseDir = from === 'objects' ? 'root' : 'results';
+      // Use pattern-aware object input import helper as a fallback
+      return this.generateObjectInputImport(inputTypeName as string, baseDir as any);
     }
   }
 
@@ -2433,7 +2436,7 @@ export default class Transformer {
       }
     } catch (error) {
       // Fallback to legacy naming
-      console.warn('Failed to generate custom enum import for', enumName, error);
+      logger.warn('Failed to generate custom enum import for', enumName, error);
       const baseDir = from === 'objects' ? '../enums' : './enums';
       return `import { ${enumName}Schema } from '${baseDir}/${enumName}.schema${this.getImportFileExtension()}'`;
     }
@@ -2443,7 +2446,10 @@ export default class Transformer {
    * Generate input import for object schemas honoring naming.input patterns.
    * Similar to generateInputImport but for object-to-object imports using './' prefix.
    */
-  private generateObjectInputImport(inputTypeName: string): string {
+  private generateObjectInputImport(
+    inputTypeName: string,
+    from: 'objects' | 'root' | 'results' = 'objects',
+  ): string {
     try {
       const cfg = resolveInputNaming(Transformer.getGeneratorConfig());
 
@@ -2464,14 +2470,16 @@ export default class Transformer {
         : `${inputTypeName}Object${Transformer.zodSchemaSuffix}`;
 
       const ext = this.getImportFileExtension();
-      return `import { ${exportName} as ${alias} } from './${base}${ext}'`;
+      const baseDir = from === 'objects' ? '.' : from === 'root' ? './objects' : '../objects';
+      return `import { ${exportName} as ${alias} } from '${baseDir}/${base}${ext}'`;
     } catch (error) {
       // Log error for debugging and fallback to legacy naming
-      console.warn('Failed to generate custom object input import for', inputTypeName, error);
+      logger.warn('Failed to generate custom object input import for', inputTypeName, error);
       const schemaName = Transformer.exportTypedSchemas
         ? `${inputTypeName}ObjectSchema`
         : `${inputTypeName}Object${Transformer.zodSchemaSuffix}`;
-      return `import { ${schemaName} } from './${inputTypeName}.schema${this.getImportFileExtension()}'`;
+      const baseDir = from === 'objects' ? '.' : from === 'root' ? './objects' : '../objects';
+      return `import { ${schemaName} } from '${baseDir}/${inputTypeName}.schema${this.getImportFileExtension()}'`;
     }
   }
 
@@ -2529,8 +2537,8 @@ export default class Transformer {
     // Check for collisions
     this.checkSchemaFileCollision(fullPath, modelName, operation);
 
-    // Write the file
-    await writeFileSafely(fullPath, content);
+    // Write the file (avoid double index updates; we handle export add explicitly)
+    await writeFileSafely(fullPath, content, false);
 
     // Add to index exports
     addIndexExport(fullPath);
@@ -3553,12 +3561,7 @@ export default class Transformer {
         // Only add other imports if they're actually referenced in the schema
         if (resultSchema.dependencies && resultSchema.dependencies.length > 0) {
           resultSchema.dependencies.forEach((dep: string) => {
-            imports.push(
-              this.generateInputImport(dep.replace('Schema', '')).replace(
-                './objects/',
-                '../objects/',
-              ),
-            );
+            imports.push(this.generateInputImport(dep.replace('Schema', ''), 'results'));
           });
         }
 
