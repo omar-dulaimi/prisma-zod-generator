@@ -1646,14 +1646,14 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
           // Use Transformer import strategy to match zodImportTarget
           const zImport = new Transformer({}).generateImportZodStatement();
           const enumImportBase = placeAtRoot ? './enums' : '../enums';
+          const importExtension = Transformer.getImportFileExtension();
           const enumSchemaImports = enumTypes.length
             ? enumTypes
-                .map((n) => `import { ${n}Schema } from '${enumImportBase}/${n}.schema';`)
+                .map((n) => `import { ${n}Schema } from '${enumImportBase}/${n}.schema${importExtension}';`)
                 .join('\n') + '\n'
             : '';
           const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
-          const importExtension = Transformer.getImportFileExtension();
           exportLines.push(`export { ${schemaName} } from './${fileBase}${importExtension}';`);
         }
       }
@@ -1822,7 +1822,7 @@ async function generateVariantSchemaContent(
     const importExtension = Transformer.getImportFileExtension();
     try {
       const { resolveEnumNaming, generateFileName, generateExportName } = await import(
-        './utils/namingResolver'
+        './utils/naming-resolver'
       );
       const enumNaming = resolveEnumNaming(config);
       enumImportLines =
@@ -2170,7 +2170,7 @@ async function generatePureModelSchemas(
     // Generate pure model schemas
     const schemaCollection = typeMapper.generateSchemaCollection(filteredModels);
 
-    const { resolvePureModelNaming, applyPattern } = await import('./utils/namingResolver');
+    const { resolvePureModelNaming, applyPattern } = await import('./utils/naming-resolver');
     const namingResolved = resolvePureModelNaming(config);
     const {
       filePattern,
@@ -2198,14 +2198,19 @@ async function generatePureModelSchemas(
         logger.debug(`[pure-models] Preparing ${modelName} -> file ${fileName}`);
         // Import paths are generated correctly by the model generator; no enum path rewrite needed
         // Remove accidental duplicate enum imports (defensive clean-up)
-        content = content.replace(
-          /^(import { (\w+)Schema } from '\.\.\/schemas\/enums\/\2\.schema';)\n\1/gm,
-          '$1',
-        );
-        content = content.replace(
-          /^(import { (\w+)Schema } from '\.\.\/enums\/\2\.schema';)\n\1/gm,
-          '$1',
-        );
+        {
+          const importExtension = Transformer.getImportFileExtension();
+          const dupSchemasEnums = new RegExp(
+            `^(import { (\\w+)Schema } from '\\\.\\\\.\\\/schemas\\\/enums\\\/\\2\\.schema${importExtension}';)\\n\\1`,
+            'gm',
+          );
+          content = content.replace(dupSchemasEnums, '$1');
+          const dupEnums = new RegExp(
+            `^(import { (\\w+)Schema } from '\\\.\\\\.\\\/enums\\\/\\2\\.schema${importExtension}';)\\n\\1`,
+            'gm',
+          );
+          content = content.replace(dupEnums, '$1');
+        }
         // Rename exported const & type if suffix customization used
         if (
           schemaSuffix !== 'Schema' ||

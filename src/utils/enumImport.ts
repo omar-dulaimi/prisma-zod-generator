@@ -12,10 +12,11 @@ export function computeEnumImportPath(
   fromVariantDirAbs: string,
   enumsDirAbs: string,
   enumName: string,
+  ext = '',
 ): string {
   const rel = path.relative(fromVariantDirAbs, enumsDirAbs).replace(/\\/g, '/');
   const base = rel.startsWith('.') ? rel : `./${rel}`;
-  return `${base}/${enumName}.schema`;
+  return `${base}/${enumName}.schema${ext}`;
 }
 
 /**
@@ -25,10 +26,11 @@ export function computeEnumImportPath(
 export function generateEnumSchemaImportLines(
   enumNames: string[],
   depthFromVariantDir = 2,
+  ext = '',
 ): string {
   if (!enumNames.length) return '';
   const upSegments = Array(depthFromVariantDir).fill('..').join('/');
   return enumNames
-    .map((e) => `import { ${e}Schema } from '${upSegments}/schemas/enums/${e}.schema';`)
+    .map((e) => `import { ${e}Schema } from '${upSegments}/schemas/enums/${e}.schema${ext}';`)
     .join('\n');
 }
