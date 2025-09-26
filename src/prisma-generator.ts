@@ -2203,13 +2203,15 @@ async function generatePureModelSchemas(
         // Remove accidental duplicate enum imports (defensive clean-up)
         {
           const importExtension = Transformer.getImportFileExtension();
+          const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const escExt = escapeRegExp(importExtension);
           const dupSchemasEnums = new RegExp(
-            `^(import { (\\w+)Schema } from '\\\.\\\\.\\\/schemas\\\/enums\\\/\\2\\.schema${importExtension}';)\\n\\1`,
+            `^(import { (\\w+)Schema } from '\\\\.\\\\.\\\/schemas\\\/enums\\\/\\2\\.schema${escExt}';)\\n\\1`,
             'gm',
           );
           content = content.replace(dupSchemasEnums, '$1');
           const dupEnums = new RegExp(
-            `^(import { (\\w+)Schema } from '\\\.\\\\.\\\/enums\\\/\\2\\.schema${importExtension}';)\\n\\1`,
+            `^(import { (\\w+)Schema } from '\\\\.\\\\.\\\/enums\\\/\\2\\.schema${escExt}';)\\n\\1`,
             'gm',
           );
           content = content.replace(dupEnums, '$1');
