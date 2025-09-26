@@ -44,6 +44,7 @@ Schema naming resolved by `resolveSchemaNaming`:
   }
 }
 ```
+Note: If your `filePattern` omits an operation token, multiple operations for the same model may collide. The generator detects and errors on such collisions; include {operation} or {Operation} to avoid them.
 
 ### Available Tokens:
 - `{Model}`: PascalCase model name (e.g., `User`, `BlogPost`)
@@ -81,7 +82,7 @@ Input object naming resolved by `resolveInputNaming`:
 - `{model}`: camelCase model name
 - `{InputType}`: Full input type name (e.g., `UserWhereInput`, `PostCreateInput`)
 
-**Note**: For export names, when both `{Model}` and `{InputType}` tokens are used, duplicate model prefixes are automatically stripped to avoid names like `UserUserWhereInputObjectSchema`. File names do not apply this stripping.
+**Note**: When your pattern includes a model token (`{Model}` or `{model}`) together with `{InputType}`, duplicate model prefixes are automatically stripped for both export names and file names to avoid results like `UserUserWhereInput*`.
 
 ## Enum Naming
 
@@ -110,6 +111,7 @@ Enum naming resolved by `resolveEnumNaming`:
 ### Available Tokens:
 - `{Enum}`: PascalCase enum name (e.g., `Role`, `UserStatus`)
 - `{enum}`: camelCase enum name (e.g., `role`, `userStatus`)
+- `{camel}`: camelCase alias (same as `{enum}` for enums)
 
 ## Complete Configuration Example
 

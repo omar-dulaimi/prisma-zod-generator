@@ -294,6 +294,101 @@ describe('Naming Customization (experimental)', () => {
     }
   });
 
+  it('dedupes filename when pattern includes {Model}{InputType}', async () => {
+    const env = await TestEnvironment.createTestEnv('naming-dedupe-input-file');
+    try {
+      const config = {
+        naming: {
+          input: {
+            filePattern: '{Model}{InputType}.schema.ts',
+            exportNamePattern: '{Model}{InputType}ObjectSchema',
+          },
+        },
+      };
+      const configName = 'config.json';
+      const schema = prismaSchema(env.outputDir, configName);
+      await (await import('fs')).promises.writeFile(env.schemaPath, schema);
+      await (
+        await import('fs')
+      ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
+
+      await env.runGeneration();
+      const objectsDir = join(env.outputDir, 'schemas', 'objects');
+
+      // Expect deduped filename like UserWhereInput.schema.ts instead of UserUserWhereInput.schema.ts
+      const deduped = join(objectsDir, 'UserWhereInput.schema.ts');
+      const duplicated = join(objectsDir, 'UserUserWhereInput.schema.ts');
+      expect(existsSync(deduped)).toBe(true);
+      expect(existsSync(duplicated)).toBe(false);
+    } finally {
+      await env.cleanup();
+    }
+  });
+
+  it('dedupes filename when pattern includes {model}{InputType}', async () => {
+    const env = await TestEnvironment.createTestEnv('naming-dedupe-input-file-lower');
+    try {
+      const config = {
+        naming: {
+          input: {
+            filePattern: '{model}{InputType}.schema.ts',
+            exportNamePattern: '{Model}{InputType}ObjectSchema',
+          },
+        },
+      };
+      const configName = 'config.json';
+      const schema = prismaSchema(env.outputDir, configName);
+      await (await import('fs')).promises.writeFile(env.schemaPath, schema);
+      await (
+        await import('fs')
+      ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
+
+      await env.runGeneration();
+      const objectsDir = join(env.outputDir, 'schemas', 'objects');
+
+      // Expect deduped filename like userWhereInput.schema.ts instead of userUserWhereInput.schema.ts
+      const deduped = join(objectsDir, 'userWhereInput.schema.ts');
+      const duplicated = join(objectsDir, 'userUserWhereInput.schema.ts');
+      expect(existsSync(deduped)).toBe(true);
+      expect(existsSync(duplicated)).toBe(false);
+    } finally {
+      await env.cleanup();
+    }
+  });
+
+  it('dedupes export name when pattern includes {model}{InputType}', async () => {
+    const env = await TestEnvironment.createTestEnv('naming-dedupe-export-lower');
+    try {
+      const config = {
+        naming: {
+          input: {
+            // Keep default file pattern; focus on export name
+            exportNamePattern: '{model}{InputType}ObjectSchema',
+          },
+        },
+      };
+      const configName = 'config.json';
+      const schema = prismaSchema(env.outputDir, configName);
+      await (await import('fs')).promises.writeFile(env.schemaPath, schema);
+      await (
+        await import('fs')
+      ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
+
+      await env.runGeneration();
+      const objectsDir = join(env.outputDir, 'schemas', 'objects');
+
+      // Default object file should exist; check its contents
+      const file = join(objectsDir, 'UserWhereInput.schema.ts');
+      expect(existsSync(file)).toBe(true);
+      const content = readFileSync(file, 'utf-8');
+      // Should export deduped name 'userWhereInputObjectSchema', not 'userUserWhereInputObjectSchema'
+      expect(content).toMatch(/export const userWhereInputObjectSchema\b/);
+      expect(content).not.toMatch(/export const userUserWhereInputObjectSchema\b/);
+    } finally {
+      await env.cleanup();
+    }
+  });
+
   it('applies custom schema operation naming patterns', async () => {
     const env = await TestEnvironment.createTestEnv('naming-custom-schema');
     try {

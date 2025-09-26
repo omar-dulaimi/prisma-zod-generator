@@ -173,6 +173,20 @@ export function generateFileName(
   inputType?: string,
   enumName?: string,
 ): string {
+  // If pattern contains a model token ({Model} or {model}) and {InputType}, and inputType starts with modelName,
+  // strip the model name from inputType to avoid duplicate prefixes in filenames
+  let processedInputType = inputType || '';
+  if (
+    pattern.includes('{InputType}') &&
+    (pattern.includes('{Model}') || pattern.includes('{model}')) &&
+    inputType &&
+    modelName
+  ) {
+    if (inputType.startsWith(modelName)) {
+      processedInputType = inputType.substring(modelName.length);
+    }
+  }
+
   const tokens: Record<string, string> = {
     '{Model}': modelName,
     '{model}': modelName.charAt(0).toLowerCase() + modelName.slice(1),
@@ -181,7 +195,7 @@ export function generateFileName(
     // Normalize operation tokens to mirror generateExportName semantics
     '{Operation}': operation ? operation.charAt(0).toUpperCase() + operation.slice(1) : '',
     '{operation}': operation ? operation.charAt(0).toLowerCase() + operation.slice(1) : '',
-    '{InputType}': inputType || '',
+    '{InputType}': processedInputType,
     '{Enum}': enumName || '',
     '{enum}': enumName ? enumName.charAt(0).toLowerCase() + enumName.slice(1) : '',
   };
@@ -196,10 +210,15 @@ export function generateExportName(
   inputType?: string,
   enumName?: string,
 ): string {
-  // If pattern contains both {Model} and {InputType}, and inputType starts with modelName,
+  // If pattern contains a model token ({Model} or {model}) and {InputType}, and inputType starts with modelName,
   // strip the model name from inputType to avoid duplication
   let processedInputType = inputType || '';
-  if (pattern.includes('{Model}') && pattern.includes('{InputType}') && inputType && modelName) {
+  if (
+    pattern.includes('{InputType}') &&
+    (pattern.includes('{Model}') || pattern.includes('{model}')) &&
+    inputType &&
+    modelName
+  ) {
     if (inputType.startsWith(modelName)) {
       processedInputType = inputType.substring(modelName.length);
     }
