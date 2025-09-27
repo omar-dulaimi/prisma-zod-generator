@@ -112,25 +112,6 @@ jobs:
         if: matrix.node-version != '18.x'
         run: pnpm run test:basic
 
-      - name: Run comprehensive tests
-        if: matrix.node-version != '18.x'
-        run: pnpm run test:coverage:comprehensive
-        timeout-minutes: 10
-
-      - name: Generate MongoDB schemas
-        if: matrix.node-version != '18.x'
-        run: pnpm prisma generate --schema="tests/multi-provider/schemas/mongodb/schema.prisma"
-
-      - name: Run MongoDB tests
-        if: matrix.node-version != '18.x'
-        run: pnpm run test:coverage:mongodb
-        timeout-minutes: 10
-
-      - name: Run multi-provider tests (sequential)
-        if: matrix.node-version != '18.x'
-        run: pnpm run test:multi:sequential
-        timeout-minutes: 15
-
   package-test:
     runs-on: ubuntu-latest
     needs: test

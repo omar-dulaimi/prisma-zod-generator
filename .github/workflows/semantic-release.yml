@@ -35,7 +35,7 @@ jobs:
       - name: Build and test
         run: |
           pnpm run gen-example
-          pnpm run test:type-check
+          pnpm run typecheck
           pnpm run lint
           pnpm run test:basic
 

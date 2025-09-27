@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "typescheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "exec": "pnpm run gen-example && pnpm run test:features:filtering -- -t \"should handle combinations of model, operation, and field filtering\"",
     "gen-example": "tsc && DEBUG_PRISMA_ZOD=1 pnpm prisma generate",
     "gen-example:debug": "tsc && DEBUG_PRISMA_ZOD=1 pnpm prisma generate",

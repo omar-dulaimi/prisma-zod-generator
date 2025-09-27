@@ -13,10 +13,6 @@ This repository uses GitHub Actions for automated testing, building, and releasi
   - Type checking with `npm run test:type-check`
   - Linting with `npm run lint`
   - Basic tests with `npm run test:basic`
-  - Comprehensive tests with coverage
-  - MongoDB-specific tests
-  - Multi-provider tests (sequential)
-  - Uploads coverage to Codecov
 - **package-test**: Tests package integrity
   - Builds and packages the project
   - Verifies package can be created successfully
@@ -161,8 +157,8 @@ npm run test:basic
 # Run with coverage
 npm run test:coverage
 
-# Run multi-provider tests
-npm run test:multi:sequential
+# Run basic tests
+npm run test:basic
 
 # Test release process (dry run)
 npm run release:dry

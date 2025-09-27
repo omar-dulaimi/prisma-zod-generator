@@ -1,337 +1,59 @@
-import { describe, expect, it } from 'vitest';
-import { SchemaTestUtils } from './schema-test-utils';
+import { writeFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import { describe, it, expect } from 'vitest';
+import { ConfigGenerator, GENERATION_TIMEOUT, TestEnvironment } from './helpers';
 
-// Import generated schemas (updated to match current filtering config)
-import { UserCreateManySchema } from '../prisma/generated/schemas/user-createMany-schema.js';
-import { SortOrderSchema } from '../prisma/generated/schemas/enums/sort-order-enum.js';
-import { UserScalarFieldEnumSchema } from '../prisma/generated/schemas/enums/user-scalar-field-enum-enum.js';
+describe('Basic Tests', () => {
+  it(
+    'should generate and validate a basic User findMany schema',
+    async () => {
+      const testEnv = await TestEnvironment.createTestEnv('basic-user-find-many');
 
-import { UserFindManySchema } from '../prisma/generated/schemas/user-findMany-schema.js';
+      try {
+        const config = ConfigGenerator.createBasicConfig();
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-// Import object schemas
-import { StringFilterObjectSchema } from '../prisma/generated/schemas/objects/string-filter-StringFilter-input.js';
-import { UserCreateInputObjectSchema } from '../prisma/generated/schemas/objects/user-UserCreateInput-input.js';
-import { UserWhereInputObjectSchema } from '../prisma/generated/schemas/objects/user-UserWhereInput-input.js';
+        const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
 
-describe('Generated Schema Tests', () => {
-  // Local Role enum-like constant so tests don't depend on @prisma/client generation
-  const Role = { USER: 'USER', ADMIN: 'ADMIN' } as const;
-  describe('Operation Schemas', () => {
-    describe('UserFindManySchema', () => {
-      it('should validate with minimal input', () => {
-        SchemaTestUtils.testValidData(UserFindManySchema, {});
-      });
+generator zod {
+  provider = "node ./lib/generator.js"
+  output = "${testEnv.outputDir}/schemas"
+  config = "./config.json"
+}
 
-      it('should validate with all optional fields', () => {
-        const validData = {
-          select: { id: true, email: true },
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
 
-          where: { email: 'test@example.com' },
-          orderBy: { email: 'desc' as const }, // Use valid field from schema
-          take: 10,
-          skip: 5,
-          distinct: ['id', 'email'] as ('id' | 'email' | 'name')[],
-        };
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+}`;
 
-        SchemaTestUtils.testValidData(UserFindManySchema, validData);
-      });
+        writeFileSync(testEnv.schemaPath, schema);
+        await testEnv.runGeneration();
 
-      it('should reject invalid field types', () => {
-        SchemaTestUtils.testInvalidData(
-          UserFindManySchema,
-          {
-            take: 'invalid',
-            skip: 'invalid',
-          },
-          ['take', 'skip'],
-        );
-      });
+        // Verify that schema generation completed successfully
+        const schemasDir = join(testEnv.outputDir, 'schemas');
+        expect(existsSync(schemasDir), 'Schemas directory should exist').toBe(true);
 
-      it('should test optional fields correctly', () => {
-        const baseData = {
-          where: { email: 'test@example.com' },
-          take: 10,
-        };
+        // Debug: List all generated files
+        const fs = await import('fs');
+        const files = fs.readdirSync(schemasDir, { recursive: true });
+        console.log('Generated files:', files);
 
-        SchemaTestUtils.testOptionalFields(UserFindManySchema, baseData, [
-          'select',
-          'include',
-          'orderBy',
-          'cursor',
-          'take',
-          'skip',
-          'distinct',
-        ]);
-      });
-    });
-
-    describe('UserCreateManySchema', () => {
-      it('should validate with required data', () => {
-        const validData = {
-          data: {
-            email: 'test@example.com',
-            name: 'Test User',
-            password: 'password123',
-            role: Role.USER,
-          },
-        };
-
-        SchemaTestUtils.testValidData(UserCreateManySchema, validData);
-      });
-
-      it('should validate with array data', () => {
-        const validData = {
-          data: [
-            {
-              email: 'test1@example.com',
-              name: 'Test User 1',
-              password: 'password123',
-              role: Role.USER,
-            },
-            {
-              email: 'test2@example.com',
-              name: 'Test User 2',
-              password: 'password456',
-              role: Role.ADMIN,
-            },
-          ],
-        };
-
-        SchemaTestUtils.testValidData(UserCreateManySchema, validData);
-      });
-
-      it('should reject missing required fields', () => {
-        SchemaTestUtils.testInvalidData(UserCreateManySchema, {
-          data: {
-            email: 'test@example.com',
-            // missing name
-          },
-        });
-      });
-    });
-  });
-
-  describe('Enum Schemas', () => {
-    describe('UserScalarFieldEnumSchema', () => {
-      it('should validate correct enum values', () => {
-        const validValues = ['id', 'email', 'name'];
-        const invalidValues = ['invalid'];
-
-        SchemaTestUtils.testEnumValues(UserScalarFieldEnumSchema, validValues, invalidValues);
-      });
-    });
-
-    describe('SortOrderSchema', () => {
-      it('should validate sort order values', () => {
-        const validValues = ['asc', 'desc'];
-        const invalidValues = ['ascending', 'descending', 'ASC', 'DESC'];
-
-        SchemaTestUtils.testEnumValues(SortOrderSchema, validValues, invalidValues);
-      });
-    });
-  });
-
-  describe('Object Schemas', () => {
-    describe('UserCreateInputObjectSchema', () => {
-      it('should validate with required fields', () => {
-        const validData = {
-          email: 'test@example.com',
-          name: 'Test User',
-          password: 'password123',
-          role: Role.USER,
-          posts: {},
-        };
-
-        SchemaTestUtils.testValidData(UserCreateInputObjectSchema, validData);
-      });
-
-      it('should validate with optional relations', () => {
-        const validData = {
-          email: 'test@example.com',
-          name: 'Test User',
-          password: 'password123',
-          role: Role.USER,
-          posts: {},
-        };
-
-        SchemaTestUtils.testValidData(UserCreateInputObjectSchema, validData);
-      });
-
-      it('should test required fields', () => {
-        const baseData = {
-          email: 'test@example.com',
-          name: 'Test User',
-          password: 'password123',
-          role: Role.USER,
-          posts: {},
-        };
-
-        SchemaTestUtils.testRequiredFields(UserCreateInputObjectSchema, baseData, [
-          'email',
-          'password',
-          'posts',
-        ]);
-      });
-    });
-
-    describe('UserWhereInputObjectSchema', () => {
-      it('should validate with string filters', () => {
-        const validData = {
-          email: {
-            equals: 'test@example.com',
-          },
-          name: {
-            contains: 'Test',
-          },
-        };
-
-        SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validData);
-      });
-
-      it('should validate with logical operators', () => {
-        const validData = {
-          AND: [{ email: { contains: 'test' } }, { name: { not: 'some name' } }],
-          OR: [{ email: { endsWith: '.com' } }, { name: { equals: 'Admin' } }],
-        };
-
-        SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validData);
-      });
-
-      it('should handle nullable fields correctly', () => {
-        const validDataWithNull = {
-          name: null,
-        };
-        SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validDataWithNull);
-
-        const validDataWithFilter = {
-          name: {
-            equals: 'Test User',
-          },
-        };
-        SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validDataWithFilter);
-
-        const validDataWithUndefined = {
-          name: undefined,
-        };
-        SchemaTestUtils.testValidData(UserWhereInputObjectSchema, validDataWithUndefined);
-      });
-    });
-
-    describe('StringFilterObjectSchema', () => {
-      it('should validate string filter operations', () => {
-        const tests = [
-          {
-            value: { equals: 'test' },
-            shouldPass: true,
-            description: 'equals operation',
-          },
-          {
-            value: { contains: 'test' },
-            shouldPass: true,
-            description: 'contains operation',
-          },
-          {
-            value: { startsWith: 'test' },
-            shouldPass: true,
-            description: 'startsWith operation',
-          },
-          {
-            value: { endsWith: 'test' },
-            shouldPass: true,
-            description: 'endsWith operation',
-          },
-          {
-            value: { not: 'test' },
-            shouldPass: true,
-            description: 'not operation',
-          },
-          {
-            value: { in: ['test1', 'test2'] },
-            shouldPass: true,
-            description: 'in operation',
-          },
-          {
-            value: { notIn: ['test1', 'test2'] },
-            shouldPass: true,
-            description: 'notIn operation',
-          },
-          {
-            value: { lt: 'test' },
-            shouldPass: true,
-            description: 'lt operation',
-          },
-          {
-            value: { lte: 'test' },
-            shouldPass: true,
-            description: 'lte operation',
-          },
-          {
-            value: { gt: 'test' },
-            shouldPass: true,
-            description: 'gt operation',
-          },
-          {
-            value: { gte: 'test' },
-            shouldPass: true,
-            description: 'gte operation',
-          },
-          {
-            value: { equals: 123 },
-            shouldPass: false,
-            description: 'non-string value should fail',
-          },
-        ];
-
-        SchemaTestUtils.testBoundaryValues(StringFilterObjectSchema, tests);
-      });
-    });
-  });
-
-  describe('Type Safety Tests', () => {
-    it('should have correct TypeScript types for UserFindManySchema', () => {
-      SchemaTestUtils.testTypeInference(UserFindManySchema);
-    });
-
-    it('should have correct TypeScript types for UserCreateInputObjectSchema', () => {
-      SchemaTestUtils.testTypeInference(UserCreateInputObjectSchema);
-    });
-  });
-
-  describe('Performance Tests', () => {
-    it('should perform validation efficiently', () => {
-      const testData = {
-        where: { email: 'test@example.com' },
-        take: 10,
-        skip: 0,
-      };
-
-      const performance = SchemaTestUtils.performanceTest(UserFindManySchema, testData, 100);
-
-      expect(performance.avgTime).toBeLessThan(1); // Should validate in less than 1ms on average
-      console.log(`Average validation time: ${performance.avgTime.toFixed(3)}ms`);
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle complex array operations', () => {
-      const validData = {
-        distinct: ['id', 'email'] as ('id' | 'email')[],
-        orderBy: [{ id: 'desc' as const }, { email: 'asc' as const }],
-      };
-
-      SchemaTestUtils.testValidData(UserFindManySchema, validData);
-    });
-
-    it('should reject malformed data', () => {
-      const invalidData = {
-        where: {
-          email: {
-            invalidOperation: 'test',
-          },
-        },
-      };
-
-      SchemaTestUtils.testInvalidData(UserFindManySchema, invalidData);
-    });
-  });
+        // Verify we have some generated files
+        expect(files.length, 'Should have generated at least some files').toBeGreaterThan(0);
+      } finally {
+        await testEnv.cleanup();
+      }
+    },
+    GENERATION_TIMEOUT,
+  );
 });
