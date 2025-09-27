@@ -23,10 +23,10 @@
 ## ✨ Core Features
 
 <div align="center">
-  <img src="https://img.shields.io/badge/🎯_Schema_Generation-FF6B6B?style=for-the-badge&logoColor=white" alt="Schema Generation" />
-  <img src="https://img.shields.io/badge/🛠️_Customization-4ECDC4?style=for-the-badge&logoColor=white" alt="Customization" />
-  <img src="https://img.shields.io/badge/🛡️_Safety-45B7D1?style=for-the-badge&logoColor=white" alt="Safety" />
-  <img src="https://img.shields.io/badge/⚡_Performance-96CEB4?style=for-the-badge&logoColor=white" alt="Performance" />
+  <img src="https://img.shields.io/badge/🎯_Schema_Generation-2C3E50?style=for-the-badge&color=2C3E50&logoColor=white" alt="Schema Generation" />
+  <img src="https://img.shields.io/badge/🛠️_Customization-27AE60?style=for-the-badge&color=27AE60&logoColor=white" alt="Customization" />
+  <img src="https://img.shields.io/badge/🛡️_Safety-8E44AD?style=for-the-badge&color=8E44AD&logoColor=white" alt="Safety" />
+  <img src="https://img.shields.io/badge/⚡_Performance-E74C3C?style=for-the-badge&color=E74C3C&logoColor=white" alt="Performance" />
 </div>
 
 <br />
@@ -42,7 +42,7 @@
 <td width="50%" valign="top">
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Generation_Modes-FF6B6B?style=flat-square&logo=settings&logoColor=white" />
+  <img src="https://img.shields.io/badge/Generation_Modes-FF6B6B?style=for-the-badge&logo=settings&logoColor=white" />
 </div>
 
 <br />
@@ -74,7 +74,7 @@ graph TB
 ```
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Schema_Types-FFA07A?style=flat-square&logo=database&logoColor=white" />
+  <img src="https://img.shields.io/badge/Schema_Types-FFA07A?style=for-the-badge&logo=database&logoColor=white" />
 </div>
 
 <br />
@@ -117,7 +117,7 @@ graph LR
 <td width="50%" valign="top">
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Schema_Variants-9B59B6?style=flat-square&logo=layers&logoColor=white" />
+  <img src="https://img.shields.io/badge/Schema_Variants-9B59B6?style=for-the-badge&logo=layers&logoColor=white" />
 </div>
 
 <br />
@@ -154,7 +154,7 @@ graph TD
 ```
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Filtering_&_Selection-E74C3C?style=flat-square&logo=filter&logoColor=white" />
+  <img src="https://img.shields.io/badge/Filtering_&_Selection-E74C3C?style=for-the-badge&logo=filter&logoColor=white" />
 </div>
 
 <br />
@@ -209,7 +209,7 @@ graph LR
 <td width="33%" valign="top">
 
 <div align="center">
-  <img src="https://img.shields.io/badge/File_Organization-4ECDC4?style=flat-square&logo=folder&logoColor=white" />
+  <img src="https://img.shields.io/badge/File_Organization-4ECDC4?style=for-the-badge&logo=folder&logoColor=white" />
 </div>
 
 <br />
@@ -281,7 +281,7 @@ graph LR
 <td width="33%" valign="top">
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Type_Safety-8E44AD?style=flat-square&logo=shield&logoColor=white" />
+  <img src="https://img.shields.io/badge/Type_Safety-8E44AD?style=for-the-badge&logo=shield&logoColor=white" />
 </div>
 
 <br />
@@ -351,7 +351,7 @@ graph LR
 <td width="33%" valign="top">
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Advanced_Features-E67E22?style=flat-square&logo=cpu&logoColor=white" />
+  <img src="https://img.shields.io/badge/Advanced_Features-E67E22?style=for-the-badge&logo=cpu&logoColor=white" />
 </div>
 
 <br />
@@ -442,7 +442,7 @@ graph LR
 <td width="50%" valign="top">
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Safety_&_Validation-C0392B?style=flat-square&logo=shield-check&logoColor=white" />
+  <img src="https://img.shields.io/badge/Safety_&_Validation-C0392B?style=for-the-badge&logo=shield-check&logoColor=white" />
 </div>
 
 <br />
@@ -485,7 +485,7 @@ graph TD
 <td width="50%" valign="top">
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Database_Support-34495E?style=flat-square&logo=database&logoColor=white" />
+  <img src="https://img.shields.io/badge/Database_Support-34495E?style=for-the-badge&logo=database&logoColor=white" />
 </div>
 
 <br />
