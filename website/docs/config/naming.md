@@ -44,7 +44,17 @@ Schema naming resolved by `resolveSchemaNaming`:
   }
 }
 ```
-Note: If your `filePattern` omits an operation token, multiple operations for the same model may collide. The generator detects and errors on such collisions; include {operation} or {Operation} to avoid them.
+
+### ⚠️ Important Pattern Requirements
+
+**Operation Token Required**: Your `filePattern` MUST include an operation token (`{operation}` or `{Operation}`) to avoid file collisions. Without it, all CRUD operations for the same model will overwrite each other, resulting in only the last operation being generated.
+
+**Examples**:
+- ✅ `{kebab}-{operation}-schema.ts` → `user-findMany-schema.ts`, `user-createOne-schema.ts`
+- ✅ `{operation}{Model}.schema.ts` → `findManyUser.schema.ts`, `createOneUser.schema.ts`
+- ❌ `{kebab}-schema.ts` → `user-schema.ts` (all operations overwrite each other!)
+
+**Collision Detection**: The generator will detect filename collisions and throw an error during generation. Always include `{operation}` or `{Operation}` in your pattern.
 
 ### Available Tokens:
 - `{Model}`: PascalCase model name (e.g., `User`, `BlogPost`)

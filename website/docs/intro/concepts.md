@@ -38,7 +38,7 @@ You can also define **array-based custom variants** with suffix, exclusions, and
 
 **Naming Customization** drives file & export shapes across all schema types:
 - **Pure Models**: `naming.preset` + `naming.pureModel` overrides
-- **CRUD Schemas**: `naming.schema` for operation file/export patterns
+- **CRUD Schemas**: `naming.schema` for operation file/export patterns (requires `{operation}` token to avoid collisions)
 - **Input Objects**: `naming.input` for input type file/export patterns
 - **Enums**: `naming.enum` for enum file/export patterns
 
