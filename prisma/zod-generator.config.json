@@ -1,11 +1,31 @@
 {
-	"mode": "full",
-	"output": "./generated/schemas",
-	"useMultipleFiles": true,
-	"pureModels": true,
-	"generateResultSchemas": true,
-	"models": {
-		"User": { "enabled": true },
-		"Post": { "enabled": true }
-	}
+  "mode": "full",
+  "pureModels": true,
+  "variants": {
+    "pure": { "enabled": true },
+    "input": { "enabled": true },
+    "result": { "enabled": true }
+  },
+  "imports": {
+    "mode": "js"
+  },
+  "naming": {
+    "pureModel": {
+      "filePattern": "{kebab}-model.ts",
+      "exportNamePattern": "{Model}Model"
+    },
+    "schema": {
+      "filePattern": "{kebab}-{operation}-schema.ts",
+      "exportNamePattern": "{Model}{Operation}Schema"
+    },
+    "input": {
+      "filePattern": "{kebab}-{InputType}-input.ts",
+      "exportNamePattern": "{Model}{InputType}"
+    },
+    "enum": {
+      "filePattern": "{kebab}-enum.ts",
+      "exportNamePattern": "{Enum}"
+    }
+  },
+  "dateTimeStrategy": "isoString"
 }

@@ -38,7 +38,10 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['prisma/schemas/*/generated/**/*.ts', 'prisma/generated/schemas/**/*.ts'],
+      include: [
+        'tests/multi-provider/schemas/*/generated/**/*.ts',
+        'prisma/generated/schemas/**/*.ts',
+      ],
       exclude: ['node_modules', '**/index.ts', '**/node_modules/**', '**/*.d.ts'],
       thresholds: {
         statements: 0,

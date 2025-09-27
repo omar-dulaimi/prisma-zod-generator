@@ -6,7 +6,7 @@ prisma/generated
 coverage
 
 # Multi-provider test generated files
-prisma/schemas/*/generated/
+tests/multi-provider/schemas/*/generated/
 *.db
 *.sqlite
 *.sqlite3

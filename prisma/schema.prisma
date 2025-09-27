@@ -1,5 +1,9 @@
 generator client {
-  provider = "prisma-client-js"
+  provider               = "prisma-client"
+  output                 = "../src/dsrc"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "js"
 }
 
 datasource db {
@@ -8,8 +12,12 @@ datasource db {
 }
 
 generator zod {
-  provider = "node ./lib/generator.js"
-  config   = "./zod-generator.config.json"
+  provider                  = "node ./lib/generator.js"
+  config                    = "./zod-generator.config.json"
+  output                    = "../prisma/generated/schemas"
+  safetyAllowDangerousPaths = true
+  mode                      = "full"
+  useMultipleFiles          = true
 }
 
 model Planet {

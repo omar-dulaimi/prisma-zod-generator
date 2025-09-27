@@ -1,391 +1,259 @@
-# Multi-Provider Testing Framework
+# Multi-Provider Test Suite
 
-This directory contains a comprehensive testing framework for validating the Prisma Zod Generator across all supported database providers.
+A comprehensive testing framework for validating the Prisma Zod Generator across multiple database providers (PostgreSQL, MySQL, MongoDB, SQLite, SQL Server).
 
 ## Overview
 
-The multi-provider testing framework ensures that the Prisma Zod Generator works correctly with:
-- **PostgreSQL** - Full PostgreSQL native types and features
-- **MySQL** - MySQL-specific types and spatial features
-- **MongoDB** - Document modeling and embedded documents
-- **SQLite** - SQLite type affinity and limitations
-- **SQL Server** - SQL Server native types and features
+This test suite ensures that the Prisma Zod Generator produces consistent, valid Zod schemas regardless of the underlying database provider. It validates schema generation, type safety, and feature compatibility across all supported providers.
 
 ## Architecture
 
-```
-tests/multi-provider/
-├── provider-test-suite.ts      # Test suite framework
-├── multi-provider.test.ts      # Integration tests
-├── run-all-tests.ts           # Test runner script
-└── README.md                  # This file
+### Core Components
 
-prisma/
-├── schemas/                   # Provider-specific schemas
-│   ├── postgresql/
-│   │   ├── schema.prisma      # PostgreSQL test schema
-│   │   └── generated/         # Generated Zod schemas
-│   ├── mysql/
-│   │   ├── schema.prisma      # MySQL test schema
-│   │   └── generated/         # Generated Zod schemas
-│   ├── mongodb/
-│   │   ├── schema.prisma      # MongoDB test schema
-│   │   └── generated/         # Generated Zod schemas
-│   ├── sqlite/
-│   │   ├── schema.prisma      # SQLite test schema
-│   │   └── generated/         # Generated Zod schemas
-│   └── sqlserver/
-│       ├── schema.prisma      # SQL Server test schema
-│       └── generated/         # Generated Zod schemas
-└── utils/
-    ├── provider-config.ts     # Provider configurations
-    └── multi-provider-test-runner.ts  # Test execution engine
-```
+- **`multi-provider.test.ts`** - Main test suite orchestrating cross-provider validation
+- **`provider-test-suite.ts`** - Framework for creating provider-specific test suites
+- **`run-all-tests.ts`** - CLI script for comprehensive test execution
+- **`../../prisma/utils/`** - Supporting utilities for multi-provider testing
 
-## Features Tested
+### Test Categories
 
-### Core Features (All Providers)
-- ✅ Basic scalar types (String, Int, Float, Boolean, DateTime, Json, Bytes, BigInt)
-- ✅ CRUD operations (findMany, findFirst, create, update, delete, etc.)
-- ✅ Aggregation operations (count, sum, avg, min, max)
-- ✅ Relationships (one-to-one, one-to-many, many-to-many)
-- ✅ Enums and optional fields
-- ✅ Null handling and validation
+1. **Provider Availability Tests** - Validates configuration for each provider
+2. **Schema Generation Tests** - Ensures schemas generate successfully for each provider
+3. **Cross-Provider Compatibility** - Verifies consistent schema structure across providers
+4. **Performance Comparison** - Benchmarks generation speed across providers
+5. **Error Handling** - Tests graceful handling of invalid configurations
+6. **Feature Coverage** - Validates provider-specific features and limitations
 
-### Provider-Specific Features
+## Supported Providers
 
-#### PostgreSQL
-- ✅ All native types (VarChar, Text, Json, JsonB, Uuid, Inet, etc.)
-- ✅ Arrays of scalars
-- ✅ Custom types and enums
-- ✅ Full-text search
-- ✅ Network types (Inet, Cidr, Macaddr)
-- ✅ Advanced date/time types
-- ✅ Geometric types
-- ✅ Range types
+| Provider | Features | Limitations |
+|----------|----------|-------------|
+| **PostgreSQL** | Full feature set, native types, arrays, JSON, enums | None |
+| **MySQL** | Full feature set, native types, JSON, enums | Limited array support |
+| **MongoDB** | Document-based, embedded types, raw operations | No traditional relations |
+| **SQLite** | Basic types, JSON support | Limited native types |
+| **SQL Server** | Full feature set, native types | Complex type mappings |
 
-#### MySQL
-- ✅ All integer types (signed/unsigned)
-- ✅ Spatial data types (Point, LineString, Polygon, etc.)
-- ✅ AUTO_INCREMENT functionality
-- ✅ ZEROFILL and UNSIGNED attributes
-- ✅ JSON functions
-- ✅ Full-text search
-- ✅ Generated columns
+## Quick Start
 
-#### MongoDB
-- ✅ Document modeling
-- ✅ Embedded documents (composite types)
-- ✅ Arrays of documents
-- ✅ ObjectId handling
-- ✅ Geospatial data
-- ✅ Aggregation pipelines
-- ✅ Raw operations (findRaw, aggregateRaw)
+### Running All Tests
 
-#### SQLite
-- ✅ Type affinity system
-- ✅ JSON1 extension
-- ✅ FTS (Full-Text Search)
-- ✅ Limitation handling
-- ✅ Workarounds for missing features
-
-#### SQL Server
-- ✅ All native types (TinyInt, SmallInt, Money, etc.)
-- ✅ Unicode types (NChar, NVarChar, NText)
-- ✅ Spatial types (Geometry, Geography)
-- ✅ UniqueIdentifier (GUID)
-- ✅ XML data type
-- ✅ Identity columns
-- ✅ Computed columns
-
-## Running Tests
-
-### All Providers
 ```bash
-# Run all tests for all providers
-npm run test:multi-provider
+# Run comprehensive multi-provider tests
+pnpm test tests/multi-provider/
 
-# Run tests in parallel (faster)
-npm run test:multi-provider:parallel
+# Run with specific providers
+pnpm test tests/multi-provider/ -- --providers postgresql,mysql
 
-# Generate schemas only
-npm run test:multi-provider:generate
-
-# Run comprehensive test suite
-npm run test:comprehensive
+# Run in parallel for faster execution
+pnpm test tests/multi-provider/ -- --parallel
 ```
 
-### Specific Providers
+### Using the CLI Runner
+
 ```bash
-# Test PostgreSQL only
-npm run test:multi-provider:postgresql
+# Run all providers with full setup
+npx ts-node tests/multi-provider/run-all-tests.ts
 
-# Test MySQL only
-npm run test:multi-provider:mysql
+# Test specific providers only
+npx ts-node tests/multi-provider/run-all-tests.ts --providers postgresql,mysql
 
-# Test MongoDB only
-npm run test:multi-provider:mongodb
+# Generate schemas only (skip tests)
+npx ts-node tests/multi-provider/run-all-tests.ts --generate-only
 
-# Test SQLite only
-npm run test:multi-provider:sqlite
-
-# Test SQL Server only
-npm run test:multi-provider:sqlserver
-```
-
-### Custom Options
-```bash
-# Run specific providers
-npm run test:multi-provider -- --providers postgresql,mysql
+# Run tests only (skip generation)
+npx ts-node tests/multi-provider/run-all-tests.ts --test-only
 
 # Verbose output
-npm run test:multi-provider -- --verbose
+npx ts-node tests/multi-provider/run-all-tests.ts --verbose
 
-# JSON output for CI/CD
-npm run test:multi-provider:json
-
-# Skip setup phase
-npm run test:multi-provider -- --skip-setup
-
-# Test only (no generation)
-npm run test:multi-provider -- --test-only
+# Output results as JSON
+npx ts-node tests/multi-provider/run-all-tests.ts --output json
 ```
 
-## Test Categories
+## Test Structure
 
-### 1. Type Validation Tests
-- Validates that all native database types generate correct Zod schemas
-- Tests boundary values and edge cases
-- Verifies type coercion works properly
+### Provider Test Suite Framework
 
-### 2. Operation Schema Tests
-- Tests all CRUD operations generate valid schemas
-- Verifies aggregation operations work correctly
-- Tests complex query operations
+Each provider gets its own comprehensive test suite covering:
 
-### 3. Relationship Tests
-- One-to-one relationships
-- One-to-many relationships
-- Many-to-many relationships
-- Self-referential relationships
-- Embedded relationships (MongoDB)
+```typescript
+describe('PostgreSQL Provider Tests', () => {
+  describe('Type Validation', () => {
+    // Tests for native types, arrays, JSON, enums, composite types
+  });
+  
+  describe('Operation Schemas', () => {
+    // Tests for CRUD operations, aggregates, groupBy
+  });
+  
+  describe('Relationship Schemas', () => {
+    // Tests for one-to-one, one-to-many, many-to-many, self-referential
+  });
+  
+  describe('Provider-Specific Features', () => {
+    // Tests for provider-specific capabilities and limitations
+  });
+  
+  describe('Performance Tests', () => {
+    // Schema generation speed, validation performance, file size
+  });
+  
+  describe('Edge Cases', () => {
+    // Null handling, empty values, special characters, unicode
+  });
+});
+```
 
-### 4. Provider-Specific Tests
-- Database-specific features
-- Provider limitations
-- Error handling for unsupported features
+### Cross-Provider Validation
 
-### 5. Performance Tests
-- Schema generation speed
-- Validation performance
-- Memory usage
-- File size optimization
+The main test suite ensures consistency across providers:
 
-### 6. Edge Case Tests
-- Null/undefined handling
-- Empty arrays and objects
-- Large values
-- Special characters
-- Unicode support
+```typescript
+describe('Cross-Provider Compatibility Tests', () => {
+  it('should generate consistent schemas across providers', async () => {
+    // Validates that all providers generate similar operation schemas
+    // Checks for common operations: Basic Types, CRUD Operations, Relationships
+  });
+});
+```
 
-## Test Report Format
+## Configuration
 
-The test runner generates comprehensive reports:
+### Provider Configuration
 
-```json
-{
-  "timestamp": "2024-01-01T00:00:00.000Z",
-  "version": "0.8.13",
-  "providers": ["postgresql", "mysql", "mongodb", "sqlite", "sqlserver"],
-  "testSuites": [
-    {
-      "name": "postgresql",
-      "description": "Test suite for PostgreSQL",
-      "results": [...],
-      "summary": {
-        "totalTests": 45,
-        "passedTests": 43,
-        "failedTests": 2,
-        "skippedTests": 0,
-        "totalDuration": 1250,
-        "coverage": 95.56
-      }
-    }
-  ],
-  "overallSummary": {
-    "totalTests": 225,
-    "passedTests": 215,
-    "failedTests": 10,
-    "skippedTests": 0,
-    "totalDuration": 6250,
-    "coverage": 95.56
-  },
-  "performanceMetrics": {
-    "generationTime": {
-      "postgresql": 1200,
-      "mysql": 1100,
-      "mongodb": 800,
-      "sqlite": 500,
-      "sqlserver": 1400
-    },
-    "schemaValidationTime": {...},
-    "memoryUsage": {...},
-    "fileSize": {...}
-  }
+Provider configurations are defined in `../../prisma/utils/provider-config.ts`:
+
+```typescript
+interface ProviderConfig {
+  name: string;
+  provider: string;
+  schemaPath: string;
+  generatedPath: string;
+  features: {
+    nativeTypes: string[];
+    arrays: boolean;
+    json: boolean;
+    enums: boolean;
+    composite: boolean;
+    specificFeatures: string[];
+  };
+  limitations: {
+    unsupportedFeatures: string[];
+  };
 }
 ```
 
-## Environment Setup
+### Schema Paths
 
-### Prerequisites
-- Node.js 18+
-- TypeScript 5+
-- Prisma CLI
-- Database connections (optional for full testing)
+Each provider uses its own schema file:
+- PostgreSQL: `tests/multi-provider/schemas/postgresql/schema.prisma`
+- MySQL: `tests/multi-provider/schemas/mysql/schema.prisma`
+- MongoDB: `tests/multi-provider/schemas/mongodb/schema.prisma`
+- SQLite: `tests/multi-provider/schemas/sqlite/schema.prisma`
+- SQL Server: `tests/multi-provider/schemas/sqlserver/schema.prisma`
 
-### Environment Variables
-```bash
-# PostgreSQL
-POSTGRESQL_URL="postgresql://user:password@localhost:5432/test"
+## Test Execution Flow
 
-# MySQL
-MYSQL_URL="mysql://user:password@localhost:3306/test"
+### 1. Setup Phase
+- Check prerequisites (Node.js, Prisma CLI, TypeScript, Vitest)
+- Setup database connections
+- Install dependencies
 
-# MongoDB
-MONGODB_URL="mongodb://localhost:27017/test"
+### 2. Generation Phase
+- Generate schemas for each provider using `prisma generate`
+- Validate schema generation success
+- Import generated schemas for testing
 
-# SQLite (file-based)
-SQLITE_URL="file:./test.db"
+### 3. Testing Phase
+- Run provider-specific test suites
+- Execute cross-provider compatibility tests
+- Performance benchmarking
+- Error handling validation
 
-# SQL Server
-SQLSERVER_URL="sqlserver://localhost:1433;database=test;user=sa;password=password"
-```
+### 4. Teardown Phase
+- Cleanup generated files
+- Close database connections
+- Generate test reports
 
-### Docker Setup (Optional)
-```bash
-# Start all databases with Docker Compose
-docker-compose up -d
+## Performance Benchmarks
 
-# Or start individual databases
-docker run -d --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=password postgres:15
-docker run -d --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mysql:8.0
-docker run -d --name mongodb -p 27017:27017 mongo:7.0
-docker run -d --name sqlserver -p 1433:1433 -e SA_PASSWORD=Password123 mcr.microsoft.com/mssql/server:2022-latest
-```
+The test suite includes performance validation:
 
-## CI/CD Integration
+- **Generation Time**: Each provider should complete within 60 seconds
+- **Validation Speed**: Schema validation should average under 1ms
+- **File Size**: Generated files should be under 1MB each
+- **Relative Performance**: Slowest provider should not be more than 10x slower than fastest
 
-### GitHub Actions Example
+## Error Handling
+
+The test suite validates graceful error handling:
+
+- Invalid provider configurations
+- Missing schema files
+- Generation failures
+- Type validation errors
+- Provider-specific limitations
+
+## Integration with CI/CD
+
+Add to your CI pipeline:
+
 ```yaml
-name: Multi-Provider Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: password
-        ports:
-          - 5432:5432
-      
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: password
-        ports:
-          - 3306:3306
-      
-      mongodb:
-        image: mongo:7.0
-        ports:
-          - 27017:27017
-          
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          
-      - run: npm ci
-      - run: npm run test:multi-provider:parallel
-        env:
-          POSTGRESQL_URL: postgresql://postgres:password@localhost:5432/test
-          MYSQL_URL: mysql://root:password@localhost:3306/test
-          MONGODB_URL: mongodb://localhost:27017/test
-          SQLITE_URL: file:./test.db
+- name: Multi-Provider Tests
+  run: |
+    pnpm test tests/multi-provider/
+    npx ts-node tests/multi-provider/run-all-tests.ts --output json > test-results.json
 ```
-
-## Contributing
-
-### Adding New Providers
-1. Create schema in `prisma/schemas/{provider}/schema.prisma`
-2. Add provider configuration in `prisma/utils/provider-config.ts`
-3. Update test suites to include new provider
-4. Add provider-specific tests for unique features
-
-### Adding New Tests
-1. Add test cases to appropriate provider configuration
-2. Implement test logic in `provider-test-suite.ts`
-3. Update documentation
-
-### Performance Benchmarks
-- PostgreSQL: ~1200ms generation time
-- MySQL: ~1100ms generation time
-- MongoDB: ~800ms generation time
-- SQLite: ~500ms generation time
-- SQL Server: ~1400ms generation time
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Schema Generation Fails**
-   - Check that schema files exist
-   - Verify Prisma CLI is installed
-   - Ensure database connections are valid
+1. **Schema Generation Failures**
+   - Ensure all provider schema files exist
+   - Check Prisma CLI version compatibility
+   - Verify database connection strings
 
-2. **Test Timeouts**
-   - Increase timeout values in test configuration
+2. **Provider Configuration Errors**
+   - Validate provider config in `provider-config.ts`
+   - Check schema paths are correct
+   - Ensure generated paths exist
+
+3. **Performance Issues**
    - Use `--parallel` flag for faster execution
-   - Check database connectivity
+   - Check system resources during parallel runs
+   - Review provider-specific performance characteristics
 
-3. **Memory Issues**
-   - Reduce test parallelism
-   - Increase Node.js memory limit: `--max-old-space-size=4096`
-
-4. **Provider Not Found**
-   - Check provider configuration in `provider-config.ts`
-   - Verify schema files exist
-   - Ensure provider is in the supported list
+4. **Type Safety Issues**
+   - Ensure TypeScript compilation succeeds
+   - Check generated schema imports
+   - Validate Zod schema structure
 
 ### Debug Mode
+
+Run tests with verbose output:
+
 ```bash
-# Enable verbose logging
-npm run test:multi-provider -- --verbose
-
-# Generate only for debugging
-npm run test:multi-provider:generate -- --verbose
-
-# Test single provider with debug output
-npm run test:multi-provider:postgresql -- --verbose
+npx ts-node tests/multi-provider/run-all-tests.ts --verbose
 ```
 
-## Future Enhancements
+## Best Practices
 
-- [ ] Visual diff reporting for schema changes
-- [ ] Integration with schema registries
-- [ ] Performance regression testing
-- [ ] Automated provider feature detection
-- [ ] Real-time database testing
-- [ ] Schema evolution testing
-- [ ] Load testing with large schemas
-- [ ] Cross-version compatibility testing
+1. **Test All Providers**: Ensure comprehensive coverage across all supported databases
+2. **Validate Consistency**: Cross-provider tests ensure uniform behavior
+3. **Performance Monitoring**: Regular benchmarking prevents regression
+4. **Error Handling**: Test graceful failure scenarios
+5. **Feature Coverage**: Validate provider-specific capabilities and limitations
 
-## License
+## Contributing
 
-This testing framework is part of the Prisma Zod Generator project and is licensed under the MIT License.
+When adding new providers or features:
+
+1. Update `provider-config.ts` with new provider configuration
+2. Create provider-specific schema file
+3. Add provider to test suite creation
+4. Update this README with new provider information
+5. Run full multi-provider test suite to validate changes
+
+This comprehensive test suite ensures the Prisma Zod Generator maintains high quality and consistency across all supported database providers.

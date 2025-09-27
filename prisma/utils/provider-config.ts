@@ -69,8 +69,8 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
   postgresql: {
     name: 'PostgreSQL',
     provider: 'postgresql',
-    schemaPath: 'prisma/schemas/postgresql/schema.prisma',
-    generatedPath: 'prisma/schemas/postgresql/generated',
+    schemaPath: 'tests/multi-provider/schemas/postgresql/schema.prisma',
+    generatedPath: 'tests/multi-provider/schemas/postgresql/generated/schemas',
     connectionString:
       process.env.POSTGRESQL_URL || 'postgresql://user:password@localhost:5432/test',
     features: {
@@ -165,8 +165,8 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
   mysql: {
     name: 'MySQL',
     provider: 'mysql',
-    schemaPath: 'prisma/schemas/mysql/schema.prisma',
-    generatedPath: 'prisma/schemas/mysql/generated',
+    schemaPath: 'tests/multi-provider/schemas/mysql/schema.prisma',
+    generatedPath: 'tests/multi-provider/schemas/mysql/generated',
     connectionString: process.env.MYSQL_URL || 'mysql://user:password@localhost:3306/test',
     features: {
       nativeTypes: [
@@ -328,8 +328,8 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
   sqlite: {
     name: 'SQLite',
     provider: 'sqlite',
-    schemaPath: 'prisma/schemas/sqlite/schema.prisma',
-    generatedPath: 'prisma/schemas/sqlite/generated',
+    schemaPath: 'tests/multi-provider/schemas/sqlite/schema.prisma',
+    generatedPath: 'tests/multi-provider/schemas/sqlite/generated/schemas',
     connectionString: process.env.SQLITE_URL || 'file:./test.db',
     features: {
       nativeTypes: ['Integer', 'Real', 'Text', 'Blob'],
@@ -407,8 +407,8 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
   sqlserver: {
     name: 'SQL Server',
     provider: 'sqlserver',
-    schemaPath: 'prisma/schemas/sqlserver/schema.prisma',
-    generatedPath: 'prisma/schemas/sqlserver/generated',
+    schemaPath: 'tests/multi-provider/schemas/sqlserver/schema.prisma',
+    generatedPath: 'tests/multi-provider/schemas/sqlserver/generated/schemas',
     connectionString:
       process.env.SQLSERVER_URL ||
       'sqlserver://localhost:1433;database=test;user=sa;password=password;encrypt=true;trustServerCertificate=true',

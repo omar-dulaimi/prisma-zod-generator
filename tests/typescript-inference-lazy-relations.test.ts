@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 
 // Import schemas that demonstrate the TypeScript inference fix
 // These schemas have required relations that use z.lazy() and should benefit from the fix
-import { PostgreSQLProfileCreateInputObjectSchema } from '../prisma/schemas/postgresql/generated/schemas/objects/PostgreSQLProfileCreateInput.schema';
-import { PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema } from '../prisma/schemas/postgresql/generated/schemas/objects/PostgreSQLUserCreateNestedOneWithoutProfileInput.schema';
+import { PostgreSQLProfileCreateInputObjectSchema } from '../multi-provider/schemas/postgresql/generated/schemas/objects/PostgreSQLProfileCreateInput.schema';
+import { PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema } from '../multi-provider/schemas/postgresql/generated/schemas/objects/PostgreSQLUserCreateNestedOneWithoutProfileInput.schema';
 
 describe('TypeScript Inference Fix for z.lazy() Relations', () => {
   describe('Schema Generation Fix', () => {

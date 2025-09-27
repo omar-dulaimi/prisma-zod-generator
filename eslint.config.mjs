@@ -54,7 +54,8 @@ export default [
     },
   },
   {
-    files: ['prisma/schemas/**/*.ts'],
+    files: ['tests/multi-provider/schemas/**/*.ts'],
+    ignores: ['tests/multi-provider/schemas/*/generated/**/*.ts'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {

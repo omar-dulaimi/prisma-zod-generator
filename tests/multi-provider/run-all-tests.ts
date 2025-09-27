@@ -94,7 +94,7 @@ class ComprehensiveTestRunner {
       console.log(`\n📄 Generating schemas for ${provider}...`);
 
       try {
-        const schemaPath = `./prisma/schemas/${provider}/schema.prisma`;
+        const schemaPath = `./tests/multi-provider/schemas/${provider}/schema.prisma`;
 
         if (!existsSync(schemaPath)) {
           console.warn(`⚠️  Schema file not found: ${schemaPath}`);

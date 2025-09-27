@@ -13,7 +13,7 @@ const testImportedSchemas = async () => {
   try {
     // Test operation schemas
     const findFirstMongoUser = await import(
-      '../prisma/schemas/mongodb/generated/schemas/findFirstMongoUser.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/findFirstMongoUser.schema'
     );
     results.push({
       name: 'findFirstMongoUser',
@@ -22,7 +22,7 @@ const testImportedSchemas = async () => {
     });
 
     const findManyMongoUser = await import(
-      '../prisma/schemas/mongodb/generated/schemas/findManyMongoUser.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/findManyMongoUser.schema'
     );
     results.push({
       name: 'findManyMongoUser',
@@ -31,7 +31,7 @@ const testImportedSchemas = async () => {
     });
 
     const createOneMongoUser = await import(
-      '../prisma/schemas/mongodb/generated/schemas/createOneMongoUser.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/createOneMongoUser.schema'
     );
     results.push({
       name: 'createOneMongoUser',
@@ -40,7 +40,7 @@ const testImportedSchemas = async () => {
     });
 
     const updateOneMongoUser = await import(
-      '../prisma/schemas/mongodb/generated/schemas/updateOneMongoUser.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/updateOneMongoUser.schema'
     );
     results.push({
       name: 'updateOneMongoUser',
@@ -49,7 +49,7 @@ const testImportedSchemas = async () => {
     });
 
     const deleteOneMongoUser = await import(
-      '../prisma/schemas/mongodb/generated/schemas/deleteOneMongoUser.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/deleteOneMongoUser.schema'
     );
     results.push({
       name: 'deleteOneMongoUser',
@@ -59,7 +59,7 @@ const testImportedSchemas = async () => {
 
     // Test aggregate schemas
     const aggregateMongoUser = await import(
-      '../prisma/schemas/mongodb/generated/schemas/aggregateMongoUser.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/aggregateMongoUser.schema'
     );
     results.push({
       name: 'aggregateMongoUser',
@@ -69,12 +69,12 @@ const testImportedSchemas = async () => {
 
     // Test enum schemas
     const sortOrder = await import(
-      '../prisma/schemas/mongodb/generated/schemas/enums/SortOrder.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/enums/SortOrder.schema'
     );
     results.push({ name: 'SortOrder', success: true, schema: sortOrder.SortOrderSchema });
 
     const mongoUserScalarFieldEnum = await import(
-      '../prisma/schemas/mongodb/generated/schemas/enums/MongoUserScalarFieldEnum.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/enums/MongoUserScalarFieldEnum.schema'
     );
     results.push({
       name: 'MongoUserScalarFieldEnum',
@@ -84,7 +84,7 @@ const testImportedSchemas = async () => {
 
     // Test object schemas
     const mongoUserWhereInput = await import(
-      '../prisma/schemas/mongodb/generated/schemas/objects/MongoUserWhereInput.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/objects/MongoUserWhereInput.schema'
     );
     results.push({
       name: 'MongoUserWhereInput',
@@ -93,7 +93,7 @@ const testImportedSchemas = async () => {
     });
 
     const mongoUserCreateInput = await import(
-      '../prisma/schemas/mongodb/generated/schemas/objects/MongoUserCreateInput.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/objects/MongoUserCreateInput.schema'
     );
     results.push({
       name: 'MongoUserCreateInput',
@@ -102,7 +102,7 @@ const testImportedSchemas = async () => {
     });
 
     const mongoUserUpdateInput = await import(
-      '../prisma/schemas/mongodb/generated/schemas/objects/MongoUserUpdateInput.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/objects/MongoUserUpdateInput.schema'
     );
     results.push({
       name: 'MongoUserUpdateInput',
@@ -111,7 +111,7 @@ const testImportedSchemas = async () => {
     });
 
     const stringFilter = await import(
-      '../prisma/schemas/mongodb/generated/schemas/objects/StringFilter.schema'
+      '../multi-provider/schemas/mongodb/generated/schemas/objects/StringFilter.schema'
     );
     results.push({
       name: 'StringFilter',
@@ -128,7 +128,7 @@ const testImportedSchemas = async () => {
 // Test additional schemas by sampling from each category
 const testSampleSchemas = async () => {
   const results: Array<{ name: string; success: boolean; schema?: z.ZodTypeAny }> = [];
-  const basePath = 'prisma/schemas/mongodb/generated/schemas';
+  const basePath = 'multi-provider/schemas/mongodb/generated/schemas';
 
   try {
     // Sample operation schemas (findMany, createOne, etc.)

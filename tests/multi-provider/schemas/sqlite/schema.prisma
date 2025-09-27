@@ -8,7 +8,7 @@ datasource db {
 }
 
 generator zod {
-  provider = "node ./lib/generator.js"
+  provider = "node /home/omar/Desktop/NewFolder/libs/prisma-zod-generator/lib/generator.js"
   output   = "./generated"
 }
 

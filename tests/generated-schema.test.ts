@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { SchemaTestUtils } from './schema-test-utils';
 
 // Import generated schemas (updated to match current filtering config)
-import { UserCreateManySchema } from '../prisma/generated/schemas/createManyUser.schema';
-import { SortOrderSchema } from '../prisma/generated/schemas/enums/SortOrder.schema';
-import { UserScalarFieldEnumSchema } from '../prisma/generated/schemas/enums/UserScalarFieldEnum.schema';
+import { UserCreateManySchema } from '../prisma/generated/schemas/user-createMany-schema.js';
+import { SortOrderSchema } from '../prisma/generated/schemas/enums/sort-order-enum.js';
+import { UserScalarFieldEnumSchema } from '../prisma/generated/schemas/enums/user-scalar-field-enum-enum.js';
 
-import { UserFindManySchema } from '../prisma/generated/schemas/findManyUser.schema';
+import { UserFindManySchema } from '../prisma/generated/schemas/user-findMany-schema.js';
 
 // Import object schemas
-import { StringFilterObjectSchema } from '../prisma/generated/schemas/objects/StringFilter.schema';
-import { UserCreateInputObjectSchema } from '../prisma/generated/schemas/objects/UserCreateInput.schema';
-import { UserWhereInputObjectSchema } from '../prisma/generated/schemas/objects/UserWhereInput.schema';
+import { StringFilterObjectSchema } from '../prisma/generated/schemas/objects/string-filter-StringFilter-input.js';
+import { UserCreateInputObjectSchema } from '../prisma/generated/schemas/objects/user-UserCreateInput-input.js';
+import { UserWhereInputObjectSchema } from '../prisma/generated/schemas/objects/user-UserWhereInput-input.js';
 
 describe('Generated Schema Tests', () => {
   // Local Role enum-like constant so tests don't depend on @prisma/client generation
