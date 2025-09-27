@@ -20,7 +20,7 @@ The latest version is **v1.22.1**. See the [GitHub Releases](https://github.com/
 
 ### 📚 Documentation
 
-* **naming:** add notes about {operation} token requirement for CRUD schemas ([4b16664](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4b1666459cc3d8535e3be71977c5f6e1be83a9bf))
+* **naming:** add notes about operation token requirement for CRUD schemas ([4b16664](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4b1666459cc3d8535e3be71977c5f6e1be83a9bf))
 * **naming:** add notes about input naming ([67a5c05](https://github.com/omar-dulaimi/prisma-zod-generator/commit/67a5c052efcf1307ecf1de768f53166fd6513f53))
 * **readme:** add comprehensive Core Features table ([4444c59](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4444c59f0e4a8e923e76fb7231d0db28ebbbe8b4))
 
@@ -38,7 +38,7 @@ The latest version is **v1.22.1**. See the [GitHub Releases](https://github.com/
 * **naming-resolver:** use applyUniversalPattern to avoid regex quirks with brace tokens ([2607486](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2607486231447117266ee8a216478138c97d4181))
 * **naming:** avoid redundant aliasing in enum imports ([66b67ab](https://github.com/omar-dulaimi/prisma-zod-generator/commit/66b67ab28a22a4ecabb999ae0a983f0351f53963))
 * **naming:** honor custom schema patterns in import generation ([6ab60a6](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6ab60a66ce64e46cdb6e55e5228a81c093999323))
-* **naming:** normalize {Operation} to PascalCase in schema filenames and imports ([b0e34f3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b0e34f34907813699a5f472c4b5a507818f6aa46))
+* **naming:** normalize Operation to PascalCase in schema filenames and imports ([b0e34f3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b0e34f34907813699a5f472c4b5a507818f6aa46))
 * **naming:** replace Unknown fallback with inputType to prevent filename collisions ([2eef15e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2eef15e08ee038458279d78478ea7755d4917607))
 * **naming:** resolve duplicate model prefixes and operation casing in custom naming patterns ([9b029ae](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9b029aed26ce095ea0cac450970eeab4d59ecf45))
 * **naming:** synchronize import paths with custom schema patterns and prevent file collisions ([196d949](https://github.com/omar-dulaimi/prisma-zod-generator/commit/196d949909fb2bc3f7fbd1e205c91207a1ccbd79))
