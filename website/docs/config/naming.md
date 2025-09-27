@@ -70,8 +70,8 @@ Input object naming resolved by `resolveInputNaming`:
 {
   "naming": {
     "input": {
-      "filePattern": "{InputType}Validator.schema.ts",
-      "exportNamePattern": "{InputType}ValidatorSchema"
+      "filePattern": "{kebab}-{InputType}-input.ts",
+      "exportNamePattern": "{Model}{InputType}"
     }
   }
 }
@@ -80,7 +80,20 @@ Input object naming resolved by `resolveInputNaming`:
 ### Available Tokens:
 - `{Model}`: PascalCase model name extracted from input type
 - `{model}`: camelCase model name
+- `{kebab}`: kebab-case model name (e.g., `user`, `blog-post`)
 - `{InputType}`: Full input type name (e.g., `UserWhereInput`, `PostCreateInput`)
+
+### ⚠️ Important Pattern Requirements
+
+**File Pattern Must Include Unique Identifiers**: Your `filePattern` must include tokens that make each input type unique. Without proper uniqueness, multiple input types for the same model will generate identical filenames and overwrite each other.
+
+**Recommended Patterns**:
+- ✅ `{kebab}-{InputType}-input.ts` → `book-BookCreateInput-input.ts`
+- ✅ `{InputType}.schema.ts` → `BookCreateInput.schema.ts`
+- ✅ `inputs/{Model}/{InputType}.ts` → `inputs/Book/BookCreateInput.ts`
+- ❌ `{kebab}-input.ts` → `book-input.ts` (all Book inputs collide!)
+
+**Pattern Collision Detection**: The generator will detect filename collisions and report errors during generation. If you see errors about duplicate filenames, ensure your pattern includes sufficient tokens to uniquely identify each input type.
 
 **Note**: When your pattern includes a model token (`{Model}` or `{model}`) together with `{InputType}`, duplicate model prefixes are automatically stripped for both export names and file names to avoid results like `UserUserWhereInput*`.
 

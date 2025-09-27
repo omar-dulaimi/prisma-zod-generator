@@ -14,3 +14,5 @@ title: Troubleshooting
 | Nested inputs missing  | Minimal mode pruning                                                | Switch to full/custom or explicitly enable operations |
 | `*CreateInput` missing relation fields | Minimal mode blocks regular CreateInput schemas | Use `*UncheckedCreateInput` schemas or switch to full mode |
 | TypeScript errors about missing relation fields | Importing blocked CreateInput schemas in minimal mode | Import UncheckedCreateInput variants instead |
+| TypeScript errors: `Module has no exported member '*InputObjectSchema'` | Input file pattern doesn't include `{InputType}` token, causing file collisions | Update `naming.input.filePattern` to include `{InputType}` token |
+| Missing input schema files (only generic files exist) | Input file pattern generates identical names for all input types | Use pattern like `{kebab}-{InputType}-input.ts` instead of `{kebab}-input.ts` |
