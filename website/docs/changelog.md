@@ -9,8 +9,20 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.22.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.22.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.22.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.22.0...v1.22.1) (2025-09-27)
+
+### 🐛 Bug Fixes
+
+* **naming:** fix remaining bugs ([62ef64f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/62ef64fc28897f9d31383c21447e55a800561c29))
+
+### 📚 Documentation
+
+* **naming:** add notes about {operation} token requirement for CRUD schemas ([4b16664](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4b1666459cc3d8535e3be71977c5f6e1be83a9bf))
+* **naming:** add notes about input naming ([67a5c05](https://github.com/omar-dulaimi/prisma-zod-generator/commit/67a5c052efcf1307ecf1de768f53166fd6513f53))
+* **readme:** add comprehensive Core Features table ([4444c59](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4444c59f0e4a8e923e76fb7231d0db28ebbbe8b4))
 
 ## [1.22.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.21.4...v1.22.0) (2025-09-26)
 
