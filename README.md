@@ -20,12 +20,77 @@
 
 > Docs: https://omar-dulaimi.github.io/prisma-zod-generator/
 
-## Highlights
+## Core Features
 
-- Zero‑boilerplate Zod schemas generated from your Prisma models
-- Multiple variants for different layers: input, result, and pure models
-- Fast minimal mode and filtering when you only need a subset
-- Type‑safe across ESM/CJS, works great with TypeScript strict
+| Feature | Description |
+|---------|-------------|
+| **🔧 Generation Modes** | |
+| Full Mode | Generate all schemas (CRUD, objects, enums, variants) |
+| Minimal Mode | Lean subset: basic CRUD only, no complex nesting |
+| Custom Mode | Explicitly control what gets generated |
+| **📋 Schema Types** | |
+| Pure Model Schemas | Direct model validation with optional relations |
+| CRUD Operation Schemas | Validation for findMany, create, update, etc. |
+| Input Object Schemas | WhereInput, CreateInput, UpdateInput, etc. |
+| Result Schemas | Return type validation for operations |
+| Enum Schemas | Prisma enum validation |
+| **🎯 Schema Variants** | |
+| Pure Variant | Canonical model snapshot (all fields) |
+| Input Variant | Data for create/update (omits id, timestamps) |
+| Result Variant | Data returned to callers (full model) |
+| Custom Array Variants | User-defined variants with field exclusions |
+| **🔍 Filtering & Selection** | |
+| Model Filtering | Include/exclude specific models |
+| Operation Filtering | Control which CRUD operations to generate |
+| Field Filtering | Include/exclude fields per model/variant |
+| Wildcard Patterns | Use glob patterns for flexible filtering |
+| **📁 File Organization** | |
+| Multi-file Output | Separate files per schema (default) |
+| Single-file Bundle | All schemas in one file |
+| Custom Directory Structure | Control where schemas are placed |
+| ESM Import Extensions | Automatic .js extensions for ESM compatibility |
+| **🏷️ Naming Customization** | |
+| Naming Presets | Built-in patterns (default, zod-prisma, etc.) |
+| Custom File Patterns | Control filename generation |
+| Custom Export Names | Control export name generation |
+| Token-based Patterns | Use {Model}, {operation}, {kebab}, etc. |
+| **🔒 Type Safety** | |
+| Dual Exports | Both typed (Prisma) and pure Zod schemas |
+| Strict Type Binding | Explicit Prisma type annotations |
+| ESM/CJS Support | Works with both module systems |
+| **💾 Data Handling** | |
+| JSON Field Support | Enhanced JSON validation and transforms |
+| Bytes Field Support | Buffer/Uint8Array handling |
+| DateTime Strategy | Date/string conversion options |
+| Optional/Nullable Fields | Configurable optional field behavior |
+| WhereUniqueInput Parity | Full Prisma Client compatibility |
+| Relation Handling | Proper optional/required field mapping |
+| **🎨 Advanced Features** | |
+| Zod Comments | Inline validation rules via `@zod` comments |
+| JSON Schema Compatibility | `z.toJSONSchema()` ready for OpenAPI integration |
+| Circular Dependency Resolution | Smart relation exclusion to avoid cycles |
+| Aggregate Support | Count, min, max, avg, sum operations |
+| Select/Include Schemas | Validation for Prisma select/include |
+| Custom Zod Import Target | Configure where Zod is imported from |
+| Array Field Handling | Proper wrapping for enum arrays and nullable arrays |
+| **⚡ Performance** | |
+| Lazy Loading | Circular imports handled via z.lazy() |
+| Minimal Bundle Size | Tree-shakeable exports |
+| Fast Generation | Optimized schema building |
+| **🛡️ Safety & Validation** | |
+| Configurable Safety System | Manifest tracking and strict controls |
+| Output Path Safety | Prevents accidental overwrites |
+| File Collision Detection | Warns about naming conflicts |
+| Config Validation | JSON schema validation of config |
+| Unused Enum Generation | Include enums even if not directly used |
+| **🔧 Database Support** | |
+| PostgreSQL | Full support including arrays, JSON |
+| MySQL | Complete compatibility |
+| SQLite | Full feature support |
+| MongoDB | Document model support |
+| SQL Server | Complete compatibility |
+| CockroachDB | PostgreSQL-compatible features |
+
 
 ## Prerequisites
 
