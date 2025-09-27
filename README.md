@@ -20,76 +20,521 @@
 
 > Docs: https://omar-dulaimi.github.io/prisma-zod-generator/
 
-## Core Features
+## ✨ Core Features
 
-| Feature | Description |
-|---------|-------------|
-| **🔧 Generation Modes** | |
-| Full Mode | Generate all schemas (CRUD, objects, enums, variants) |
-| Minimal Mode | Lean subset: basic CRUD only, no complex nesting |
-| Custom Mode | Explicitly control what gets generated |
-| **📋 Schema Types** | |
-| Pure Model Schemas | Direct model validation with optional relations |
-| CRUD Operation Schemas | Validation for findMany, create, update, etc. |
-| Input Object Schemas | WhereInput, CreateInput, UpdateInput, etc. |
-| Result Schemas | Return type validation for operations |
-| Enum Schemas | Prisma enum validation |
-| **🎯 Schema Variants** | |
-| Pure Variant | Canonical model snapshot (all fields) |
-| Input Variant | Data for create/update (omits id, timestamps) |
-| Result Variant | Data returned to callers (full model) |
-| Custom Array Variants | User-defined variants with field exclusions |
-| **🔍 Filtering & Selection** | |
-| Model Filtering | Include/exclude specific models |
-| Operation Filtering | Control which CRUD operations to generate |
-| Field Filtering | Include/exclude fields per model/variant |
-| Wildcard Patterns | Use glob patterns for flexible filtering |
-| **📁 File Organization** | |
-| Multi-file Output | Separate files per schema (default) |
-| Single-file Bundle | All schemas in one file |
-| Custom Directory Structure | Control where schemas are placed |
-| ESM Import Extensions | Automatic .js extensions for ESM compatibility |
-| **🏷️ Naming Customization** | |
-| Naming Presets | Built-in patterns (default, zod-prisma, etc.) |
-| Custom File Patterns | Control filename generation |
-| Custom Export Names | Control export name generation |
-| Token-based Patterns | Use {Model}, {operation}, {kebab}, etc. |
-| **🔒 Type Safety** | |
-| Dual Exports | Both typed (Prisma) and pure Zod schemas |
-| Strict Type Binding | Explicit Prisma type annotations |
-| ESM/CJS Support | Works with both module systems |
-| **💾 Data Handling** | |
-| JSON Field Support | Enhanced JSON validation and transforms |
-| Bytes Field Support | Buffer/Uint8Array handling |
-| DateTime Strategy | Date/string conversion options |
-| Optional/Nullable Fields | Configurable optional field behavior |
-| WhereUniqueInput Parity | Full Prisma Client compatibility |
-| Relation Handling | Proper optional/required field mapping |
-| **🎨 Advanced Features** | |
-| Zod Comments | Inline validation rules via `@zod` comments |
-| JSON Schema Compatibility | `z.toJSONSchema()` ready for OpenAPI integration |
-| Circular Dependency Resolution | Smart relation exclusion to avoid cycles |
-| Aggregate Support | Count, min, max, avg, sum operations |
-| Select/Include Schemas | Validation for Prisma select/include |
-| Custom Zod Import Target | Configure where Zod is imported from |
-| Array Field Handling | Proper wrapping for enum arrays and nullable arrays |
-| **⚡ Performance** | |
-| Lazy Loading | Circular imports handled via z.lazy() |
-| Minimal Bundle Size | Tree-shakeable exports |
-| Fast Generation | Optimized schema building |
-| **🛡️ Safety & Validation** | |
-| Configurable Safety System | Manifest tracking and strict controls |
-| Output Path Safety | Prevents accidental overwrites |
-| File Collision Detection | Warns about naming conflicts |
-| Config Validation | JSON schema validation of config |
-| Unused Enum Generation | Include enums even if not directly used |
-| **🔧 Database Support** | |
-| PostgreSQL | Full support including arrays, JSON |
-| MySQL | Complete compatibility |
-| SQLite | Full feature support |
-| MongoDB | Document model support |
-| SQL Server | Complete compatibility |
-| CockroachDB | PostgreSQL-compatible features |
+<div align="center">
+  <img src="https://img.shields.io/badge/🎯_Schema_Generation-FF6B6B?style=for-the-badge&logoColor=white" alt="Schema Generation" />
+  <img src="https://img.shields.io/badge/🛠️_Customization-4ECDC4?style=for-the-badge&logoColor=white" alt="Customization" />
+  <img src="https://img.shields.io/badge/🛡️_Safety-45B7D1?style=for-the-badge&logoColor=white" alt="Safety" />
+  <img src="https://img.shields.io/badge/⚡_Performance-96CEB4?style=for-the-badge&logoColor=white" alt="Performance" />
+</div>
+
+<br />
+
+<!-- ===== SCHEMA GENERATION SECTION ===== -->
+<details open>
+<summary>
+  <h3>🎯 <strong>Schema Generation & Types</strong></h3>
+</summary>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Generation_Modes-FF6B6B?style=flat-square&logo=settings&logoColor=white" />
+</div>
+
+<br />
+
+```mermaid
+graph TB
+    subgraph "🔧 Generation Modes"
+        A[Prisma Schema] --> B["🌟 Full Mode<br/>Complete Ecosystem"]
+        A --> C["⚡ Minimal Mode<br/>Essential CRUD Only"]
+        A --> D["🎛️ Custom Mode<br/>Granular Control"]
+
+        B --> B1[CRUD Operations]
+        B --> B2[Input Objects]
+        B --> B3[Result Schemas]
+        B --> B4[Enum Schemas]
+        B --> B5[Schema Variants]
+
+        C --> C1[Basic CRUD Only]
+        C --> C2[Lean Output]
+
+        D --> D1[User-Defined Rules]
+        D --> D2[Selective Generation]
+    end
+
+    style A fill:#ff6b6b,stroke:#333,stroke-width:3px,color:#fff
+    style B fill:#4ecdc4,stroke:#333,stroke-width:2px,color:#fff
+    style C fill:#45b7d1,stroke:#333,stroke-width:2px,color:#fff
+    style D fill:#96ceb4,stroke:#333,stroke-width:2px,color:#fff
+```
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Schema_Types-FFA07A?style=flat-square&logo=database&logoColor=white" />
+</div>
+
+<br />
+
+```mermaid
+graph LR
+    subgraph "📋 Schema Types Pipeline"
+        PS[Prisma Schema] --> ST{Schema Types}
+
+        ST --> PMS["🏗️ Pure Model<br/>Schemas"]
+        ST --> CRUD["🔄 CRUD<br/>Operations"]
+        ST --> IO["📝 Input<br/>Objects"]
+        ST --> RS["📤 Result<br/>Schemas"]
+        ST --> ES["🏷️ Enum<br/>Schemas"]
+
+        CRUD --> C1[findMany]
+        CRUD --> C2[create]
+        CRUD --> C3[update]
+        CRUD --> C4[delete]
+        CRUD --> C5[upsert]
+
+        IO --> I1[WhereInput]
+        IO --> I2[CreateInput]
+        IO --> I3[UpdateInput]
+
+        RS --> R1[Operation Results]
+        RS --> R2[Type Validation]
+    end
+
+    style PS fill:#ff6b6b,stroke:#333,stroke-width:3px,color:#fff
+    style ST fill:#ffa07a,stroke:#333,stroke-width:2px,color:#fff
+    style PMS fill:#4ecdc4,stroke:#333,stroke-width:2px,color:#fff
+    style CRUD fill:#45b7d1,stroke:#333,stroke-width:2px,color:#fff
+    style IO fill:#96ceb4,stroke:#333,stroke-width:2px,color:#fff
+    style RS fill:#f7dc6f,stroke:#333,stroke-width:2px,color:#fff
+    style ES fill:#bb8fce,stroke:#333,stroke-width:2px,color:#fff
+```
+
+</td>
+<td width="50%" valign="top">
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Schema_Variants-9B59B6?style=flat-square&logo=layers&logoColor=white" />
+</div>
+
+<br />
+
+```mermaid
+graph TD
+    subgraph "🎯 Schema Variants"
+        UM[User Model] --> PV["🎨 Pure Variant<br/>All Fields"]
+        UM --> IV["✏️ Input Variant<br/>Creation Data"]
+        UM --> RV["📦 Result Variant<br/>Response Data"]
+        UM --> CV["🔧 Custom Variants<br/>User-Defined"]
+
+        PV --> PV1["id: string"]
+        PV --> PV2["email: string"]
+        PV --> PV3["name?: string"]
+        PV --> PV4["createdAt: Date"]
+
+        IV --> IV1["email: string"]
+        IV --> IV2["name?: string"]
+        IV --> IV3["❌ Auto-generated<br/>fields omitted"]
+
+        RV --> RV1["Complete Model"]
+        RV --> RV2["Response Ready"]
+
+        CV --> CV1["Field Exclusions"]
+        CV --> CV2["Custom Rules"]
+    end
+
+    style UM fill:#ff6b6b,stroke:#333,stroke-width:3px,color:#fff
+    style PV fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
+    style IV fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
+    style RV fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
+    style CV fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
+```
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Filtering_&_Selection-E74C3C?style=flat-square&logo=filter&logoColor=white" />
+</div>
+
+<br />
+
+```mermaid
+graph LR
+    subgraph "🔍 Filtering & Selection System"
+        SC[Schema Config] --> FS{Filtering System}
+
+        FS --> MF["🎯 Model<br/>Filtering"]
+        FS --> OF["⚙️ Operation<br/>Filtering"]
+        FS --> FF["📋 Field<br/>Filtering"]
+        FS --> WP["🌐 Wildcard<br/>Patterns"]
+
+        MF --> MF1["Include Models:<br/>User, Post"]
+        MF --> MF2["Exclude Models:<br/>Internal*"]
+
+        OF --> OF1["Generate:<br/>findMany, create"]
+        OF --> OF2["Skip:<br/>deleteMany"]
+
+        FF --> FF1["Include Fields:<br/>id, email"]
+        FF --> FF2["Exclude Fields:<br/>password"]
+
+        WP --> WP1["Patterns:<br/>*Schema"]
+        WP --> WP2["Glob Matching:<br/>User*Input"]
+    end
+
+    style SC fill:#ff6b6b,stroke:#333,stroke-width:3px,color:#fff
+    style FS fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
+    style MF fill:#3498db,stroke:#333,stroke-width:2px,color:#fff
+    style OF fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
+    style FF fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
+    style WP fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
+```
+
+</td>
+</tr>
+</table>
+
+</details>
+
+<br />
+
+<!-- ===== CUSTOMIZATION SECTION ===== -->
+<details open>
+<summary>
+  <h3>🛠️ <strong>Customization & Organization</strong></h3>
+</summary>
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+<div align="center">
+  <img src="https://img.shields.io/badge/File_Organization-4ECDC4?style=flat-square&logo=folder&logoColor=white" />
+</div>
+
+<br />
+
+```mermaid
+graph TD
+    subgraph "📁 File Organization"
+        FO[File Output] --> MFO["📂 Multi-file<br/>Output (default)"]
+        FO --> SFB["📄 Single-file<br/>Bundle"]
+        FO --> CDS["🗂️ Custom Directory<br/>Structure"]
+        FO --> EIE["🔗 ESM Import<br/>Extensions"]
+
+        MFO --> MFO1["schemas/user.ts"]
+        MFO --> MFO2["schemas/post.ts"]
+        MFO --> MFO3["objects/input.ts"]
+
+        SFB --> SFB1["index.ts<br/>(all schemas)"]
+
+        CDS --> CDS1["custom/path/"]
+        CDS --> CDS2["nested/structure/"]
+
+        EIE --> EIE1["import './schema.js'"]
+        EIE --> EIE2["ESM Compatible"]
+    end
+
+    style FO fill:#4ecdc4,stroke:#333,stroke-width:3px,color:#fff
+    style MFO fill:#3498db,stroke:#333,stroke-width:2px,color:#fff
+    style SFB fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
+    style CDS fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
+    style EIE fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
+```
+
+<br />
+
+```mermaid
+graph LR
+    subgraph "🏷️ Naming Control System"
+        NC[Naming Config] --> NS{Naming Strategy}
+
+        NS --> PR["🎨 Presets"]
+        NS --> CP["📝 Custom<br/>Patterns"]
+        NS --> ENC["🔧 Export Name<br/>Control"]
+        NS --> TT["🧩 Token<br/>Templates"]
+
+        PR --> PR1["default"]
+        PR --> PR2["zod-prisma"]
+        PR --> PR3["custom-preset"]
+
+        CP --> CP1["UserCreateSchema"]
+        CP --> CP2["user.create.schema"]
+
+        ENC --> ENC1["Custom Exports"]
+        ENC --> ENC2["Alias Support"]
+
+        TT --> TT1["{Model}"]
+        TT --> TT2["{operation}"]
+        TT --> TT3["{kebab-case}"]
+    end
+
+    style NC fill:#f39c12,stroke:#333,stroke-width:3px,color:#fff
+    style NS fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
+    style PR fill:#3498db,stroke:#333,stroke-width:2px,color:#fff
+    style CP fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
+    style ENC fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
+    style TT fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
+```
+
+</td>
+<td width="33%" valign="top">
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Type_Safety-8E44AD?style=flat-square&logo=shield&logoColor=white" />
+</div>
+
+<br />
+
+```mermaid
+graph TD
+    subgraph "🔒 Type Safety System"
+        TS[Type Safety] --> DE["🎭 Dual Exports"]
+        TS --> STB["🔗 Strict Type<br/>Binding"]
+        TS --> MS["📦 Module<br/>Support"]
+        TS --> TO["⚡ Tree-shake<br/>Optimized"]
+
+        DE --> DE1["Typed Schemas<br/>(Prisma bound)"]
+        DE --> DE2["Pure Schemas<br/>(Zod only)"]
+
+        STB --> STB1["Explicit Types"]
+        STB --> STB2["Type Annotations"]
+
+        MS --> MS1["ESM Support"]
+        MS --> MS2["CJS Support"]
+
+        TO --> TO1["Selective Imports"]
+        TO --> TO2["Minimal Bundles"]
+    end
+
+    style TS fill:#8e44ad,stroke:#333,stroke-width:3px,color:#fff
+    style DE fill:#3498db,stroke:#333,stroke-width:2px,color:#fff
+    style STB fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
+    style MS fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
+    style TO fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
+```
+
+<br />
+
+```mermaid
+graph LR
+    subgraph "💾 Data Handling Pipeline"
+        DH[Data Handler] --> DT{Data Types}
+
+        DT --> JSON["🗃️ JSON<br/>Fields"]
+        DT --> BYTES["📊 Bytes<br/>Fields"]
+        DT --> DT_TIME["📅 DateTime<br/>Strategy"]
+        DT --> OPT["❓ Optional/<br/>Nullable"]
+
+        JSON --> JSON1["Enhanced Validation"]
+        JSON --> JSON2["Transform Support"]
+
+        BYTES --> BYTES1["Buffer Handling"]
+        BYTES --> BYTES2["Uint8Array Support"]
+
+        DT_TIME --> DT1["Date Objects"]
+        DT_TIME --> DT2["String Conversion"]
+
+        OPT --> OPT1["Optional Fields"]
+        OPT --> OPT2["Nullable Config"]
+    end
+
+    style DH fill:#2ecc71,stroke:#333,stroke-width:3px,color:#fff
+    style DT fill:#2ecc71,stroke:#333,stroke-width:2px,color:#fff
+    style JSON fill:#3498db,stroke:#333,stroke-width:2px,color:#fff
+    style BYTES fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
+    style DT_TIME fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
+    style OPT fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
+```
+
+</td>
+<td width="33%" valign="top">
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Advanced_Features-E67E22?style=flat-square&logo=cpu&logoColor=white" />
+</div>
+
+<br />
+
+```mermaid
+graph TD
+    subgraph "🎨 Advanced Features"
+        AF[Advanced Features] --> ZC["💬 @zod Comments"]
+        AF --> JSR["🌐 JSON Schema<br/>Ready"]
+        AF --> CDF["🔄 Circular<br/>Dependency Fix"]
+        AF --> AO["📊 Aggregate<br/>Operations"]
+        AF --> SIS["🎯 Select/Include<br/>Schemas"]
+        AF --> CZI["🔧 Custom Zod<br/>Imports"]
+
+        ZC --> ZC1["// @zod.min(5)"]
+        ZC --> ZC2["// @zod.max(100)"]
+        ZC --> ZC3["Inline Rules"]
+
+        JSR --> JSR1["OpenAPI Ready"]
+        JSR --> JSR2["z.toJSONSchema()"]
+
+        CDF --> CDF1["Smart Relations"]
+        CDF --> CDF2["z.lazy() Usage"]
+
+        AO --> AO1["count, min, max"]
+        AO --> AO2["avg, sum ops"]
+
+        SIS --> SIS1["Prisma Compatible"]
+        SIS --> SIS2["Type-safe Selection"]
+
+        CZI --> CZI1["Custom Import Path"]
+        CZI --> CZI2["Flexible Sources"]
+    end
+
+    style AF fill:#e67e22,stroke:#333,stroke-width:3px,color:#fff
+    style ZC fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
+    style JSR fill:#3498db,stroke:#333,stroke-width:2px,color:#fff
+    style CDF fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
+    style AO fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
+    style SIS fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
+    style CZI fill:#8e44ad,stroke:#333,stroke-width:2px,color:#fff
+```
+
+<br />
+
+```mermaid
+graph LR
+    subgraph "⚡ Performance Optimization"
+        PO[Performance] --> LL["🔄 Lazy<br/>Loading"]
+        PO --> MB["📦 Minimal<br/>Bundles"]
+        PO --> FG["🚀 Fast<br/>Generation"]
+
+        LL --> LL1["Circular Imports"]
+        LL --> LL2["z.lazy() Pattern"]
+        LL --> LL3["On-demand Loading"]
+
+        MB --> MB1["Tree-shaking"]
+        MB --> MB2["Selective Exports"]
+        MB --> MB3["Dead Code Elimination"]
+
+        FG --> FG1["Optimized Pipeline"]
+        FG --> FG2["Efficient Processing"]
+        FG --> FG3["Quick Schema Build"]
+    end
+
+    style PO fill:#27ae60,stroke:#333,stroke-width:3px,color:#fff
+    style LL fill:#3498db,stroke:#333,stroke-width:2px,color:#fff
+    style MB fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
+    style FG fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
+```
+
+</td>
+</tr>
+</table>
+
+</details>
+
+<br />
+
+<!-- ===== SAFETY & DATABASE SECTION ===== -->
+<details open>
+<summary>
+  <h3>🛡️ <strong>Safety & Database Ecosystem</strong></h3>
+</summary>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Safety_&_Validation-C0392B?style=flat-square&logo=shield-check&logoColor=white" />
+</div>
+
+<br />
+
+```mermaid
+graph TD
+    subgraph "🛡️ Safety & Validation System"
+        SS[Safety System] --> CSS["🔒 Configurable<br/>Safety System"]
+        SS --> OPP["🛣️ Output Path<br/>Protection"]
+        SS --> FCD["⚠️ File Collision<br/>Detection"]
+        SS --> CV["✅ Config<br/>Validation"]
+        SS --> UEG["🏷️ Unused Enum<br/>Generation"]
+
+        CSS --> CSS1["Manifest Tracking"]
+        CSS --> CSS2["Strict Controls"]
+        CSS --> CSS3["Enterprise Grade"]
+
+        OPP --> OPP1["Prevent Overwrites"]
+        OPP --> OPP2["Safe Paths Only"]
+
+        FCD --> FCD1["Naming Conflicts"]
+        FCD --> FCD2["Warning System"]
+
+        CV --> CV1["JSON Schema"]
+        CV --> CV2["Type Validation"]
+
+        UEG --> UEG1["Include All Enums"]
+        UEG --> UEG2["Complete Coverage"]
+    end
+
+    style SS fill:#c0392b,stroke:#333,stroke-width:3px,color:#fff
+    style CSS fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
+    style OPP fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
+    style FCD fill:#ff7675,stroke:#333,stroke-width:2px,color:#fff
+    style CV fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
+    style UEG fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
+```
+
+</td>
+<td width="50%" valign="top">
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Database_Support-34495E?style=flat-square&logo=database&logoColor=white" />
+</div>
+
+<br />
+
+```mermaid
+graph TD
+    subgraph "🗄️ Universal Database Support"
+        DS[Database Support] --> PG["🐘 PostgreSQL"]
+        DS --> MY["🐬 MySQL"]
+        DS --> SQ["📂 SQLite"]
+        DS --> MG["🍃 MongoDB"]
+        DS --> SS["🏢 SQL Server"]
+        DS --> CR["🪳 CockroachDB"]
+
+        PG --> PG1["✅ Arrays Support"]
+        PG --> PG2["✅ JSON Fields"]
+        PG --> PG3["✅ Full Features"]
+        PG --> PG4["✅ Advanced Types"]
+
+        MY --> MY1["✅ Complete Compatibility"]
+        MY --> MY2["✅ All Data Types"]
+
+        SQ --> SQ1["✅ Full Feature Support"]
+        SQ --> SQ2["✅ Embedded Ready"]
+
+        MG --> MG1["✅ Document Models"]
+        MG --> MG2["✅ NoSQL Features"]
+
+        SS --> SS1["✅ Complete Compatibility"]
+        SS --> SS2["✅ Enterprise Ready"]
+
+        CR --> CR1["✅ PostgreSQL Compatible"]
+        CR --> CR2["✅ Distributed Ready"]
+    end
+
+    style DS fill:#34495e,stroke:#333,stroke-width:3px,color:#fff
+    style PG fill:#336791,stroke:#333,stroke-width:2px,color:#fff
+    style MY fill:#4479a1,stroke:#333,stroke-width:2px,color:#fff
+    style SQ fill:#003b57,stroke:#333,stroke-width:2px,color:#fff
+    style MG fill:#47a248,stroke:#333,stroke-width:2px,color:#fff
+    style SS fill:#cc2927,stroke:#333,stroke-width:2px,color:#fff
+    style CR fill:#6933ff,stroke:#333,stroke-width:2px,color:#fff
+```
+
+</td>
+</tr>
+</table>
+
+</details>
 
 
 ## Prerequisites
