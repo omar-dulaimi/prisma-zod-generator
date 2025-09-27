@@ -1978,7 +1978,15 @@ export default class Transformer {
       : Transformer.exportTypedSchemas
         ? `${inputType.type}ObjectSchema`
         : `${inputType.type}Object${Transformer.zodSchemaSuffix}`;
-    const enumSchemaLine = `${inputType.type}Schema`;
+    // Use proper enum naming resolution instead of hardcoded "Schema" suffix
+    const enumNamingConfig = resolveEnumNaming(Transformer.getGeneratorConfig());
+    const enumSchemaLine = generateExportName(
+      enumNamingConfig.exportNamePattern,
+      inputType.type as string, // Use enum name as model name for naming pattern
+      undefined, // No operation
+      undefined, // No input type
+      inputType.type as string,
+    );
 
     const schema =
       inputType.type === this.name ? objectSchemaLine : isEnum ? enumSchemaLine : objectSchemaLine;
@@ -2896,7 +2904,7 @@ export default class Transformer {
             this.generateInputImport(`${modelName}WhereUniqueInput`),
             this.generateEnumImport(
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
-              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               'root',
             ),
           ];
@@ -2916,7 +2924,7 @@ export default class Transformer {
           const selectField = `select: ${selectFieldReference},`;
           const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
           const schemaFields =
-            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
+            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnum, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.array()]).optional()`
               .trim()
               .replace(/,\s*,/g, ',');
 
@@ -2955,7 +2963,7 @@ export default class Transformer {
             this.generateInputImport(`${modelName}WhereUniqueInput`),
             this.generateEnumImport(
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
-              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               'root',
             ),
           ];
@@ -2974,7 +2982,7 @@ export default class Transformer {
           const selectField = `select: ${selectFieldReference},`;
           const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
           const schemaFields =
-            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
+            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnum, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.array()]).optional()`
               .trim()
               .replace(/,\s*,/g, ',');
 
@@ -3014,7 +3022,7 @@ export default class Transformer {
             this.generateInputImport(`${modelName}WhereUniqueInput`),
             this.generateEnumImport(
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
-              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               'root',
             ),
           ];
@@ -3034,7 +3042,7 @@ export default class Transformer {
           const selectField = `select: ${selectFieldReference},`;
           const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
           const schemaFields =
-            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
+            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnum, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnum.array()]).optional()`
               .trim()
               .replace(/,\s*,/g, ',');
 
@@ -3510,7 +3518,7 @@ export default class Transformer {
             this.generateInputImport(`${modelName}ScalarWhereWithAggregatesInput`),
             this.generateEnumImport(
               `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
-              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema`,
+              `${this.getPascalCaseModelName(modelName)}ScalarFieldEnum`,
               'root',
             ),
             this.generateInputImport(
@@ -3548,7 +3556,7 @@ export default class Transformer {
             `having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional()`,
             'take: z.number().optional()',
             'skip: z.number().optional()',
-            `by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema)`,
+            `by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnum)`,
             `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional()`,
             `_min: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'MinAggregateInput')}`)}.optional()`,
             `_max: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'MaxAggregateInput')}`)}.optional()`,

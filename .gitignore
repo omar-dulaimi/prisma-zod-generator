@@ -69,3 +69,5 @@ node_modules/
 prisma/client
 debug-test
 app
+src/dsrc
+src/schemas

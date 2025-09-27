@@ -1031,9 +1031,28 @@ export class PrismaTypeMapper {
    */
   private mapEnumType(field: DMMF.Field, result: FieldTypeMappingResult): void {
     const enumName = field.type;
-    // Reference generated enum schema (e.g., RoleSchema) instead of native Prisma enum
-    result.zodSchema = `${enumName}Schema`;
-    result.imports.add(`${enumName}Schema`);
+    // Use proper enum naming resolution instead of hardcoded "Schema" suffix
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { resolveEnumNaming, generateExportName } = require('../utils/naming-resolver');
+      // Access the global transformer config like done elsewhere in this file
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const cfg = require('../transformer').default.getGeneratorConfig?.();
+      const enumNaming = resolveEnumNaming(cfg);
+      const actualExportName = generateExportName(
+        enumNaming.exportNamePattern,
+        enumName,
+        undefined,
+        undefined,
+        enumName,
+      );
+      result.zodSchema = actualExportName;
+      result.imports.add(actualExportName);
+    } catch {
+      // Fallback to the old pattern if naming resolution fails
+      result.zodSchema = `${enumName}Schema`;
+      result.imports.add(`${enumName}Schema`);
+    }
     result.additionalValidations.push(`// Enum type: ${enumName}`);
   }
 
