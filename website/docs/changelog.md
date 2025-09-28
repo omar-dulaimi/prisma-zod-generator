@@ -9,8 +9,17 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.23.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.23.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.23.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.23.0...v1.23.1) (2025-09-28)
+
+### 🐛 Bug Fixes
+
+* **esm:** add file extension to JSON helpers imports ([50481a2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/50481a27d1c6fff0915888418cc4953cf901bd7d))
+* **esm:** add file extension to Prisma client imports in single-file mode ([c0c3a7f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c0c3a7fe38e3af112a8f93beb1e79e807f9a8e4c))
+* **esm:** update JSON helpers import regex for single-file mode ([a109656](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a1096560fd9913cd0e508f7c088bf062cab76014))
+* **transformer:** use enum schemas instead of enum types for runtime validation ([0faaa02](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0faaa02a0ab05cf40c20840183db04911209adbd))
 
 ## [1.23.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.22.2...v1.23.0) (2025-09-28)
 
