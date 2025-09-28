@@ -9,8 +9,20 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.22.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.22.2**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.22.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.22.1...v1.22.2) (2025-09-28)
+
+### 🐛 Bug Fixes
+
+* **esm:** add .js extension support for Prisma client imports ([d8ce5af](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d8ce5af8529883053ffa1851032b43d91f7bfd4f))
+
+### 📚 Documentation
+
+* **changelog:** fix changelog issue affecting docs site ([d59c791](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d59c7919bd870b8c5710c855a08e042cdb04608a))
+* **readme:** enhance core features with visual Mermaid diagrams ([bd715b4](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bd715b40621f03defa64476b152d54e9db366f30))
+* **readme:** enhance feature badge visibility ([387e64e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/387e64e7eb33e22205b8200749a5e064fdbd0274))
 
 ## [1.22.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.22.0...v1.22.1) (2025-09-27)
 
