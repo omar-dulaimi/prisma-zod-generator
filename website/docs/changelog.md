@@ -9,8 +9,49 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.22.2**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.23.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.23.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.22.2...v1.23.0) (2025-09-28)
+
+### 🚀 Features
+
+* **zod-comments:** add complete Zod v4 string format support ([41ed24b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/41ed24b441f2ef6643f538e164e9038b61be4ecc))
+* **zod-comments:** add support for 14 new Zod v4 string format validation methods ([75eb185](https://github.com/omar-dulaimi/prisma-zod-generator/commit/75eb18581c349cca9cc0c47bc2ce71a497f51ebb)), closes [#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233)
+
+### 🐛 Bug Fixes
+
+* **parsers:** correct parameter validation for Zod v4 string format methods ([5b2b339](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5b2b339bc9334d21934559d2a7c899e48e46aaa5))
+* **release:** correct GitHub assignee format and complete datetime docs ([0de41aa](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0de41aa035c0742909e8db199b18b90df15beae0))
+* **zod-comments:** improve parser robustness and error handling ([cd022ae](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cd022ae934e3fa4d9c9634eb75fea7e83428eee5))
+* **zod-comments:** preserve parameters in v4 base replacement methods ([cf18276](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cf182769ced06520e5f0c1c9e3c9085caa58dfee))
+
+### ♻️ Code Refactoring
+
+* **zod-comments:** use central logger consistently ([4bb63ef](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4bb63efc0c4e3a83e30ae1e68e16abcebb9ca5a3))
+
+### 📚 Documentation
+
+* **changelog:** correct Zod v4 string format methods list ([2910146](https://github.com/omar-dulaimi/prisma-zod-generator/commit/29101461ed24d97103c8b174d5c045c8a2958680))
+
+## [Unreleased]
+
+### 🚀 Features
+
+* **zod-comments:** add support for 20 new Zod v4 string format validation methods ([#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233))
+  - Network/URL formats: `@zod.httpUrl()`, `@zod.hostname()`
+  - Identifier formats: `@zod.nanoid()`, `@zod.cuid()`, `@zod.cuid2()`, `@zod.ulid()`
+  - Encoding formats: `@zod.base64()`, `@zod.base64url()`, `@zod.hex()`
+  - Security formats: `@zod.jwt()`, `@zod.hash("algorithm")`
+  - Network formats: `@zod.ipv4()`, `@zod.ipv6()`, `@zod.cidrv4()`, `@zod.cidrv6()`
+  - Character formats: `@zod.emoji()`
+  - ISO date/time formats: `@zod.isoDate()`, `@zod.isoTime()`, `@zod.isoDatetime()`, `@zod.isoDuration()`
+  - All methods support Zod v4 base types (e.g., `z.nanoid()`, `z.iso.date()`) with v3 fallback compatibility
+  - Existing methods like `@zod.email()`, `@zod.url()`, `@zod.uuid()` maintain compatibility
+
+### 📚 Documentation
+
+* **zod-comments:** add comprehensive documentation for new string format methods with examples and compatibility matrix
 
 ## [1.22.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.22.1...v1.22.2) (2025-09-28)
 
@@ -647,17 +688,6 @@ The latest version is **v1.22.2**. See the [GitHub Releases](https://github.com/
 * **recipes:** add CRUD-only, input-only, result-only recipe examples ([36d6702](https://github.com/omar-dulaimi/prisma-zod-generator/commit/36d67029fb142d984b4d91e8cb7d50d6d62479ff))
 * **recipes:** add pure-models-lean recipe with DateTime strategy examples ([dcd773a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/dcd773acb9679d102e4535108faf31f5a3794645))
 
-## [Unreleased]
-
-### 🚀 Features
-
-* **naming:** introduce stable naming customization (presets: zod-prisma, zod-prisma-types, legacy-model-suffix) with tokenized file/export patterns and legacy alias support.
-
-### 📚 Documentation
-
-* **readme:** add comprehensive naming customization guide (presets, migration tips, precedence) and mark feature stable.
-
----
 
 ## [1.7.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.6.0...v1.7.0) (2025-08-12)
 
@@ -930,27 +960,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-- Comprehensive CI/CD pipeline with GitHub Actions
-- Automated release workflow with semantic versioning
-- Multi-provider database testing infrastructure
-- Extended test matrix for cross-platform compatibility
-- Dependabot configuration for automated dependency updates
-- Semantic release configuration for automated changelog generation
-
-### Changed
-- Improved test command reliability and compatibility
-- Updated ESLint configuration for better TypeScript support
-- Enhanced vitest configuration for better performance
-
-### Fixed
-- Test command compatibility issues with Zod v4
-- Undefined config errors in multi-provider tests
-- TypeScript type checking configuration
-
----
 
 *This changelog is automatically generated using [semantic-release](https://github.com/semantic-release/semantic-release).*
 
@@ -963,7 +972,7 @@ For the complete version history including older releases, please see the [full 
 
 ## Version Support
 
-- **Current:** v1.22.x - Full support with new features and bug fixes
+- **Current:** v1.23.x - Full support with new features and bug fixes
 - **Previous:** Previous minor versions - Security and critical bug fixes only
 - **Legacy:** Older versions - Community support only
 
