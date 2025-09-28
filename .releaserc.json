@@ -92,7 +92,7 @@
         "failComment": "❌ The release from branch `${branch.name}` had an error during the release step.\n\nPlease check the [build logs](${env.BUILD_URL}) for more details.",
         "failTitle": "🚨 The automated release failed",
         "labels": ["released"],
-        "assignees": ["@omar-dulaimi"]
+        "assignees": ["omar-dulaimi"]
       }
     ]
   ]

@@ -129,6 +129,8 @@ model SecurityData {
   ipv6Addr  String?
   /// @zod.cidrv4()
   subnet    String
+  /// @zod.datetime()
+  timestamp String
 }
 ```
 
@@ -141,6 +143,7 @@ export const SecurityDataCreateInputSchema = z.object({
   ipv4Addr: z.ipv4(),              // Base type in v4
   ipv6Addr: z.ipv6().optional(),   // Base type in v4
   subnet: z.cidrv4(),              // Base type in v4
+  timestamp: z.datetime(),         // Base type in v4
 });
 ```
 
@@ -186,6 +189,7 @@ The generator automatically detects your Zod version:
 | `@zod.httpUrl()` | None | HTTP/HTTPS URLs | `z.httpUrl()` | `z.string()` |
 | `@zod.hostname()` | None | Hostname validation | `z.hostname()` | `z.string()` |
 | `@zod.uuid()` | None | UUID validation | `z.uuid()` | `z.string().uuid()` |
+| `@zod.datetime()` | None | ISO datetime validation | `z.datetime()` | `z.string().datetime()` |
 | `@zod.nanoid()` | None | Nanoid validation | `z.nanoid()` | `z.string()` |
 | `@zod.cuid()` | None | CUID validation | `z.cuid()` | `z.string()` |
 | `@zod.cuid2()` | None | CUID v2 validation | `z.cuid2()` | `z.string()` |
