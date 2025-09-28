@@ -1,3 +1,9 @@
+## [1.23.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.23.1...v1.23.2) (2025-09-28)
+
+### 🐛 Bug Fixes
+
+* **ci:** add missing GitHub permissions for semantic-release ([db07eca](https://github.com/omar-dulaimi/prisma-zod-generator/commit/db07eca0f42cc33f98b3ce2d94070c88d97fc78d)), closes [#260](https://github.com/omar-dulaimi/prisma-zod-generator/issues/260) [#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233)
+
 ## [1.23.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.23.0...v1.23.1) (2025-09-28)
 
 ### 🐛 Bug Fixes
