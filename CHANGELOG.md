@@ -1,3 +1,25 @@
+## [1.23.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.22.2...v1.23.0) (2025-09-28)
+
+### 🚀 Features
+
+* **zod-comments:** add complete Zod v4 string format support ([41ed24b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/41ed24b441f2ef6643f538e164e9038b61be4ecc))
+* **zod-comments:** add support for 14 new Zod v4 string format validation methods ([75eb185](https://github.com/omar-dulaimi/prisma-zod-generator/commit/75eb18581c349cca9cc0c47bc2ce71a497f51ebb)), closes [#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233)
+
+### 🐛 Bug Fixes
+
+* **parsers:** correct parameter validation for Zod v4 string format methods ([5b2b339](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5b2b339bc9334d21934559d2a7c899e48e46aaa5))
+* **release:** correct GitHub assignee format and complete datetime docs ([0de41aa](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0de41aa035c0742909e8db199b18b90df15beae0))
+* **zod-comments:** improve parser robustness and error handling ([cd022ae](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cd022ae934e3fa4d9c9634eb75fea7e83428eee5))
+* **zod-comments:** preserve parameters in v4 base replacement methods ([cf18276](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cf182769ced06520e5f0c1c9e3c9085caa58dfee))
+
+### ♻️ Code Refactoring
+
+* **zod-comments:** use central logger consistently ([4bb63ef](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4bb63efc0c4e3a83e30ae1e68e16abcebb9ca5a3))
+
+### 📚 Documentation
+
+* **changelog:** correct Zod v4 string format methods list ([2910146](https://github.com/omar-dulaimi/prisma-zod-generator/commit/29101461ed24d97103c8b174d5c045c8a2958680))
+
 ## [Unreleased]
 
 ### 🚀 Features
