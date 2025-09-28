@@ -428,7 +428,7 @@ export function parseZodAnnotations(
         result.annotations = validAnnotations;
         // Log validation errors but don't fail if we have some valid annotations
         if (validationErrors.length > 0) {
-          console.warn('Some @zod annotations were invalid and filtered out:', validationErrors);
+          logger.warn('Some @zod annotations were invalid and filtered out:', validationErrors);
         }
       }
     }
@@ -1300,7 +1300,7 @@ function resolveZodVersion(zodVersion: 'auto' | 'v3' | 'v4'): 'v3' | 'v4' {
   }
 
   // Fallback to v3 if detection fails
-  console.warn('Failed to detect Zod version, defaulting to v3 syntax');
+  logger.warn('Failed to detect Zod version, defaulting to v3 syntax');
   return 'v3';
 }
 
@@ -1324,7 +1324,7 @@ function mapAnnotationToZodMethod(
 
   if (!methodConfig) {
     // Unknown method - pass through as-is with warning
-    console.warn(`Unknown @zod method: ${method} - generating as-is`);
+    logger.warn(`Unknown @zod method: ${method} - generating as-is`);
     return {
       methodCall: `.${method}(${formatParameters(parameters)})`,
     };
