@@ -2082,10 +2082,12 @@ export default class Transformer {
           const helpersDir = path.join(Transformer.getOutputPath(), 'helpers');
           let rel = path.relative(objectsDir, helpersDir).replace(/\\/g, '/');
           if (!rel.startsWith('.') && !rel.startsWith('/')) rel = `./${rel}`;
-          jsonImport = `import { JsonValueSchema as jsonSchema } from '${rel}/json-helpers';\n\n`;
+          const extension = this.getImportFileExtension();
+          jsonImport = `import { JsonValueSchema as jsonSchema } from '${rel}/json-helpers${extension}';\n\n`;
         } catch {
           // Fallback to original relative import (pre-change behavior)
-          jsonImport = `import { JsonValueSchema as jsonSchema } from './helpers/json-helpers';\n\n`;
+          const extension = this.getImportFileExtension();
+          jsonImport = `import { JsonValueSchema as jsonSchema } from './helpers/json-helpers${extension}';\n\n`;
         }
       }
     }
