@@ -883,11 +883,6 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'cidrv4',
     'cidrv6',
     'emoji',
-    // ISO date/time methods
-    'isoDate',
-    'isoTime',
-    'isoDatetime',
-    'isoDuration',
   ];
 
   // Common number validation methods
@@ -952,11 +947,6 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'cidrv4',
     'cidrv6',
     'emoji',
-    // ISO date/time methods
-    'isoDate',
-    'isoTime',
-    'isoDatetime',
-    'isoDuration',
   ];
 
   // Methods that accept optional error message parameter
@@ -1400,11 +1390,6 @@ function mapAnnotationToZodMethod(
     'cidrv4',
     'cidrv6',
     'emoji',
-    // ISO date/time methods
-    'isoDate',
-    'isoTime',
-    'isoDatetime',
-    'isoDuration',
   ];
 
   // Handle ISO methods which use z.iso.xxx() syntax
@@ -1416,8 +1401,13 @@ function mapAnnotationToZodMethod(
     if (resolvedVersion === 'v4') {
       // In Zod v4, prefer base types like z.httpUrl(), z.base64(), etc.
       // Don't chain unnecessarily!
+      const formattedParams = formatParameters(parameters);
+      const methodCall = formattedParams
+        ? `z.${method}(${formattedParams})`
+        : `z.${method}()`;
+
       return {
-        methodCall: `z.${method}()`,
+        methodCall,
         requiredImport: methodConfig.requiresImport,
         isBaseReplacement: true,
       };
@@ -1439,14 +1429,19 @@ function mapAnnotationToZodMethod(
     if (resolvedVersion === 'v4') {
       // Map method names to ISO methods
       const isoMethodMap: Record<string, string> = {
-        isoDate: 'z.iso.date()',
-        isoTime: 'z.iso.time()',
-        isoDatetime: 'z.iso.datetime()',
-        isoDuration: 'z.iso.duration()',
+        isoDate: 'z.iso.date',
+        isoTime: 'z.iso.time',
+        isoDatetime: 'z.iso.datetime',
+        isoDuration: 'z.iso.duration',
       };
 
+      const formattedParams = formatParameters(parameters);
+      const methodCall = formattedParams
+        ? `${isoMethodMap[method]}(${formattedParams})`
+        : `${isoMethodMap[method]}()`;
+
       return {
-        methodCall: isoMethodMap[method],
+        methodCall,
         requiredImport: methodConfig.requiresImport,
         isBaseReplacement: true,
       };

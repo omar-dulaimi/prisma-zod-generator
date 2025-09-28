@@ -457,4 +457,138 @@ model MixedFormatTest {
       GENERATION_TIMEOUT,
     );
   });
+
+  describe('Parameter Preservation in v4 Base Methods', () => {
+    it(
+      'should preserve parameters when using v4 base replacement methods',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-233-params');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model ParameterTest {
+  id          Int    @id @default(autoincrement())
+
+  /// @zod.nanoid(10)
+  customNano  String
+
+  /// @zod.jwt("HS256")
+  customJwt   String
+
+  /// @zod.base64(true)
+  customB64   String
+
+  /// @zod.isoDate(3)
+  isoDateWithPrecision String
+
+  /// @zod.ipv4(4)
+  customIpv4  String
+}
+`;
+
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const createInputPath = join(objectsDir, 'ParameterTestCreateInput.schema.ts');
+
+          expect(existsSync(createInputPath)).toBe(true);
+
+          const content = readFileSync(createInputPath, 'utf-8');
+
+          // Should preserve parameters in v4 base methods
+          expect(content).toMatch(/z\.nanoid\(\s*10\s*\)/);
+          expect(content).toMatch(/z\.jwt\(\s*["']HS256["']\s*\)/);
+          expect(content).toMatch(/z\.base64\(\s*true\s*\)/);
+          expect(content).toMatch(/z\.iso\.date\(\s*3\s*\)/);
+          expect(content).toMatch(/z\.ipv4\(\s*4\s*\)/);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle methods without parameters correctly',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('issue-233-no-params');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model NoParamTest {
+  id        Int    @id @default(autoincrement())
+
+  /// @zod.nanoid()
+  basicNano String
+
+  /// @zod.emoji()
+  basicEmoji String
+
+  /// @zod.isoTime()
+  basicIsoTime String
+}
+`;
+
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const createInputPath = join(objectsDir, 'NoParamTestCreateInput.schema.ts');
+
+          expect(existsSync(createInputPath)).toBe(true);
+
+          const content = readFileSync(createInputPath, 'utf-8');
+
+          // Should use empty parentheses for methods without parameters
+          expect(content).toMatch(/z\.nanoid\(\)/);
+          expect(content).toMatch(/z\.emoji\(\)/);
+          expect(content).toMatch(/z\.iso\.time\(\)/);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });
