@@ -168,9 +168,9 @@ model HashTest {
           const content = readFileSync(createInputPath, 'utf-8');
 
           // Should contain hash method calls with parameters
-          expect(content).toMatch(/hash.*sha256/);
-          expect(content).toMatch(/hash.*md5/);
-          expect(content).toMatch(/hash.*sha1/);
+          expect(content).toMatch(/hash\s*\(\s*["']sha256["']\s*\)/);
+          expect(content).toMatch(/hash\s*\(\s*["']md5["']\s*\)/);
+          expect(content).toMatch(/hash\s*\(\s*["']sha1["']\s*\)/);
         } finally {
           await testEnv.cleanup();
         }
@@ -292,8 +292,15 @@ model HashErrorTest {
           writeFileSync(testEnv.schemaPath, schema);
 
           // This should either fail generation or fallback gracefully
-          // We don't expect this to throw, but it should generate a warning or fallback
-          await testEnv.runGeneration();
+          try {
+            await testEnv.runGeneration();
+          } catch (error) {
+            // Generation failed as expected for invalid hash parameter
+            expect(error).toBeDefined();
+            return;
+          }
+
+          // If generation succeeded without throwing, verify fallback behavior
 
           // If generation succeeds, check that it falls back to basic string
           const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');

@@ -6,6 +6,7 @@
  */
 
 import { DMMF } from '@prisma/generator-helper';
+import { logger } from '../utils/logger';
 
 /**
  * Interface for field comment context including metadata for error reporting
@@ -1061,6 +1062,12 @@ function validateStringMethodParameters(method: string, parameters: unknown[]): 
         throw new Error(`${method} requires a string parameter`);
       }
       break;
+
+    case 'hash':
+      if (parameters.length !== 1 || typeof parameters[0] !== 'string') {
+        throw new Error(`hash requires a single string algorithm parameter (e.g., 'sha256')`);
+      }
+      break;
   }
 }
 
@@ -1127,7 +1134,6 @@ export interface ValidationMethodConfig {
   methodName: string;
   zodMethod: string;
   parameterCount: number | 'variable';
-  parameterTypes?: string[];
   requiresImport?: string;
   fieldTypeCompatibility?: string[];
 }
@@ -1166,7 +1172,10 @@ export function mapAnnotationsToZodSchema(
     for (const annotation of annotations) {
       try {
         const methodResult = mapAnnotationToZodMethod(annotation, context, zodVersion);
-        methodCalls.push(methodResult.methodCall);
+        // Skip empty fallbacks (e.g., v3 for v4-only base methods)
+        if (methodResult.methodCall) {
+          methodCalls.push(methodResult.methodCall);
+        }
         methodResults.push(methodResult);
 
         // Add any required imports
@@ -1187,6 +1196,7 @@ export function mapAnnotationsToZodSchema(
       const baseReplacements = methodResults.filter((result) => result.isBaseReplacement);
       const regularReplacements = methodCalls.filter(
         (call) =>
+          call &&
           !call.startsWith('.') &&
           !methodResults.find((r) => r.methodCall === call)?.isBaseReplacement,
       );
@@ -1388,7 +1398,9 @@ function mapAnnotationToZodMethod(
       };
     }
     // For v3, fallback to z.string() since these methods likely don't exist
-    console.warn(`Method ${method} not supported in Zod v3, falling back to z.string()`);
+    logger.warn(
+      `[zod-comments] Method ${method} not supported in Zod v3; falling back to z.string()`,
+    );
     return {
       methodCall: '', // Will result in base z.string() only
       requiredImport: methodConfig.requiresImport,
@@ -1409,7 +1421,7 @@ function mapAnnotationToZodMethod(
       };
     }
     // For v3, fallback to z.string() since hash() likely doesn't exist
-    console.warn(`Method hash not supported in Zod v3, falling back to z.string()`);
+    logger.warn(`[zod-comments] Method hash not supported in Zod v3; falling back to z.string()`);
     return {
       methodCall: '', // Will result in base z.string() only
       requiredImport: methodConfig.requiresImport,
@@ -1850,10 +1862,14 @@ export function generateCompleteZodSchema(
   let schemaChain = validationResult.schemaChain;
 
   // Check if the schema chain is a replacement method (doesn't start with dot)
-  const isReplacementSchema = !schemaChain.startsWith('.');
+  const hasChain = schemaChain.length > 0;
+  const isReplacementSchema = hasChain && !schemaChain.startsWith('.');
 
   let fullSchema: string;
-  if (isReplacementSchema) {
+  if (!hasChain) {
+    // No validations to apply; return base type untouched
+    fullSchema = baseType;
+  } else if (isReplacementSchema) {
     // For replacement schemas (json, enum), use them directly instead of concatenating
     fullSchema = schemaChain;
   } else {
