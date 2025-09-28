@@ -864,16 +864,15 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'trim',
     'toLowerCase',
     'toUpperCase',
+    'datetime',
     // New Zod v4 string format methods - Issue #233
     'httpUrl',
-    'hostname',
     'nanoid',
     'cuid',
     'cuid2',
     'ulid',
     'base64',
     'base64url',
-    'hex',
     'jwt',
     'hash',
     'ipv4',
@@ -919,24 +918,23 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   ];
 
   // Methods that don't allow parameters
-  const noParams = [
+  const noParams = ['nonempty', 'trim', 'toLowerCase', 'toUpperCase'];
+
+  // Methods that accept optional parameters (format validation methods)
+  const optionalParams = [
+    // Existing string format methods
     'email',
     'url',
     'uuid',
-    'nonempty',
-    'trim',
-    'toLowerCase',
-    'toUpperCase',
-    // New Zod v4 string format methods that don't take parameters - Issue #233
+    'datetime',
+    // New Zod v4 string format methods - Issue #233
     'httpUrl',
-    'hostname',
     'nanoid',
     'cuid',
     'cuid2',
     'ulid',
     'base64',
     'base64url',
-    'hex',
     'jwt',
     'ipv4',
     'ipv6',
@@ -977,6 +975,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
       ...arrayMethods,
       ...additionalMethods,
       ...optionalErrorMessage,
+      ...optionalParams,
     ]),
   ];
   if (!allKnownMethods.includes(method)) {
@@ -990,6 +989,11 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
 
   if (noParams.includes(method) && parameters.length > 0) {
     throw new Error(`Method ${method} does not accept parameters`);
+  }
+
+  // Validate optional parameter methods (string format methods)
+  if (optionalParams.includes(method) && parameters.length > 1) {
+    throw new Error(`Method ${method} accepts at most one parameter`);
   }
 
   // Validate optional error message methods
@@ -1456,14 +1460,19 @@ function getValidationMethodConfig(
     {
       methodName: 'email',
       zodMethod: 'email',
-      parameterCount: 0,
+      parameterCount: 'variable', // 0 or 1 parameter
       fieldTypeCompatibility: ['String'],
     },
-    { methodName: 'url', zodMethod: 'url', parameterCount: 0, fieldTypeCompatibility: ['String'] },
+    {
+      methodName: 'url',
+      zodMethod: 'url',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
     {
       methodName: 'uuid',
       zodMethod: 'uuid',
-      parameterCount: 0,
+      parameterCount: 'variable', // 0 or 1 parameter
       fieldTypeCompatibility: ['String'],
     },
     {
@@ -1617,7 +1626,7 @@ function getValidationMethodConfig(
     {
       methodName: 'datetime',
       zodMethod: 'datetime',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     { methodName: 'object', zodMethod: 'object', parameterCount: 0 },
@@ -1634,13 +1643,13 @@ function getValidationMethodConfig(
     {
       methodName: 'httpUrl',
       zodMethod: 'httpUrl',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     {
       methodName: 'hostname',
       zodMethod: 'hostname',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
 
@@ -1648,25 +1657,25 @@ function getValidationMethodConfig(
     {
       methodName: 'nanoid',
       zodMethod: 'nanoid',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     {
       methodName: 'cuid',
       zodMethod: 'cuid',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     {
       methodName: 'cuid2',
       zodMethod: 'cuid2',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     {
       methodName: 'ulid',
       zodMethod: 'ulid',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
 
@@ -1674,19 +1683,19 @@ function getValidationMethodConfig(
     {
       methodName: 'base64',
       zodMethod: 'base64',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     {
       methodName: 'base64url',
       zodMethod: 'base64url',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     {
       methodName: 'hex',
       zodMethod: 'hex',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
 
@@ -1694,7 +1703,7 @@ function getValidationMethodConfig(
     {
       methodName: 'jwt',
       zodMethod: 'jwt',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     {
@@ -1708,19 +1717,19 @@ function getValidationMethodConfig(
     {
       methodName: 'ipv4',
       zodMethod: 'ipv4',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     {
       methodName: 'ipv6',
       zodMethod: 'ipv6',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     {
       methodName: 'cidrv4',
       zodMethod: 'cidrv4',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
 
@@ -1728,7 +1737,7 @@ function getValidationMethodConfig(
     {
       methodName: 'emoji',
       zodMethod: 'emoji',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
 
