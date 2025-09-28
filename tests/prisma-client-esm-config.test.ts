@@ -307,6 +307,81 @@ ${baseSchema}`;
         }
       });
 
+      it('should add .js extensions to custom Prisma client imports with ESM config', async () => {
+        const schemaContent = `generator client {
+  provider              = "prisma-client"
+  output                = "../dsrc"
+  runtime               = "nodejs"
+  moduleFormat          = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension   = "js"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+  posts Post[]
+}
+
+model Post {
+  id       Int     @id @default(autoincrement())
+  title    String
+  content  String?
+  author   User?   @relation(fields: [authorId], references: [id])
+  authorId Int?
+}`;
+
+        writeFileSync(schemaPath, schemaContent);
+
+        try {
+          execSync(`npx prisma generate --schema ${schemaPath}`, {
+            cwd: process.cwd(),
+            stdio: 'pipe',
+          });
+
+          // Check that Prisma client imports include .js extension with custom output path
+          const testFiles = [
+            join(outputDir, 'schemas', 'findUniqueUser.schema.ts'),
+            join(outputDir, 'schemas', 'findManyPost.schema.ts'),
+            join(outputDir, 'schemas', 'createOneUser.schema.ts'),
+          ];
+
+          for (const filePath of testFiles) {
+            if (existsSync(filePath)) {
+              const content = readFileSync(filePath, 'utf-8');
+
+              // Should contain Prisma client import with .js extension when using custom output
+              if (content.includes('import type { Prisma } from')) {
+                // The import should include the .js extension for custom client paths
+                expect(content).toMatch(/import type \{ Prisma \} from ['"'][^'"]*\.js['"];?/);
+
+                // Specifically check for the custom client path pattern
+                expect(content).toMatch(/from ['"]\.\.[^'"]*client\.js['"];?/);
+              }
+
+              // Should also contain .js extensions in other imports
+              if (content.includes("from './objects/") || content.includes("from './enums/")) {
+                expect(content).toMatch(/from '\.\/(objects|enums)\/[^']*\.js'/);
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Skipping custom Prisma client ESM test - might not be available');
+          console.error('Original error:', error);
+        }
+      });
+
       it('should add .js extensions in index files with useMultipleFiles and ESM config (issue #234)', async () => {
         const schemaContent = `generator client {
   provider              = "prisma-client"

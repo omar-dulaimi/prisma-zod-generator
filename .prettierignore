@@ -1,5 +1,7 @@
 lib/**/*
 package/**/*
+src/schemas/**/*
+src/dsrc/**/*
 node_modules/
 tests/node_modules/
 coverage/

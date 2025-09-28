@@ -83,6 +83,8 @@ export default [
       'lib/**/*',
       'node_modules/**/*',
       'package/**/*',
+      'src/schemas/**/*',
+      'src/dsrc/**/*',
       // 'prisma/generated/**/*',
       'tests/node_modules/**/*',
       'coverage/**/*',

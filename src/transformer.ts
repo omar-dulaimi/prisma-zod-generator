@@ -960,6 +960,10 @@ export default class Transformer {
         }
       }
 
+      // Add file extension if needed (for ESM with importFileExtension)
+      const extension = this.getImportFileExtension();
+      rel = `${rel}${extension}`;
+
       // Ensure it is a valid relative module specifier (prefix with ./ when needed)
       if (rel.startsWith('.') || rel.startsWith('/')) return rel;
       return `./${rel}`;
