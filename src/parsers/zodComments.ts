@@ -868,18 +868,26 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'datetime',
     // New Zod v4 string format methods - Issue #233
     'httpUrl',
+    'hostname',
     'nanoid',
     'cuid',
     'cuid2',
     'ulid',
     'base64',
     'base64url',
+    'hex',
     'jwt',
     'hash',
     'ipv4',
     'ipv6',
     'cidrv4',
+    'cidrv6',
     'emoji',
+    // ISO date/time methods
+    'isoDate',
+    'isoTime',
+    'isoDatetime',
+    'isoDuration',
   ];
 
   // Common number validation methods
@@ -930,17 +938,25 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'datetime',
     // New Zod v4 string format methods - Issue #233
     'httpUrl',
+    'hostname',
     'nanoid',
     'cuid',
     'cuid2',
     'ulid',
     'base64',
     'base64url',
+    'hex',
     'jwt',
     'ipv4',
     'ipv6',
     'cidrv4',
+    'cidrv6',
     'emoji',
+    // ISO date/time methods
+    'isoDate',
+    'isoTime',
+    'isoDatetime',
+    'isoDuration',
   ];
 
   // Methods that accept optional error message parameter
@@ -1382,8 +1398,17 @@ function mapAnnotationToZodMethod(
     'ipv4',
     'ipv6',
     'cidrv4',
+    'cidrv6',
     'emoji',
+    // ISO date/time methods
+    'isoDate',
+    'isoTime',
+    'isoDatetime',
+    'isoDuration',
   ];
+
+  // Handle ISO methods which use z.iso.xxx() syntax
+  const isoMethods = ['isoDate', 'isoTime', 'isoDatetime', 'isoDuration'];
 
   if (newStringFormatMethods.includes(method)) {
     const resolvedVersion = resolveZodVersion(zodVersion);
@@ -1400,6 +1425,35 @@ function mapAnnotationToZodMethod(
     // For v3, fallback to z.string() since these methods likely don't exist
     logger.warn(
       `[zod-comments] Method ${method} not supported in Zod v3; falling back to z.string()`,
+    );
+    return {
+      methodCall: '', // Will result in base z.string() only
+      requiredImport: methodConfig.requiresImport,
+    };
+  }
+
+  // Handle ISO methods with z.iso.xxx() syntax
+  if (isoMethods.includes(method)) {
+    const resolvedVersion = resolveZodVersion(zodVersion);
+
+    if (resolvedVersion === 'v4') {
+      // Map method names to ISO methods
+      const isoMethodMap: Record<string, string> = {
+        isoDate: 'z.iso.date()',
+        isoTime: 'z.iso.time()',
+        isoDatetime: 'z.iso.datetime()',
+        isoDuration: 'z.iso.duration()',
+      };
+
+      return {
+        methodCall: isoMethodMap[method],
+        requiredImport: methodConfig.requiresImport,
+        isBaseReplacement: true,
+      };
+    }
+    // For v3, fallback to z.string() since ISO methods don't exist
+    logger.warn(
+      `[zod-comments] ISO method ${method} not supported in Zod v3; falling back to z.string()`,
     );
     return {
       methodCall: '', // Will result in base z.string() only
@@ -1744,11 +1798,43 @@ function getValidationMethodConfig(
       parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
+    {
+      methodName: 'cidrv6',
+      zodMethod: 'cidrv6',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
 
     // Character validation methods
     {
       methodName: 'emoji',
       zodMethod: 'emoji',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // ISO date/time validation methods
+    {
+      methodName: 'isoDate',
+      zodMethod: 'iso.date',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'isoTime',
+      zodMethod: 'iso.time',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'isoDatetime',
+      zodMethod: 'iso.datetime',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'isoDuration',
+      zodMethod: 'iso.duration',
       parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },

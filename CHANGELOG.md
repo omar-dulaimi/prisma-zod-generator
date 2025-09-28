@@ -2,14 +2,16 @@
 
 ### 🚀 Features
 
-* **zod-comments:** add support for 14 new Zod v4 string format validation methods ([#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233))
-  - Network/URL formats: `@zod.email()`, `@zod.url()`, `@zod.uuid()`
+* **zod-comments:** add support for 20 new Zod v4 string format validation methods ([#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233))
+  - Network/URL formats: `@zod.httpUrl()`, `@zod.hostname()`
   - Identifier formats: `@zod.nanoid()`, `@zod.cuid()`, `@zod.cuid2()`, `@zod.ulid()`
-  - Encoding formats: `@zod.base64()`, `@zod.base64url()`
+  - Encoding formats: `@zod.base64()`, `@zod.base64url()`, `@zod.hex()`
   - Security formats: `@zod.jwt()`, `@zod.hash("algorithm")`
-  - Network formats: `@zod.ipv4()`, `@zod.ipv6()`, `@zod.cidrv4()`
+  - Network formats: `@zod.ipv4()`, `@zod.ipv6()`, `@zod.cidrv4()`, `@zod.cidrv6()`
   - Character formats: `@zod.emoji()`
-  - All methods support Zod v4 base types (e.g., `z.nanoid()`) with v3 fallback compatibility
+  - ISO date/time formats: `@zod.isoDate()`, `@zod.isoTime()`, `@zod.isoDatetime()`, `@zod.isoDuration()`
+  - All methods support Zod v4 base types (e.g., `z.nanoid()`, `z.iso.date()`) with v3 fallback compatibility
+  - Existing methods like `@zod.email()`, `@zod.url()`, `@zod.uuid()` maintain compatibility
 
 ### 📚 Documentation
 
