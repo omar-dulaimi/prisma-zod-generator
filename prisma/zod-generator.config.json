@@ -1,3 +1,4 @@
 {
-  "mode": "full"
+  "mode": "full",
+  "useMultipleFiles": false
 }

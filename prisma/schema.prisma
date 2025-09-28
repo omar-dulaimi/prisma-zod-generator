@@ -55,6 +55,7 @@ model Book {
   title    String
   author   User?  @relation(fields: [authorId], references: [id])
   authorId Int?
+  content  Json
 }
 
 model Map {
