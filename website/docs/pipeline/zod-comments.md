@@ -26,6 +26,180 @@ export const UserSchema = z
 
 Annotations are concatenated after base type; unsafe expressions are not executed (string append model). Keep rules pure.
 
+## String Format Validations
+
+The generator supports all Zod v4 string format validation methods. In Zod v4, these generate optimized base types (e.g., `z.email()` instead of `z.string().email()`).
+
+### Network & URL Formats
+
+```prisma
+model WebData {
+  id       String @id @default(cuid())
+  /// @zod.email()
+  email    String @unique
+  /// @zod.url()
+  website  String?
+  /// @zod.httpUrl()
+  apiUrl   String
+  /// @zod.hostname()
+  server   String
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const WebDataCreateInputSchema = z.object({
+  email: z.email(),      // Base type in v4
+  website: z.url().optional(),
+  apiUrl: z.httpUrl(),   // Base type in v4
+  server: z.hostname(),  // Base type in v4
+});
+```
+
+### Identifier Formats
+
+```prisma
+model Identifiers {
+  id       String @id @default(cuid())
+  /// @zod.uuid()
+  uuid     String
+  /// @zod.nanoid()
+  nanoid   String
+  /// @zod.cuid()
+  cuid     String
+  /// @zod.cuid2()
+  cuid2    String
+  /// @zod.ulid()
+  ulid     String
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const IdentifiersCreateInputSchema = z.object({
+  uuid: z.uuid(),       // Base type in v4
+  nanoid: z.nanoid(),   // Base type in v4
+  cuid: z.cuid(),       // Base type in v4
+  cuid2: z.cuid2(),     // Base type in v4
+  ulid: z.ulid(),       // Base type in v4
+});
+```
+
+### Encoding & Character Formats
+
+```prisma
+model EncodingData {
+  id        String @id @default(cuid())
+  /// @zod.base64()
+  base64    String
+  /// @zod.base64url()
+  base64url String
+  /// @zod.hex()
+  hex       String
+  /// @zod.emoji()
+  reaction  String
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const EncodingDataCreateInputSchema = z.object({
+  base64: z.base64(),       // Base type in v4
+  base64url: z.base64url(), // Base type in v4
+  hex: z.hex(),             // Base type in v4
+  reaction: z.emoji(),      // Base type in v4
+});
+```
+
+### Security & Network Formats
+
+```prisma
+model SecurityData {
+  id        String @id @default(cuid())
+  /// @zod.jwt()
+  token     String?
+  /// @zod.hash("sha256")
+  checksum  String
+  /// @zod.ipv4()
+  ipv4Addr  String
+  /// @zod.ipv6()
+  ipv6Addr  String?
+  /// @zod.cidrv4()
+  subnet    String
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const SecurityDataCreateInputSchema = z.object({
+  token: z.jwt().optional(),        // Base type in v4
+  checksum: z.hash("sha256"),       // Base type with parameter
+  ipv4Addr: z.ipv4(),              // Base type in v4
+  ipv6Addr: z.ipv6().optional(),   // Base type in v4
+  subnet: z.cidrv4(),              // Base type in v4
+});
+```
+
+### Chaining with String Format Methods
+
+String format methods can be chained with other Zod validations:
+
+```prisma
+model ChainedValidations {
+  id       String @id @default(cuid())
+  /// @zod.email().max(100).toLowerCase()
+  email    String @unique
+  /// @zod.nanoid().min(21)
+  publicId String
+  /// @zod.httpUrl().max(200)
+  website  String?
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const ChainedValidationsCreateInputSchema = z.object({
+  email: z.email().max(100).toLowerCase(),
+  publicId: z.nanoid().min(21),
+  website: z.httpUrl().max(200).optional(),
+});
+```
+
+### Version Compatibility
+
+The generator automatically detects your Zod version:
+
+- **Zod v4**: Uses optimized base types like `z.email()`, `z.nanoid()`
+- **Zod v3**: Falls back to chaining methods like `z.string().email()` where supported, or `z.string()` for unsupported methods
+
+### Complete Reference
+
+| Method | Parameter | Description | Zod v4 Output | Zod v3 Fallback |
+|--------|-----------|-------------|---------------|-----------------|
+| `@zod.email()` | None | Email validation | `z.email()` | `z.string().email()` |
+| `@zod.url()` | None | URL validation | `z.url()` | `z.string().url()` |
+| `@zod.httpUrl()` | None | HTTP/HTTPS URLs | `z.httpUrl()` | `z.string()` |
+| `@zod.hostname()` | None | Hostname validation | `z.hostname()` | `z.string()` |
+| `@zod.uuid()` | None | UUID validation | `z.uuid()` | `z.string().uuid()` |
+| `@zod.nanoid()` | None | Nanoid validation | `z.nanoid()` | `z.string()` |
+| `@zod.cuid()` | None | CUID validation | `z.cuid()` | `z.string()` |
+| `@zod.cuid2()` | None | CUID v2 validation | `z.cuid2()` | `z.string()` |
+| `@zod.ulid()` | None | ULID validation | `z.ulid()` | `z.string()` |
+| `@zod.base64()` | None | Base64 validation | `z.base64()` | `z.string()` |
+| `@zod.base64url()` | None | Base64URL validation | `z.base64url()` | `z.string()` |
+| `@zod.hex()` | None | Hexadecimal validation | `z.hex()` | `z.string()` |
+| `@zod.jwt()` | None | JWT validation | `z.jwt()` | `z.string()` |
+| `@zod.hash("algo")` | Algorithm | Hash validation | `z.hash("sha256")` | `z.string()` |
+| `@zod.ipv4()` | None | IPv4 validation | `z.ipv4()` | `z.string()` |
+| `@zod.ipv6()` | None | IPv6 validation | `z.ipv6()` | `z.string()` |
+| `@zod.cidrv4()` | None | CIDR v4 validation | `z.cidrv4()` | `z.string()` |
+| `@zod.emoji()` | None | Single emoji validation | `z.emoji()` | `z.string()` |
+
 ## Custom Inline Override (@zod.custom.use)
 
 Replace an entire field schema inline:

@@ -864,6 +864,22 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'trim',
     'toLowerCase',
     'toUpperCase',
+    // New Zod v4 string format methods - Issue #233
+    'httpUrl',
+    'hostname',
+    'nanoid',
+    'cuid',
+    'cuid2',
+    'ulid',
+    'base64',
+    'base64url',
+    'hex',
+    'jwt',
+    'hash',
+    'ipv4',
+    'ipv6',
+    'cidrv4',
+    'emoji',
   ];
 
   // Common number validation methods
@@ -898,10 +914,35 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'transform',
     'multipleOf',
     'step',
+    // New methods that require parameters - Issue #233
+    'hash', // hash requires algorithm parameter like "sha256"
   ];
 
   // Methods that don't allow parameters
-  const noParams = ['email', 'url', 'uuid', 'nonempty', 'trim', 'toLowerCase', 'toUpperCase'];
+  const noParams = [
+    'email',
+    'url',
+    'uuid',
+    'nonempty',
+    'trim',
+    'toLowerCase',
+    'toUpperCase',
+    // New Zod v4 string format methods that don't take parameters - Issue #233
+    'httpUrl',
+    'hostname',
+    'nanoid',
+    'cuid',
+    'cuid2',
+    'ulid',
+    'base64',
+    'base64url',
+    'hex',
+    'jwt',
+    'ipv4',
+    'ipv6',
+    'cidrv4',
+    'emoji',
+  ];
 
   // Methods that accept optional error message parameter
   const optionalErrorMessage = [
@@ -1312,6 +1353,65 @@ function mapAnnotationToZodMethod(
     // For v3, fall through to regular chaining method below
   }
 
+  // Handle new Zod v4 string format methods - Issue #233
+  const newStringFormatMethods = [
+    'httpUrl',
+    'hostname',
+    'nanoid',
+    'cuid',
+    'cuid2',
+    'ulid',
+    'base64',
+    'base64url',
+    'hex',
+    'jwt',
+    'ipv4',
+    'ipv6',
+    'cidrv4',
+    'emoji',
+  ];
+
+  if (newStringFormatMethods.includes(method)) {
+    const resolvedVersion = resolveZodVersion(zodVersion);
+
+    if (resolvedVersion === 'v4') {
+      // In Zod v4, prefer base types like z.httpUrl(), z.base64(), etc.
+      // Don't chain unnecessarily!
+      return {
+        methodCall: `z.${method}()`,
+        requiredImport: methodConfig.requiresImport,
+        isBaseReplacement: true,
+      };
+    }
+    // For v3, fallback to z.string() since these methods likely don't exist
+    console.warn(`Method ${method} not supported in Zod v3, falling back to z.string()`);
+    return {
+      methodCall: '', // Will result in base z.string() only
+      requiredImport: methodConfig.requiresImport,
+    };
+  }
+
+  // Handle hash method with parameter (special case)
+  if (method === 'hash') {
+    const resolvedVersion = resolveZodVersion(zodVersion);
+
+    if (resolvedVersion === 'v4') {
+      // In Zod v4, z.hash(algorithm) is a base type
+      const formattedParams = formatParameters(parameters);
+      return {
+        methodCall: `z.hash(${formattedParams})`,
+        requiredImport: methodConfig.requiresImport,
+        isBaseReplacement: true,
+      };
+    }
+    // For v3, fallback to z.string() since hash() likely doesn't exist
+    console.warn(`Method hash not supported in Zod v3, falling back to z.string()`);
+    return {
+      methodCall: '', // Will result in base z.string() only
+      requiredImport: methodConfig.requiresImport,
+    };
+  }
+
   // Generate the method call for regular chaining methods
   const formattedParams = formatParameters(parameters);
   const methodCall = `.${methodConfig.zodMethod}(${formattedParams})`;
@@ -1528,6 +1628,110 @@ function getValidationMethodConfig(
       parameterCount: 0,
       fieldTypeCompatibility: ['Json'],
     },
+
+    // New Zod v4 string format methods - Issue #233
+    // Network/URL validation methods
+    {
+      methodName: 'httpUrl',
+      zodMethod: 'httpUrl',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'hostname',
+      zodMethod: 'hostname',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // Identifier validation methods
+    {
+      methodName: 'nanoid',
+      zodMethod: 'nanoid',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'cuid',
+      zodMethod: 'cuid',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'cuid2',
+      zodMethod: 'cuid2',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'ulid',
+      zodMethod: 'ulid',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // Encoding validation methods
+    {
+      methodName: 'base64',
+      zodMethod: 'base64',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'base64url',
+      zodMethod: 'base64url',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'hex',
+      zodMethod: 'hex',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // Security/Crypto validation methods
+    {
+      methodName: 'jwt',
+      zodMethod: 'jwt',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'hash',
+      zodMethod: 'hash',
+      parameterCount: 1, // Takes algorithm parameter like "sha256"
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // Network validation methods
+    {
+      methodName: 'ipv4',
+      zodMethod: 'ipv4',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'ipv6',
+      zodMethod: 'ipv6',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'cidrv4',
+      zodMethod: 'cidrv4',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // Character validation methods
+    {
+      methodName: 'emoji',
+      zodMethod: 'emoji',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+
     // Note: Removed 'string', 'number', 'boolean' method configs as they duplicate base types
   ];
 

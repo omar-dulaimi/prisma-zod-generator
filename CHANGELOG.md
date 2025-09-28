@@ -1,3 +1,20 @@
+## [Unreleased]
+
+### 🚀 Features
+
+* **zod-comments:** add support for 14 new Zod v4 string format validation methods ([#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233))
+  - Network/URL formats: `@zod.httpUrl()`, `@zod.hostname()`
+  - Identifier formats: `@zod.nanoid()`, `@zod.cuid()`, `@zod.cuid2()`, `@zod.ulid()`
+  - Encoding formats: `@zod.base64()`, `@zod.base64url()`, `@zod.hex()`
+  - Security formats: `@zod.jwt()`, `@zod.hash("algorithm")`
+  - Network formats: `@zod.ipv4()`, `@zod.ipv6()`, `@zod.cidrv4()`
+  - Character formats: `@zod.emoji()`
+  - All methods support Zod v4 base types (e.g., `z.nanoid()`) with v3 fallback compatibility
+
+### 📚 Documentation
+
+* **zod-comments:** add comprehensive documentation for new string format methods with examples and compatibility matrix
+
 ## [1.22.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.22.1...v1.22.2) (2025-09-28)
 
 ### 🐛 Bug Fixes
