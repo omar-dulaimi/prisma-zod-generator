@@ -9,8 +9,14 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.23.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.23.2**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.23.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.23.1...v1.23.2) (2025-09-28)
+
+### 🐛 Bug Fixes
+
+* **ci:** add missing GitHub permissions for semantic-release ([db07eca](https://github.com/omar-dulaimi/prisma-zod-generator/commit/db07eca0f42cc33f98b3ce2d94070c88d97fc78d)), closes [#260](https://github.com/omar-dulaimi/prisma-zod-generator/issues/260) [#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233)
 
 ## [1.23.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.23.0...v1.23.1) (2025-09-28)
 
