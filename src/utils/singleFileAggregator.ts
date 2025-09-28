@@ -14,8 +14,12 @@ let sawPrismaAlias = false; // whether __PrismaAlias was referenced
 let prismaImportBase = '@prisma/client';
 let needsJsonHelpers = false; // whether to inject json helpers block
 
-export function setSingleFilePrismaImportPath(importPath: string) {
-  prismaImportBase = (importPath || '@prisma/client').replace(/\\/g, '/');
+export function setSingleFilePrismaImportPath(importPath: string, extension?: string) {
+  let finalPath = (importPath || '@prisma/client').replace(/\\/g, '/');
+  if (extension && !finalPath.endsWith(extension) && !finalPath.includes('node_modules')) {
+    finalPath += extension;
+  }
+  prismaImportBase = finalPath;
 }
 
 export function initSingleFile(bundleFullPath: string) {

@@ -388,7 +388,8 @@ export async function generate(options: GeneratorOptions) {
                 rel = `${rel.replace(/\/$/, '')}/client`;
               }
               const importPath = rel.startsWith('.') || rel.startsWith('/') ? rel : `./${rel}`;
-              setSingleFilePrismaImportPath(importPath || '@prisma/client');
+              const importExtension = Transformer.getImportFileExtension();
+              setSingleFilePrismaImportPath(importPath || '@prisma/client', importExtension);
             }
           }
         } catch {
