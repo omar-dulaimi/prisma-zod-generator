@@ -1977,11 +1977,16 @@ async function generateVariantSchemaContent(
     })
     .join(',\n');
 
+  // Check if partial flag is enabled for this variant
+  const variantConfig = config?.variants?.[variantName as keyof typeof config.variants];
+  const shouldApplyPartial = variantConfig?.partial === true;
+  const partialSuffix = shouldApplyPartial ? '.partial()' : '';
+
   const zImport = new Transformer({}).generateImportZodStatement();
   return `${zImport}\n${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
-}).strict();
+}).strict()${partialSuffix};
 
 export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;
 `;

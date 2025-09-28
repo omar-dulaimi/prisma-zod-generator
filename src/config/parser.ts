@@ -224,6 +224,9 @@ export interface VariantConfig {
 
   /** Fields to exclude from this variant */
   excludeFields?: string[];
+
+  /** Apply .partial() to the generated schema, making all fields optional */
+  partial?: boolean;
 }
 
 /**
