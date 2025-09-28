@@ -1,3 +1,22 @@
+## [Unreleased]
+
+### 🚀 Features
+
+* **zod-comments:** add support for 20 new Zod v4 string format validation methods ([#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233))
+  - Network/URL formats: `@zod.httpUrl()`, `@zod.hostname()`
+  - Identifier formats: `@zod.nanoid()`, `@zod.cuid()`, `@zod.cuid2()`, `@zod.ulid()`
+  - Encoding formats: `@zod.base64()`, `@zod.base64url()`, `@zod.hex()`
+  - Security formats: `@zod.jwt()`, `@zod.hash("algorithm")`
+  - Network formats: `@zod.ipv4()`, `@zod.ipv6()`, `@zod.cidrv4()`, `@zod.cidrv6()`
+  - Character formats: `@zod.emoji()`
+  - ISO date/time formats: `@zod.isoDate()`, `@zod.isoTime()`, `@zod.isoDatetime()`, `@zod.isoDuration()`
+  - All methods support Zod v4 base types (e.g., `z.nanoid()`, `z.iso.date()`) with v3 fallback compatibility
+  - Existing methods like `@zod.email()`, `@zod.url()`, `@zod.uuid()` maintain compatibility
+
+### 📚 Documentation
+
+* **zod-comments:** add comprehensive documentation for new string format methods with examples and compatibility matrix
+
 ## [1.22.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.22.1...v1.22.2) (2025-09-28)
 
 ### 🐛 Bug Fixes
@@ -633,17 +652,6 @@
 * **recipes:** add CRUD-only, input-only, result-only recipe examples ([36d6702](https://github.com/omar-dulaimi/prisma-zod-generator/commit/36d67029fb142d984b4d91e8cb7d50d6d62479ff))
 * **recipes:** add pure-models-lean recipe with DateTime strategy examples ([dcd773a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/dcd773acb9679d102e4535108faf31f5a3794645))
 
-## [Unreleased]
-
-### 🚀 Features
-
-* **naming:** introduce stable naming customization (presets: zod-prisma, zod-prisma-types, legacy-model-suffix) with tokenized file/export patterns and legacy alias support.
-
-### 📚 Documentation
-
-* **readme:** add comprehensive naming customization guide (presets, migration tips, precedence) and mark feature stable.
-
----
 
 ## [1.7.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.6.0...v1.7.0) (2025-08-12)
 
@@ -916,26 +924,5 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-- Comprehensive CI/CD pipeline with GitHub Actions
-- Automated release workflow with semantic versioning
-- Multi-provider database testing infrastructure
-- Extended test matrix for cross-platform compatibility
-- Dependabot configuration for automated dependency updates
-- Semantic release configuration for automated changelog generation
-
-### Changed
-- Improved test command reliability and compatibility
-- Updated ESLint configuration for better TypeScript support
-- Enhanced vitest configuration for better performance
-
-### Fixed
-- Test command compatibility issues with Zod v4
-- Undefined config errors in multi-provider tests
-- TypeScript type checking configuration
-
----
 
 *This changelog is automatically generated using [semantic-release](https://github.com/semantic-release/semantic-release).*

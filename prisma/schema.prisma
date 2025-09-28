@@ -12,9 +12,9 @@ datasource db {
 }
 
 generator zod {
-  provider                  = "node ./lib/generator.js"
-  config                    = "./zod-generator.config.json"
-  output                    = "../src/schemas"
+  provider = "node ./lib/generator.js"
+  config   = "./zod-generator.config.json"
+  output   = "../src/schemas"
 }
 
 model Planet {

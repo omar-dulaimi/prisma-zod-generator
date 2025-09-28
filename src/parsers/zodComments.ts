@@ -6,6 +6,7 @@
  */
 
 import { DMMF } from '@prisma/generator-helper';
+import { logger } from '../utils/logger';
 
 /**
  * Interface for field comment context including metadata for error reporting
@@ -427,7 +428,7 @@ export function parseZodAnnotations(
         result.annotations = validAnnotations;
         // Log validation errors but don't fail if we have some valid annotations
         if (validationErrors.length > 0) {
-          console.warn('Some @zod annotations were invalid and filtered out:', validationErrors);
+          logger.warn('Some @zod annotations were invalid and filtered out:', validationErrors);
         }
       }
     }
@@ -864,6 +865,24 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'trim',
     'toLowerCase',
     'toUpperCase',
+    'datetime',
+    // New Zod v4 string format methods - Issue #233
+    'httpUrl',
+    'hostname',
+    'nanoid',
+    'cuid',
+    'cuid2',
+    'ulid',
+    'base64',
+    'base64url',
+    'hex',
+    'jwt',
+    'hash',
+    'ipv4',
+    'ipv6',
+    'cidrv4',
+    'cidrv6',
+    'emoji',
   ];
 
   // Common number validation methods
@@ -898,10 +917,37 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'transform',
     'multipleOf',
     'step',
+    // New methods that require parameters - Issue #233
+    'hash', // hash requires algorithm parameter like "sha256"
   ];
 
   // Methods that don't allow parameters
-  const noParams = ['email', 'url', 'uuid', 'nonempty', 'trim', 'toLowerCase', 'toUpperCase'];
+  const noParams = ['nonempty', 'trim', 'toLowerCase', 'toUpperCase'];
+
+  // Methods that accept optional parameters (format validation methods)
+  const optionalParams = [
+    // Existing string format methods
+    'email',
+    'url',
+    'uuid',
+    'datetime',
+    // New Zod v4 string format methods - Issue #233
+    'httpUrl',
+    'hostname',
+    'nanoid',
+    'cuid',
+    'cuid2',
+    'ulid',
+    'base64',
+    'base64url',
+    'hex',
+    'jwt',
+    'ipv4',
+    'ipv6',
+    'cidrv4',
+    'cidrv6',
+    'emoji',
+  ];
 
   // Methods that accept optional error message parameter
   const optionalErrorMessage = [
@@ -936,6 +982,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
       ...arrayMethods,
       ...additionalMethods,
       ...optionalErrorMessage,
+      ...optionalParams,
     ]),
   ];
   if (!allKnownMethods.includes(method)) {
@@ -949,6 +996,11 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
 
   if (noParams.includes(method) && parameters.length > 0) {
     throw new Error(`Method ${method} does not accept parameters`);
+  }
+
+  // Validate optional parameter methods (string format methods)
+  if (optionalParams.includes(method) && parameters.length > 1) {
+    throw new Error(`Method ${method} accepts at most one parameter`);
   }
 
   // Validate optional error message methods
@@ -1014,6 +1066,12 @@ function validateStringMethodParameters(method: string, parameters: unknown[]): 
     case 'endsWith':
       if (parameters.length !== 1 || typeof parameters[0] !== 'string') {
         throw new Error(`${method} requires a string parameter`);
+      }
+      break;
+
+    case 'hash':
+      if (parameters.length !== 1 || typeof parameters[0] !== 'string') {
+        throw new Error(`hash requires a single string algorithm parameter (e.g., 'sha256')`);
       }
       break;
   }
@@ -1082,7 +1140,6 @@ export interface ValidationMethodConfig {
   methodName: string;
   zodMethod: string;
   parameterCount: number | 'variable';
-  parameterTypes?: string[];
   requiresImport?: string;
   fieldTypeCompatibility?: string[];
 }
@@ -1121,7 +1178,10 @@ export function mapAnnotationsToZodSchema(
     for (const annotation of annotations) {
       try {
         const methodResult = mapAnnotationToZodMethod(annotation, context, zodVersion);
-        methodCalls.push(methodResult.methodCall);
+        // Skip empty fallbacks (e.g., v3 for v4-only base methods)
+        if (methodResult.methodCall) {
+          methodCalls.push(methodResult.methodCall);
+        }
         methodResults.push(methodResult);
 
         // Add any required imports
@@ -1142,6 +1202,7 @@ export function mapAnnotationsToZodSchema(
       const baseReplacements = methodResults.filter((result) => result.isBaseReplacement);
       const regularReplacements = methodCalls.filter(
         (call) =>
+          call &&
           !call.startsWith('.') &&
           !methodResults.find((r) => r.methodCall === call)?.isBaseReplacement,
       );
@@ -1229,7 +1290,7 @@ function resolveZodVersion(zodVersion: 'auto' | 'v3' | 'v4'): 'v3' | 'v4' {
   }
 
   // Fallback to v3 if detection fails
-  console.warn('Failed to detect Zod version, defaulting to v3 syntax');
+  logger.warn('Failed to detect Zod version, defaulting to v3 syntax');
   return 'v3';
 }
 
@@ -1253,7 +1314,7 @@ function mapAnnotationToZodMethod(
 
   if (!methodConfig) {
     // Unknown method - pass through as-is with warning
-    console.warn(`Unknown @zod method: ${method} - generating as-is`);
+    logger.warn(`Unknown @zod method: ${method} - generating as-is`);
     return {
       methodCall: `.${method}(${formatParameters(parameters)})`,
     };
@@ -1312,6 +1373,108 @@ function mapAnnotationToZodMethod(
     // For v3, fall through to regular chaining method below
   }
 
+  // Handle new Zod v4 string format methods - Issue #233
+  const newStringFormatMethods = [
+    'httpUrl',
+    'hostname',
+    'nanoid',
+    'cuid',
+    'cuid2',
+    'ulid',
+    'base64',
+    'base64url',
+    'hex',
+    'jwt',
+    'ipv4',
+    'ipv6',
+    'cidrv4',
+    'cidrv6',
+    'emoji',
+  ];
+
+  // Handle ISO methods which use z.iso.xxx() syntax
+  const isoMethods = ['isoDate', 'isoTime', 'isoDatetime', 'isoDuration'];
+
+  if (newStringFormatMethods.includes(method)) {
+    const resolvedVersion = resolveZodVersion(zodVersion);
+
+    if (resolvedVersion === 'v4') {
+      // In Zod v4, prefer base types like z.httpUrl(), z.base64(), etc.
+      // Don't chain unnecessarily!
+      const formattedParams = formatParameters(parameters);
+      const methodCall = formattedParams ? `z.${method}(${formattedParams})` : `z.${method}()`;
+
+      return {
+        methodCall,
+        requiredImport: methodConfig.requiresImport,
+        isBaseReplacement: true,
+      };
+    }
+    // For v3, fallback to z.string() since these methods likely don't exist
+    logger.warn(
+      `[zod-comments] Method ${method} not supported in Zod v3; falling back to z.string()`,
+    );
+    return {
+      methodCall: '', // Will result in base z.string() only
+      requiredImport: methodConfig.requiresImport,
+    };
+  }
+
+  // Handle ISO methods with z.iso.xxx() syntax
+  if (isoMethods.includes(method)) {
+    const resolvedVersion = resolveZodVersion(zodVersion);
+
+    if (resolvedVersion === 'v4') {
+      // Map method names to ISO methods
+      const isoMethodMap: Record<string, string> = {
+        isoDate: 'z.iso.date',
+        isoTime: 'z.iso.time',
+        isoDatetime: 'z.iso.datetime',
+        isoDuration: 'z.iso.duration',
+      };
+
+      const formattedParams = formatParameters(parameters);
+      const methodCall = formattedParams
+        ? `${isoMethodMap[method]}(${formattedParams})`
+        : `${isoMethodMap[method]}()`;
+
+      return {
+        methodCall,
+        requiredImport: methodConfig.requiresImport,
+        isBaseReplacement: true,
+      };
+    }
+    // For v3, fallback to z.string() since ISO methods don't exist
+    logger.warn(
+      `[zod-comments] ISO method ${method} not supported in Zod v3; falling back to z.string()`,
+    );
+    return {
+      methodCall: '', // Will result in base z.string() only
+      requiredImport: methodConfig.requiresImport,
+    };
+  }
+
+  // Handle hash method with parameter (special case)
+  if (method === 'hash') {
+    const resolvedVersion = resolveZodVersion(zodVersion);
+
+    if (resolvedVersion === 'v4') {
+      // In Zod v4, z.hash(algorithm) is a base type
+      const formattedParams = formatParameters(parameters);
+      return {
+        methodCall: `z.hash(${formattedParams})`,
+        requiredImport: methodConfig.requiresImport,
+        isBaseReplacement: true,
+      };
+    }
+    // For v3, fallback to z.string() since hash() likely doesn't exist
+    logger.warn(`[zod-comments] Method hash not supported in Zod v3; falling back to z.string()`);
+    return {
+      methodCall: '', // Will result in base z.string() only
+      requiredImport: methodConfig.requiresImport,
+    };
+  }
+
   // Generate the method call for regular chaining methods
   const formattedParams = formatParameters(parameters);
   const methodCall = `.${methodConfig.zodMethod}(${formattedParams})`;
@@ -1356,14 +1519,19 @@ function getValidationMethodConfig(
     {
       methodName: 'email',
       zodMethod: 'email',
-      parameterCount: 0,
+      parameterCount: 'variable', // 0 or 1 parameter
       fieldTypeCompatibility: ['String'],
     },
-    { methodName: 'url', zodMethod: 'url', parameterCount: 0, fieldTypeCompatibility: ['String'] },
+    {
+      methodName: 'url',
+      zodMethod: 'url',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
     {
       methodName: 'uuid',
       zodMethod: 'uuid',
-      parameterCount: 0,
+      parameterCount: 'variable', // 0 or 1 parameter
       fieldTypeCompatibility: ['String'],
     },
     {
@@ -1517,7 +1685,7 @@ function getValidationMethodConfig(
     {
       methodName: 'datetime',
       zodMethod: 'datetime',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['String'],
     },
     { methodName: 'object', zodMethod: 'object', parameterCount: 0 },
@@ -1528,6 +1696,142 @@ function getValidationMethodConfig(
       parameterCount: 0,
       fieldTypeCompatibility: ['Json'],
     },
+
+    // New Zod v4 string format methods - Issue #233
+    // Network/URL validation methods
+    {
+      methodName: 'httpUrl',
+      zodMethod: 'httpUrl',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'hostname',
+      zodMethod: 'hostname',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // Identifier validation methods
+    {
+      methodName: 'nanoid',
+      zodMethod: 'nanoid',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'cuid',
+      zodMethod: 'cuid',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'cuid2',
+      zodMethod: 'cuid2',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'ulid',
+      zodMethod: 'ulid',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // Encoding validation methods
+    {
+      methodName: 'base64',
+      zodMethod: 'base64',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'base64url',
+      zodMethod: 'base64url',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'hex',
+      zodMethod: 'hex',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // Security/Crypto validation methods
+    {
+      methodName: 'jwt',
+      zodMethod: 'jwt',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'hash',
+      zodMethod: 'hash',
+      parameterCount: 1, // Takes algorithm parameter like "sha256"
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // Network validation methods
+    {
+      methodName: 'ipv4',
+      zodMethod: 'ipv4',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'ipv6',
+      zodMethod: 'ipv6',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'cidrv4',
+      zodMethod: 'cidrv4',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'cidrv6',
+      zodMethod: 'cidrv6',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // Character validation methods
+    {
+      methodName: 'emoji',
+      zodMethod: 'emoji',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+
+    // ISO date/time validation methods
+    {
+      methodName: 'isoDate',
+      zodMethod: 'iso.date',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'isoTime',
+      zodMethod: 'iso.time',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'isoDatetime',
+      zodMethod: 'iso.datetime',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'isoDuration',
+      zodMethod: 'iso.duration',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+
     // Note: Removed 'string', 'number', 'boolean' method configs as they duplicate base types
   ];
 
@@ -1637,10 +1941,14 @@ export function generateCompleteZodSchema(
   let schemaChain = validationResult.schemaChain;
 
   // Check if the schema chain is a replacement method (doesn't start with dot)
-  const isReplacementSchema = !schemaChain.startsWith('.');
+  const hasChain = schemaChain.length > 0;
+  const isReplacementSchema = hasChain && !schemaChain.startsWith('.');
 
   let fullSchema: string;
-  if (isReplacementSchema) {
+  if (!hasChain) {
+    // No validations to apply; return base type untouched
+    fullSchema = baseType;
+  } else if (isReplacementSchema) {
     // For replacement schemas (json, enum), use them directly instead of concatenating
     fullSchema = schemaChain;
   } else {
