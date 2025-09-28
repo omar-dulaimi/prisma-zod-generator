@@ -1402,9 +1402,7 @@ function mapAnnotationToZodMethod(
       // In Zod v4, prefer base types like z.httpUrl(), z.base64(), etc.
       // Don't chain unnecessarily!
       const formattedParams = formatParameters(parameters);
-      const methodCall = formattedParams
-        ? `z.${method}(${formattedParams})`
-        : `z.${method}()`;
+      const methodCall = formattedParams ? `z.${method}(${formattedParams})` : `z.${method}()`;
 
       return {
         methodCall,
