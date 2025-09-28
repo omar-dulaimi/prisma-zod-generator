@@ -3,9 +3,9 @@
 ### 🚀 Features
 
 * **zod-comments:** add support for 14 new Zod v4 string format validation methods ([#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233))
-  - Network/URL formats: `@zod.httpUrl()`, `@zod.hostname()`
+  - Network/URL formats: `@zod.email()`, `@zod.url()`, `@zod.uuid()`
   - Identifier formats: `@zod.nanoid()`, `@zod.cuid()`, `@zod.cuid2()`, `@zod.ulid()`
-  - Encoding formats: `@zod.base64()`, `@zod.base64url()`, `@zod.hex()`
+  - Encoding formats: `@zod.base64()`, `@zod.base64url()`
   - Security formats: `@zod.jwt()`, `@zod.hash("algorithm")`
   - Network formats: `@zod.ipv4()`, `@zod.ipv6()`, `@zod.cidrv4()`
   - Character formats: `@zod.emoji()`
