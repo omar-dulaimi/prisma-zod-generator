@@ -1491,31 +1491,43 @@ function mapAnnotationToZodMethod(
   }
 
   if (method === 'custom') {
-    // @zod.custom() replaces the base type entirely with custom object/array schema
-    const formattedParams = formatParameters(parameters);
-    // Convert JSON object to z.object() schema
-    if (parameters.length > 0) {
-      const param = parameters[0];
-      if (typeof param === 'string' && param.trim().startsWith('{')) {
-        try {
-          const parsedObject = JSON.parse(param);
-          const zodObject = convertObjectToZodSchema(parsedObject);
-          return {
-            methodCall: `z.object(${zodObject})`,
-            requiredImport: methodConfig.requiresImport,
-          };
-        } catch {
-          // Fallback to raw parameter if JSON parsing fails
-          return {
-            methodCall: `z.object(${formattedParams})`,
-            requiredImport: methodConfig.requiresImport,
-          };
-        }
+    if (parameters.length === 0) {
+      throw new Error('Method custom requires parameters');
+    }
+
+    const [schemaCandidate] = parameters;
+
+    if (
+      schemaCandidate &&
+      typeof schemaCandidate === 'object' &&
+      !('__js_object_literal__' in (schemaCandidate as Record<string, unknown>))
+    ) {
+      const zodSchema = inferZodTypeFromValue(schemaCandidate);
+      return {
+        methodCall: zodSchema,
+        requiredImport: methodConfig.requiresImport,
+        isBaseReplacement: true,
+      };
+    }
+
+    if (typeof schemaCandidate === 'string') {
+      try {
+        const zodSchema = inferZodTypeFromValue(JSON.parse(schemaCandidate));
+        return {
+          methodCall: zodSchema,
+          requiredImport: methodConfig.requiresImport,
+          isBaseReplacement: true,
+        };
+      } catch {
+        // Fall through; formatParameters will handle non-JSON literals.
       }
     }
+
+    const formattedParams = formatParameters(parameters);
     return {
       methodCall: `z.object(${formattedParams})`,
       requiredImport: methodConfig.requiresImport,
+      isBaseReplacement: true,
     };
   }
 
