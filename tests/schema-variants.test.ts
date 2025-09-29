@@ -952,6 +952,348 @@ model User {
     );
   });
 
+  describe('Variant Partial Flag Support', () => {
+    it(
+      'should apply .partial() to variant schemas when partial flag is enabled',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('schema-variants-partial-flag');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            useMultipleFiles: true,
+            variants: {
+              pure: {
+                enabled: true,
+                suffix: '.model',
+                partial: false,
+              },
+              input: {
+                enabled: true,
+                suffix: '.input',
+                partial: true,
+              },
+              result: {
+                enabled: true,
+                suffix: '.result',
+                partial: false,
+              },
+            },
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  name     String?
+  password String
+  role     String  @default("USER")
+}
+
+model Post {
+  id      Int     @id @default(autoincrement())
+  title   String
+  content String?
+  draft   Boolean @default(true)
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const variantsDir = join(testEnv.outputDir, 'schemas', 'variants');
+
+          // Check pure variant (partial: false) - should NOT have .partial()
+          const userPurePath = join(variantsDir, 'pure', 'User.pure.ts');
+          if (existsSync(userPurePath)) {
+            const content = readFileSync(userPurePath, 'utf-8');
+            expect(content).toMatch(/z\.object\(/);
+            expect(content).toMatch(/\}\)\.strict\(\);/);
+            expect(content).not.toMatch(/\.partial\(\)/);
+            expect(content).toMatch(/export const UserModelSchema/);
+          }
+
+          // Check input variant (partial: true) - should have .partial()
+          const userInputPath = join(variantsDir, 'input', 'User.input.ts');
+          if (existsSync(userInputPath)) {
+            const content = readFileSync(userInputPath, 'utf-8');
+            expect(content).toMatch(/z\.object\(/);
+            expect(content).toMatch(/\}\)\.strict\(\)\.partial\(\);/);
+            expect(content).toMatch(/export const UserInputSchema/);
+
+            // Verify all fields are present in the schema definition
+            expect(content).toMatch(/id:/);
+            expect(content).toMatch(/email:/);
+            expect(content).toMatch(/name:/);
+            expect(content).toMatch(/password:/);
+            expect(content).toMatch(/role:/);
+          }
+
+          // Check result variant (partial: false) - should NOT have .partial()
+          const userResultPath = join(variantsDir, 'result', 'User.result.ts');
+          if (existsSync(userResultPath)) {
+            const content = readFileSync(userResultPath, 'utf-8');
+            expect(content).toMatch(/z\.object\(/);
+            expect(content).toMatch(/\}\)\.strict\(\);/);
+            expect(content).not.toMatch(/\.partial\(\)/);
+            expect(content).toMatch(/export const UserResultSchema/);
+          }
+
+          // Test Post model as well to ensure consistent behavior
+          const postInputPath = join(variantsDir, 'input', 'Post.input.ts');
+          if (existsSync(postInputPath)) {
+            const content = readFileSync(postInputPath, 'utf-8');
+            expect(content).toMatch(/\}\)\.strict\(\)\.partial\(\);/);
+            expect(content).toMatch(/export const PostInputSchema/);
+          }
+
+          const postPurePath = join(variantsDir, 'pure', 'Post.pure.ts');
+          if (existsSync(postPurePath)) {
+            const content = readFileSync(postPurePath, 'utf-8');
+            expect(content).toMatch(/\}\)\.strict\(\);/);
+            expect(content).not.toMatch(/\.partial\(\)/);
+            expect(content).toMatch(/export const PostModelSchema/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should work with custom naming conventions and partial flag',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv(
+          'schema-variants-partial-custom-naming',
+        );
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            useMultipleFiles: true,
+            naming: {
+              preset: 'default',
+            },
+            variants: {
+              create: {
+                enabled: true,
+                suffix: 'CreateSchema',
+                partial: true,
+                excludeFields: ['id', 'createdAt', 'updatedAt'],
+              },
+              update: {
+                enabled: true,
+                suffix: 'UpdateSchema',
+                partial: true,
+                excludeFields: ['id', 'createdAt'],
+              },
+              view: {
+                enabled: true,
+                suffix: 'ViewSchema',
+                partial: false,
+                excludeFields: ['password'],
+              },
+            },
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const variantsDir = join(testEnv.outputDir, 'schemas', 'variants');
+
+          // Check create variant (partial: true, excludes id, createdAt, updatedAt)
+          const userCreatePath = join(variantsDir, 'create', 'User.create.ts');
+          if (existsSync(userCreatePath)) {
+            const content = readFileSync(userCreatePath, 'utf-8');
+            expect(content).toMatch(/\}\)\.strict\(\)\.partial\(\);/);
+            expect(content).toMatch(/export const UserCreateSchemaSchema/);
+
+            // Should include fields not excluded
+            expect(content).toMatch(/email:/);
+            expect(content).toMatch(/password:/);
+            expect(content).toMatch(/name:/);
+
+            // Should exclude specified fields
+            expect(content).not.toMatch(/id:/);
+            expect(content).not.toMatch(/createdAt:/);
+            expect(content).not.toMatch(/updatedAt:/);
+          }
+
+          // Check update variant (partial: true, excludes id, createdAt)
+          const userUpdatePath = join(variantsDir, 'update', 'User.update.ts');
+          if (existsSync(userUpdatePath)) {
+            const content = readFileSync(userUpdatePath, 'utf-8');
+            expect(content).toMatch(/\}\)\.strict\(\)\.partial\(\);/);
+            expect(content).toMatch(/export const UserUpdateSchemaSchema/);
+
+            // Should include updatedAt but not id, createdAt
+            expect(content).toMatch(/email:/);
+            expect(content).toMatch(/password:/);
+            expect(content).toMatch(/name:/);
+            expect(content).toMatch(/updatedAt:/);
+            expect(content).not.toMatch(/id:/);
+            expect(content).not.toMatch(/createdAt:/);
+          }
+
+          // Check view variant (partial: false, excludes password)
+          const userViewPath = join(variantsDir, 'view', 'User.view.ts');
+          if (existsSync(userViewPath)) {
+            const content = readFileSync(userViewPath, 'utf-8');
+            expect(content).toMatch(/\}\)\.strict\(\);/);
+            expect(content).not.toMatch(/\.partial\(\)/);
+            expect(content).toMatch(/export const UserViewSchemaSchema/);
+
+            // Should exclude password but include other fields
+            expect(content).toMatch(/id:/);
+            expect(content).toMatch(/email:/);
+            expect(content).toMatch(/name:/);
+            expect(content).toMatch(/createdAt:/);
+            expect(content).toMatch(/updatedAt:/);
+            expect(content).not.toMatch(/password:/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle partial flag with ESM imports correctly',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('schema-variants-partial-esm');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            useMultipleFiles: true,
+            variants: {
+              input: {
+                enabled: true,
+                suffix: '.input',
+                partial: true,
+              },
+            },
+          };
+
+          const schema = `
+generator client {
+  provider            = "prisma-client-js"
+  output              = "${testEnv.outputDir}/prisma"
+  engineType          = "client"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  name     String?
+  role     Role    @default(USER)
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const variantsDir = join(testEnv.outputDir, 'schemas', 'variants');
+
+          // Check input variant with ESM imports
+          const userInputPath = join(variantsDir, 'input', 'User.input.ts');
+          if (existsSync(userInputPath)) {
+            const content = readFileSync(userInputPath, 'utf-8');
+
+            // Should have .partial() applied
+            expect(content).toMatch(/\}\)\.strict\(\)\.partial\(\);/);
+            expect(content).toMatch(/export const UserInputSchema/);
+
+            // Should have ESM imports with .js extension
+            expect(content).toMatch(/import.*from.*zod/);
+
+            // Should handle enum correctly with partial
+            expect(content).toMatch(/role:/);
+
+            // All fields should be present since partial makes them all optional
+            expect(content).toMatch(/id:/);
+            expect(content).toMatch(/email:/);
+            expect(content).toMatch(/name:/);
+            expect(content).toMatch(/role:/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   describe('Variant Integration with Other Features', () => {
     it(
       'should work with field exclusions at multiple levels',

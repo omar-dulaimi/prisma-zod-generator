@@ -390,6 +390,11 @@ export const ConfigurationSchema: JSONSchema7 = {
           uniqueItems: true,
           description: 'Fields to exclude from this variant',
         },
+        partial: {
+          type: 'boolean',
+          default: false,
+          description: 'Apply .partial() to the generated schema, making all fields optional',
+        },
       },
     },
 

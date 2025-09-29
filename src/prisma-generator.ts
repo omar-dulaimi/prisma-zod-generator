@@ -1650,10 +1650,51 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
                       }
                     }
                   } else {
-                    // Regular @zod annotation processing
-                    const m = doc.match(/@zod(.*)$/m);
-                    if (m && m[1]) {
-                      zod += m[1];
+                    // Handle @zod.custom({ ... }) for object/array literals
+                    const customMatch = doc.match(
+                      /@zod\.custom\(((?:\{[^}]*\}|\[[^\]]*\]|(?:[^()]|\([^)]*\))*?))\)(.*)$/m,
+                    );
+                    if (customMatch) {
+                      const objectExpression = customMatch[1].trim();
+                      const chainedMethods = customMatch[2].trim();
+
+                      if (objectExpression) {
+                        if (objectExpression.startsWith('{')) {
+                          // Convert JSON object to z.object()
+                          try {
+                            const parsedObject = JSON.parse(objectExpression);
+                            const zodObject = convertObjectToZodSchema(parsedObject);
+                            zod = `z.object(${zodObject})`;
+                          } catch {
+                            // If JSON parsing fails, preserve the raw expression
+                            zod = `z.object(${objectExpression})`;
+                          }
+                        } else if (objectExpression.startsWith('[')) {
+                          // Convert JSON array to z.array()
+                          try {
+                            const parsedArray = JSON.parse(objectExpression);
+                            const zodArray = convertArrayToZodSchema(parsedArray);
+                            zod = `z.array(${zodArray})`;
+                          } catch {
+                            // If JSON parsing fails, preserve the raw expression
+                            zod = `z.array(${objectExpression})`;
+                          }
+                        } else {
+                          // For other expressions, use them directly
+                          zod = objectExpression;
+                        }
+
+                        // Add any chained methods
+                        if (chainedMethods) {
+                          zod += chainedMethods;
+                        }
+                      }
+                    } else {
+                      // Regular @zod annotation processing
+                      const m = doc.match(/@zod(.*)$/m);
+                      if (m && m[1]) {
+                        zod += m[1];
+                      }
                     }
                   }
                 }
@@ -1977,11 +2018,16 @@ async function generateVariantSchemaContent(
     })
     .join(',\n');
 
+  // Check if partial flag is enabled for this variant
+  const variantConfig = config?.variants?.[variantName as keyof typeof config.variants];
+  const shouldApplyPartial = variantConfig?.partial === true;
+  const partialSuffix = shouldApplyPartial ? '.partial()' : '';
+
   const zImport = new Transformer({}).generateImportZodStatement();
   return `${zImport}\n${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
-}).strict();
+}).strict()${partialSuffix};
 
 export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;
 `;
@@ -2345,5 +2391,57 @@ async function generatePureModelSchemas(
       `❌ Pure model generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
     // Don't throw - pure model generation failure shouldn't stop the main generation
+  }
+}
+
+/**
+ * Convert a parsed JSON object to a Zod schema string
+ */
+function convertObjectToZodSchema(obj: Record<string, any>): string {
+  const entries = Object.entries(obj).map(([key, value]) => {
+    const zodType = inferZodTypeFromValue(value);
+    return `${JSON.stringify(key)}: ${zodType}`;
+  });
+
+  return `{ ${entries.join(', ')} }`;
+}
+
+/**
+ * Convert a parsed JSON array to a Zod schema string
+ */
+function convertArrayToZodSchema(arr: any[]): string {
+  if (arr.length === 0) {
+    return 'z.unknown()';
+  }
+
+  // For simplicity, infer the type from the first element
+  // In practice, you might want to validate all elements have the same type
+  const firstElementType = inferZodTypeFromValue(arr[0]);
+  return firstElementType;
+}
+
+/**
+ * Infer a Zod type from a JavaScript value
+ */
+function inferZodTypeFromValue(value: any): string {
+  if (value === null) {
+    return 'z.null()';
+  }
+
+  switch (typeof value) {
+    case 'string':
+      return 'z.string()';
+    case 'number':
+      return Number.isInteger(value) ? 'z.number().int()' : 'z.number()';
+    case 'boolean':
+      return 'z.boolean()';
+    case 'object':
+      if (Array.isArray(value)) {
+        return `z.array(${convertArrayToZodSchema(value)})`;
+      } else {
+        return `z.object(${convertObjectToZodSchema(value)})`;
+      }
+    default:
+      return 'z.unknown()';
   }
 }

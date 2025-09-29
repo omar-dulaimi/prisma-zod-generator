@@ -1,4 +1,22 @@
 {
   "mode": "full",
-  "useMultipleFiles": false
+  "useMultipleFiles": true,
+  "zodImportTarget": "v4",
+  "variants": {
+    "pure": {
+      "enabled": true,
+      "suffix": ".model",
+      "partial": false
+    },
+    "input": {
+      "enabled": true,
+      "suffix": ".input",
+      "partial": true
+    },
+    "result": {
+      "enabled": true,
+      "suffix": ".result",
+      "partial": false
+    }
+  }
 }

@@ -8,10 +8,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Install deps (docs only)
-        run: npm ci --omit=dev || npm ci
+      - name: Use Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.1
+      - name: Install docs dependencies
+        run: cd website && pnpm install --frozen-lockfile
       - name: Build docs
-        run: npm run docs:build
+        run: cd website && pnpm run build
       - name: Check internal links
         run: |
           grep -Rho "/prisma-zod-generator[^"]*" website/build | sed 's/#.*//' | sort -u > links.txt

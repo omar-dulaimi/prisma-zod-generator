@@ -180,29 +180,92 @@ The generator automatically detects your Zod version:
 - **Zod v4**: Uses optimized base types like `z.email()`, `z.nanoid()`
 - **Zod v3**: Falls back to chaining methods like `z.string().email()` where supported, or `z.string()` for unsupported methods
 
+### Regular Expression Validation
+
+```prisma
+model ValidationData {
+  id          String @id @default(cuid())
+  /// @zod.regex(/^[A-Z]+$/, "Must be uppercase letters only")
+  upperCode   String
+  /// @zod.regex(/^\d{4}-\d{2}-\d{2}$/)
+  dateFormat  String
+  /// @zod.regex(new RegExp('[0-9]+'))
+  numberStr   String
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const ValidationDataCreateInputSchema = z.object({
+  upperCode: z.regex(/^[A-Z]+$/, 'Must be uppercase letters only'),
+  dateFormat: z.regex(/^\d{4}-\d{2}-\d{2}$/),
+  numberStr: z.regex(new RegExp('[0-9]+')),
+});
+```
+
+### Advanced Parameter Support
+
+The generator supports complex parameter expressions, including:
+
+#### JavaScript Object Literals
+
+```prisma
+model AdvancedValidation {
+  id       String @id @default(cuid())
+  /// @zod.nanoid({ abort: true, error: 'Custom nanoid error' })
+  customId String
+  /// @zod.nanoid({ abort: true, pattern: new RegExp('.'), error: 'Complex validation' })
+  complexId String
+}
+```
+
+Generated schema:
+
+```ts
+export const AdvancedValidationCreateInputSchema = z.object({
+  customId: z.nanoid({"abort":true,"error":"Custom nanoid error"}),
+  complexId: z.nanoid({"abort":true,"pattern":new RegExp('.'),"error":"Complex validation"}),
+});
+```
+
+### Parameter Types Supported
+
+The generator preserves all JavaScript parameter types:
+
+- **Strings**: `@zod.nanoid('Custom error')` → `z.nanoid('Custom error')`
+- **Objects**: `@zod.nanoid({ abort: true })` → `z.nanoid({"abort":true})`
+- **Numbers**: `@zod.min(10)` → `z.string().min(10)` (valid usage)
+- **Booleans**: `@zod.optional()` → `z.string().optional()` (parameter-less)
+- **Arrays**: `@zod.custom([1, 2, 3])` → `z.custom([1,2,3])`
+- **RegExp**: `@zod.regex(/pattern/)` → `z.regex(/pattern/)`
+- **Function calls**: `@zod.custom(Date.now())` → `z.custom(Date.now())`
+- **Nested expressions**: `@zod.custom(new RegExp('.'))` → `z.custom(new RegExp('.'))`
+
 ### Complete Reference
 
-| Method | Parameter | Description | Zod v4 Output | Zod v3 Fallback |
-|--------|-----------|-------------|---------------|-----------------|
-| `@zod.email()` | None | Email validation | `z.email()` | `z.string().email()` |
-| `@zod.url()` | None | URL validation | `z.url()` | `z.string().url()` |
-| `@zod.httpUrl()` | None | HTTP/HTTPS URLs | `z.httpUrl()` | `z.string()` |
-| `@zod.hostname()` | None | Hostname validation | `z.hostname()` | `z.string()` |
-| `@zod.uuid()` | None | UUID validation | `z.uuid()` | `z.string().uuid()` |
-| `@zod.datetime()` | None | ISO datetime validation | `z.datetime()` | `z.string().datetime()` |
-| `@zod.nanoid()` | None | Nanoid validation | `z.nanoid()` | `z.string()` |
-| `@zod.cuid()` | None | CUID validation | `z.cuid()` | `z.string()` |
-| `@zod.cuid2()` | None | CUID v2 validation | `z.cuid2()` | `z.string()` |
-| `@zod.ulid()` | None | ULID validation | `z.ulid()` | `z.string()` |
-| `@zod.base64()` | None | Base64 validation | `z.base64()` | `z.string()` |
-| `@zod.base64url()` | None | Base64URL validation | `z.base64url()` | `z.string()` |
-| `@zod.hex()` | None | Hexadecimal validation | `z.hex()` | `z.string()` |
-| `@zod.jwt()` | None | JWT validation | `z.jwt()` | `z.string()` |
-| `@zod.hash("algo")` | Algorithm | Hash validation | `z.hash("sha256")` | `z.string()` |
-| `@zod.ipv4()` | None | IPv4 validation | `z.ipv4()` | `z.string()` |
-| `@zod.ipv6()` | None | IPv6 validation | `z.ipv6()` | `z.string()` |
-| `@zod.cidrv4()` | None | CIDR v4 validation | `z.cidrv4()` | `z.string()` |
-| `@zod.emoji()` | None | Single emoji validation | `z.emoji()` | `z.string()` |
+| Method | Parameters | Description | Zod v4 Output | Zod v3 Fallback |
+|--------|------------|-------------|---------------|-----------------|
+| `@zod.email()` | Optional error message/config | Email validation | `z.email()` | `z.string().email()` |
+| `@zod.url()` | Optional error message/config | URL validation | `z.url()` | `z.string().url()` |
+| `@zod.httpUrl()` | Optional error message/config | HTTP/HTTPS URLs | `z.httpUrl()` | `z.string()` |
+| `@zod.hostname()` | Optional error message/config | Hostname validation | `z.hostname()` | `z.string()` |
+| `@zod.uuid()` | Optional error message/config | UUID validation | `z.uuid()` | `z.string().uuid()` |
+| `@zod.datetime()` | Optional error message/config | ISO datetime validation | `z.datetime()` | `z.string().datetime()` |
+| `@zod.nanoid()` | Optional config object/error message | Nanoid validation | `z.nanoid()` | `z.string()` |
+| `@zod.cuid()` | Optional error message/config | CUID validation | `z.cuid()` | `z.string()` |
+| `@zod.cuid2()` | Optional error message/config | CUID v2 validation | `z.cuid2()` | `z.string()` |
+| `@zod.ulid()` | Optional error message/config | ULID validation | `z.ulid()` | `z.string()` |
+| `@zod.base64()` | Optional config object/error message | Base64 validation | `z.base64()` | `z.string()` |
+| `@zod.base64url()` | Optional config object/error message | Base64URL validation | `z.base64url()` | `z.string()` |
+| `@zod.hex()` | Optional error message/config | Hexadecimal validation | `z.hex()` | `z.string()` |
+| `@zod.jwt()` | Optional config object/error message | JWT validation | `z.jwt()` | `z.string()` |
+| `@zod.regex()` | Pattern, optional error message | Regular expression validation | `z.regex(/pattern/)` | `z.string().regex(/pattern/)` |
+| `@zod.hash("algo")` | Algorithm, optional config | Hash validation | `z.hash("sha256")` | `z.string()` |
+| `@zod.ipv4()` | Optional error message/config | IPv4 validation | `z.ipv4()` | `z.string()` |
+| `@zod.ipv6()` | Optional error message/config | IPv6 validation | `z.ipv6()` | `z.string()` |
+| `@zod.cidrv4()` | Optional error message/config | CIDR v4 validation | `z.cidrv4()` | `z.string()` |
+| `@zod.emoji()` | Optional error message/config | Single emoji validation | `z.emoji()` | `z.string()` |
 
 ## Custom Inline Override (@zod.custom.use)
 
@@ -234,6 +297,72 @@ Optional helper for deep JSON arrays:
 ```ts
 import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
 const ChatMessagesSchema = z.array(MessageSchema)${'${jsonMaxDepthRefinement(10)}'};
+```
+
+## Custom Object Schema (@zod.custom)
+
+For JSON fields, use `@zod.custom()` to define structured object schemas using JavaScript object literals:
+
+```prisma
+model User {
+  id String @id @default(cuid())
+
+  /// @zod.custom({ "title": "User Profile", "description": "User details", "isActive": true })
+  profile Json
+
+  /// @zod.custom({ "settings": { "theme": "dark", "notifications": true }, "preferences": ["email", "sms"] })
+  metadata Json
+}
+```
+
+Result:
+
+```ts
+// Creates type-safe object schemas
+profile: z.union([JsonNullValueInputSchema, z.object({
+  title: z.string(),
+  description: z.string(),
+  isActive: z.boolean()
+})]).optional(),
+
+metadata: z.union([JsonNullValueInputSchema, z.object({
+  settings: z.object({
+    theme: z.string(),
+    notifications: z.boolean()
+  }),
+  preferences: z.array(z.string())
+})]).optional()
+```
+
+### Supported Value Types
+
+- **Strings** → `z.string()`
+- **Numbers** → `z.number().int()` or `z.number()`
+- **Booleans** → `z.boolean()`
+- **Arrays** → `z.array(T)` (inferred from first element)
+- **Nested Objects** → `z.object({...})`
+- **null** → `z.null()`
+
+### Key Differences from @zod.custom.use()
+
+| Feature | `@zod.custom()` | `@zod.custom.use()` |
+|---------|-----------------|---------------------|
+| **Use Case** | Structured object/array schemas | Complete schema replacement with custom logic |
+| **Syntax** | JavaScript object literals | Raw Zod schema expressions |
+| **Field Types** | JSON fields only | Any field type |
+| **Complexity** | Simple structured data | Advanced validation (refine, transform) |
+| **Auto-conversion** | ✅ Automatic type inference | ❌ Manual Zod syntax |
+
+### Example Comparison
+
+```prisma
+// @zod.custom() - Simple structured schema
+/// @zod.custom({ "name": "John", "age": 30, "active": true })
+profile Json
+
+// @zod.custom.use() - Advanced custom validation
+/// @zod.custom.use(z.object({ name: z.string().min(2), age: z.number().positive() }).refine(data => data.age >= 18))
+profile Json
 ```
 
 ## Native Type Max Length Validation

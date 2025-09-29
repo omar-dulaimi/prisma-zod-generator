@@ -51,6 +51,8 @@ export interface ValidationCustomization {
   disableInlineValidations?: boolean;
   // Custom validation templates
   validationTemplates?: Record<string, string>;
+  // Apply .partial() to the generated schema, making all fields optional
+  partial?: boolean;
 }
 
 /**
@@ -227,9 +229,11 @@ export const DEFAULT_FIELD_EXCLUSIONS: Record<VariantType, FieldExclusionRule> =
 export const DEFAULT_VALIDATION_CUSTOMIZATIONS: Record<VariantType, ValidationCustomization> = {
   [VariantType.PURE]: {
     disableInlineValidations: false,
+    partial: false,
   },
   [VariantType.INPUT]: {
     disableInlineValidations: false,
+    partial: false,
     additionalValidations: {
       // Add stricter validations for input
       email: ['email()'],
@@ -238,6 +242,7 @@ export const DEFAULT_VALIDATION_CUSTOMIZATIONS: Record<VariantType, ValidationCu
   },
   [VariantType.RESULT]: {
     disableInlineValidations: true, // Results don't need validation
+    partial: false,
   },
 };
 

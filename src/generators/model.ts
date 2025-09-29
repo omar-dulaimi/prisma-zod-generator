@@ -479,6 +479,80 @@ export class PrismaTypeMapper {
     };
 
     try {
+      // Check for custom schema replacements first (before any type-specific processing)
+      if (field.documentation) {
+        // Fast-path: support custom full schema replacement via @zod.custom.use(<expr>)
+        const customUseMatch = field.documentation.match(
+          /@zod\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m,
+        );
+        if (customUseMatch) {
+          const baseExpression = customUseMatch[1].trim();
+          const chainedMethods = customUseMatch[2].trim();
+
+          if (baseExpression) {
+            let fullExpression = baseExpression;
+            if (chainedMethods) {
+              fullExpression += chainedMethods;
+            }
+
+            result.zodSchema = fullExpression;
+            result.additionalValidations.push('// Replaced base schema via @zod.custom.use');
+            result.requiresSpecialHandling = true;
+            return result; // Skip all other processing
+          }
+        }
+
+        // Fast-path: support custom object schema via @zod.custom({ ... })
+        const customMatch = field.documentation.match(
+          /@zod\.custom\(((?:\{[^}]*\}|\[[^\]]*\]|(?:[^()]|\([^)]*\))*?))\)(.*)$/m,
+        );
+        if (field.name === 'content') {
+          console.log(`[DEBUG] Custom match for content: ${!!customMatch}`);
+        }
+        if (customMatch) {
+          const objectExpression = customMatch[1].trim();
+          const chainedMethods = customMatch[2].trim();
+
+          if (objectExpression) {
+            let zodSchema: string;
+            if (objectExpression.startsWith('{')) {
+              // Convert JSON object to z.object()
+              try {
+                const parsedObject = JSON.parse(objectExpression);
+                const zodObject = this.convertObjectToZodSchema(parsedObject);
+                zodSchema = `z.object(${zodObject})`;
+              } catch {
+                // If JSON parsing fails, preserve the raw expression
+                zodSchema = `z.object(${objectExpression})`;
+              }
+            } else if (objectExpression.startsWith('[')) {
+              // Convert JSON array to z.array()
+              try {
+                const parsedArray = JSON.parse(objectExpression);
+                const zodArray = this.convertArrayToZodSchema(parsedArray);
+                zodSchema = `z.array(${zodArray})`;
+              } catch {
+                // If JSON parsing fails, preserve the raw expression
+                zodSchema = `z.array(${objectExpression})`;
+              }
+            } else {
+              // For other expressions, use them directly
+              zodSchema = objectExpression;
+            }
+
+            // Add any chained methods
+            if (chainedMethods) {
+              zodSchema += chainedMethods;
+            }
+
+            result.zodSchema = zodSchema;
+            result.additionalValidations.push('// Replaced base schema via @zod.custom');
+            result.requiresSpecialHandling = true;
+            return result; // Skip all other processing
+          }
+        }
+      }
+
       // Handle scalar types
       if (field.kind === 'scalar') {
         this.mapScalarType(field, result);
@@ -1450,29 +1524,6 @@ export class PrismaTypeMapper {
     }
 
     try {
-      // Fast-path: support custom full schema replacement via @zod.custom.use(<expr>)
-      // This captures the entire expression including any chained method calls after the parentheses
-      const customUseMatch = field.documentation.match(
-        /@zod\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m,
-      );
-      if (customUseMatch) {
-        const baseExpression = customUseMatch[1].trim();
-        const chainedMethods = customUseMatch[2].trim();
-
-        if (baseExpression) {
-          // Combine the base expression with any chained methods
-          let fullExpression = baseExpression;
-          if (chainedMethods) {
-            fullExpression += chainedMethods;
-          }
-
-          result.zodSchema = fullExpression;
-          result.additionalValidations.push('// Replaced base schema via @zod.custom.use');
-          result.requiresSpecialHandling = true;
-          return; // Skip standard parsing; full override applied
-        }
-      }
-
       // Create field comment context
       const context: FieldCommentContext = {
         modelName: modelName,
@@ -2821,5 +2872,57 @@ export class PrismaTypeMapper {
     }
 
     return defaultTypeName;
+  }
+
+  /**
+   * Convert a parsed JSON object to a Zod schema string
+   */
+  private convertObjectToZodSchema(obj: Record<string, any>): string {
+    const entries = Object.entries(obj).map(([key, value]) => {
+      const zodType = this.inferZodTypeFromValue(value);
+      return `${JSON.stringify(key)}: ${zodType}`;
+    });
+
+    return `{ ${entries.join(', ')} }`;
+  }
+
+  /**
+   * Convert a parsed JSON array to a Zod schema string
+   */
+  private convertArrayToZodSchema(arr: any[]): string {
+    if (arr.length === 0) {
+      return 'z.unknown()';
+    }
+
+    // For simplicity, infer the type from the first element
+    // In practice, you might want to validate all elements have the same type
+    const firstElementType = this.inferZodTypeFromValue(arr[0]);
+    return firstElementType;
+  }
+
+  /**
+   * Infer a Zod type from a JavaScript value
+   */
+  private inferZodTypeFromValue(value: any): string {
+    if (value === null) {
+      return 'z.null()';
+    }
+
+    switch (typeof value) {
+      case 'string':
+        return 'z.string()';
+      case 'number':
+        return Number.isInteger(value) ? 'z.number().int()' : 'z.number()';
+      case 'boolean':
+        return 'z.boolean()';
+      case 'object':
+        if (Array.isArray(value)) {
+          return `z.array(${this.convertArrayToZodSchema(value)})`;
+        } else {
+          return `z.object(${this.convertObjectToZodSchema(value)})`;
+        }
+      default:
+        return 'z.unknown()';
+    }
   }
 }

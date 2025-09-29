@@ -496,6 +496,9 @@ export class VariantFileGenerationCoordinator {
       }
     }
 
+    // Note: .partial() support is handled during template generation in prisma-generator.ts
+    // This avoids fragile regex patterns that break with custom naming conventions
+
     return customizedContent;
   }
 
