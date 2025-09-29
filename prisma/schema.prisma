@@ -17,53 +17,142 @@ generator zod {
   output   = "../src/schemas"
 }
 
-model Planet {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model ZodV4Examples {
+  id Int @id @default(autoincrement())
 
-  @@map("planets")
-}
+  // String format methods with no parameters (use default validation)
+  /// @zod.email()
+  email String
 
-model User {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique
-  name     String?
-  password String
-  role     Role?
-  posts    Post[]
-  books    Book[]
-}
+  /// @zod.url()
+  website String
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  viewCount Int      @default(0)
-  author    User?    @relation(fields: [authorId], references: [id])
-  authorId  Int?
-  likes     BigInt
-  bytes     Bytes?
-}
+  /// @zod.uuid()
+  uuid String
 
-model Book {
-  id       Int    @unique
-  title    String
-  author   User?  @relation(fields: [authorId], references: [id])
-  authorId Int?
-  content  Json
-}
+  /// @zod.nanoid()
+  nanoidDefault String
 
-model Map {
-  key   String @id
-  value String
-}
+  /// @zod.jwt()
+  jwtDefault String
 
-enum Role {
-  USER
-  ADMIN
+  /// @zod.base64()
+  base64Default String
+
+  /// @zod.ipv4()
+  ipv4Default String
+
+  /// @zod.ipv6()
+  ipv6Default String
+
+  // String format methods with custom error messages
+  /// @zod.email("Please provide a valid email address")
+  emailWithMessage String
+
+  /// @zod.url("Must be a valid URL")
+  urlWithMessage String
+
+  /// @zod.uuid("Invalid UUID format")
+  uuidWithMessage String
+
+  /// @zod.nanoid("Invalid nanoid format")
+  nanoidWithMessage String
+
+  /// @zod.jwt("Invalid JWT token")
+  jwtWithMessage String
+
+  /// @zod.base64("Invalid base64 encoding")
+  base64WithMessage String
+
+  /// @zod.ipv4("Invalid IPv4 address")
+  ipv4WithMessage String
+
+  /// @zod.ipv6("Invalid IPv6 address")
+  ipv6WithMessage String
+
+  /// @zod.cuid("Invalid CUID format")
+  cuidWithMessage String
+
+  /// @zod.cuid2("Invalid CUID2 format")
+  cuid2WithMessage String
+
+  /// @zod.ulid("Invalid ULID format")
+  ulidWithMessage String
+
+  /// @zod.emoji("Must be a valid emoji")
+  emojiWithMessage String
+
+  // String format methods without parameters for testing
+  /// @zod.cuid()
+  cuidDefault String
+
+  /// @zod.cuid2()
+  cuid2Default String
+
+  /// @zod.ulid()
+  ulidDefault String
+
+  /// @zod.emoji()
+  emojiDefault String
+
+  /// @zod.base64url()
+  base64urlDefault String
+
+  /// @zod.hex()
+  hexDefault String
+
+  /// @zod.cidrv4()
+  cidrv4Default String
+
+  /// @zod.cidrv6()
+  cidrv6Default String
+
+  // ISO methods (these should generate z.iso.xxx() in v4)
+  /// @zod.isoDate()
+  isoDateDefault String
+
+  /// @zod.isoTime()
+  isoTimeDefault String
+
+  /// @zod.isoDatetime()
+  isoDatetimeDefault String
+
+  /// @zod.isoDuration()
+  isoDurationDefault String
+
+  // ISO methods with custom error messages
+  /// @zod.isoDate("Invalid ISO date format")
+  isoDateWithMessage String
+
+  /// @zod.isoTime("Invalid ISO time format")
+  isoTimeWithMessage String
+
+  /// @zod.isoDatetime("Invalid ISO datetime format")
+  isoDatetimeWithMessage String
+
+  /// @zod.isoDuration("Invalid ISO duration format")
+  isoDurationWithMessage String
+
+  // Regular string validations for comparison
+  /// @zod.min(5)
+  minLength String
+
+  /// @zod.max(100)
+  maxLength String
+
+  /// @zod.length(10)
+  exactLength String
+
+  /// @zod.regex(/^[A-Z]+$/, "Must be uppercase letters only")
+  regexPattern String
+
+  // Chained validations
+  /// @zod.email().max(100)
+  emailWithMaxLength String
+
+  /// @zod.url().optional()
+  optionalUrl String?
+
+  /// @zod.uuid().nullable()
+  nullableUuid String?
 }

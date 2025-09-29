@@ -1,6 +1,7 @@
 {
   "mode": "full",
   "useMultipleFiles": true,
+  "zodImportTarget": "v4",
   "variants": {
     "pure": {
       "enabled": true,

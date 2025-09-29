@@ -465,7 +465,10 @@ model MixedFormatTest {
         const testEnv = await TestEnvironment.createTestEnv('issue-233-params');
 
         try {
-          const config = ConfigGenerator.createBasicConfig();
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            zodImportTarget: 'v4',
+          };
           const configPath = join(testEnv.testDir, 'config.json');
 
           const schema = `
@@ -535,7 +538,10 @@ model ParameterTest {
         const testEnv = await TestEnvironment.createTestEnv('issue-233-no-params');
 
         try {
-          const config = ConfigGenerator.createBasicConfig();
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            zodImportTarget: 'v4',
+          };
           const configPath = join(testEnv.testDir, 'config.json');
 
           const schema = `

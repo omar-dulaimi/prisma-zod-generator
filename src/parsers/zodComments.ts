@@ -1357,24 +1357,11 @@ function mapAnnotationToZodMethod(
     };
   }
 
-  // Handle email method with Zod v4 compatibility
-  if (method === 'email') {
-    const resolvedVersion = resolveZodVersion(zodVersion);
-
-    if (resolvedVersion === 'v4') {
-      // In Zod v4, use z.email() as base type instead of z.string().email()
-      // Mark this as a base type replacement that can still be chained
-      return {
-        methodCall: 'z.email()',
-        requiredImport: methodConfig.requiresImport,
-        isBaseReplacement: true,
-      };
-    }
-    // For v3, fall through to regular chaining method below
-  }
-
   // Handle new Zod v4 string format methods - Issue #233
   const newStringFormatMethods = [
+    'email',
+    'url',
+    'uuid',
     'httpUrl',
     'hostname',
     'nanoid',
@@ -1401,7 +1388,7 @@ function mapAnnotationToZodMethod(
     if (resolvedVersion === 'v4') {
       // In Zod v4, prefer base types like z.httpUrl(), z.base64(), etc.
       // Don't chain unnecessarily!
-      const formattedParams = formatParameters(parameters);
+      const formattedParams = formatV4StringFormatParameters(method, parameters);
       const methodCall = formattedParams ? `z.${method}(${formattedParams})` : `z.${method}()`;
 
       return {
@@ -1864,6 +1851,41 @@ function formatParameters(parameters: unknown[]): string {
   }
 
   return parameters.map((param) => formatSingleParameter(param)).join(', ');
+}
+
+/**
+ * Format parameters specifically for Zod v4 string format methods
+ * These methods expect either string error messages or validation parameter objects
+ *
+ * From the Zod v4 API: all string format methods expect `string | core.$ZodCheck{Method}Params`
+ * These are validation parameters, not configuration parameters
+ *
+ * @param method - The method name (nanoid, jwt, base64, etc.)
+ * @param parameters - Array of parameters to format
+ * @returns Formatted parameter string or empty string
+ */
+function formatV4StringFormatParameters(method: string, parameters: any[] | undefined): string {
+  if (!parameters || parameters.length === 0) {
+    return '';
+  }
+
+  const firstParam = parameters[0];
+
+  // For numeric/boolean parameters, these don't make sense as validation parameters
+  // for string format methods. These methods expect error messages or validation config objects.
+  // The original @zod comments were likely intended for different validation logic.
+  if (typeof firstParam === 'number' || typeof firstParam === 'boolean') {
+    // Convert to a descriptive error message instead
+    return formatSingleParameter(`Invalid ${method} format`);
+  }
+
+  // For string parameters, format them normally as error messages
+  if (typeof firstParam === 'string') {
+    return formatSingleParameter(firstParam);
+  }
+
+  // For other types (objects, arrays), format normally
+  return formatParameters(parameters);
 }
 
 /**

@@ -1155,9 +1155,10 @@ export default class Transformer {
     const target = (config?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
     switch (target) {
       case 'v4':
-        return "import { z } from 'zod';\n";
-      case 'auto':
+        return "import * as z from 'zod/v4';\n";
       case 'v3':
+        return "import { z } from 'zod/v3';\n";
+      case 'auto':
       default:
         return "import { z } from 'zod';\n";
     }

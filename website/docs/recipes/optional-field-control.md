@@ -144,3 +144,23 @@ const data: Prisma.UserCreateInput = {
 // All optionalFieldBehavior settings accept this
 UserCreateInputSchema.parse(data); // ✅ Always works
 ```
+
+## Related: Variant Partial Flag
+
+The `optionalFieldBehavior` setting controls how **Prisma optional fields** (like `String?`) are handled. For making **all fields optional** in specific variants, use the [partial flag in variants configuration](../config/variants.md#partial-flag):
+
+```json
+{
+  "optionalFieldBehavior": "optional",  // Controls Prisma optional fields
+  "variants": {
+    "input": {
+      "enabled": true,
+      "partial": true  // Makes ALL fields optional with .partial()
+    }
+  }
+}
+```
+
+Key differences:
+- **`optionalFieldBehavior`**: Controls only Prisma optional fields (`String?`)
+- **`partial` flag**: Makes ALL fields optional in specific variants
