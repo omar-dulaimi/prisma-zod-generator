@@ -2339,7 +2339,7 @@ export class PrismaTypeMapper {
       const transformer = require('../transformer').default;
       const importLine = transformer.prototype.generateImportZodStatement
         ? transformer.prototype.generateImportZodStatement.call(transformer)
-        : "import { z } from 'zod';\n";
+        : "import * as z from 'zod';\n";
       lines.push(importLine.trimEnd());
     }
 

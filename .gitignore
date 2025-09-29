@@ -71,3 +71,4 @@ debug-test
 app
 src/dsrc
 src/schemas
+dsrc/

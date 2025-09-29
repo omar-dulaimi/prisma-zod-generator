@@ -8,7 +8,8 @@ Control how generated schemas import Zod via the `zodImportTarget` config option
 
 Install Zod in your app (peer dependency), then pick one of:
 
-- auto (default) or v3: `import { z } from 'zod'`
+- auto (default): `import * as z from 'zod'` (namespace import for better tree-shaking)
+- v3: `import { z } from 'zod'` (named import for compatibility)
 - v4: `import * as z from 'zod/v4'`
 
 Notes

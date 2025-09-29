@@ -7,7 +7,8 @@ When to use
 - You want to keep default imports compatible with Zod v3 style.
 
 Options
-- auto (default) or v3: `import { z } from 'zod'`
+- auto (default): `import * as z from 'zod'` (namespace import for better tree-shaking)
+- v3: `import { z } from 'zod'` (named import for compatibility)
 - v4: `import * as z from 'zod/v4'`
 
 Notes

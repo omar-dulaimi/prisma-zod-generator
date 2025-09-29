@@ -40,7 +40,7 @@ describe('Zod import target', () => {
   );
 
   it(
-    'emits \'import { z } from "zod"\' when zodImportTarget is auto (single-file)',
+    'emits \'import * as z from "zod"\' when zodImportTarget is auto (single-file)',
     async () => {
       const env = await TestEnvironment.createTestEnv('zod-imports-auto-single-file');
       try {
@@ -61,7 +61,7 @@ describe('Zod import target', () => {
 
         const bundlePath = join(env.outputDir, 'schemas', 'schemas.ts');
         const content = readFileSync(bundlePath, 'utf-8');
-        expect(content).toContain("import { z } from 'zod'");
+        expect(content).toContain("import * as z from 'zod'");
       } finally {
         await env.cleanup();
       }
