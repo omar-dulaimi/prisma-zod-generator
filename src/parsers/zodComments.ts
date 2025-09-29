@@ -1420,7 +1420,7 @@ function mapAnnotationToZodMethod(
         isoDuration: 'z.iso.duration',
       };
 
-      const formattedParams = formatParameters(parameters);
+      const formattedParams = formatV4StringFormatParameters(method, parameters);
       const methodCall = formattedParams
         ? `${isoMethodMap[method]}(${formattedParams})`
         : `${isoMethodMap[method]}()`;
@@ -1871,12 +1871,10 @@ function formatV4StringFormatParameters(method: string, parameters: any[] | unde
 
   const firstParam = parameters[0];
 
-  // For numeric/boolean parameters, these don't make sense as validation parameters
-  // for string format methods. These methods expect error messages or validation config objects.
-  // The original @zod comments were likely intended for different validation logic.
+  // For numeric/boolean parameters, preserve them as-is to maintain user intent
+  // Even if they result in invalid TypeScript, let the user fix their annotations
   if (typeof firstParam === 'number' || typeof firstParam === 'boolean') {
-    // Convert to a descriptive error message instead
-    return formatSingleParameter(`Invalid ${method} format`);
+    return formatParameters(parameters);
   }
 
   // For string parameters, format them normally as error messages
