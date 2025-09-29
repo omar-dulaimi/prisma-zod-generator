@@ -1,3 +1,13 @@
+## [1.25.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.24.0...v1.25.0) (2025-09-29)
+
+### 🚀 Features
+
+* **imports:** switch to namespace imports for better tree-shaking ([aa3873c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/aa3873c340aa4035da96ef73220bf2dcb3673b52)), closes [#158](https://github.com/omar-dulaimi/prisma-zod-generator/issues/158)
+
+### 🐛 Bug Fixes
+
+* format code with prettier ([c598173](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c598173779e0c2e6c7683e6b43651d65271064a5))
+
 ## [1.24.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.23.2...v1.24.0) (2025-09-29)
 
 ### 🚀 Features
