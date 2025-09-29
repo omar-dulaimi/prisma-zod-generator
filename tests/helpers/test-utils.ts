@@ -343,7 +343,8 @@ export class SchemaValidationUtils {
     const content = readFileSync(filePath, 'utf-8');
 
     // Check for basic Zod schema patterns
-    const hasZodImport = content.includes("import { z } from 'zod'");
+    const hasZodImport =
+      content.includes("import { z } from 'zod'") || content.includes("import * as z from 'zod'");
     const hasSchemaExport = content.includes('export const') && content.includes('Schema');
     const hasZodSchema =
       content.includes('.object(') || content.includes('.string(') || content.includes('.number(');

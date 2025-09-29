@@ -1160,7 +1160,7 @@ export default class Transformer {
         return "import { z } from 'zod/v3';\n";
       case 'auto':
       default:
-        return "import { z } from 'zod';\n";
+        return "import * as z from 'zod';\n";
     }
   }
 

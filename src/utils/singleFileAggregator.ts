@@ -217,10 +217,10 @@ export async function flushSingleFile(): Promise<void> {
       const transformer = require('../transformer').default;
       const zImport = transformer?.prototype?.generateImportZodStatement
         ? transformer.prototype.generateImportZodStatement.call(transformer)
-        : "import { z } from 'zod';\n";
+        : "import * as z from 'zod';\n";
       header.push(zImport.trim());
     } catch {
-      header.push(`import { z } from 'zod';`);
+      header.push(`import * as z from 'zod';`);
     }
   }
   // Handle Prisma imports - if we need both type and value imports, use separate lines
