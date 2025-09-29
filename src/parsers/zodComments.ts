@@ -237,6 +237,142 @@ function validateParentheses(comment: string, context: FieldCommentContext): str
 }
 
 /**
+ * Extract @zod annotations from comment with proper nested parentheses handling
+ *
+ * @param comment - Comment string
+ * @returns Array of annotation strings
+ */
+function extractZodAnnotations(comment: string): string[] {
+  const annotations: string[] = [];
+  const zodRegex = /@zod\s*\./gi;
+  let match;
+
+  while ((match = zodRegex.exec(comment)) !== null) {
+    const startIndex = match.index!;
+    // Find the method name
+    let currentIndex = startIndex + match[0].length;
+
+    // Skip whitespace
+    while (currentIndex < comment.length && /\s/.test(comment[currentIndex])) {
+      currentIndex++;
+    }
+
+    // Extract method name
+    const methodStart = currentIndex;
+    while (currentIndex < comment.length && /[a-zA-Z0-9_]/.test(comment[currentIndex])) {
+      currentIndex++;
+    }
+
+    if (currentIndex === methodStart) continue; // No method name found
+
+    // Skip whitespace
+    while (currentIndex < comment.length && /\s/.test(comment[currentIndex])) {
+      currentIndex++;
+    }
+
+    // Check if there are parameters
+    if (currentIndex < comment.length && comment[currentIndex] === '(') {
+      // Find the matching closing parenthesis with proper nesting
+      let depth = 0;
+      let inString = false;
+      let stringChar = '';
+
+      while (currentIndex < comment.length) {
+        const char = comment[currentIndex];
+
+        if (!inString && (char === '"' || char === "'")) {
+          inString = true;
+          stringChar = char;
+        } else if (inString && char === stringChar && comment[currentIndex - 1] !== '\\') {
+          inString = false;
+          stringChar = '';
+        } else if (!inString) {
+          if (char === '(') {
+            depth++;
+          } else if (char === ')') {
+            depth--;
+            if (depth === 0) {
+              currentIndex++; // Include the closing parenthesis
+              break;
+            }
+          }
+        }
+        currentIndex++;
+      }
+
+      if (depth === 0) {
+        annotations.push(comment.substring(startIndex, currentIndex));
+      }
+    } else {
+      // No parameters, just method name
+      annotations.push(comment.substring(startIndex, currentIndex));
+    }
+  }
+
+  return annotations;
+}
+
+/**
+ * Parse @zod annotations with proper nested parentheses support
+ *
+ * @param comment - Comment string
+ * @param context - Field context
+ * @returns Parse result with annotations and errors
+ */
+function parseZodAnnotationsWithNestedParentheses(
+  comment: string,
+  context: FieldCommentContext,
+): ZodAnnotationParseResult {
+  const result: ZodAnnotationParseResult = {
+    annotations: [],
+    parseErrors: [],
+    isValid: true,
+  };
+
+  const annotationStrings = extractZodAnnotations(comment);
+
+  for (const annotationStr of annotationStrings) {
+    try {
+      const methodMatch = annotationStr.match(/@zod\s*\.([a-zA-Z_][a-zA-Z0-9_]*)/i);
+      if (!methodMatch) continue;
+
+      const methodName = methodMatch[1];
+      const paramStart = annotationStr.indexOf('(');
+
+      if (paramStart !== -1) {
+        const paramEnd = annotationStr.lastIndexOf(')');
+        if (paramEnd !== -1) {
+          const parameterString = annotationStr.substring(paramStart, paramEnd + 1);
+          const fakeMatch = [
+            annotationStr,
+            methodName,
+            parameterString,
+          ] as unknown as RegExpExecArray;
+          fakeMatch.index = 0;
+
+          const annotation = parseZodAnnotation(fakeMatch, context);
+          result.annotations.push(annotation);
+        }
+      } else {
+        const fakeMatch = [annotationStr, methodName, ''] as unknown as RegExpExecArray;
+        fakeMatch.index = 0;
+
+        const annotation = parseZodAnnotation(fakeMatch, context);
+        result.annotations.push(annotation);
+      }
+    } catch (error) {
+      const errorMessage = `Failed to parse @zod annotation "${annotationStr}": ${
+        error instanceof Error ? error.message : String(error)
+      }`;
+      result.parseErrors.push(errorMessage);
+      result.isValid = false;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Validate basic @zod annotation syntax
  *
  * @param comment - Comment to validate
@@ -247,7 +383,7 @@ function validateZodSyntax(comment: string, context: FieldCommentContext): strin
   const errors: string[] = [];
 
   // Look for @zod annotations and validate basic structure - allow optional whitespace
-  const zodMatches = comment.match(/@zod\s*\.[a-zA-Z_][a-zA-Z0-9_]*(\([^)]*\))?/gi);
+  const zodMatches = extractZodAnnotations(comment);
 
   if (zodMatches) {
     zodMatches.forEach((match, _index) => {
@@ -386,20 +522,12 @@ export function parseZodAnnotations(
         result.isValid = false;
       }
     } else {
-      // Handle simple @zod annotations - allow optional whitespace between @zod and .
-      // Matches: @zod.methodName(), @zod .methodName(param), @zod.methodName(param1, param2)
-      const zodPattern = /@zod\s*\.([a-zA-Z_][a-zA-Z0-9_]*)\s*(\([^)]*\))?/gi;
-
-      let match;
-      while ((match = zodPattern.exec(comment)) !== null) {
-        try {
-          const annotation = parseZodAnnotation(match, context);
-          result.annotations.push(annotation);
-        } catch (error) {
-          const errorMessage = `Failed to parse @zod annotation "${match[0]}": ${error instanceof Error ? error.message : String(error)}`;
-          result.parseErrors.push(errorMessage);
-          result.isValid = false;
-        }
+      // Handle simple @zod annotations with proper nested parentheses support
+      const annotations = parseZodAnnotationsWithNestedParentheses(comment, context);
+      result.annotations.push(...annotations.annotations);
+      result.parseErrors.push(...annotations.parseErrors);
+      if (annotations.parseErrors.length > 0) {
+        result.isValid = false;
       }
     }
 
@@ -733,84 +861,6 @@ function splitParameters(paramString: string): string[] {
 }
 
 /**
- * Convert JavaScript object literal syntax to valid JSON
- * Handles unquoted property names and single-quoted strings
- *
- * @param jsObject - JavaScript object literal as string
- * @returns Valid JSON string
- */
-function convertJSObjectToJSON(jsObject: string): string {
-  // Remove outer braces temporarily for easier processing
-  const inner = jsObject.slice(1, -1).trim();
-  if (!inner) return '{}';
-
-  // Split by commas, but respect nested structures and quotes
-  const pairs: string[] = [];
-  let current = '';
-  let depth = 0;
-  let inQuotes = false;
-  let quoteChar = '';
-
-  for (let i = 0; i < inner.length; i++) {
-    const char = inner[i];
-
-    if (!inQuotes && (char === '"' || char === "'")) {
-      inQuotes = true;
-      quoteChar = char;
-      current += '"'; // Always use double quotes in JSON
-    } else if (inQuotes && char === quoteChar && inner[i - 1] !== '\\') {
-      inQuotes = false;
-      quoteChar = '';
-      current += '"'; // Always use double quotes in JSON
-    } else if (!inQuotes) {
-      if (char === '{' || char === '[') {
-        depth++;
-        current += char;
-      } else if (char === '}' || char === ']') {
-        depth--;
-        current += char;
-      } else if (char === ',' && depth === 0) {
-        pairs.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    } else {
-      current += char;
-    }
-  }
-
-  if (current.trim()) {
-    pairs.push(current.trim());
-  }
-
-  // Process each key-value pair
-  const jsonPairs = pairs.map((pair) => {
-    const colonIndex = pair.indexOf(':');
-    if (colonIndex === -1) {
-      throw new Error(`Invalid object pair: ${pair}`);
-    }
-
-    let key = pair.substring(0, colonIndex).trim();
-    let value = pair.substring(colonIndex + 1).trim();
-
-    // Fix unquoted keys
-    if (!key.startsWith('"')) {
-      key = `"${key}"`;
-    }
-
-    // Fix single-quoted values to double-quoted
-    if (value.startsWith("'") && value.endsWith("'")) {
-      value = `"${value.slice(1, -1)}"`;
-    }
-
-    return `${key}:${value}`;
-  });
-
-  return `{${jsonPairs.join(',')}}`;
-}
-
-/**
  * Parse a single parameter value
  *
  * @param paramValue - Parameter string value
@@ -868,21 +918,15 @@ function parseSimpleParameter(paramValue: string): unknown {
     }
   }
 
-  // Objects (basic support)
+  // Objects (JavaScript object literal support)
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
     try {
-      // First try standard JSON parsing
-      const parsed = JSON.parse(trimmed);
-      return parsed;
+      // First try standard JSON parsing for simple cases
+      return JSON.parse(trimmed);
     } catch {
-      // If JSON parsing fails, try to convert JavaScript object literal to valid JSON
-      try {
-        const fixedJson = convertJSObjectToJSON(trimmed);
-        const parsed = JSON.parse(fixedJson);
-        return parsed;
-      } catch {
-        throw new Error(`Invalid object: ${trimmed}`);
-      }
+      // For complex JavaScript object literals, return as-is as a special marker
+      // This will be handled specially in formatParameters to preserve JavaScript expressions
+      return { __js_object_literal__: trimmed };
     }
   }
 
@@ -1006,6 +1050,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'step',
     // New methods that require parameters - Issue #233
     'hash', // hash requires algorithm parameter like "sha256"
+    'custom', // custom requires object/array schema parameter
   ];
 
   // Methods that don't allow parameters
@@ -1070,6 +1115,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
       ...additionalMethods,
       ...optionalErrorMessage,
       ...optionalParams,
+      ...requiresParams, // Add methods that require parameters
     ]),
   ];
   if (!allKnownMethods.includes(method)) {
@@ -1444,6 +1490,35 @@ function mapAnnotationToZodMethod(
     };
   }
 
+  if (method === 'custom') {
+    // @zod.custom() replaces the base type entirely with custom object/array schema
+    const formattedParams = formatParameters(parameters);
+    // Convert JSON object to z.object() schema
+    if (parameters.length > 0) {
+      const param = parameters[0];
+      if (typeof param === 'string' && param.trim().startsWith('{')) {
+        try {
+          const parsedObject = JSON.parse(param);
+          const zodObject = convertObjectToZodSchema(parsedObject);
+          return {
+            methodCall: `z.object(${zodObject})`,
+            requiredImport: methodConfig.requiresImport,
+          };
+        } catch {
+          // Fallback to raw parameter if JSON parsing fails
+          return {
+            methodCall: `z.object(${formattedParams})`,
+            requiredImport: methodConfig.requiresImport,
+          };
+        }
+      }
+    }
+    return {
+      methodCall: `z.object(${formattedParams})`,
+      requiredImport: methodConfig.requiresImport,
+    };
+  }
+
   // Handle new Zod v4 string format methods - Issue #233
   const newStringFormatMethods = [
     'email',
@@ -1464,6 +1539,7 @@ function mapAnnotationToZodMethod(
     'cidrv4',
     'cidrv6',
     'emoji',
+    'regex',
   ];
 
   // Handle ISO methods which use z.iso.xxx() syntax
@@ -1906,6 +1982,14 @@ function getValidationMethodConfig(
       fieldTypeCompatibility: ['String'],
     },
 
+    // Custom schema method - replaces base type entirely
+    {
+      methodName: 'custom',
+      zodMethod: 'object', // This will be overridden in special handling
+      parameterCount: 1,
+      fieldTypeCompatibility: ['Json'], // Only works with Json fields
+    },
+
     // Note: Removed 'string', 'number', 'boolean' method configs as they duplicate base types
   ];
 
@@ -2017,6 +2101,11 @@ function formatSingleParameter(param: unknown): string {
   }
 
   if (typeof param === 'object') {
+    // Handle special JavaScript object literal marker
+    if (param && typeof param === 'object' && '__js_object_literal__' in param) {
+      // Return the raw JavaScript object literal without quotes
+      return (param as { __js_object_literal__: string }).__js_object_literal__;
+    }
     return JSON.stringify(param);
   }
 
@@ -2226,4 +2315,43 @@ export function getRequiredImports(
   }
 
   return imports;
+}
+
+/**
+ * Convert a JavaScript object to a Zod object schema string
+ */
+function convertObjectToZodSchema(obj: any): string {
+  const properties: string[] = [];
+
+  for (const [key, value] of Object.entries(obj)) {
+    const zodType = inferZodTypeFromValue(value);
+    properties.push(`${key}: ${zodType}`);
+  }
+
+  return `{ ${properties.join(', ')} }`;
+}
+
+/**
+ * Infer Zod type from a JavaScript value
+ */
+function inferZodTypeFromValue(value: any): string {
+  if (typeof value === 'string') {
+    return `z.string()`;
+  } else if (typeof value === 'number') {
+    return Number.isInteger(value) ? `z.number().int()` : `z.number()`;
+  } else if (typeof value === 'boolean') {
+    return `z.boolean()`;
+  } else if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return `z.array(z.unknown())`;
+    }
+    const firstElementType = inferZodTypeFromValue(value[0]);
+    return `z.array(${firstElementType})`;
+  } else if (value && typeof value === 'object') {
+    return `z.object(${convertObjectToZodSchema(value)})`;
+  } else if (value === null) {
+    return `z.null()`;
+  } else {
+    return `z.unknown()`;
+  }
 }

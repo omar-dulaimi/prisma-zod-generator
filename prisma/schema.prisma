@@ -20,6 +20,9 @@ generator zod {
 model ZodV4Examples {
   id Int @id @default(autoincrement())
 
+  /// @zod.custom({ "title": "Test", "description": "Test", "isPublished": true })
+  content Json
+
   // String format methods with no parameters (use default validation)
   /// @zod.email()
   email String
@@ -32,6 +35,9 @@ model ZodV4Examples {
 
   /// @zod.nanoid()
   nanoidDefault String
+
+  /// @zod.nanoid({"abort":true,"pattern":new RegExp('.'), error: 'lol'})
+  nanoidCustom String
 
   /// @zod.jwt()
   jwtDefault String
@@ -142,9 +148,6 @@ model ZodV4Examples {
 
   /// @zod.length(10)
   exactLength String
-
-  /// @zod.regex(/^[A-Z]+$/, "Must be uppercase letters only")
-  regexPattern String
 
   // Chained validations
   /// @zod.email().max(100)

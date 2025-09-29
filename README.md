@@ -12,7 +12,7 @@
 	</p>
 	<sub>
 		Prisma → Zod generator: zero‑boilerplate validation for your models.<br/>
-		✍️ comment rules · ⚡ fast/minimal mode · 🎯 selective filtering · 🔒 strict types
+		🚀 enhanced parser · ✍️ complex expressions · ⚡ fast/minimal mode · 🎯 selective filtering · 🔒 strict types
 	</sub>
 </div>
 
@@ -368,7 +368,14 @@ graph TD
 
         ZC --> ZC1["// @zod.min(5)"]
         ZC --> ZC2["// @zod.max(100)"]
-        ZC --> ZC3["Inline Rules"]
+        ZC --> ZC3["🚀 Enhanced Parser"]
+        ZC --> ZC4["Complex Objects"]
+        ZC --> ZC5["Nested Expressions"]
+
+        ZC3 --> ZC3A["Nested Parentheses"]
+        ZC3 --> ZC3B["JS Object Literals"]
+        ZC4 --> ZC4B["Any Parameter Type"]
+        ZC5 --> ZC5B["Function Calls"]
 
         JSR --> JSR1["OpenAPI Ready"]
         JSR --> JSR2["z.toJSONSchema()"]
