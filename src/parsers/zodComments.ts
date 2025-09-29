@@ -793,9 +793,18 @@ function parseSimpleParameter(paramValue: string): unknown {
   // Objects (basic support)
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
     try {
-      return JSON.parse(trimmed);
+      // First try standard JSON parsing
+      const parsed = JSON.parse(trimmed);
+      return parsed;
     } catch {
-      throw new Error(`Invalid object: ${trimmed}`);
+      // If JSON parsing fails, try to fix unquoted property names for JavaScript object literal syntax
+      try {
+        const fixedJson = trimmed.replace(/(\w+):/g, '"$1":');
+        const parsed = JSON.parse(fixedJson);
+        return parsed;
+      } catch {
+        throw new Error(`Invalid object: ${trimmed}`);
+      }
     }
   }
 
