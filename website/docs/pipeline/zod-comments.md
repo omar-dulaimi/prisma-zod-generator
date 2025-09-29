@@ -227,7 +227,7 @@ export const AdvancedValidationCreateInputSchema = z.object({
   customId: z.nanoid({"abort":true,"error":"Custom nanoid error"}),
   complexId: z.nanoid({"abort":true,"pattern":new RegExp('.'),"error":"Complex validation"}),
 });
-``
+```
 
 ### Parameter Types Supported
 

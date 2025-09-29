@@ -2325,7 +2325,7 @@ function convertObjectToZodSchema(obj: any): string {
 
   for (const [key, value] of Object.entries(obj)) {
     const zodType = inferZodTypeFromValue(value);
-    properties.push(`${key}: ${zodType}`);
+    properties.push(`${JSON.stringify(key)}: ${zodType}`);
   }
 
   return `{ ${properties.join(', ')} }`;
