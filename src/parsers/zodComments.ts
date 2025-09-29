@@ -733,6 +733,84 @@ function splitParameters(paramString: string): string[] {
 }
 
 /**
+ * Convert JavaScript object literal syntax to valid JSON
+ * Handles unquoted property names and single-quoted strings
+ *
+ * @param jsObject - JavaScript object literal as string
+ * @returns Valid JSON string
+ */
+function convertJSObjectToJSON(jsObject: string): string {
+  // Remove outer braces temporarily for easier processing
+  const inner = jsObject.slice(1, -1).trim();
+  if (!inner) return '{}';
+
+  // Split by commas, but respect nested structures and quotes
+  const pairs: string[] = [];
+  let current = '';
+  let depth = 0;
+  let inQuotes = false;
+  let quoteChar = '';
+
+  for (let i = 0; i < inner.length; i++) {
+    const char = inner[i];
+
+    if (!inQuotes && (char === '"' || char === "'")) {
+      inQuotes = true;
+      quoteChar = char;
+      current += '"'; // Always use double quotes in JSON
+    } else if (inQuotes && char === quoteChar && inner[i - 1] !== '\\') {
+      inQuotes = false;
+      quoteChar = '';
+      current += '"'; // Always use double quotes in JSON
+    } else if (!inQuotes) {
+      if (char === '{' || char === '[') {
+        depth++;
+        current += char;
+      } else if (char === '}' || char === ']') {
+        depth--;
+        current += char;
+      } else if (char === ',' && depth === 0) {
+        pairs.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.trim()) {
+    pairs.push(current.trim());
+  }
+
+  // Process each key-value pair
+  const jsonPairs = pairs.map((pair) => {
+    const colonIndex = pair.indexOf(':');
+    if (colonIndex === -1) {
+      throw new Error(`Invalid object pair: ${pair}`);
+    }
+
+    let key = pair.substring(0, colonIndex).trim();
+    let value = pair.substring(colonIndex + 1).trim();
+
+    // Fix unquoted keys
+    if (!key.startsWith('"')) {
+      key = `"${key}"`;
+    }
+
+    // Fix single-quoted values to double-quoted
+    if (value.startsWith("'") && value.endsWith("'")) {
+      value = `"${value.slice(1, -1)}"`;
+    }
+
+    return `${key}:${value}`;
+  });
+
+  return `{${jsonPairs.join(',')}}`;
+}
+
+/**
  * Parse a single parameter value
  *
  * @param paramValue - Parameter string value
@@ -797,9 +875,9 @@ function parseSimpleParameter(paramValue: string): unknown {
       const parsed = JSON.parse(trimmed);
       return parsed;
     } catch {
-      // If JSON parsing fails, try to fix unquoted property names for JavaScript object literal syntax
+      // If JSON parsing fails, try to convert JavaScript object literal to valid JSON
       try {
-        const fixedJson = trimmed.replace(/(\w+):/g, '"$1":');
+        const fixedJson = convertJSObjectToJSON(trimmed);
         const parsed = JSON.parse(fixedJson);
         return parsed;
       } catch {
@@ -1873,7 +1951,7 @@ function formatParameters(parameters: unknown[]): string {
  * @param parameters - Array of parameters to format
  * @returns Formatted parameter string or empty string
  */
-function formatV4StringFormatParameters(method: string, parameters: any[] | undefined): string {
+function formatV4StringFormatParameters(_method: string, parameters: any[] | undefined): string {
   if (!parameters || parameters.length === 0) {
     return '';
   }
