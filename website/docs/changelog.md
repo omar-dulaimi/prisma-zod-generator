@@ -9,8 +9,25 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.23.2**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.24.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.24.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.23.2...v1.24.0) (2025-09-29)
+
+### 🚀 Features
+
+* **variants:** add partial flag support for automatic .partial() application ([e5876eb](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e5876ebf12dbac045d0a55d04908c39e117a5e71)), closes [#192](https://github.com/omar-dulaimi/prisma-zod-generator/issues/192) [#192](https://github.com/omar-dulaimi/prisma-zod-generator/issues/192)
+* **zod-comments:** add comprehensive JavaScript object literal parser ([3afa975](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3afa9755c7bff21d910dc07923787924073687e0))
+* **zod-comments:** support custom json shapes validations ([14dfb06](https://github.com/omar-dulaimi/prisma-zod-generator/commit/14dfb066992c851ae67de527e452495670cabcce))
+* **zod-v4:** implement string formats and imports with partial field support ([308e97e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/308e97ebd6c7deff097c48f2ed14a9f051f31da4)), closes [#233](https://github.com/omar-dulaimi/prisma-zod-generator/issues/233)
+
+### 🐛 Bug Fixes
+
+* **ci:** update link-check workflow to use pnpm instead of npm ([7bc1536](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7bc15369f587b46b3e7a73e0388a04c70428cd87))
+* **zod-comments:** review notes ([3c5bedb](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3c5bedbd0847a813b43d336035f44d1e96d783a4))
+* **zod-comments:** route [@zod](https://github.com/zod).custom payloads through inferZodTypeFromValue ([f840f17](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f840f173c65215c32ece7aafb822cf42baad1144))
+* **zod-comments:** support JavaScript object literal syntax in parameters ([2f72870](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2f728709e1c4d9093c0f6c6741b79dd9de59b7be))
+* **zod-v4:** preserve caller-supplied parameters in v4 string format methods ([ca28735](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ca28735890adf19e5f50b1333f5c6a3ad72c9b26))
 
 ## [1.23.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.23.1...v1.23.2) (2025-09-28)
 
@@ -987,7 +1004,7 @@ For the complete version history including older releases, please see the [full 
 
 ## Version Support
 
-- **Current:** v1.23.x - Full support with new features and bug fixes
+- **Current:** v1.24.x - Full support with new features and bug fixes
 - **Previous:** Previous minor versions - Security and critical bug fixes only
 - **Legacy:** Older versions - Community support only
 
