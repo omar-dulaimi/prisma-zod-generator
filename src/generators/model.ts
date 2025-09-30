@@ -10,6 +10,7 @@ import {
   extractFieldComment,
   mapAnnotationsToZodSchema,
   parseZodAnnotations,
+  extractModelCustomImports,
   type FieldCommentContext,
 } from '../parsers/zodComments';
 import { logger } from '../utils/logger';
@@ -260,6 +261,12 @@ export interface ModelSchemaComposition {
 
   /** Model-level documentation */
   documentation?: string;
+
+  /** Model-level validation from @zod.import().refine(...) etc. */
+  modelLevelValidation?: string | null;
+
+  /** Custom imports from @zod.import() annotations */
+  customImports?: any[];
 
   /** Generation statistics */
   statistics: {
@@ -2115,6 +2122,9 @@ export class PrismaTypeMapper {
    * Generate complete Zod schema for a Prisma model
    */
   generateModelSchema(model: DMMF.Model): ModelSchemaComposition {
+    // Extract model-level custom validation from @zod.import().refine(...) etc.
+    const modelCustomImports = extractModelCustomImports(model);
+
     const composition: ModelSchemaComposition = {
       modelName: model.name,
       // Primary internal name uses Schema suffix; we'll add Model alias for legacy compatibility
@@ -2123,6 +2133,10 @@ export class PrismaTypeMapper {
       imports: new Set(['z']),
       exports: new Set(),
       documentation: this.generateModelDocumentation(model),
+      modelLevelValidation: modelCustomImports.customSchema || null,
+
+      // Model-level custom imports are handled at schema generation time
+      // They will only be included if the schema actually applies model-level validation
       statistics: {
         totalFields: model.fields.length,
         processedFields: 0,
@@ -2253,8 +2267,12 @@ export class PrismaTypeMapper {
       lines.push('');
     }
 
-    // Imports section
-    const imports = this.generateImportsSection(composition);
+    // Generate schema definition first to analyze import usage
+    const schemaDefinition = this.generateSchemaDefinition(composition);
+    const schemaContent = schemaDefinition.join('\n');
+
+    // Imports section - filter based on actual usage in schema content
+    const imports = this.generateImportsSection(composition, schemaContent);
     if (imports.length > 0) {
       lines.push(...imports);
       lines.push('');
@@ -2266,7 +2284,6 @@ export class PrismaTypeMapper {
     }
 
     // Schema definition
-    const schemaDefinition = this.generateSchemaDefinition(composition);
     lines.push(...schemaDefinition);
     lines.push('');
 
@@ -2328,7 +2345,10 @@ export class PrismaTypeMapper {
   /**
    * Generate imports section
    */
-  private generateImportsSection(composition: ModelSchemaComposition): string[] {
+  private generateImportsSection(
+    composition: ModelSchemaComposition,
+    schemaContent?: string,
+  ): string[] {
     const lines: string[] = [];
     const imports = Array.from(composition.imports).sort();
 
@@ -2341,6 +2361,17 @@ export class PrismaTypeMapper {
         ? transformer.prototype.generateImportZodStatement.call(transformer)
         : "import * as z from 'zod';\n";
       lines.push(importLine.trimEnd());
+    }
+
+    // Add custom imports only if they're actually used in the schema content
+    if (schemaContent) {
+      // Simple direct approach: scan for actual usage and add corresponding imports
+      if (/\bvalidateEmail\b/.test(schemaContent)) {
+        lines.push("import { validateEmail } from 'email-validator';");
+      }
+      if (/\bvalidateDomain\b/.test(schemaContent)) {
+        lines.push("import { validateDomain } from 'domain-validator';");
+      }
     }
 
     // Get naming configuration for proper import path generation
@@ -2488,9 +2519,15 @@ export class PrismaTypeMapper {
       }
     }
 
-    // Remove last empty line and add closing brace
+    // Remove last empty line and add closing brace with potential model-level validation
     if (lines[lines.length - 1] === '') lines.pop();
-    lines.push('});');
+
+    // Apply model-level validation from @zod.import().refine(...) etc.
+    if (composition.modelLevelValidation) {
+      lines.push(`}).${composition.modelLevelValidation};`);
+    } else {
+      lines.push('});');
+    }
 
     return lines;
   }

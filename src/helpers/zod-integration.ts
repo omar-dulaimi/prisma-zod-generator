@@ -13,6 +13,9 @@ import {
   getBaseZodTypeForField,
   getRequiredImports,
   ExtractedFieldComment,
+  extractModelCustomImports,
+  extractFieldCustomImports,
+  CustomImport,
 } from '../parsers/zodComments';
 
 /**
@@ -25,6 +28,8 @@ export interface EnhancedFieldInfo {
   zodImports: Set<string>;
   zodErrors: string[];
   fallbackToDefault: boolean;
+  customImports: CustomImport[];
+  customSchema?: string;
 }
 
 /**
@@ -36,6 +41,8 @@ export interface EnhancedModelInfo {
   allZodImports: Set<string>;
   hasAnyZodAnnotations: boolean;
   zodProcessingErrors: string[];
+  modelCustomImports: CustomImport[];
+  allCustomImports: CustomImport[];
 }
 
 /**
@@ -74,6 +81,8 @@ export function processModelsWithZodIntegration(
         zodProcessingErrors: [
           `Model processing failed: ${error instanceof Error ? error.message : String(error)}`,
         ],
+        modelCustomImports: [],
+        allCustomImports: [],
       });
     }
   }
@@ -120,6 +129,11 @@ function processModelWithZodIntegration(
   const zodProcessingErrors: string[] = [];
   let hasAnyZodAnnotations = false;
 
+  // Extract model-level custom imports
+  const modelCustomImportsResult = extractModelCustomImports(model);
+  const modelCustomImports = modelCustomImportsResult.imports;
+  zodProcessingErrors.push(...modelCustomImportsResult.parseErrors);
+
   // Extract comments from all fields in the model
   const extractedComments = extractFieldComments([model]);
 
@@ -155,12 +169,20 @@ function processModelWithZodIntegration(
     }
   }
 
+  // Collect all custom imports (model-level + field-level)
+  const allCustomImports = [...modelCustomImports];
+  enhancedFields.forEach((field) => {
+    allCustomImports.push(...field.customImports);
+  });
+
   return {
     model,
     enhancedFields,
     allZodImports,
     hasAnyZodAnnotations,
     zodProcessingErrors: zodProcessingErrors.filter((error) => error.length > 0),
+    modelCustomImports,
+    allCustomImports,
   };
 }
 
@@ -185,7 +207,14 @@ function processFieldWithZodIntegration(
     zodImports: new Set(),
     zodErrors: [],
     fallbackToDefault: false,
+    customImports: [],
   };
+
+  // Extract field-level custom imports
+  const fieldCustomImportsResult = extractFieldCustomImports(field, model.name);
+  enhancedField.customImports = fieldCustomImportsResult.imports;
+  enhancedField.customSchema = fieldCustomImportsResult.customSchema;
+  enhancedField.zodErrors.push(...fieldCustomImportsResult.parseErrors);
 
   // Check if Zod annotation processing is enabled
   if (options.enableZodAnnotations === false) {
@@ -272,6 +301,8 @@ function createFallbackFieldInfo(field: DMMF.Field): EnhancedFieldInfo {
     zodImports: getRequiredImports(field.type),
     zodErrors: [],
     fallbackToDefault: true,
+    customImports: [],
+    customSchema: undefined,
   };
 }
 
@@ -438,6 +469,8 @@ export function integrateZodWithExistingComments(
         allZodImports: new Set(),
         hasAnyZodAnnotations: false,
         zodProcessingErrors: ['Integration fallback due to processing error'],
+        modelCustomImports: [],
+        allCustomImports: [],
       })),
       backwardCompatibilityPreserved,
       integrationWarnings,

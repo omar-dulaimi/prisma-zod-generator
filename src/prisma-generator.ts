@@ -1895,7 +1895,17 @@ async function generateVariantSchemaContent(
   variantName: string,
   config?: CustomGeneratorConfig,
 ): Promise<string> {
+  // Extract custom imports for this model
+  const { extractModelCustomImports } = await import('./parsers/zodComments');
+  const modelCustomImports = extractModelCustomImports(model);
+
   const enabledFields = model.fields.filter((field) => !excludeFields.includes(field.name));
+
+  // For variant schemas, only include model-level imports if model validation will be applied
+  // Field-level custom validation is handled separately in input object schemas
+  const shouldIncludeModelImports = variantName !== 'input' && modelCustomImports.customSchema;
+  const uniqueCustomImports = shouldIncludeModelImports ? modelCustomImports.imports : [];
+
   // Collect enum types used in this model to generate proper imports
   const enumTypes = Array.from(
     new Set(
@@ -2023,11 +2033,24 @@ async function generateVariantSchemaContent(
   const shouldApplyPartial = variantConfig?.partial === true;
   const partialSuffix = shouldApplyPartial ? '.partial()' : '';
 
+  // Generate custom import lines
+  const customImportLines =
+    uniqueCustomImports.length > 0
+      ? uniqueCustomImports.map((imp) => imp.importStatement).join('\n') + '\n'
+      : '';
+
+  // Apply model-level validation if present and appropriate for this variant type
+  // Model-level validation typically applies to pure/result schemas, not input schemas
+  const shouldApplyModelValidation = variantName !== 'input' && modelCustomImports.customSchema;
+  const modelLevelValidation = shouldApplyModelValidation
+    ? `.${modelCustomImports.customSchema}`
+    : '';
+
   const zImport = new Transformer({}).generateImportZodStatement();
-  return `${zImport}\n${enumImportLines}// prettier-ignore
+  return `${zImport}\n${customImportLines}${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
-}).strict()${partialSuffix};
+}).strict()${partialSuffix}${modelLevelValidation};
 
 export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;
 `;

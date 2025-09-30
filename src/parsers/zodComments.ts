@@ -31,6 +31,36 @@ export interface ExtractedFieldComment {
 }
 
 /**
+ * Interface for custom import statements
+ */
+export interface CustomImport {
+  importStatement: string;
+  source: string; // The module being imported from
+  importedItems: string[]; // Names/aliases being imported
+  isDefault: boolean;
+  isNamespace: boolean;
+  originalStatement: string; // Original import string for debugging
+}
+
+/**
+ * Interface for custom imports parsing result
+ */
+export interface CustomImportsParseResult {
+  imports: CustomImport[];
+  customSchema?: string;
+  parseErrors: string[];
+  isValid: boolean;
+}
+
+/**
+ * Interface for model comment context including metadata for error reporting
+ */
+export interface ModelCommentContext {
+  modelName: string;
+  comment: string;
+}
+
+/**
  * Extract comments from Prisma DMMF model fields
  *
  * This function processes Prisma model field definitions and extracts
@@ -2366,4 +2396,350 @@ function inferZodTypeFromValue(value: any): string {
   } else {
     return `z.unknown()`;
   }
+}
+
+/**
+ * Detect if comment contains @zod.import annotations
+ *
+ * @param comment - Normalized comment string
+ * @returns True if @zod.import annotations are detected
+ */
+export function detectCustomImports(comment: string): boolean {
+  if (!comment) {
+    return false;
+  }
+
+  // Look for @zod.import patterns (case-insensitive)
+  const importPattern = /@zod\s*\.\s*import\s*\(/i;
+  return importPattern.test(comment);
+}
+
+/**
+ * Parse custom imports from a comment string
+ *
+ * Supports both model-level and field-level imports:
+ * - @zod.import(["import { myFunction } from 'mypackage'"])
+ * - @zod.import(["import myFunction from 'mypackage'"])
+ * - @zod.import(["import * as myModule from 'mypackage'"])
+ *
+ * @param comment - Comment string to parse
+ * @param context - Context for error reporting (model or field)
+ * @returns Custom imports parsing result
+ */
+export function parseCustomImports(
+  comment: string,
+  context: ModelCommentContext | FieldCommentContext,
+): CustomImportsParseResult {
+  const result: CustomImportsParseResult = {
+    imports: [],
+    parseErrors: [],
+    isValid: true,
+    customSchema: undefined,
+  };
+
+  if (!comment || !detectCustomImports(comment)) {
+    return result;
+  }
+
+  try {
+    // Simpler approach: find @zod.import patterns and check for .custom.use after
+    const importPattern = /@zod\s*\.\s*import\s*\(([^)]+(?:\([^)]*\)[^)]*)*)\)/gi;
+    let match;
+
+    while ((match = importPattern.exec(comment)) !== null) {
+      const importArrayString = match[1].trim();
+      const endOfImport = match.index + match[0].length;
+      const afterImport = comment.substring(endOfImport);
+
+      // Look for validation methods after the import - support both field and model level
+      let customSchemaString: string | null = null;
+
+      // Field-level: .custom.use(...)
+      const customUseMatch = afterImport.match(/^\s*\.\s*custom\s*\.\s*use\s*\(/);
+      if (customUseMatch) {
+        const startPos = customUseMatch.index! + customUseMatch[0].length;
+        const endPos = findBalancedParentheses(afterImport, startPos);
+        if (endPos !== -1) {
+          customSchemaString = afterImport.substring(startPos, endPos).trim();
+        }
+      }
+
+      // Model-level: .refine(...), .transform(...), etc.
+      if (!customSchemaString) {
+        const modelValidationMatch = afterImport.match(
+          /^\s*\.\s*(refine|transform|superRefine|pipe)\s*\(/,
+        );
+        if (modelValidationMatch) {
+          const method = modelValidationMatch[1];
+          const startPos = modelValidationMatch.index! + modelValidationMatch[0].length;
+          const endPos = findBalancedParentheses(afterImport, startPos);
+          if (endPos !== -1) {
+            const validationArgs = afterImport.substring(startPos, endPos).trim();
+            customSchemaString = `${method}(${validationArgs})`;
+          }
+        }
+      }
+
+      try {
+        // Parse the import array - it should be a JSON array of strings
+        const importStatements = parseImportArray(importArrayString, context);
+
+        // Process each import statement
+        for (const importStatement of importStatements) {
+          const customImport = parseImportStatement(importStatement, context);
+          if (customImport) {
+            result.imports.push(customImport);
+          }
+        }
+
+        // Store the custom schema if present
+        if (customSchemaString) {
+          result.customSchema = customSchemaString;
+        }
+      } catch (error) {
+        const contextStr =
+          'fieldName' in context
+            ? `${context.modelName}.${context.fieldName}`
+            : `${context.modelName}`;
+
+        result.parseErrors.push(
+          `${contextStr}: Failed to parse import array: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        result.isValid = false;
+      }
+    }
+
+    // Deduplicate imports by import statement
+    result.imports = deduplicateImports(result.imports);
+  } catch (error) {
+    const contextStr =
+      'fieldName' in context ? `${context.modelName}.${context.fieldName}` : `${context.modelName}`;
+
+    result.parseErrors.push(
+      `${contextStr}: Failed to parse custom imports: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    result.isValid = false;
+  }
+
+  return result;
+}
+
+/**
+ * Parse import array string into individual import statements
+ *
+ * @param importArrayString - String representation of import array
+ * @param context - Context for error reporting
+ * @returns Array of import statement strings
+ */
+function parseImportArray(
+  importArrayString: string,
+  _context: ModelCommentContext | FieldCommentContext,
+): string[] {
+  try {
+    // Handle both single quotes and double quotes
+    let normalizedString = importArrayString;
+
+    // If it looks like a JSON array, parse it directly
+    if (normalizedString.trim().startsWith('[') && normalizedString.trim().endsWith(']')) {
+      return JSON.parse(normalizedString) as string[];
+    }
+
+    // If it's a single string without brackets, wrap it in an array
+    if (!normalizedString.trim().startsWith('[')) {
+      normalizedString = `[${normalizedString}]`;
+    }
+
+    return JSON.parse(normalizedString) as string[];
+  } catch {
+    throw new Error(
+      `Invalid import array format. Expected JSON array of strings, got: ${importArrayString}`,
+    );
+  }
+}
+
+/**
+ * Parse a single import statement into a CustomImport object
+ *
+ * @param importStatement - Import statement string
+ * @param context - Context for error reporting
+ * @returns CustomImport object or null if invalid
+ */
+function parseImportStatement(
+  importStatement: string,
+  context: ModelCommentContext | FieldCommentContext,
+): CustomImport | null {
+  if (!importStatement || typeof importStatement !== 'string') {
+    return null;
+  }
+
+  const trimmed = importStatement.trim();
+
+  // Basic validation - must start with 'import' and contain 'from'
+  if (!trimmed.startsWith('import ') || !trimmed.includes(' from ')) {
+    const contextStr =
+      'fieldName' in context ? `${context.modelName}.${context.fieldName}` : `${context.modelName}`;
+
+    logger.warn(`${contextStr}: Invalid import statement format: ${trimmed}`);
+    return null;
+  }
+
+  // Extract source module
+  const fromMatch = trimmed.match(/from\s+['"`]([^'"`]+)['"`]/);
+  if (!fromMatch) {
+    const contextStr =
+      'fieldName' in context ? `${context.modelName}.${context.fieldName}` : `${context.modelName}`;
+
+    logger.warn(`${contextStr}: Could not extract source module from: ${trimmed}`);
+    return null;
+  }
+
+  const source = fromMatch[1];
+
+  // Extract import clause (everything between 'import' and 'from')
+  const importClause = trimmed.substring(6, trimmed.indexOf(' from ')).trim();
+
+  // Determine import type and extract imported items
+  let isDefault = false;
+  let isNamespace = false;
+  let importedItems: string[] = [];
+
+  if (importClause.startsWith('* as ')) {
+    // Namespace import: import * as name from 'module'
+    isNamespace = true;
+    const nameMatch = importClause.match(/\*\s+as\s+(\w+)/);
+    if (nameMatch) {
+      importedItems = [nameMatch[1]];
+    }
+  } else if (importClause.startsWith('{') && importClause.endsWith('}')) {
+    // Named imports: import { name1, name2 } from 'module'
+    const namedImports = importClause.slice(1, -1);
+    importedItems = namedImports
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .map((item) => {
+        // Handle aliases: import { name as alias } from 'module'
+        if (item.includes(' as ')) {
+          return item.split(' as ')[1].trim();
+        }
+        return item;
+      });
+  } else {
+    // Default import: import name from 'module'
+    isDefault = true;
+    importedItems = [importClause];
+  }
+
+  return {
+    importStatement: trimmed,
+    source,
+    importedItems,
+    isDefault,
+    isNamespace,
+    originalStatement: importStatement,
+  };
+}
+
+/**
+ * Find balanced parentheses in a string starting from a given position
+ *
+ * @param text - Text to search in
+ * @param startPos - Starting position (after opening parenthesis)
+ * @returns End position of balanced parentheses or -1 if not found
+ */
+function findBalancedParentheses(text: string, startPos: number): number {
+  let depth = 1;
+  let pos = startPos;
+
+  while (pos < text.length && depth > 0) {
+    const char = text[pos];
+    if (char === '(') {
+      depth++;
+    } else if (char === ')') {
+      depth--;
+    }
+    pos++;
+  }
+
+  return depth === 0 ? pos - 1 : -1;
+}
+
+/**
+ * Deduplicate imports by import statement
+ *
+ * @param imports - Array of CustomImport objects
+ * @returns Deduplicated array of CustomImport objects
+ */
+function deduplicateImports(imports: CustomImport[]): CustomImport[] {
+  const seen = new Set<string>();
+  const deduplicated: CustomImport[] = [];
+
+  for (const customImport of imports) {
+    if (!seen.has(customImport.importStatement)) {
+      seen.add(customImport.importStatement);
+      deduplicated.push(customImport);
+    }
+  }
+
+  return deduplicated;
+}
+
+/**
+ * Extract custom imports from model documentation
+ *
+ * @param model - Prisma DMMF model
+ * @returns Custom imports parsing result
+ */
+export function extractModelCustomImports(model: DMMF.Model): CustomImportsParseResult {
+  const modelComment = model.documentation || '';
+
+  if (!modelComment.trim()) {
+    return {
+      imports: [],
+      parseErrors: [],
+      isValid: true,
+      customSchema: undefined,
+    };
+  }
+
+  const context: ModelCommentContext = {
+    modelName: model.name,
+    comment: modelComment,
+  };
+
+  return parseCustomImports(modelComment, context);
+}
+
+/**
+ * Extract custom imports from field documentation
+ *
+ * @param field - Prisma DMMF field
+ * @param modelName - Name of the model containing the field
+ * @returns Custom imports parsing result
+ */
+export function extractFieldCustomImports(
+  field: DMMF.Field,
+  modelName: string,
+): CustomImportsParseResult {
+  const fieldComment = field.documentation || '';
+
+  if (!fieldComment.trim()) {
+    return {
+      imports: [],
+      parseErrors: [],
+      isValid: true,
+      customSchema: undefined,
+    };
+  }
+
+  const context: FieldCommentContext = {
+    modelName,
+    fieldName: field.name,
+    fieldType: field.type,
+    comment: fieldComment,
+    isOptional: !field.isRequired,
+    isList: field.isList,
+  };
+
+  return parseCustomImports(fieldComment, context);
 }

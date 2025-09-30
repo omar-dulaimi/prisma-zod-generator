@@ -298,6 +298,26 @@ export class VariantFileGenerationCoordinator {
     const schemaComposition = this.typeMapper.generateModelSchema(model);
     const fileContent = this.typeMapper.generateSchemaFileContent(schemaComposition);
 
+    // Debug: Log content before variant customizations
+    if (process.env.DEBUG_PRISMA_ZOD === '1' && context.variant === VariantType.PURE) {
+      console.log('🔍 DEBUG: Pre-customization content for pure variant:');
+      console.log(
+        'Schema composition:',
+        JSON.stringify(
+          {
+            modelLevelValidation: schemaComposition.modelLevelValidation,
+            customImports: schemaComposition.customImports?.length || 0,
+            customImportsDetail: schemaComposition.customImports || [],
+          },
+          null,
+          2,
+        ),
+      );
+      console.log('File content preview:');
+      console.log(fileContent.content);
+      console.log('File content dependencies:', fileContent.dependencies);
+    }
+
     // Apply variant-specific filtering and customizations
     const filteredContent = this.applyVariantCustomizations(fileContent.content, context);
     const formattedContent = await this.formatContent(filteredContent);
@@ -331,6 +351,16 @@ export class VariantFileGenerationCoordinator {
    */
   private applyVariantCustomizations(content: string, context: GenerationContext): string {
     let customizedContent = content;
+
+    // Preserve custom imports and model-level validation before applying other customizations
+    const preservedCustomImports = this.extractCustomImports(customizedContent);
+    const preservedModelValidation = this.extractModelLevelValidation(customizedContent);
+
+    // Debug logging
+    if (process.env.DEBUG_PRISMA_ZOD === '1' && context.variant === VariantType.PURE) {
+      console.log('🔍 DEBUG: Extracted custom imports:', preservedCustomImports);
+      console.log('🔍 DEBUG: Extracted model validation:', preservedModelValidation);
+    }
 
     // Apply field exclusions
     const fieldExclusions = this.configManager.getEffectiveFieldExclusions(
@@ -499,7 +529,100 @@ export class VariantFileGenerationCoordinator {
     // Note: .partial() support is handled during template generation in prisma-generator.ts
     // This avoids fragile regex patterns that break with custom naming conventions
 
+    // Restore preserved custom imports and model-level validation
+    customizedContent = this.restoreCustomImports(customizedContent, preservedCustomImports);
+    customizedContent = this.restoreModelLevelValidation(
+      customizedContent,
+      preservedModelValidation,
+    );
+
     return customizedContent;
+  }
+
+  /**
+   * Extract custom imports from content (non-enum related)
+   */
+  private extractCustomImports(content: string): string[] {
+    const customImports: string[] = [];
+
+    // Match import statements that aren't zod, @prisma/client, or enum schema imports
+    const importRegex = /^import\s+.*?from\s+['"][^'"]*['"];?\s*$/gm;
+    let match;
+
+    while ((match = importRegex.exec(content)) !== null) {
+      const importLine = match[0];
+
+      // Skip standard imports
+      if (
+        importLine.includes("from 'zod") ||
+        importLine.includes('from "zod') ||
+        importLine.includes("from '@prisma/client") ||
+        importLine.includes('from "@prisma/client') ||
+        importLine.includes('/enums/') ||
+        importLine.includes('type { Prisma }') ||
+        importLine.includes('JsonNullValue') ||
+        importLine.includes('json-helpers')
+      ) {
+        continue;
+      }
+
+      // This is likely a custom import
+      customImports.push(importLine);
+    }
+
+    return customImports;
+  }
+
+  /**
+   * Extract model-level validation from content
+   */
+  private extractModelLevelValidation(content: string): string | null {
+    // Look for .refine() calls at the end of object definitions, accounting for .strict()
+    const refineRegex = /\}\)\.strict\(\)\.refine\([^;]+\);/;
+    const match = content.match(refineRegex);
+    return match ? match[0] : null;
+  }
+
+  /**
+   * Restore custom imports to content
+   */
+  private restoreCustomImports(content: string, customImports: string[]): string {
+    if (customImports.length === 0) {
+      return content;
+    }
+
+    // Insert custom imports after the zod import
+    const zodImportRegex = /(import\s*\*\s*as\s*z\s*from\s*['"]zod[^'"]*['"];?\s*)/;
+    const match = content.match(zodImportRegex);
+
+    if (match) {
+      const insertPosition = match.index! + match[0].length;
+      const customImportLines = customImports.join('\n') + '\n';
+      return content.slice(0, insertPosition) + customImportLines + content.slice(insertPosition);
+    }
+
+    return content;
+  }
+
+  /**
+   * Restore model-level validation to content
+   */
+  private restoreModelLevelValidation(content: string, modelValidation: string | null): string {
+    if (!modelValidation) {
+      return content;
+    }
+
+    // Replace the .strict() ending with the model validation
+    const strictRegex = /\}\)\.strict\(\);/;
+    if (strictRegex.test(content)) {
+      // Extract the .refine() part from the full validation
+      const refineMatch = modelValidation.match(/\.refine\([^;]+\);/);
+      if (refineMatch) {
+        return content.replace(strictRegex, `}).strict()${refineMatch[0]}`);
+      }
+    }
+
+    return content;
   }
 
   /**

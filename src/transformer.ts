@@ -1164,6 +1164,154 @@ export default class Transformer {
     }
   }
 
+  /**
+   * Generate custom import statements from @zod.import() annotations
+   *
+   * @param customImports - Array of custom import objects
+   * @param outputPath - Current output path for relative import adjustment
+   * @returns Generated import statements string
+   */
+  generateCustomImportStatements(customImports: any[], outputPath: string = ''): string {
+    if (!customImports || customImports.length === 0) {
+      return '';
+    }
+
+    // Import CustomImport type from zodComments
+    // const { CustomImport } = require('./parsers/zodComments') as { CustomImport: any };
+
+    const importStatements: string[] = [];
+    const seenImports = new Set<string>();
+
+    for (const customImport of customImports as any[]) {
+      if (!customImport || !customImport.importStatement) {
+        continue;
+      }
+
+      let importStatement = customImport.importStatement;
+
+      // Adjust relative paths for multi-file output
+      if (outputPath && customImport.source.startsWith('.')) {
+        importStatement = this.adjustRelativeImportPath(importStatement, outputPath);
+      }
+
+      // Avoid duplicate imports
+      if (!seenImports.has(importStatement)) {
+        seenImports.add(importStatement);
+        importStatements.push(importStatement);
+      }
+    }
+
+    if (importStatements.length === 0) {
+      return '';
+    }
+
+    // Return imports with proper formatting and newline
+    return importStatements.join(';\n') + ';\n';
+  }
+
+  /**
+   * Get custom imports for a specific schema context
+   *
+   * @param modelName - Name of the model
+   * @returns Array of custom imports needed for this specific schema
+   */
+  getCustomImportsForModel(modelName: string | null): any[] {
+    if (!modelName) return [];
+
+    // Find the enhanced model data
+    const enhancedModel = this.enhancedModels.find((em) => em.model.name === modelName);
+    if (!enhancedModel) return [];
+
+    // Only include imports that are actually used by fields in this specific schema
+    const usedImports: any[] = [];
+
+    // Check which fields in this schema use custom imports
+    for (const field of this.fields) {
+      const enhancedField = enhancedModel.enhancedFields.find((ef) => ef.field.name === field.name);
+      if (enhancedField && enhancedField.customImports) {
+        usedImports.push(...enhancedField.customImports);
+      }
+    }
+
+    // Add model-level imports if any field in this schema needs them
+    if (usedImports.length > 0) {
+      usedImports.push(...enhancedModel.modelCustomImports);
+    }
+
+    return usedImports;
+  }
+
+  /**
+   * Get custom schema for a specific field
+   *
+   * @param fieldName - Name of the field
+   * @returns Custom schema string or null if not found
+   */
+  getCustomSchemaForField(fieldName: string): string | null {
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    if (!modelName) return null;
+
+    // Find the enhanced model data
+    const enhancedModel = this.enhancedModels.find((em) => em.model.name === modelName);
+    if (!enhancedModel) return null;
+
+    // Find the enhanced field data
+    const enhancedField = enhancedModel.enhancedFields.find((ef) => ef.field.name === fieldName);
+    if (!enhancedField) return null;
+
+    // Return the custom schema from @zod.import().custom.use() if available
+    if (enhancedField.customSchema) {
+      return enhancedField.customSchema;
+    }
+
+    // Fallback to regular zod schema if available
+    if (enhancedField.hasZodAnnotations && enhancedField.zodSchema) {
+      return enhancedField.zodSchema;
+    }
+
+    return null;
+  }
+
+  /**
+   * Adjust relative import paths based on output directory structure
+   *
+   * @param importStatement - Original import statement
+   * @param outputPath - Current output path
+   * @returns Adjusted import statement
+   */
+  private adjustRelativeImportPath(importStatement: string, outputPath: string): string {
+    // For multi-file output, add additional "../" levels as needed
+    const config = Transformer.getGeneratorConfig();
+    const isMultiFile = config?.useMultipleFiles === true;
+
+    if (!isMultiFile) {
+      return importStatement;
+    }
+
+    // Count directory levels in output path to determine how many "../" to add
+    const pathLevels = outputPath.split('/').length - 1;
+    const additionalLevels = Math.max(0, pathLevels);
+
+    if (additionalLevels === 0) {
+      return importStatement;
+    }
+
+    // Extract the module path and add additional levels
+    const fromMatch = importStatement.match(/from\s+['"`]([^'"`]+)['"`]/);
+    if (!fromMatch) {
+      return importStatement;
+    }
+
+    const originalPath = fromMatch[1];
+    if (!originalPath.startsWith('.')) {
+      return importStatement;
+    }
+
+    // Add additional "../" levels
+    const adjustedPath = '../'.repeat(additionalLevels) + originalPath;
+    return importStatement.replace(fromMatch[0], `from '${adjustedPath}'`);
+  }
+
   generateExportSchemaStatement(name: string, schema: string) {
     return `export const ${name}Schema = ${schema}`;
   }
@@ -1311,7 +1459,10 @@ export default class Transformer {
       }
 
       if (inputType.type === 'String') {
-        result.push(this.wrapWithZodValidators('z.string()', field, inputType));
+        // Check for custom schema from @zod.import() annotations
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'z.string()';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType));
       } else if (inputType.type === 'Boolean') {
         result.push(this.wrapWithZodValidators('z.boolean()', field, inputType));
       } else if (inputType.type === 'Int') {
@@ -2067,7 +2218,10 @@ export default class Transformer {
       const sanity = this.generateZodOnlySanityCheck(finalFields);
       if (sanity) objectSchema += sanity + '\n';
     }
-    const baseImports = this.generateObjectSchemaImportStatements();
+    // Get custom imports for this model
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    const customImports = this.getCustomImportsForModel(modelName);
+    const baseImports = this.generateObjectSchemaImportStatements(customImports);
     let jsonImport = '';
     if (this.hasJson) {
       const cfg = Transformer.getGeneratorConfig();
@@ -2340,8 +2494,18 @@ export default class Transformer {
     }
   }
 
-  generateObjectSchemaImportStatements() {
+  generateObjectSchemaImportStatements(customImports: any[] = []) {
     let generatedImports = this.generateImportZodStatement();
+
+    // Add custom imports from @zod.import() annotations
+    const customImportStatements = this.generateCustomImportStatements(
+      customImports,
+      'objects', // Output path for relative import adjustment
+    );
+    if (customImportStatements) {
+      generatedImports += customImportStatements;
+    }
+
     // Only import Prisma types when emitting typed schemas
     if (Transformer.exportTypedSchemas) {
       // Ensure Prisma types import exists for type safety checks in tests
