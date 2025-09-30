@@ -17,7 +17,7 @@ generator zod {
   output   = "../src/schemas"
 }
 
-/// @zod.import(["import { validateEmail } from 'email-validator'"]).refine((val) => validateEmail(val.email), { message: 'Invalid email in model' })
+/// @zod.import(["import { isEmail } from 'validator'"]).refine((val) => isEmail(val.email), { message: 'Invalid email in model' })
 model ZodV4Examples {
   id Int @id @default(autoincrement())
 
@@ -34,7 +34,7 @@ model ZodV4Examples {
   /// @zod.uuid()
   uuid String
 
-  /// @zod.import(["import { validateDomain } from 'domain-validator'"]).custom.use(z.string().refine((val) => validateDomain(val), { message: 'Invalid domain' }))
+  /// @zod.import(["import { isFQDN } from 'validator'"]).custom.use(z.string().refine((val) => isFQDN(val), { message: 'Invalid domain' }))
   nanoidDefault String
 
   /// @zod.nanoid({"abort":true,"pattern":new RegExp('.'), error: 'lol'})

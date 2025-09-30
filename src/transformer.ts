@@ -1211,34 +1211,157 @@ export default class Transformer {
 
   /**
    * Get custom imports for a specific schema context
+   * This method is called AFTER the schema content is generated to determine which imports are actually needed
    *
    * @param modelName - Name of the model
+   * @param schemaContent - The generated schema content to analyze for import usage
    * @returns Array of custom imports needed for this specific schema
    */
-  getCustomImportsForModel(modelName: string | null): any[] {
+  getCustomImportsForModel(modelName: string | null, schemaContent?: string): any[] {
     if (!modelName) return [];
 
     // Find the enhanced model data
     const enhancedModel = this.enhancedModels.find((em) => em.model.name === modelName);
     if (!enhancedModel) return [];
 
-    // Only include imports that are actually used by fields in this specific schema
     const usedImports: any[] = [];
+    const usedImportSources = new Set<string>();
 
-    // Check which fields in this schema use custom imports
+    // If schema content is provided, analyze it for actual usage
+    if (schemaContent) {
+      // Collect all potential imports from field-level and model-level
+      const allPotentialImports = [];
+
+      // Add field-level imports
+      for (const enhancedField of enhancedModel.enhancedFields) {
+        if (enhancedField.customImports) {
+          allPotentialImports.push(...enhancedField.customImports);
+        }
+      }
+
+      // Add model-level imports
+      if (enhancedModel.modelCustomImports) {
+        allPotentialImports.push(...enhancedModel.modelCustomImports);
+      }
+
+      // Check which imports are actually used in the schema content
+      for (const potentialImport of allPotentialImports) {
+        if (potentialImport.importedItems) {
+          // Check if any imported function/item is used in the schema content
+          const isUsed = potentialImport.importedItems.some((item: string) =>
+            schemaContent.includes(item),
+          );
+
+          if (isUsed && !usedImportSources.has(potentialImport.importStatement)) {
+            usedImports.push(potentialImport);
+            usedImportSources.add(potentialImport.importStatement);
+          }
+        }
+      }
+
+      return usedImports;
+    }
+
+    // Fallback to the old logic if no schema content is provided
+    // Check which fields in this schema actually use custom validation
     for (const field of this.fields) {
       const enhancedField = enhancedModel.enhancedFields.find((ef) => ef.field.name === field.name);
-      if (enhancedField && enhancedField.customImports) {
-        usedImports.push(...enhancedField.customImports);
+
+      // Only add imports if the field has custom imports AND the field string contains custom validation logic
+      if (enhancedField && enhancedField.customImports && enhancedField.customImports.length > 0) {
+        // Check if this field actually contains custom validation by looking for function calls
+        const hasCustomValidation = this.fieldContainsCustomValidation(field, enhancedField);
+
+        if (hasCustomValidation) {
+          for (const customImport of enhancedField.customImports) {
+            // Deduplicate imports by source
+            if (!usedImportSources.has(customImport.importStatement)) {
+              usedImports.push(customImport);
+              usedImportSources.add(customImport.importStatement);
+            }
+          }
+        }
       }
     }
 
-    // Add model-level imports if any field in this schema needs them
-    if (usedImports.length > 0) {
-      usedImports.push(...enhancedModel.modelCustomImports);
+    // Only add model-level imports if this is a schema type that should include model-level validation
+    // Model-level validation (like .refine()) should only be in result/output schemas, not input aggregate schemas
+    const isResultSchema =
+      this.name.includes('Result') ||
+      this.name.includes('ModelSchema') ||
+      (!this.name.includes('Input') &&
+        !this.name.includes('Filter') &&
+        !this.name.includes('OrderBy') &&
+        !this.name.includes('Aggregate'));
+
+    if (
+      isResultSchema &&
+      enhancedModel.modelCustomImports &&
+      enhancedModel.modelCustomImports.length > 0
+    ) {
+      for (const modelImport of enhancedModel.modelCustomImports) {
+        if (!usedImportSources.has(modelImport.importStatement)) {
+          usedImports.push(modelImport);
+          usedImportSources.add(modelImport.importStatement);
+        }
+      }
     }
 
     return usedImports;
+  }
+
+  /**
+   * Check if a field actually contains custom validation logic
+   */
+  private fieldContainsCustomValidation(field: any, enhancedField: any): boolean {
+    // Check if the enhanced field has a custom schema or custom validation
+    if (enhancedField.hasZodAnnotations && enhancedField.zodSchema) {
+      const zodSchema = enhancedField.zodSchema;
+
+      // Check if the zodSchema contains function calls from the custom imports
+      if (enhancedField.customImports) {
+        for (const customImport of enhancedField.customImports) {
+          // Check if any of the imported function names are used in the schema
+          for (const importedItem of customImport.importedItems || []) {
+            if (zodSchema.includes(importedItem)) {
+              return true;
+            }
+          }
+        }
+      }
+
+      // Check if schema contains .refine() or .transform() which would use custom logic
+      if (zodSchema.includes('.refine(') || zodSchema.includes('.transform(')) {
+        return true;
+      }
+    }
+
+    // Check if the enhanced field has a custom schema from @zod.import().custom.use()
+    if (enhancedField.customSchema) {
+      return true;
+    }
+
+    // Convert field to string to check its content as fallback
+    const fieldString = field.toString();
+
+    // If field is just z.literal(true).optional() or similar basic patterns, it doesn't need custom imports
+    if (fieldString.includes('z.literal(true)') || fieldString.includes('z.lazy(')) {
+      return false;
+    }
+
+    // Check if field contains function calls from the custom imports as fallback
+    if (enhancedField.customImports) {
+      for (const customImport of enhancedField.customImports) {
+        // Check if any of the imported function names are used in the field
+        for (const importedItem of customImport.importedItems || []) {
+          if (fieldString.includes(importedItem)) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -2218,9 +2341,9 @@ export default class Transformer {
       const sanity = this.generateZodOnlySanityCheck(finalFields);
       if (sanity) objectSchema += sanity + '\n';
     }
-    // Get custom imports for this model
+    // Get custom imports for this model by analyzing the actual schema content
     const modelName = Transformer.extractModelNameFromContext(this.name);
-    const customImports = this.getCustomImportsForModel(modelName);
+    const customImports = this.getCustomImportsForModel(modelName, objectSchema);
     const baseImports = this.generateObjectSchemaImportStatements(customImports);
     let jsonImport = '';
     if (this.hasJson) {
