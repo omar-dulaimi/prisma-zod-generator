@@ -2526,92 +2526,19 @@ function parseImportArray(
     return [];
   }
 
-  const sanitizedInput = trimmedInput.replace(/,\s*$/, '');
-
-  let rawEntries: string[] | null = null;
-
-  try {
-    if (sanitizedInput.startsWith('[') && sanitizedInput.endsWith(']')) {
-      rawEntries = JSON.parse(sanitizedInput) as string[];
-    }
-
-    if (!sanitizedInput.startsWith('[')) {
-      rawEntries = JSON.parse(`[${sanitizedInput}]`) as string[];
-    }
-  } catch {
-    // Fall through to permissive parser below.
+  const statementsFromJson = parseImportArrayJson(trimmedInput);
+  if (statementsFromJson.length > 0) {
+    return statementsFromJson;
   }
 
-  if (!rawEntries) {
-    const normalizedInput = sanitizedInput.startsWith('[')
-      ? sanitizedInput.slice(1, sanitizedInput.endsWith(']') ? -1 : undefined)
-      : sanitizedInput;
-
-    rawEntries = splitImportEntries(normalizedInput).map(stripWrappingQuotes);
+  const fallbackStatements = extractImportStatements(trimmedInput);
+  if (fallbackStatements.length > 0) {
+    return fallbackStatements;
   }
 
-  const statements: string[] = [];
-
-  for (const segment of rawEntries) {
-    const extracted = extractImportStatements(segment);
-    for (const statement of extracted) {
-      statements.push(statement);
-    }
-  }
-
-  if (!statements.length) {
-    throw new Error(
-      `Invalid import array format. Expected JSON array of strings, got: ${importArrayString}`,
-    );
-  }
-
-  return statements;
-}
-
-function splitImportEntries(raw: string): string[] {
-  if (!raw) {
-    return [];
-  }
-
-  const entries: string[] = [];
-  let current = '';
-  let braceDepth = 0;
-  let inSingle = false;
-  let inDouble = false;
-  let inBacktick = false;
-
-  for (let i = 0; i < raw.length; i++) {
-    const char = raw[i];
-    const prevChar = i > 0 ? raw[i - 1] : '';
-
-    if (char === "'" && prevChar !== '\\' && !inDouble && !inBacktick) {
-      inSingle = !inSingle;
-    } else if (char === '"' && prevChar !== '\\' && !inSingle && !inBacktick) {
-      inDouble = !inDouble;
-    } else if (char === '`' && prevChar !== '\\' && !inSingle && !inDouble) {
-      inBacktick = !inBacktick;
-    }
-
-    if (!inSingle && !inDouble && !inBacktick) {
-      if (char === '{') {
-        braceDepth++;
-      } else if (char === '}') {
-        braceDepth = Math.max(0, braceDepth - 1);
-      } else if (char === ',' && braceDepth === 0) {
-        entries.push(current.trim());
-        current = '';
-        continue;
-      }
-    }
-
-    current += char;
-  }
-
-  if (current.trim()) {
-    entries.push(current.trim());
-  }
-
-  return entries;
+  throw new Error(
+    `Invalid import array format. Expected JSON array of strings, got: ${importArrayString}`,
+  );
 }
 
 function extractImportStatements(segment: string): string[] {
@@ -2661,6 +2588,32 @@ function unescapeString(value: string): string {
     return JSON.parse(`"${escaped}"`);
   } catch {
     return value;
+  }
+}
+
+function parseImportArrayJson(raw: string): string[] {
+  try {
+    const jsonText = raw.startsWith('[') ? raw : `[${raw}]`;
+    const parsed = JSON.parse(jsonText);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    const statements: string[] = [];
+
+    for (const entry of parsed) {
+      if (typeof entry !== 'string') {
+        continue;
+      }
+
+      const extracted = extractImportStatements(entry);
+      statements.push(...extracted);
+    }
+
+    return statements;
+  } catch {
+    return [];
   }
 }
 
