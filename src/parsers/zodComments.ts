@@ -1581,11 +1581,13 @@ function mapAnnotationToZodMethod(
     'cidrv4',
     'cidrv6',
     'emoji',
-    'regex',
+    // Note: 'regex' is not included because z.regex() is not a valid method
+    // regex should use z.string().regex() syntax instead
+    'isoDate',
+    'isoTime',
+    'isoDatetime',
+    'isoDuration',
   ];
-
-  // Handle ISO methods which use z.iso.xxx() syntax
-  const isoMethods = ['isoDate', 'isoTime', 'isoDatetime', 'isoDuration'];
 
   if (newStringFormatMethods.includes(method)) {
     const resolvedVersion = resolveZodVersion(zodVersion);
@@ -1594,7 +1596,23 @@ function mapAnnotationToZodMethod(
       // In Zod v4, prefer base types like z.httpUrl(), z.base64(), etc.
       // Don't chain unnecessarily!
       const formattedParams = formatV4StringFormatParameters(method, parameters);
-      const methodCall = formattedParams ? `z.${method}(${formattedParams})` : `z.${method}()`;
+
+      // Special handling for ISO methods which use z.iso.xxx() syntax
+      const isoMethods = ['isoDate', 'isoTime', 'isoDatetime', 'isoDuration'];
+      let methodCall: string;
+      if (isoMethods.includes(method)) {
+        const isoMethodMap: Record<string, string> = {
+          isoDate: 'z.iso.date',
+          isoTime: 'z.iso.time',
+          isoDatetime: 'z.iso.datetime',
+          isoDuration: 'z.iso.duration',
+        };
+        methodCall = formattedParams
+          ? `${isoMethodMap[method]}(${formattedParams})`
+          : `${isoMethodMap[method]}()`;
+      } else {
+        methodCall = formattedParams ? `z.${method}(${formattedParams})` : `z.${method}()`;
+      }
 
       return {
         methodCall,
@@ -1605,40 +1623,6 @@ function mapAnnotationToZodMethod(
     // For v3, fallback to z.string() since these methods likely don't exist
     logger.warn(
       `[zod-comments] Method ${method} not supported in Zod v3; falling back to z.string()`,
-    );
-    return {
-      methodCall: '', // Will result in base z.string() only
-      requiredImport: methodConfig.requiresImport,
-    };
-  }
-
-  // Handle ISO methods with z.iso.xxx() syntax
-  if (isoMethods.includes(method)) {
-    const resolvedVersion = resolveZodVersion(zodVersion);
-
-    if (resolvedVersion === 'v4') {
-      // Map method names to ISO methods
-      const isoMethodMap: Record<string, string> = {
-        isoDate: 'z.iso.date',
-        isoTime: 'z.iso.time',
-        isoDatetime: 'z.iso.datetime',
-        isoDuration: 'z.iso.duration',
-      };
-
-      const formattedParams = formatV4StringFormatParameters(method, parameters);
-      const methodCall = formattedParams
-        ? `${isoMethodMap[method]}(${formattedParams})`
-        : `${isoMethodMap[method]}()`;
-
-      return {
-        methodCall,
-        requiredImport: methodConfig.requiresImport,
-        isBaseReplacement: true,
-      };
-    }
-    // For v3, fallback to z.string() since ISO methods don't exist
-    logger.warn(
-      `[zod-comments] ISO method ${method} not supported in Zod v3; falling back to z.string()`,
     );
     return {
       methodCall: '', // Will result in base z.string() only

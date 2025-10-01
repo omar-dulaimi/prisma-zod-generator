@@ -96,11 +96,15 @@ export default class Transformer {
     this.enumTypes = params.enumTypes ?? [];
 
     // Process models with Zod integration on initialization
+    const generatorConfig = Transformer.getGeneratorConfig();
+    const zodVersion = (generatorConfig?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
+
     this.enhancedModels = processModelsWithZodIntegration(this.models, {
       enableZodAnnotations: true,
       generateFallbackSchemas: true,
       validateTypeCompatibility: true,
       collectDetailedErrors: true,
+      zodVersion: zodVersion,
     });
   }
 
@@ -1782,7 +1786,7 @@ export default class Transformer {
       if (field.name && typeof field.name === 'string' && field.name.length > 0) {
         const zodValidations = this.extractZodValidationsForField(field.name);
 
-        if (zodValidations && zodValidations !== mainValidator) {
+        if (zodValidations) {
           line = zodValidations;
           hasEnhancedZodSchema = true;
         }
@@ -1804,37 +1808,13 @@ export default class Transformer {
         if (hasEnhancedZodSchema && existingMaxConstraint !== null) {
           // Both native type and @zod.max exist - use the more restrictive one
           const finalMaxLength = Math.min(nativeMaxLength, existingMaxConstraint);
-
-          // Always replace all max constraints with the single most restrictive one
           line = this.replaceAllMaxConstraints(line, finalMaxLength);
-        } else if (!hasEnhancedZodSchema) {
-          // Only native type constraint exists - apply it to the base validator
-          line = line.replace('z.string()', `z.string().max(${nativeMaxLength})`);
         } else if (hasEnhancedZodSchema && existingMaxConstraint === null) {
           // Enhanced @zod schema exists but no max constraint - add native constraint
-          // Find the base type and add max constraint after it
-          if (line.includes('z.string()')) {
-            line = line.replace('z.string()', `z.string().max(${nativeMaxLength})`);
-          } else if (line.includes('z.email()')) {
-            // Handle Zod v4 email syntax - add max constraint after z.email()
-            line = line.replace('z.email()', `z.email().max(${nativeMaxLength})`);
-          } else {
-            // Handle cases where the string type is already transformed
-            const baseStringMatch = line.match(/(z\.string\(\)[^.]*)/);
-            const baseEmailMatch = line.match(/(z\.email\(\)[^.]*)/);
-            if (baseStringMatch) {
-              line = line.replace(
-                baseStringMatch[1],
-                `${baseStringMatch[1]}.max(${nativeMaxLength})`,
-              );
-            } else if (baseEmailMatch) {
-              // Handle Zod v4 email with potential chaining
-              line = line.replace(
-                baseEmailMatch[1],
-                `${baseEmailMatch[1]}.max(${nativeMaxLength})`,
-              );
-            }
-          }
+          line = this.replaceAllMaxConstraints(line, nativeMaxLength);
+        } else if (!hasEnhancedZodSchema) {
+          // Only native type constraint exists - apply it to the base validator
+          line = this.replaceAllMaxConstraints(line, nativeMaxLength);
         }
       }
     }
@@ -2171,27 +2151,41 @@ export default class Transformer {
    */
   private replaceAllMaxConstraints(validationString: string, newMaxValue: number): string {
     // Remove all existing .max(number) constraints
-    const withoutMax = validationString.replace(/\.max\(\d+\)/g, '');
+    let result = validationString.replace(/\.max\(\d+\)/g, '');
 
-    // Add the new max constraint after z.string() or z.email()
-    if (withoutMax.includes('z.string()')) {
-      return withoutMax.replace('z.string()', `z.string().max(${newMaxValue})`);
-    } else if (withoutMax.includes('z.email()')) {
-      // Handle Zod v4 email syntax
-      return withoutMax.replace('z.email()', `z.email().max(${newMaxValue})`);
-    } else {
-      // Handle cases where string/email type is already transformed - add after the base type
-      const baseStringMatch = withoutMax.match(/(z\.string\(\)[^.]*)/);
-      const baseEmailMatch = withoutMax.match(/(z\.email\(\)[^.]*)/);
-
-      if (baseStringMatch) {
-        return withoutMax.replace(baseStringMatch[1], `${baseStringMatch[1]}.max(${newMaxValue})`);
-      } else if (baseEmailMatch) {
-        return withoutMax.replace(baseEmailMatch[1], `${baseEmailMatch[1]}.max(${newMaxValue})`);
+    // Strategy: Find the first Zod method and add max constraint right after it
+    // Handle z.string() case
+    if (result.includes('z.string()')) {
+      result = result.replace('z.string()', `z.string().max(${newMaxValue})`);
+    }
+    // Handle z.email() case
+    else if (result.includes('z.email()')) {
+      result = result.replace('z.email()', `z.email().max(${newMaxValue})`);
+    }
+    // Handle z.url() case
+    else if (result.includes('z.url()')) {
+      result = result.replace('z.url()', `z.url().max(${newMaxValue})`);
+    }
+    // Handle already-chained method case (e.g., z.string().min(1) -> z.string().max(X).min(1))
+    else {
+      // Try to find any z.xxx() method at the beginning and add max constraint after it
+      const baseTypeMatch = result.match(/^(\s*)(z\.[a-zA-Z]+\(\))/);
+      if (baseTypeMatch) {
+        result = result.replace(baseTypeMatch[2], `${baseTypeMatch[2]}.max(${newMaxValue})`);
+      } else {
+        // Handle cases where there's already chaining (e.g., z.string().min(5))
+        const chainStartMatch = result.match(/^(\s*z\.[^.]+(?:\([^)]*\))?)/);
+        if (chainStartMatch) {
+          result = result.replace(chainStartMatch[1], `${chainStartMatch[1]}.max(${newMaxValue})`);
+        } else {
+          // Last resort fallback
+          console.warn(`[transformer] Could not find where to insert max constraint in: ${result}`);
+          return result;
+        }
       }
     }
 
-    return withoutMax;
+    return result;
   }
 
   /**
