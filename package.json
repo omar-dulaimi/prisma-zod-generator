@@ -14,6 +14,7 @@
     "gen-example:debug": "tsc && DEBUG_PRISMA_ZOD=1 pnpm prisma generate",
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "pnpm update && pnpm run check-uncommitted && ./package.sh && cd package && pnpm publish",
+    "render:diagrams": "pnpm tsx scripts/render-mermaid.ts",
     "test": "vitest --config vitest.config.mjs",
     "test:watch": "vitest --config vitest.config.mjs --watch",
     "test:basic": "vitest --config vitest.config.mjs run tests/generated-schema.test.ts --reporter=default",
@@ -115,6 +116,7 @@
     "zod": ">=3.25.0 <5"
   },
   "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^11.12.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/git": "^10.0.1",

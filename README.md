@@ -47,6 +47,9 @@
 
 <br />
 
+<details class="diagram-source">
+<summary>Mermaid source</summary>
+
 ```mermaid
 graph TB
     subgraph "🔧 Generation Modes"
@@ -72,12 +75,21 @@ graph TB
     style C fill:#45b7d1,stroke:#333,stroke-width:2px,color:#fff
     style D fill:#96ceb4,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-01-7d1132fdf6 -->
+![Diagram 1](docs/assets/diagrams/diagram-01-7d1132fdf6.svg)
+<!-- /diagram:diagram-01-7d1132fdf6 -->
+
 
 <div align="center">
   <img src="https://img.shields.io/badge/Schema_Types-FFA07A?style=for-the-badge&logo=database&logoColor=white" />
 </div>
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph LR
@@ -112,6 +124,12 @@ graph LR
     style RS fill:#f7dc6f,stroke:#333,stroke-width:2px,color:#fff
     style ES fill:#bb8fce,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-02-9a773c8224 -->
+![Diagram 2](docs/assets/diagrams/diagram-02-9a773c8224.svg)
+<!-- /diagram:diagram-02-9a773c8224 -->
+
 
 </td>
 <td width="50%" valign="top">
@@ -121,6 +139,9 @@ graph LR
 </div>
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph TD
@@ -152,12 +173,21 @@ graph TD
     style RV fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
     style CV fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-03-74e5143daa -->
+![Diagram 3](docs/assets/diagrams/diagram-03-74e5143daa.svg)
+<!-- /diagram:diagram-03-74e5143daa -->
+
 
 <div align="center">
   <img src="https://img.shields.io/badge/Filtering_&_Selection-E74C3C?style=for-the-badge&logo=filter&logoColor=white" />
 </div>
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph LR
@@ -189,6 +219,12 @@ graph LR
     style FF fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
     style WP fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-04-eaa9e24b2a -->
+![Diagram 4](docs/assets/diagrams/diagram-04-eaa9e24b2a.svg)
+<!-- /diagram:diagram-04-eaa9e24b2a -->
+
 
 </td>
 </tr>
@@ -213,6 +249,9 @@ graph LR
 </div>
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph TD
@@ -241,8 +280,17 @@ graph TD
     style CDS fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
     style EIE fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-05-d7f60e92d2 -->
+![Diagram 5](docs/assets/diagrams/diagram-05-d7f60e92d2.svg)
+<!-- /diagram:diagram-05-d7f60e92d2 -->
+
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph LR
@@ -276,6 +324,12 @@ graph LR
     style ENC fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
     style TT fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-06-b47cb41f1c -->
+![Diagram 6](docs/assets/diagrams/diagram-06-b47cb41f1c.svg)
+<!-- /diagram:diagram-06-b47cb41f1c -->
+
 
 </td>
 <td width="33%" valign="top">
@@ -285,6 +339,9 @@ graph LR
 </div>
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph TD
@@ -313,8 +370,17 @@ graph TD
     style MS fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
     style TO fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-07-7aafa72152 -->
+![Diagram 7](docs/assets/diagrams/diagram-07-7aafa72152.svg)
+<!-- /diagram:diagram-07-7aafa72152 -->
+
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph LR
@@ -346,6 +412,12 @@ graph LR
     style DT_TIME fill:#f39c12,stroke:#333,stroke-width:2px,color:#fff
     style OPT fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-08-57b4dbf675 -->
+![Diagram 8](docs/assets/diagrams/diagram-08-57b4dbf675.svg)
+<!-- /diagram:diagram-08-57b4dbf675 -->
+
 
 </td>
 <td width="33%" valign="top">
@@ -355,6 +427,9 @@ graph LR
 </div>
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph TD
@@ -401,8 +476,17 @@ graph TD
     style SIS fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
     style CZI fill:#8e44ad,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-09-99751db375 -->
+![Diagram 9](docs/assets/diagrams/diagram-09-99751db375.svg)
+<!-- /diagram:diagram-09-99751db375 -->
+
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph LR
@@ -429,6 +513,12 @@ graph LR
     style MB fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
     style FG fill:#e74c3c,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-10-693f6cced2 -->
+![Diagram 10](docs/assets/diagrams/diagram-10-693f6cced2.svg)
+<!-- /diagram:diagram-10-693f6cced2 -->
+
 
 </td>
 </tr>
@@ -453,6 +543,9 @@ graph LR
 </div>
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph TD
@@ -487,6 +580,12 @@ graph TD
     style CV fill:#27ae60,stroke:#333,stroke-width:2px,color:#fff
     style UEG fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-11-303cab24a4 -->
+![Diagram 11](docs/assets/diagrams/diagram-11-303cab24a4.svg)
+<!-- /diagram:diagram-11-303cab24a4 -->
+
 
 </td>
 <td width="50%" valign="top">
@@ -496,6 +595,9 @@ graph TD
 </div>
 
 <br />
+
+<details class="diagram-source">
+<summary>Mermaid source</summary>
 
 ```mermaid
 graph TD
@@ -536,6 +638,12 @@ graph TD
     style SS fill:#cc2927,stroke:#333,stroke-width:2px,color:#fff
     style CR fill:#6933ff,stroke:#333,stroke-width:2px,color:#fff
 ```
+</details>
+
+<!-- diagram:diagram-12-216a09ac5c -->
+![Diagram 12](docs/assets/diagrams/diagram-12-216a09ac5c.svg)
+<!-- /diagram:diagram-12-216a09ac5c -->
+
 
 </td>
 </tr>
@@ -603,7 +711,10 @@ If this saves you time or prevents bugs, please consider sponsoring to support m
 
 PRs welcome. Keep diffs focused and discuss larger changes in an issue first. See the test suites for expected behavior and coverage.
 
+**Updating diagrams**
+
+If you edit Mermaid diagrams in this README, run `pnpm render:diagrams` afterwards. The script renders SVG fallbacks to `docs/assets/diagrams` and refreshes the generated image references so diagrams display correctly on npm and GitHub mobile.
+
 ## License
 
 MIT © [Omar Dulaimi](https://github.com/omar-dulaimi)
-
