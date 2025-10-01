@@ -2663,48 +2663,56 @@ function parseImportStatement(
   const importStartOffset = isTypeOnly ? 12 : 6;
   const importClause = trimmed.substring(importStartOffset, trimmed.indexOf(' from ')).trim();
 
-  // Determine import type and extract imported items
+  // Determine import type(s) and extract imported items
   let isDefault = false;
   let isNamespace = false;
   const importedItems: string[] = [];
-  let defaultImport: string | null = null;
-  let namespaceImport: string | null = null;
-  const parts = splitImportClause(importClause);
 
-  for (const part of parts) {
-    const trimmedPart = part.trim();
-    if (!trimmedPart) {
-      continue;
-    }
-
-    if (/^\*\s+as\s+/i.test(trimmedPart)) {
-      const match = trimmedPart.match(/\*\s+as\s+([A-Za-z_$][\w$]*)/i);
-      if (match) {
-        namespaceImport = match[1];
-      }
-      continue;
-    }
-
-    if (trimmedPart.startsWith('{') && trimmedPart.endsWith('}')) {
-      const namedItems = parseNamedImports(trimmedPart.slice(1, -1));
-      importedItems.push(...namedItems);
-      continue;
-    }
-
-    // Anything else is treated as a default import segment
-    if (!defaultImport) {
-      defaultImport = trimmedPart;
-    }
-  }
-
-  if (defaultImport) {
-    isDefault = true;
-    importedItems.unshift(defaultImport);
-  }
-
-  if (namespaceImport) {
+  if (importClause.startsWith('* as ')) {
     isNamespace = true;
-    importedItems.push(namespaceImport);
+    const nameMatch = importClause.match(/\*\s+as\s+([A-Za-z_$][\w$]*)/);
+    if (nameMatch) {
+      importedItems.push(nameMatch[1]);
+    }
+  } else {
+    const namedStart = importClause.indexOf('{');
+    const namedEnd = importClause.lastIndexOf('}');
+
+    // Default portion (before named block)
+    const defaultCandidate = namedStart > 0
+      ? importClause.slice(0, namedStart).replace(/,?\s*$/, '').trim()
+      : namedStart === -1
+        ? importClause.trim().replace(/,?\s*$/, '')
+        : '';
+
+    if (defaultCandidate) {
+      isDefault = true;
+      importedItems.push(defaultCandidate);
+    }
+
+    // Named imports block
+    if (namedStart !== -1 && namedEnd !== -1 && namedEnd > namedStart) {
+      const namedBlock = importClause.slice(namedStart + 1, namedEnd);
+      const namedItems = namedBlock
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .map((item) => {
+          const aliasMatch = item.match(/^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/);
+          if (aliasMatch) {
+            return aliasMatch[2];
+          }
+
+          const typeMatch = item.match(/^type\s+([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/i);
+          if (typeMatch) {
+            return typeMatch[2] ?? typeMatch[1];
+          }
+
+          return item;
+        });
+
+      importedItems.push(...namedItems);
+    }
   }
 
   return {
@@ -2716,56 +2724,6 @@ function parseImportStatement(
     isTypeOnly,
     originalStatement: importStatement,
   };
-}
-
-function splitImportClause(importClause: string): string[] {
-  const result: string[] = [];
-  let current = '';
-  let braceDepth = 0;
-
-  for (let i = 0; i < importClause.length; i++) {
-    const char = importClause[i];
-
-    if (char === '{') {
-      braceDepth++;
-    } else if (char === '}') {
-      braceDepth = Math.max(0, braceDepth - 1);
-    }
-
-    if (char === ',' && braceDepth === 0) {
-      result.push(current);
-      current = '';
-      continue;
-    }
-
-    current += char;
-  }
-
-  if (current) {
-    result.push(current);
-  }
-
-  return result;
-}
-
-function parseNamedImports(namedSection: string): string[] {
-  return namedSection
-    .split(',')
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
-    .map((item) => {
-      const aliasMatch = item.match(/\bas\s+([A-Za-z_$][\w$]*)$/i);
-      if (aliasMatch) {
-        return aliasMatch[1];
-      }
-
-      const typePrefixMatch = item.match(/^type\s+([A-Za-z_$][\w$]*)$/);
-      if (typePrefixMatch) {
-        return typePrefixMatch[1];
-      }
-
-      return item;
-    });
 }
 
 /**
