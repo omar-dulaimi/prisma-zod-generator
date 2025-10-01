@@ -129,6 +129,10 @@ export default class Transformer {
     return this.generatorConfig;
   }
 
+  private static escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   /**
    * Check if a model should be generated based on configuration
    */
@@ -1254,7 +1258,11 @@ export default class Transformer {
         if (potentialImport.importedItems) {
           // Check if any imported function/item is used in the schema content
           const isUsed = potentialImport.importedItems.some((item: string) => {
-            const re = new RegExp(`\\b${item}\\b`);
+            if (!item) {
+              return false;
+            }
+            const escaped = Transformer.escapeRegExp(item);
+            const re = new RegExp(`\\b${escaped}\\b`);
             return re.test(schemaContent);
           });
 
