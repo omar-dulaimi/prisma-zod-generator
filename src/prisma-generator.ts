@@ -1904,7 +1904,33 @@ async function generateVariantSchemaContent(
   // For variant schemas, only include model-level imports if model validation will be applied
   // Field-level custom validation is handled separately in input object schemas
   const shouldIncludeModelImports = variantName !== 'input' && modelCustomImports.customSchema;
-  const uniqueCustomImports = shouldIncludeModelImports ? modelCustomImports.imports : [];
+  const rawCustomImports = shouldIncludeModelImports ? modelCustomImports.imports ?? [] : [];
+
+  const typeOnlyImports = rawCustomImports.filter((customImport) => customImport.isTypeOnly);
+  if (typeOnlyImports.length > 0) {
+    logger.warn(
+      `[variants] Ignoring type-only imports on ${model.name}: ${typeOnlyImports
+        .map((customImport) => customImport.importStatement)
+        .join(', ')}`,
+    );
+  }
+
+  const escapeRegExp = (value: string): string =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const customSchemaUsage = modelCustomImports.customSchema ?? '';
+  const uniqueCustomImports = rawCustomImports
+    .filter((customImport) => !customImport.isTypeOnly)
+    .filter((customImport) => {
+      if (!customSchemaUsage) {
+        return false;
+      }
+      if (!customImport.importedItems || customImport.importedItems.length === 0) {
+        return true;
+      }
+      return customImport.importedItems.some((item) =>
+        item ? new RegExp(`\\b${escapeRegExp(item)}\\b`).test(customSchemaUsage) : false,
+      );
+    });
 
   // Collect enum types used in this model to generate proper imports
   const enumTypes = Array.from(
@@ -2036,7 +2062,7 @@ async function generateVariantSchemaContent(
   // Generate custom import lines
   const customImportLines =
     uniqueCustomImports.length > 0
-      ? uniqueCustomImports.map((imp) => imp.importStatement).join('\n') + '\n'
+      ? new Transformer({}).generateCustomImportStatements(uniqueCustomImports, `variants/${variantName}`)
       : '';
 
   // Apply model-level validation if present and appropriate for this variant type
