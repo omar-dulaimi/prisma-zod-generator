@@ -2147,41 +2147,16 @@ export default class Transformer {
    * Replace all max constraints in a validation string with a single constraint
    */
   private replaceAllMaxConstraints(validationString: string, newMaxValue: number): string {
-    // Remove all existing .max(number) constraints
-    let result = validationString.replace(/\.max\(\d+\)/g, '');
+    // Strip any existing .max() constraints
+    let result = validationString.replace(/\.max\(\s*\d+\s*\)/g, '');
 
-    // Strategy: Find the first Zod method and add max constraint right after it
-    // Handle z.string() case
-    if (result.includes('z.string()')) {
-      result = result.replace('z.string()', `z.string().max(${newMaxValue})`);
-    }
-    // Handle z.email() case
-    else if (result.includes('z.email()')) {
-      result = result.replace('z.email()', `z.email().max(${newMaxValue})`);
-    }
-    // Handle z.url() case
-    else if (result.includes('z.url()')) {
-      result = result.replace('z.url()', `z.url().max(${newMaxValue})`);
-    }
-    // Handle already-chained method case (e.g., z.string().min(1) -> z.string().max(X).min(1))
-    else {
-      // Try to find any z.xxx() method at the beginning and add max constraint after it
-      const baseTypeMatch = result.match(/^(\s*)(z\.[a-zA-Z]+\(\))/);
-      if (baseTypeMatch) {
-        result = result.replace(baseTypeMatch[2], `${baseTypeMatch[2]}.max(${newMaxValue})`);
-      } else {
-        // Handle cases where there's already chaining (e.g., z.string().min(5))
-        const chainStartMatch = result.match(/^(\s*z\.[^.]+(?:\([^)]*\))?)/);
-        if (chainStartMatch) {
-          result = result.replace(chainStartMatch[1], `${chainStartMatch[1]}.max(${newMaxValue})`);
-        } else {
-          // Last resort fallback
-          console.warn(`[transformer] Could not find where to insert max constraint in: ${result}`);
-          return result;
-        }
-      }
+    // Insert after the first Zod constructor call (covers z.string(), z.iso.date(), z.hash(), etc.)
+    const baseCallMatch = result.match(/^(\s*z(?:\.[A-Za-z_]\w*)+\([^)]*\))/);
+    if (baseCallMatch) {
+      return result.replace(baseCallMatch[1], `${baseCallMatch[1]}.max(${newMaxValue})`);
     }
 
+    console.warn(`[transformer] Could not find where to insert max constraint in: ${result}`);
     return result;
   }
 
