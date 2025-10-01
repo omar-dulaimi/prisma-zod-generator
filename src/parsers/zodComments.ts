@@ -2520,25 +2520,147 @@ function parseImportArray(
   importArrayString: string,
   _context: ModelCommentContext | FieldCommentContext,
 ): string[] {
+  const trimmedInput = importArrayString.trim();
+
+  if (!trimmedInput) {
+    return [];
+  }
+
+  const sanitizedInput = trimmedInput.replace(/,\s*$/, '');
+
+  let rawEntries: string[] | null = null;
+
   try {
-    // Handle both single quotes and double quotes
-    let normalizedString = importArrayString;
-
-    // If it looks like a JSON array, parse it directly
-    if (normalizedString.trim().startsWith('[') && normalizedString.trim().endsWith(']')) {
-      return JSON.parse(normalizedString) as string[];
+    if (sanitizedInput.startsWith('[') && sanitizedInput.endsWith(']')) {
+      rawEntries = JSON.parse(sanitizedInput) as string[];
     }
 
-    // If it's a single string without brackets, wrap it in an array
-    if (!normalizedString.trim().startsWith('[')) {
-      normalizedString = `[${normalizedString}]`;
+    if (!sanitizedInput.startsWith('[')) {
+      rawEntries = JSON.parse(`[${sanitizedInput}]`) as string[];
     }
-
-    return JSON.parse(normalizedString) as string[];
   } catch {
+    // Fall through to permissive parser below.
+  }
+
+  if (!rawEntries) {
+    const normalizedInput = sanitizedInput.startsWith('[')
+      ? sanitizedInput.slice(1, sanitizedInput.endsWith(']') ? -1 : undefined)
+      : sanitizedInput;
+
+    rawEntries = splitImportEntries(normalizedInput).map(stripWrappingQuotes);
+  }
+
+  const statements: string[] = [];
+
+  for (const segment of rawEntries) {
+    const extracted = extractImportStatements(segment);
+    for (const statement of extracted) {
+      statements.push(statement);
+    }
+  }
+
+  if (!statements.length) {
     throw new Error(
       `Invalid import array format. Expected JSON array of strings, got: ${importArrayString}`,
     );
+  }
+
+  return statements;
+}
+
+function splitImportEntries(raw: string): string[] {
+  if (!raw) {
+    return [];
+  }
+
+  const entries: string[] = [];
+  let current = '';
+  let braceDepth = 0;
+  let inSingle = false;
+  let inDouble = false;
+  let inBacktick = false;
+
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw[i];
+    const prevChar = i > 0 ? raw[i - 1] : '';
+
+    if (char === "'" && prevChar !== '\\' && !inDouble && !inBacktick) {
+      inSingle = !inSingle;
+    } else if (char === '"' && prevChar !== '\\' && !inSingle && !inBacktick) {
+      inDouble = !inDouble;
+    } else if (char === '`' && prevChar !== '\\' && !inSingle && !inDouble) {
+      inBacktick = !inBacktick;
+    }
+
+    if (!inSingle && !inDouble && !inBacktick) {
+      if (char === '{') {
+        braceDepth++;
+      } else if (char === '}') {
+        braceDepth = Math.max(0, braceDepth - 1);
+      } else if (char === ',' && braceDepth === 0) {
+        entries.push(current.trim());
+        current = '';
+        continue;
+      }
+    }
+
+    current += char;
+  }
+
+  if (current.trim()) {
+    entries.push(current.trim());
+  }
+
+  return entries;
+}
+
+function extractImportStatements(segment: string): string[] {
+  const cleanedSegment = stripWrappingQuotes(segment);
+
+  if (!cleanedSegment) {
+    return [];
+  }
+
+  const statements: string[] = [];
+  const importRegex = /import\s+(?:type\s+)?[\s\S]*?from\s+['"`][^'"`]+['"`](?:\s*;)?/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = importRegex.exec(cleanedSegment)) !== null) {
+    const statement = match[0].trim();
+    if (statement) {
+      statements.push(statement);
+    }
+  }
+
+  if (!statements.length && cleanedSegment.startsWith('import')) {
+    statements.push(cleanedSegment);
+  }
+
+  return statements;
+}
+
+function stripWrappingQuotes(value: string): string {
+  const trimmed = value.trim();
+
+  if (trimmed.length >= 2) {
+    const first = trimmed[0];
+    const last = trimmed[trimmed.length - 1];
+
+    if (first === last && (first === '"' || first === "'" || first === '`')) {
+      const inner = trimmed.slice(1, -1);
+      return unescapeString(inner);
+    }
+  }
+
+  return trimmed;
+}
+
+function unescapeString(value: string): string {
+  try {
+    const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return JSON.parse(`"${escaped}"`);
+  } catch {
+    return value;
   }
 }
 
@@ -2591,33 +2713,45 @@ function parseImportStatement(
   // Determine import type and extract imported items
   let isDefault = false;
   let isNamespace = false;
-  let importedItems: string[] = [];
+  const importedItems: string[] = [];
+  let defaultImport: string | null = null;
+  let namespaceImport: string | null = null;
+  const parts = splitImportClause(importClause);
 
-  if (importClause.startsWith('* as ')) {
-    // Namespace import: import * as name from 'module'
-    isNamespace = true;
-    const nameMatch = importClause.match(/\*\s+as\s+(\w+)/);
-    if (nameMatch) {
-      importedItems = [nameMatch[1]];
+  for (const part of parts) {
+    const trimmedPart = part.trim();
+    if (!trimmedPart) {
+      continue;
     }
-  } else if (importClause.startsWith('{') && importClause.endsWith('}')) {
-    // Named imports: import { name1, name2 } from 'module'
-    const namedImports = importClause.slice(1, -1);
-    importedItems = namedImports
-      .split(',')
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0)
-      .map((item) => {
-        // Handle aliases: import { name as alias } from 'module'
-        if (item.includes(' as ')) {
-          return item.split(' as ')[1].trim();
-        }
-        return item;
-      });
-  } else {
-    // Default import: import name from 'module'
+
+    if (/^\*\s+as\s+/i.test(trimmedPart)) {
+      const match = trimmedPart.match(/\*\s+as\s+([A-Za-z_$][\w$]*)/i);
+      if (match) {
+        namespaceImport = match[1];
+      }
+      continue;
+    }
+
+    if (trimmedPart.startsWith('{') && trimmedPart.endsWith('}')) {
+      const namedItems = parseNamedImports(trimmedPart.slice(1, -1));
+      importedItems.push(...namedItems);
+      continue;
+    }
+
+    // Anything else is treated as a default import segment
+    if (!defaultImport) {
+      defaultImport = trimmedPart;
+    }
+  }
+
+  if (defaultImport) {
     isDefault = true;
-    importedItems = [importClause];
+    importedItems.unshift(defaultImport);
+  }
+
+  if (namespaceImport) {
+    isNamespace = true;
+    importedItems.push(namespaceImport);
   }
 
   return {
@@ -2629,6 +2763,56 @@ function parseImportStatement(
     isTypeOnly,
     originalStatement: importStatement,
   };
+}
+
+function splitImportClause(importClause: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let braceDepth = 0;
+
+  for (let i = 0; i < importClause.length; i++) {
+    const char = importClause[i];
+
+    if (char === '{') {
+      braceDepth++;
+    } else if (char === '}') {
+      braceDepth = Math.max(0, braceDepth - 1);
+    }
+
+    if (char === ',' && braceDepth === 0) {
+      result.push(current);
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current) {
+    result.push(current);
+  }
+
+  return result;
+}
+
+function parseNamedImports(namedSection: string): string[] {
+  return namedSection
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+    .map((item) => {
+      const aliasMatch = item.match(/\bas\s+([A-Za-z_$][\w$]*)$/i);
+      if (aliasMatch) {
+        return aliasMatch[1];
+      }
+
+      const typePrefixMatch = item.match(/^type\s+([A-Za-z_$][\w$]*)$/);
+      if (typePrefixMatch) {
+        return typePrefixMatch[1];
+      }
+
+      return item;
+    });
 }
 
 /**
