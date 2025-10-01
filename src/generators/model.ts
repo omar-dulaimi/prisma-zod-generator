@@ -11,6 +11,7 @@ import {
   mapAnnotationsToZodSchema,
   parseZodAnnotations,
   extractModelCustomImports,
+  type CustomImport,
   type FieldCommentContext,
 } from '../parsers/zodComments';
 import { logger } from '../utils/logger';
@@ -266,7 +267,7 @@ export interface ModelSchemaComposition {
   modelLevelValidation?: string | null;
 
   /** Custom imports from @zod.import() annotations */
-  customImports?: any[];
+  customImports?: CustomImport[];
 
   /** Generation statistics */
   statistics: {
@@ -2122,7 +2123,7 @@ export class PrismaTypeMapper {
    * Generate complete Zod schema for a Prisma model
    */
   generateModelSchema(model: DMMF.Model): ModelSchemaComposition {
-    // Extract model-level custom validation from @zod.import().refine(...) etc.
+    // Extract model-level custom validation/imports from @zod.import(...)
     const modelCustomImports = extractModelCustomImports(model);
 
     const composition: ModelSchemaComposition = {
@@ -2133,10 +2134,16 @@ export class PrismaTypeMapper {
       imports: new Set(['z']),
       exports: new Set(),
       documentation: this.generateModelDocumentation(model),
-      modelLevelValidation: modelCustomImports.customSchema || null,
+      modelLevelValidation: ((): string | null => {
+        const chain = modelCustomImports.customSchema?.trim() ?? '';
+        if (!chain) {
+          return null;
+        }
+        return chain.startsWith('.') ? chain.slice(1) : chain;
+      })(),
+      customImports: (modelCustomImports.imports ?? []) as CustomImport[],
 
-      // Model-level custom imports are handled at schema generation time
-      // They will only be included if the schema actually applies model-level validation
+      // Model-level custom imports are emitted only when modelLevelValidation is present
       statistics: {
         totalFields: model.fields.length,
         processedFields: 0,
@@ -2347,43 +2354,47 @@ export class PrismaTypeMapper {
    */
   private generateImportsSection(
     composition: ModelSchemaComposition,
-    schemaContent?: string,
+    _schemaContent?: string,
   ): string[] {
     const lines: string[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy load to avoid circular deps
+    const transformerModule = require('../transformer').default;
     const imports = Array.from(composition.imports).sort();
 
     // Zod import
     if (imports.includes('z')) {
       // Defer to Transformer import strategy to honor zodImportTarget
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const transformer = require('../transformer').default;
-      const importLine = transformer.prototype.generateImportZodStatement
-        ? transformer.prototype.generateImportZodStatement.call(transformer)
+      const importLine = transformerModule.prototype.generateImportZodStatement
+        ? transformerModule.prototype.generateImportZodStatement.call(transformerModule)
         : "import * as z from 'zod';\n";
       lines.push(importLine.trimEnd());
     }
 
-    // Add custom imports only if they're actually used in the schema content
-    if (schemaContent) {
-      // Simple direct approach: scan for actual usage and add corresponding imports
-      if (/\bvalidateEmail\b/.test(schemaContent)) {
-        lines.push("import { validateEmail } from 'email-validator';");
-      }
-      if (/\bvalidateDomain\b/.test(schemaContent)) {
-        lines.push("import { validateDomain } from 'domain-validator';");
+    const shouldEmitCustomImports =
+      Array.isArray(composition.customImports) &&
+      composition.customImports.length > 0 &&
+      !!composition.modelLevelValidation;
+
+    if (shouldEmitCustomImports) {
+      const helper = new transformerModule({});
+      const block = helper.generateCustomImportStatements(composition.customImports, 'models');
+      if (block) {
+        block
+          .trim()
+          .split('\n')
+          .filter((line) => line.trim().length > 0)
+          .forEach((line) => lines.push(line));
       }
     }
 
     // Get naming configuration for proper import path generation
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { resolvePureModelNaming, applyPattern } = require('../utils/naming-resolver');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const transformer = require('../transformer').default;
-    const config = transformer.getGeneratorConfig?.();
+    const config = transformerModule.getGeneratorConfig?.();
     const namingResolved = resolvePureModelNaming(config);
     const ext =
-      typeof transformer.getImportFileExtension === 'function'
-        ? transformer.getImportFileExtension()
+      typeof transformerModule.getImportFileExtension === 'function'
+        ? transformerModule.getImportFileExtension()
         : '';
 
     // Identify enum fields by validation marker added in mapEnumType ("// Enum type:")
@@ -2407,7 +2418,7 @@ export class PrismaTypeMapper {
           generateExportName,
           // eslint-disable-next-line @typescript-eslint/no-require-imports
         } = require('../utils/naming-resolver');
-        const enumNaming = resolveEnumNaming(transformer.config);
+        const enumNaming = resolveEnumNaming(transformerModule.getGeneratorConfig?.());
         const enumFileName = generateFileName(
           enumNaming.filePattern,
           enumBase,
