@@ -518,9 +518,6 @@ export class PrismaTypeMapper {
         const customMatch = field.documentation.match(
           /@zod\.custom\(((?:\{[^}]*\}|\[[^\]]*\]|(?:[^()]|\([^)]*\))*?))\)(.*)$/m,
         );
-        if (field.name === 'content') {
-          console.log(`[DEBUG] Custom match for content: ${!!customMatch}`);
-        }
         if (customMatch) {
           const objectExpression = customMatch[1].trim();
           const chainedMethods = customMatch[2].trim();
