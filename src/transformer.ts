@@ -741,9 +741,9 @@ export default class Transformer {
       /^(\w+)ModelSchema$/,
 
       // Generic CreateMany relationship patterns (placed at end to avoid interference)
-      // These handle cases like PostCreateManyUserInputEnvelope -> extract User
-      /^\w+CreateMany(\w+)InputEnvelope$/,
-      /^\w+CreateMany(\w+)Input$/,
+      // Capture the owning model prefix (e.g. AccountCreateManyUserInputEnvelope -> Account)
+      /^(\w+)CreateMany\w+InputEnvelope$/,
+      /^(\w+)CreateMany\w+Input$/,
     ];
 
     for (const pattern of patterns) {

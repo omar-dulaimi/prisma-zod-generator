@@ -492,4 +492,62 @@ describe('Naming Customization (experimental)', () => {
       await env.cleanup();
     }
   });
+
+  it('uses owning model alias for CreateMany nested inputs', async () => {
+    const env = await TestEnvironment.createTestEnv('naming-create-many-alias');
+    try {
+      const generatorPath = join(process.cwd(), 'lib', 'generator.js').replace(/\\/g, '\\\\');
+      const outputDir = join(env.outputDir, 'schemas').replace(/\\/g, '\\\\');
+      const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator zod {
+  provider = "node ${generatorPath}"
+  output   = "${outputDir}"
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
+  accounts Account[]
+}
+
+model Account {
+  id       Int    @id @default(autoincrement())
+  type     String
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id])
+}
+`;
+
+      await (await import('fs')).promises.writeFile(env.schemaPath, schema);
+      await env.runGeneration();
+
+      const objectsDir = join(env.outputDir, 'schemas', 'objects');
+      const envelopePath = join(objectsDir, 'AccountCreateManyUserInputEnvelope.schema.ts');
+      const nestedPath = join(objectsDir, 'AccountCreateNestedManyWithoutUserInput.schema.ts');
+
+      const envelopeContent = readFileSync(envelopePath, 'utf-8');
+      const nestedContent = readFileSync(nestedPath, 'utf-8');
+
+      expect(envelopeContent).toContain(
+        'AccountCreateManyUserInputObjectSchema as AccountCreateManyUserInputObjectSchema',
+      );
+      expect(envelopeContent).not.toContain('UserAccountCreateManyUserInput');
+
+      expect(nestedContent).toContain(
+        'AccountCreateManyUserInputEnvelopeObjectSchema as AccountCreateManyUserInputEnvelopeObjectSchema',
+      );
+      expect(nestedContent).not.toContain('UserAccountCreateManyUserInputEnvelope');
+    } finally {
+      await env.cleanup();
+    }
+  });
 });
