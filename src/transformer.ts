@@ -1568,13 +1568,19 @@ export default class Transformer {
         // Check for custom schema from @zod.import() annotations
         const customSchema = this.getCustomSchemaForField(field.name);
         const baseSchema = customSchema || 'z.string()';
-        result.push(this.wrapWithZodValidators(baseSchema, field, inputType));
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Boolean') {
-        result.push(this.wrapWithZodValidators('z.boolean()', field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'z.boolean()';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Int') {
-        result.push(this.wrapWithZodValidators('z.number().int()', field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'z.number().int()';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Float' || inputType.type === 'Decimal') {
-        result.push(this.wrapWithZodValidators('z.number()', field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'z.number()';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'BigInt') {
         let bigintExpr = 'z.bigint()';
 
@@ -1590,7 +1596,9 @@ export default class Transformer {
           }
         }
 
-        result.push(this.wrapWithZodValidators(bigintExpr, field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || bigintExpr;
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'DateTime') {
         // Apply configurable DateTime strategy
         const cfg = Transformer.getGeneratorConfig();
@@ -1631,13 +1639,19 @@ export default class Transformer {
             }
           }
         }
-        result.push(this.wrapWithZodValidators(dateExpr, field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || dateExpr;
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Json') {
         this.hasJson = true;
 
-        result.push(this.wrapWithZodValidators('jsonSchema', field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'jsonSchema';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'True') {
-        result.push(this.wrapWithZodValidators('z.literal(true)', field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'z.literal(true)';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Bytes') {
         let bytesExpr = 'z.instanceof(Uint8Array)';
 
@@ -1655,7 +1669,9 @@ export default class Transformer {
           }
         }
 
-        result.push(this.wrapWithZodValidators(bytesExpr, field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || bytesExpr;
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else {
         const isEnum = inputType.location === 'enumTypes';
 
@@ -1755,6 +1771,7 @@ export default class Transformer {
     mainValidator: string,
     field: PrismaDMMF.SchemaArg,
     inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
+    skipZodAnnotations = false,
   ) {
     let line: string = mainValidator;
     let hasEnhancedZodSchema = false;
@@ -1765,7 +1782,7 @@ export default class Transformer {
       if (field.name && typeof field.name === 'string' && field.name.length > 0) {
         const zodValidations = this.extractZodValidationsForField(field.name);
 
-        if (zodValidations) {
+        if (!skipZodAnnotations && zodValidations) {
           line = zodValidations;
           hasEnhancedZodSchema = true;
         }
