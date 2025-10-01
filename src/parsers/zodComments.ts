@@ -39,6 +39,7 @@ export interface CustomImport {
   importedItems: string[]; // Names/aliases being imported
   isDefault: boolean;
   isNamespace: boolean;
+  isTypeOnly: boolean; // Whether this is a type-only import (import type)
   originalStatement: string; // Original import string for debugging
 }
 
@@ -2567,6 +2568,9 @@ function parseImportStatement(
     return null;
   }
 
+  // Detect type-only imports
+  const isTypeOnly = trimmed.startsWith('import type ');
+
   // Extract source module
   const fromMatch = trimmed.match(/from\s+['"`]([^'"`]+)['"`]/);
   if (!fromMatch) {
@@ -2580,7 +2584,9 @@ function parseImportStatement(
   const source = fromMatch[1];
 
   // Extract import clause (everything between 'import' and 'from')
-  const importClause = trimmed.substring(6, trimmed.indexOf(' from ')).trim();
+  // Skip 'import ' (6 chars) or 'import type ' (12 chars) based on type detection
+  const importStartOffset = isTypeOnly ? 12 : 6;
+  const importClause = trimmed.substring(importStartOffset, trimmed.indexOf(' from ')).trim();
 
   // Determine import type and extract imported items
   let isDefault = false;
@@ -2620,6 +2626,7 @@ function parseImportStatement(
     importedItems,
     isDefault,
     isNamespace,
+    isTypeOnly,
     originalStatement: importStatement,
   };
 }
