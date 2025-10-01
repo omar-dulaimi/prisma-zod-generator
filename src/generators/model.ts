@@ -2524,7 +2524,12 @@ export class PrismaTypeMapper {
 
     // Apply model-level validation from @zod.import().refine(...) etc.
     if (composition.modelLevelValidation) {
-      lines.push(`}).${composition.modelLevelValidation};`);
+      const normalizedChain = composition.modelLevelValidation.trim().replace(/^\.+/, '');
+      if (normalizedChain) {
+        lines.push(`}).${normalizedChain};`);
+      } else {
+        lines.push('});');
+      }
     } else {
       lines.push('});');
     }
