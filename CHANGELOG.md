@@ -1,3 +1,9 @@
+## [1.25.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.25.0...v1.25.1) (2025-10-01)
+
+### 🐛 Bug Fixes
+
+* **transformer:** use owning model alias for create many imports ([1fd9973](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1fd9973deeaacc0225d495121a5ed7561f7ef458))
+
 ## [1.25.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.24.0...v1.25.0) (2025-09-29)
 
 ### 🚀 Features
