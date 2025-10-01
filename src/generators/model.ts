@@ -2389,7 +2389,7 @@ export class PrismaTypeMapper {
    */
   private generateImportsSection(
     composition: ModelSchemaComposition,
-    _schemaContent?: string,
+    schemaContent?: string,
   ): string[] {
     const lines: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy load to avoid circular deps
