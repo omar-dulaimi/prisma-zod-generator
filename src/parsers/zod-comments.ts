@@ -2736,18 +2736,43 @@ function parseImportStatement(
 function findBalancedParentheses(text: string, startPos: number): number {
   let depth = 1;
   let pos = startPos;
+  let inString = false;
+  let quote = '';
 
   while (pos < text.length && depth > 0) {
-    const char = text[pos];
-    if (char === '(') {
-      depth++;
-    } else if (char === ')') {
-      depth--;
+    const ch = text[pos];
+
+    if (inString) {
+      if (ch === '\\') {
+        pos += 2;
+        continue;
+      }
+
+      if (ch === quote) {
+        inString = false;
+        quote = '';
+      }
+
+      pos++;
+      continue;
     }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+    } else if (ch === '(') {
+      depth++;
+    } else if (ch === ')') {
+      depth--;
+      if (depth === 0) {
+        return pos;
+      }
+    }
+
     pos++;
   }
 
-  return depth === 0 ? pos - 1 : -1;
+  return -1;
 }
 
 /**

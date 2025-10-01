@@ -13,7 +13,7 @@ import {
   extractModelCustomImports,
   type CustomImport,
   type FieldCommentContext,
-} from '../parsers/zodComments';
+} from '../parsers/zod-comments';
 import { logger } from '../utils/logger';
 
 /**
@@ -2141,7 +2141,7 @@ export class PrismaTypeMapper {
         }
         return chain.startsWith('.') ? chain.slice(1) : chain;
       })(),
-      customImports: (modelCustomImports.imports ?? []) as CustomImport[],
+      customImports: modelCustomImports.imports ?? [],
 
       // Model-level custom imports are emitted only when modelLevelValidation is present
       statistics: {

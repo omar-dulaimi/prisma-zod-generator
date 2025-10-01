@@ -5,7 +5,7 @@ import { ResultSchemaGenerator } from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
-import type { CustomImport } from './parsers/zodComments';
+import type { CustomImport } from './parsers/zod-comments';
 import { TransformerParams } from './types';
 import { logger } from './utils/logger';
 import {
@@ -1222,20 +1222,20 @@ export default class Transformer {
    * @param schemaContent - The generated schema content to analyze for import usage
    * @returns Array of custom imports needed for this specific schema
    */
-  getCustomImportsForModel(modelName: string | null, schemaContent?: string): any[] {
+  getCustomImportsForModel(modelName: string | null, schemaContent?: string): CustomImport[] {
     if (!modelName) return [];
 
     // Find the enhanced model data
     const enhancedModel = this.enhancedModels.find((em) => em.model.name === modelName);
     if (!enhancedModel) return [];
 
-    const usedImports: any[] = [];
+    const usedImports: CustomImport[] = [];
     const usedImportSources = new Set<string>();
 
     // If schema content is provided, analyze it for actual usage
     if (schemaContent) {
       // Collect all potential imports from field-level and model-level
-      const allPotentialImports = [];
+      const allPotentialImports: CustomImport[] = [];
 
       // Add field-level imports
       for (const enhancedField of enhancedModel.enhancedFields) {
@@ -1253,9 +1253,10 @@ export default class Transformer {
       for (const potentialImport of allPotentialImports) {
         if (potentialImport.importedItems) {
           // Check if any imported function/item is used in the schema content
-          const isUsed = potentialImport.importedItems.some((item: string) =>
-            schemaContent.includes(item),
-          );
+          const isUsed = potentialImport.importedItems.some((item: string) => {
+            const re = new RegExp(`\\b${item}\\b`);
+            return re.test(schemaContent);
+          });
 
           if (isUsed && !usedImportSources.has(potentialImport.importStatement)) {
             usedImports.push(potentialImport);
@@ -1403,37 +1404,10 @@ export default class Transformer {
    * @param outputPath - Current output path
    * @returns Adjusted import statement
    */
-  private adjustRelativeImportPath(importStatement: string, outputPath: string): string {
-    // For multi-file output, add additional "../" levels as needed
-    const config = Transformer.getGeneratorConfig();
-    const isMultiFile = config?.useMultipleFiles === true;
-
-    if (!isMultiFile) {
-      return importStatement;
-    }
-
-    // Count directory levels in output path to determine how many "../" to add
-    const pathLevels = outputPath.split('/').length - 1;
-    const additionalLevels = Math.max(0, pathLevels);
-
-    if (additionalLevels === 0) {
-      return importStatement;
-    }
-
-    // Extract the module path and add additional levels
-    const fromMatch = importStatement.match(/from\s+['"`]([^'"`]+)['"`]/);
-    if (!fromMatch) {
-      return importStatement;
-    }
-
-    const originalPath = fromMatch[1];
-    if (!originalPath.startsWith('.')) {
-      return importStatement;
-    }
-
-    // Add additional "../" levels
-    const adjustedPath = '../'.repeat(additionalLevels) + originalPath;
-    return importStatement.replace(fromMatch[0], `from '${adjustedPath}'`);
+  private adjustRelativeImportPath(importStatement: string, _outputPath: string): string {
+    // Previous logic attempted to rewrite relative paths heuristically. This is prone to
+    // breaking user-supplied paths, so we now trust the provided statement as-is.
+    return importStatement;
   }
 
   generateExportSchemaStatement(name: string, schema: string) {

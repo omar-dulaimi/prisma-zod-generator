@@ -3,7 +3,7 @@ import {
   FieldCommentContext,
   ModelCommentContext,
   parseCustomImports,
-} from '../src/parsers/zodComments';
+} from '../src/parsers/zod-comments';
 
 describe('parseCustomImports', () => {
   const baseModelContext = (comment: string): ModelCommentContext => ({

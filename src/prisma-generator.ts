@@ -1896,7 +1896,7 @@ async function generateVariantSchemaContent(
   config?: CustomGeneratorConfig,
 ): Promise<string> {
   // Extract custom imports for this model
-  const { extractModelCustomImports } = await import('./parsers/zodComments');
+  const { extractModelCustomImports } = await import('./parsers/zod-comments');
   const modelCustomImports = extractModelCustomImports(model);
 
   const enabledFields = model.fields.filter((field) => !excludeFields.includes(field.name));

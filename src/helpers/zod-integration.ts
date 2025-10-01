@@ -16,7 +16,7 @@ import {
   extractModelCustomImports,
   extractFieldCustomImports,
   CustomImport,
-} from '../parsers/zodComments';
+} from '../parsers/zod-comments';
 
 /**
  * Interface for field with enhanced Zod validation information
