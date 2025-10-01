@@ -2204,7 +2204,9 @@ export class PrismaTypeMapper {
         const fieldCustomImportsResult = extractFieldCustomImports(field, model.name);
         if (fieldCustomImportsResult.parseErrors.length > 0) {
           fieldCustomImportsResult.parseErrors.forEach((errorMessage) =>
-            logger.warn(`Custom import parsing issue for ${model.name}.${field.name}: ${errorMessage}`),
+            logger.warn(
+              `Custom import parsing issue for ${model.name}.${field.name}: ${errorMessage}`,
+            ),
           );
         }
         addCustomImports(fieldCustomImportsResult.imports);
@@ -2405,7 +2407,10 @@ export class PrismaTypeMapper {
       lines.push(importLine.trimEnd());
     }
 
-    const collectCustomImports = (imports: CustomImport[] | undefined, target: Map<string, CustomImport>) => {
+    const collectCustomImports = (
+      imports: CustomImport[] | undefined,
+      target: Map<string, CustomImport>,
+    ) => {
       if (!imports) {
         return;
       }
@@ -2425,8 +2430,7 @@ export class PrismaTypeMapper {
       collectCustomImports(field.customImports, customImportMap);
     }
 
-    const escapeRegExp = (value: string): string =>
-      value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const schemaBody = schemaContent ?? '';
     const mergedCustomImports = Array.from(customImportMap.values())
       .filter((customImport) => {

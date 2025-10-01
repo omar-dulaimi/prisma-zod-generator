@@ -1907,7 +1907,7 @@ async function generateVariantSchemaContent(
   // For variant schemas, only include model-level imports if model validation will be applied
   // Field-level custom validation is handled separately in input object schemas
   const shouldIncludeModelImports = variantName !== 'input' && modelCustomImports.customSchema;
-  const rawCustomImports = shouldIncludeModelImports ? modelCustomImports.imports ?? [] : [];
+  const rawCustomImports = shouldIncludeModelImports ? (modelCustomImports.imports ?? []) : [];
 
   const typeOnlyImports = rawCustomImports.filter((customImport) => customImport.isTypeOnly);
   if (typeOnlyImports.length > 0) {
@@ -1918,8 +1918,7 @@ async function generateVariantSchemaContent(
     );
   }
 
-  const escapeRegExp = (value: string): string =>
-    value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const customSchemaUsage = modelCustomImports.customSchema ?? '';
   const uniqueCustomImports = rawCustomImports
     .filter((customImport) => !customImport.isTypeOnly)
