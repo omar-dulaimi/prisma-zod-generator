@@ -1386,14 +1386,10 @@ export default class Transformer {
     const enhancedField = enhancedModel.enhancedFields.find((ef) => ef.field.name === fieldName);
     if (!enhancedField) return null;
 
-    // Return the custom schema from @zod.import().custom.use() if available
+    // Return ONLY the custom schema from @zod.import().custom.use() if available
+    // Regular @zod annotations should be handled by wrapWithZodValidators to avoid double-processing
     if (enhancedField.customSchema) {
       return enhancedField.customSchema;
-    }
-
-    // Fallback to regular zod schema if available
-    if (enhancedField.hasZodAnnotations && enhancedField.zodSchema) {
-      return enhancedField.zodSchema;
     }
 
     return null;
