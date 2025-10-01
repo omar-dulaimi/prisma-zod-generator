@@ -2122,7 +2122,7 @@ export default class Transformer {
    */
   private replaceAllMaxConstraints(validationString: string, newMaxValue: number): string {
     // Strip any existing .max() constraints
-    let result = validationString.replace(/\.max\(\s*\d+\s*\)/g, '');
+    const result = validationString.replace(/\.max\(\s*\d+\s*\)/g, '');
 
     // Insert after the first Zod constructor call (covers z.string(), z.iso.date(), z.hash(), etc.)
     const baseCallMatch = result.match(/^(\s*z(?:\.[A-Za-z_]\w*)+\([^)]*\))/);

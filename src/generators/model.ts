@@ -2379,11 +2379,12 @@ export class PrismaTypeMapper {
       const helper = new transformerModule({});
       const block = helper.generateCustomImportStatements(composition.customImports, 'models');
       if (block) {
-        block
-          .trim()
-          .split('\n')
-          .filter((line) => line.trim().length > 0)
-          .forEach((line) => lines.push(line));
+        for (const rawLine of block.trim().split('\n')) {
+          const trimmedLine = rawLine.trim();
+          if (trimmedLine.length > 0) {
+            lines.push(trimmedLine);
+          }
+        }
       }
     }
 

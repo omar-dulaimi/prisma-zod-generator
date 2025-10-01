@@ -21,7 +21,7 @@ describe('parseCustomImports', () => {
   });
 
   it('parses combined default and named imports from a single entry', () => {
-    const comment = "@zod.import(['import Foo, { bar as baz } from \"pkg\"'])";
+    const comment = '@zod.import([\'import Foo, { bar as baz } from "pkg"\'])';
     const result = parseCustomImports(comment, baseModelContext(comment));
 
     expect(result.isValid).toBe(true);
@@ -35,8 +35,7 @@ describe('parseCustomImports', () => {
   });
 
   it('splits multiple import statements contained in a single array element', () => {
-    const comment =
-      "@zod.import([\"import { bar } from 'pkg1'; import * as utils from \"pkg2\"\"])";
+    const comment = '@zod.import(["import { bar } from \'pkg1\'; import * as utils from "pkg2""])';
     const result = parseCustomImports(comment, baseModelContext(comment));
 
     expect(result.isValid).toBe(true);
@@ -53,7 +52,7 @@ describe('parseCustomImports', () => {
 
   it('handles single-quoted arrays with trailing commas and preserves custom schema', () => {
     const comment =
-      "@zod.import(['import { baz } from \"pkg3\"',]).custom.use(z.string().refine((value) => value.length > 0))";
+      '@zod.import([\'import { baz } from "pkg3"\',]).custom.use(z.string().refine((value) => value.length > 0))';
     const result = parseCustomImports(comment, baseFieldContext(comment));
 
     expect(result.isValid).toBe(true);

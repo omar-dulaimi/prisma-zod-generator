@@ -1045,6 +1045,10 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'cidrv4',
     'cidrv6',
     'emoji',
+    'isoDate',
+    'isoTime',
+    'isoDatetime',
+    'isoDuration',
   ];
 
   // Common number validation methods
@@ -1110,6 +1114,10 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'cidrv4',
     'cidrv6',
     'emoji',
+    'isoDate',
+    'isoTime',
+    'isoDatetime',
+    'isoDuration',
   ];
 
   // Methods that accept optional error message parameter
@@ -2679,11 +2687,15 @@ function parseImportStatement(
     const namedEnd = importClause.lastIndexOf('}');
 
     // Default portion (before named block)
-    const defaultCandidate = namedStart > 0
-      ? importClause.slice(0, namedStart).replace(/,?\s*$/, '').trim()
-      : namedStart === -1
-        ? importClause.trim().replace(/,?\s*$/, '')
-        : '';
+    const defaultCandidate =
+      namedStart > 0
+        ? importClause
+            .slice(0, namedStart)
+            .replace(/,?\s*$/, '')
+            .trim()
+        : namedStart === -1
+          ? importClause.trim().replace(/,?\s*$/, '')
+          : '';
 
     if (defaultCandidate) {
       isDefault = true;
@@ -2703,7 +2715,9 @@ function parseImportStatement(
             return aliasMatch[2];
           }
 
-          const typeMatch = item.match(/^type\s+([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/i);
+          const typeMatch = item.match(
+            /^type\s+([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/i,
+          );
           if (typeMatch) {
             return typeMatch[2] ?? typeMatch[1];
           }

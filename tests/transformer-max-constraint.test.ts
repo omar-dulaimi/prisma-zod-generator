@@ -4,8 +4,9 @@ import Transformer from '../src/transformer';
 describe('Transformer.replaceAllMaxConstraints', () => {
   const transformer = new Transformer({} as any);
   const apply = (input: string, max: number) =>
-    (transformer as unknown as { replaceAllMaxConstraints(str: string, max: number): string })
-      .replaceAllMaxConstraints(input, max);
+    (
+      transformer as unknown as { replaceAllMaxConstraints(str: string, max: number): string }
+    ).replaceAllMaxConstraints(input, max);
 
   it('injects max after basic zod constructor', () => {
     const result = apply('z.string().min(1)', 32);
@@ -13,7 +14,7 @@ describe('Transformer.replaceAllMaxConstraints', () => {
   });
 
   it('handles already constrained z.iso datetime', () => {
-    const result = apply("z.iso.datetime().transform(v => v).min(3)", 128);
+    const result = apply('z.iso.datetime().transform(v => v).min(3)', 128);
     expect(result).toBe('z.iso.datetime().max(128).transform(v => v).min(3)');
   });
 
