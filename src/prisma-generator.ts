@@ -1852,12 +1852,14 @@ async function generateVariantType(
     ];
 
     // Generate schema content
+    const currentDir = path.posix.join('variants', variantName);
     const schemaContent = await generateVariantSchemaContent(
       model,
       schemaName,
       excludeFields,
       variantName,
       config,
+      currentDir,
     );
 
     logger.debug(`   📝 Creating ${variantName} variant: ${fileName} (${schemaName})`);
@@ -1893,7 +1895,8 @@ async function generateVariantSchemaContent(
   schemaName: string,
   excludeFields: string[],
   variantName: string,
-  config?: CustomGeneratorConfig,
+  config: CustomGeneratorConfig | undefined,
+  currentDir: string,
 ): Promise<string> {
   // Extract custom imports for this model
   const { extractModelCustomImports } = await import('./parsers/zod-comments');
@@ -2062,7 +2065,7 @@ async function generateVariantSchemaContent(
   // Generate custom import lines
   const customImportLines =
     uniqueCustomImports.length > 0
-      ? new Transformer({}).generateCustomImportStatements(uniqueCustomImports, `variants/${variantName}`)
+      ? new Transformer({}).generateCustomImportStatements(uniqueCustomImports, currentDir)
       : '';
 
   // Apply model-level validation if present and appropriate for this variant type
