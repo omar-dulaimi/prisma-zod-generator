@@ -5,6 +5,7 @@ import { ResultSchemaGenerator } from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
+import type { CustomImport } from './parsers/zodComments';
 import { TransformerParams } from './types';
 import { logger } from './utils/logger';
 import {
@@ -1175,18 +1176,18 @@ export default class Transformer {
    * @param outputPath - Current output path for relative import adjustment
    * @returns Generated import statements string
    */
-  generateCustomImportStatements(customImports: any[], outputPath: string = ''): string {
+  generateCustomImportStatements(
+    customImports: CustomImport[] | undefined,
+    outputPath: string = '',
+  ): string {
     if (!customImports || customImports.length === 0) {
       return '';
     }
 
-    // Import CustomImport type from zodComments
-    // const { CustomImport } = require('./parsers/zodComments') as { CustomImport: any };
-
     const importStatements: string[] = [];
     const seenImports = new Set<string>();
 
-    for (const customImport of customImports as any[]) {
+    for (const customImport of customImports) {
       if (!customImport || !customImport.importStatement) {
         continue;
       }
@@ -2607,7 +2608,7 @@ export default class Transformer {
     }
   }
 
-  generateObjectSchemaImportStatements(customImports: any[] = []) {
+  generateObjectSchemaImportStatements(customImports: CustomImport[] = []) {
     let generatedImports = this.generateImportZodStatement();
 
     // Add custom imports from @zod.import() annotations
