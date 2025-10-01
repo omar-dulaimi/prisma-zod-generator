@@ -2653,6 +2653,8 @@ function parseImportStatement(
 
   // Detect type-only imports
   const isTypeOnly = /^\s*import\s+type\b/.test(trimmed);
+  let hasValueSpecifier = false;
+  let hasTypeSpecifier = isTypeOnly;
 
   // Extract source module
   const fromMatch = trimmed.match(/from\s+['"`]([^'"`]+)['"`]/);
@@ -2690,6 +2692,7 @@ function parseImportStatement(
     if (nameMatch) {
       importedItems.push(nameMatch[1]);
     }
+    hasValueSpecifier = true;
   } else {
     const namedStart = importClause.indexOf('{');
     const namedEnd = importClause.lastIndexOf('}');
@@ -2707,6 +2710,7 @@ function parseImportStatement(
 
     if (defaultCandidate) {
       isDefault = true;
+      hasValueSpecifier = true;
       importedItems.push(defaultCandidate);
     }
 
@@ -2720,6 +2724,7 @@ function parseImportStatement(
         .map((item) => {
           const aliasMatch = item.match(/^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/);
           if (aliasMatch) {
+            hasValueSpecifier = true;
             return aliasMatch[2];
           }
 
@@ -2727,9 +2732,11 @@ function parseImportStatement(
             /^type\s+([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/i,
           );
           if (typeMatch) {
+            hasTypeSpecifier = true;
             return typeMatch[2] ?? typeMatch[1];
           }
 
+          hasValueSpecifier = true;
           return item;
         });
 
@@ -2737,13 +2744,15 @@ function parseImportStatement(
     }
   }
 
+  const effectiveTypeOnly = isTypeOnly || (!hasValueSpecifier && hasTypeSpecifier);
+
   return {
     importStatement: trimmed,
     source,
     importedItems,
     isDefault,
     isNamespace,
-    isTypeOnly,
+    isTypeOnly: effectiveTypeOnly,
     originalStatement: importStatement,
   };
 }
