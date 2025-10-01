@@ -2642,8 +2642,8 @@ function parseImportStatement(
 
   const trimmed = importStatement.trim();
 
-  // Basic validation - must start with 'import' and contain 'from'
-  if (!trimmed.startsWith('import ') || !trimmed.includes(' from ')) {
+  // Basic validation - must start with import and include a from-clause
+  if (!/^\s*import\b/.test(trimmed) || !/\bfrom\s+['"`]/.test(trimmed)) {
     const contextStr =
       'fieldName' in context ? `${context.modelName}.${context.fieldName}` : `${context.modelName}`;
 
@@ -2652,7 +2652,7 @@ function parseImportStatement(
   }
 
   // Detect type-only imports
-  const isTypeOnly = trimmed.startsWith('import type ');
+  const isTypeOnly = /^\s*import\s+type\b/.test(trimmed);
 
   // Extract source module
   const fromMatch = trimmed.match(/from\s+['"`]([^'"`]+)['"`]/);
@@ -2666,10 +2666,18 @@ function parseImportStatement(
 
   const source = fromMatch[1];
 
-  // Extract import clause (everything between 'import' and 'from')
-  // Skip 'import ' (6 chars) or 'import type ' (12 chars) based on type detection
-  const importStartOffset = isTypeOnly ? 12 : 6;
-  const importClause = trimmed.substring(importStartOffset, trimmed.indexOf(' from ')).trim();
+  // Extract import clause (between the import keyword and the from-clause)
+  const importPrefixMatch = trimmed.match(/^\s*import\s+(?:type\s+)?/);
+  const clauseStart = importPrefixMatch ? importPrefixMatch[0].length : 0;
+  const fromIndex = trimmed.search(/\bfrom\s+['"`]/);
+  if (fromIndex === -1 || clauseStart === 0) {
+    const contextStr =
+      'fieldName' in context ? `${context.modelName}.${context.fieldName}` : `${context.modelName}`;
+
+    logger.warn(`${contextStr}: Could not determine import clause: ${trimmed}`);
+    return null;
+  }
+  const importClause = trimmed.substring(clauseStart, fromIndex).trim();
 
   // Determine import type(s) and extract imported items
   let isDefault = false;
