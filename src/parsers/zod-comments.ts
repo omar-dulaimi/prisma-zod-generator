@@ -31,6 +31,37 @@ export interface ExtractedFieldComment {
 }
 
 /**
+ * Interface for custom import statements
+ */
+export interface CustomImport {
+  importStatement: string;
+  source: string; // The module being imported from
+  importedItems: string[]; // Names/aliases being imported
+  isDefault: boolean;
+  isNamespace: boolean;
+  isTypeOnly: boolean; // Whether this is a type-only import (import type)
+  originalStatement: string; // Original import string for debugging
+}
+
+/**
+ * Interface for custom imports parsing result
+ */
+export interface CustomImportsParseResult {
+  imports: CustomImport[];
+  customSchema?: string;
+  parseErrors: string[];
+  isValid: boolean;
+}
+
+/**
+ * Interface for model comment context including metadata for error reporting
+ */
+export interface ModelCommentContext {
+  modelName: string;
+  comment: string;
+}
+
+/**
  * Extract comments from Prisma DMMF model fields
  *
  * This function processes Prisma model field definitions and extracts
@@ -1014,6 +1045,10 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'cidrv4',
     'cidrv6',
     'emoji',
+    'isoDate',
+    'isoTime',
+    'isoDatetime',
+    'isoDuration',
   ];
 
   // Common number validation methods
@@ -1079,6 +1114,10 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'cidrv4',
     'cidrv6',
     'emoji',
+    'isoDate',
+    'isoTime',
+    'isoDatetime',
+    'isoDuration',
   ];
 
   // Methods that accept optional error message parameter
@@ -1551,11 +1590,13 @@ function mapAnnotationToZodMethod(
     'cidrv4',
     'cidrv6',
     'emoji',
-    'regex',
+    // Note: 'regex' is not included because z.regex() is not a valid method
+    // regex should use z.string().regex() syntax instead
+    'isoDate',
+    'isoTime',
+    'isoDatetime',
+    'isoDuration',
   ];
-
-  // Handle ISO methods which use z.iso.xxx() syntax
-  const isoMethods = ['isoDate', 'isoTime', 'isoDatetime', 'isoDuration'];
 
   if (newStringFormatMethods.includes(method)) {
     const resolvedVersion = resolveZodVersion(zodVersion);
@@ -1564,7 +1605,23 @@ function mapAnnotationToZodMethod(
       // In Zod v4, prefer base types like z.httpUrl(), z.base64(), etc.
       // Don't chain unnecessarily!
       const formattedParams = formatV4StringFormatParameters(method, parameters);
-      const methodCall = formattedParams ? `z.${method}(${formattedParams})` : `z.${method}()`;
+
+      // Special handling for ISO methods which use z.iso.xxx() syntax
+      const isoMethods = ['isoDate', 'isoTime', 'isoDatetime', 'isoDuration'];
+      let methodCall: string;
+      if (isoMethods.includes(method)) {
+        const isoMethodMap: Record<string, string> = {
+          isoDate: 'z.iso.date',
+          isoTime: 'z.iso.time',
+          isoDatetime: 'z.iso.datetime',
+          isoDuration: 'z.iso.duration',
+        };
+        methodCall = formattedParams
+          ? `${isoMethodMap[method]}(${formattedParams})`
+          : `${isoMethodMap[method]}()`;
+      } else {
+        methodCall = formattedParams ? `z.${method}(${formattedParams})` : `z.${method}()`;
+      }
 
       return {
         methodCall,
@@ -1575,40 +1632,6 @@ function mapAnnotationToZodMethod(
     // For v3, fallback to z.string() since these methods likely don't exist
     logger.warn(
       `[zod-comments] Method ${method} not supported in Zod v3; falling back to z.string()`,
-    );
-    return {
-      methodCall: '', // Will result in base z.string() only
-      requiredImport: methodConfig.requiresImport,
-    };
-  }
-
-  // Handle ISO methods with z.iso.xxx() syntax
-  if (isoMethods.includes(method)) {
-    const resolvedVersion = resolveZodVersion(zodVersion);
-
-    if (resolvedVersion === 'v4') {
-      // Map method names to ISO methods
-      const isoMethodMap: Record<string, string> = {
-        isoDate: 'z.iso.date',
-        isoTime: 'z.iso.time',
-        isoDatetime: 'z.iso.datetime',
-        isoDuration: 'z.iso.duration',
-      };
-
-      const formattedParams = formatV4StringFormatParameters(method, parameters);
-      const methodCall = formattedParams
-        ? `${isoMethodMap[method]}(${formattedParams})`
-        : `${isoMethodMap[method]}()`;
-
-      return {
-        methodCall,
-        requiredImport: methodConfig.requiresImport,
-        isBaseReplacement: true,
-      };
-    }
-    // For v3, fallback to z.string() since ISO methods don't exist
-    logger.warn(
-      `[zod-comments] ISO method ${method} not supported in Zod v3; falling back to z.string()`,
     );
     return {
       methodCall: '', // Will result in base z.string() only
@@ -2366,4 +2389,499 @@ function inferZodTypeFromValue(value: any): string {
   } else {
     return `z.unknown()`;
   }
+}
+
+/**
+ * Detect if comment contains @zod.import annotations
+ *
+ * @param comment - Normalized comment string
+ * @returns True if @zod.import annotations are detected
+ */
+export function detectCustomImports(comment: string): boolean {
+  if (!comment) {
+    return false;
+  }
+
+  // Look for @zod.import patterns (case-insensitive)
+  const importPattern = /@zod\s*\.\s*import\s*\(/i;
+  return importPattern.test(comment);
+}
+
+/**
+ * Parse custom imports from a comment string
+ *
+ * Supports both model-level and field-level imports:
+ * - @zod.import(["import { myFunction } from 'mypackage'"])
+ * - @zod.import(["import myFunction from 'mypackage'"])
+ * - @zod.import(["import * as myModule from 'mypackage'"])
+ *
+ * @param comment - Comment string to parse
+ * @param context - Context for error reporting (model or field)
+ * @returns Custom imports parsing result
+ */
+export function parseCustomImports(
+  comment: string,
+  context: ModelCommentContext | FieldCommentContext,
+): CustomImportsParseResult {
+  const result: CustomImportsParseResult = {
+    imports: [],
+    parseErrors: [],
+    isValid: true,
+    customSchema: undefined,
+  };
+
+  if (!comment || !detectCustomImports(comment)) {
+    return result;
+  }
+
+  try {
+    // Simpler approach: find @zod.import patterns and check for .custom.use after
+    const importPattern = /@zod\s*\.\s*import\s*\(([^)]+(?:\([^)]*\)[^)]*)*)\)/gi;
+    let match;
+
+    while ((match = importPattern.exec(comment)) !== null) {
+      const importArrayString = match[1].trim();
+      const endOfImport = match.index + match[0].length;
+      const afterImport = comment.substring(endOfImport);
+
+      // Look for validation methods after the import - support both field and model level
+      let customSchemaString: string | null = null;
+
+      // Field-level: .custom.use(...)
+      const customUseMatch = afterImport.match(/^\s*\.\s*custom\s*\.\s*use\s*\(/);
+      if (customUseMatch) {
+        const startPos = customUseMatch.index! + customUseMatch[0].length;
+        const endPos = findBalancedParentheses(afterImport, startPos);
+        if (endPos !== -1) {
+          customSchemaString = afterImport.substring(startPos, endPos).trim();
+        }
+      }
+
+      // Model-level: .refine(...), .transform(...), etc.
+      if (!customSchemaString) {
+        const modelValidationMatch = afterImport.match(
+          /^\s*\.\s*(refine|transform|superRefine|pipe)\s*\(/,
+        );
+        if (modelValidationMatch) {
+          const method = modelValidationMatch[1];
+          const startPos = modelValidationMatch.index! + modelValidationMatch[0].length;
+          const endPos = findBalancedParentheses(afterImport, startPos);
+          if (endPos !== -1) {
+            const validationArgs = afterImport.substring(startPos, endPos).trim();
+            customSchemaString = `${method}(${validationArgs})`;
+          }
+        }
+      }
+
+      try {
+        // Parse the import array - it should be a JSON array of strings
+        const importStatements = parseImportArray(importArrayString, context);
+
+        // Process each import statement
+        for (const importStatement of importStatements) {
+          const customImport = parseImportStatement(importStatement, context);
+          if (customImport) {
+            result.imports.push(customImport);
+          }
+        }
+
+        // Store the custom schema if present
+        if (customSchemaString) {
+          result.customSchema = customSchemaString;
+        }
+      } catch (error) {
+        const contextStr =
+          'fieldName' in context
+            ? `${context.modelName}.${context.fieldName}`
+            : `${context.modelName}`;
+
+        result.parseErrors.push(
+          `${contextStr}: Failed to parse import array: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        result.isValid = false;
+      }
+    }
+
+    // Deduplicate imports by import statement
+    result.imports = deduplicateImports(result.imports);
+  } catch (error) {
+    const contextStr =
+      'fieldName' in context ? `${context.modelName}.${context.fieldName}` : `${context.modelName}`;
+
+    result.parseErrors.push(
+      `${contextStr}: Failed to parse custom imports: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    result.isValid = false;
+  }
+
+  return result;
+}
+
+/**
+ * Parse import array string into individual import statements
+ *
+ * @param importArrayString - String representation of import array
+ * @param context - Context for error reporting
+ * @returns Array of import statement strings
+ */
+function parseImportArray(
+  importArrayString: string,
+  _context: ModelCommentContext | FieldCommentContext,
+): string[] {
+  const trimmedInput = importArrayString.trim();
+
+  if (!trimmedInput) {
+    return [];
+  }
+
+  const statementsFromJson = parseImportArrayJson(trimmedInput);
+  if (statementsFromJson.length > 0) {
+    return statementsFromJson;
+  }
+
+  const fallbackStatements = extractImportStatements(trimmedInput);
+  if (fallbackStatements.length > 0) {
+    return fallbackStatements;
+  }
+
+  throw new Error(
+    `Invalid import array format. Expected JSON array of strings, got: ${importArrayString}`,
+  );
+}
+
+function extractImportStatements(segment: string): string[] {
+  const cleanedSegment = stripWrappingQuotes(segment);
+
+  if (!cleanedSegment) {
+    return [];
+  }
+
+  const statements: string[] = [];
+  const importRegex = /import\s+(?:type\s+)?[\s\S]*?from\s+['"`][^'"`]+['"`](?:\s*;)?/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = importRegex.exec(cleanedSegment)) !== null) {
+    const statement = match[0].trim();
+    if (statement) {
+      statements.push(statement);
+    }
+  }
+
+  if (!statements.length && cleanedSegment.startsWith('import')) {
+    statements.push(cleanedSegment);
+  }
+
+  return statements;
+}
+
+function stripWrappingQuotes(value: string): string {
+  const trimmed = value.trim();
+
+  if (trimmed.length >= 2) {
+    const first = trimmed[0];
+    const last = trimmed[trimmed.length - 1];
+
+    if (first === last && (first === '"' || first === "'" || first === '`')) {
+      const inner = trimmed.slice(1, -1);
+      return unescapeString(inner);
+    }
+  }
+
+  return trimmed;
+}
+
+function unescapeString(value: string): string {
+  try {
+    const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return JSON.parse(`"${escaped}"`);
+  } catch {
+    return value;
+  }
+}
+
+function parseImportArrayJson(raw: string): string[] {
+  try {
+    const jsonText = raw.startsWith('[') ? raw : `[${raw}]`;
+    const parsed = JSON.parse(jsonText);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    const statements: string[] = [];
+
+    for (const entry of parsed) {
+      if (typeof entry !== 'string') {
+        continue;
+      }
+
+      const extracted = extractImportStatements(entry);
+      statements.push(...extracted);
+    }
+
+    return statements;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Parse a single import statement into a CustomImport object
+ *
+ * @param importStatement - Import statement string
+ * @param context - Context for error reporting
+ * @returns CustomImport object or null if invalid
+ */
+function parseImportStatement(
+  importStatement: string,
+  context: ModelCommentContext | FieldCommentContext,
+): CustomImport | null {
+  if (!importStatement || typeof importStatement !== 'string') {
+    return null;
+  }
+
+  const trimmed = importStatement.trim();
+
+  // Basic validation - must start with import and include a from-clause
+  if (!/^\s*import\b/.test(trimmed) || !/\bfrom\s+['"`]/.test(trimmed)) {
+    const contextStr =
+      'fieldName' in context ? `${context.modelName}.${context.fieldName}` : `${context.modelName}`;
+
+    logger.warn(`${contextStr}: Invalid import statement format: ${trimmed}`);
+    return null;
+  }
+
+  // Detect type-only imports
+  const isTypeOnly = /^\s*import\s+type\b/.test(trimmed);
+  let hasValueSpecifier = false;
+  let hasTypeSpecifier = isTypeOnly;
+
+  // Extract source module
+  const fromMatch = trimmed.match(/from\s+['"`]([^'"`]+)['"`]/);
+  if (!fromMatch) {
+    const contextStr =
+      'fieldName' in context ? `${context.modelName}.${context.fieldName}` : `${context.modelName}`;
+
+    logger.warn(`${contextStr}: Could not extract source module from: ${trimmed}`);
+    return null;
+  }
+
+  const source = fromMatch[1];
+
+  // Extract import clause (between the import keyword and the from-clause)
+  const importPrefixMatch = trimmed.match(/^\s*import\s+(?:type\s+)?/);
+  const clauseStart = importPrefixMatch ? importPrefixMatch[0].length : 0;
+  const fromIndex = trimmed.search(/\bfrom\s+['"`]/);
+  if (fromIndex === -1 || clauseStart === 0) {
+    const contextStr =
+      'fieldName' in context ? `${context.modelName}.${context.fieldName}` : `${context.modelName}`;
+
+    logger.warn(`${contextStr}: Could not determine import clause: ${trimmed}`);
+    return null;
+  }
+  const importClause = trimmed.substring(clauseStart, fromIndex).trim();
+
+  // Determine import type(s) and extract imported items
+  let isDefault = false;
+  let isNamespace = false;
+  const importedItems: string[] = [];
+
+  if (importClause.startsWith('* as ')) {
+    isNamespace = true;
+    const nameMatch = importClause.match(/\*\s+as\s+([A-Za-z_$][\w$]*)/);
+    if (nameMatch) {
+      importedItems.push(nameMatch[1]);
+    }
+    hasValueSpecifier = true;
+  } else {
+    const namedStart = importClause.indexOf('{');
+    const namedEnd = importClause.lastIndexOf('}');
+
+    // Default portion (before named block)
+    const defaultCandidate =
+      namedStart > 0
+        ? importClause
+            .slice(0, namedStart)
+            .replace(/,?\s*$/, '')
+            .trim()
+        : namedStart === -1
+          ? importClause.trim().replace(/,?\s*$/, '')
+          : '';
+
+    if (defaultCandidate) {
+      isDefault = true;
+      hasValueSpecifier = true;
+      importedItems.push(defaultCandidate);
+    }
+
+    // Named imports block
+    if (namedStart !== -1 && namedEnd !== -1 && namedEnd > namedStart) {
+      const namedBlock = importClause.slice(namedStart + 1, namedEnd);
+      const namedItems = namedBlock
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .map((item) => {
+          const aliasMatch = item.match(/^([A-Za-z_$][\w$]*)\s+as\s+([A-Za-z_$][\w$]*)$/);
+          if (aliasMatch) {
+            hasValueSpecifier = true;
+            return aliasMatch[2];
+          }
+
+          const typeMatch = item.match(
+            /^type\s+([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/i,
+          );
+          if (typeMatch) {
+            hasTypeSpecifier = true;
+            return typeMatch[2] ?? typeMatch[1];
+          }
+
+          hasValueSpecifier = true;
+          return item;
+        });
+
+      importedItems.push(...namedItems);
+    }
+  }
+
+  const effectiveTypeOnly = isTypeOnly || (!hasValueSpecifier && hasTypeSpecifier);
+
+  return {
+    importStatement: trimmed,
+    source,
+    importedItems,
+    isDefault,
+    isNamespace,
+    isTypeOnly: effectiveTypeOnly,
+    originalStatement: importStatement,
+  };
+}
+
+/**
+ * Find balanced parentheses in a string starting from a given position
+ *
+ * @param text - Text to search in
+ * @param startPos - Starting position (after opening parenthesis)
+ * @returns End position of balanced parentheses or -1 if not found
+ */
+function findBalancedParentheses(text: string, startPos: number): number {
+  let depth = 1;
+  let pos = startPos;
+  let inString = false;
+  let quote = '';
+
+  while (pos < text.length && depth > 0) {
+    const ch = text[pos];
+
+    if (inString) {
+      if (ch === '\\') {
+        pos += 2;
+        continue;
+      }
+
+      if (ch === quote) {
+        inString = false;
+        quote = '';
+      }
+
+      pos++;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+    } else if (ch === '(') {
+      depth++;
+    } else if (ch === ')') {
+      depth--;
+      if (depth === 0) {
+        return pos;
+      }
+    }
+
+    pos++;
+  }
+
+  return -1;
+}
+
+/**
+ * Deduplicate imports by import statement
+ *
+ * @param imports - Array of CustomImport objects
+ * @returns Deduplicated array of CustomImport objects
+ */
+function deduplicateImports(imports: CustomImport[]): CustomImport[] {
+  const seen = new Set<string>();
+  const deduplicated: CustomImport[] = [];
+
+  for (const customImport of imports) {
+    if (!seen.has(customImport.importStatement)) {
+      seen.add(customImport.importStatement);
+      deduplicated.push(customImport);
+    }
+  }
+
+  return deduplicated;
+}
+
+/**
+ * Extract custom imports from model documentation
+ *
+ * @param model - Prisma DMMF model
+ * @returns Custom imports parsing result
+ */
+export function extractModelCustomImports(model: DMMF.Model): CustomImportsParseResult {
+  const modelComment = model.documentation || '';
+
+  if (!modelComment.trim()) {
+    return {
+      imports: [],
+      parseErrors: [],
+      isValid: true,
+      customSchema: undefined,
+    };
+  }
+
+  const context: ModelCommentContext = {
+    modelName: model.name,
+    comment: modelComment,
+  };
+
+  return parseCustomImports(modelComment, context);
+}
+
+/**
+ * Extract custom imports from field documentation
+ *
+ * @param field - Prisma DMMF field
+ * @param modelName - Name of the model containing the field
+ * @returns Custom imports parsing result
+ */
+export function extractFieldCustomImports(
+  field: DMMF.Field,
+  modelName: string,
+): CustomImportsParseResult {
+  const fieldComment = field.documentation || '';
+
+  if (!fieldComment.trim()) {
+    return {
+      imports: [],
+      parseErrors: [],
+      isValid: true,
+      customSchema: undefined,
+    };
+  }
+
+  const context: FieldCommentContext = {
+    modelName,
+    fieldName: field.name,
+    fieldType: field.type,
+    comment: fieldComment,
+    isOptional: !field.isRequired,
+    isList: field.isList,
+  };
+
+  return parseCustomImports(fieldComment, context);
 }

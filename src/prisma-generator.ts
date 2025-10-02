@@ -1852,12 +1852,14 @@ async function generateVariantType(
     ];
 
     // Generate schema content
+    const currentDir = path.posix.join('variants', variantName);
     const schemaContent = await generateVariantSchemaContent(
       model,
       schemaName,
       excludeFields,
       variantName,
       config,
+      currentDir,
     );
 
     logger.debug(`   📝 Creating ${variantName} variant: ${fileName} (${schemaName})`);
@@ -1893,9 +1895,45 @@ async function generateVariantSchemaContent(
   schemaName: string,
   excludeFields: string[],
   variantName: string,
-  config?: CustomGeneratorConfig,
+  config: CustomGeneratorConfig | undefined,
+  currentDir: string,
 ): Promise<string> {
+  // Extract custom imports for this model
+  const { extractModelCustomImports } = await import('./parsers/zod-comments');
+  const modelCustomImports = extractModelCustomImports(model);
+
   const enabledFields = model.fields.filter((field) => !excludeFields.includes(field.name));
+
+  // For variant schemas, only include model-level imports if model validation will be applied
+  // Field-level custom validation is handled separately in input object schemas
+  const shouldIncludeModelImports = variantName !== 'input' && modelCustomImports.customSchema;
+  const rawCustomImports = shouldIncludeModelImports ? (modelCustomImports.imports ?? []) : [];
+
+  const typeOnlyImports = rawCustomImports.filter((customImport) => customImport.isTypeOnly);
+  if (typeOnlyImports.length > 0) {
+    logger.warn(
+      `[variants] Ignoring type-only imports on ${model.name}: ${typeOnlyImports
+        .map((customImport) => customImport.importStatement)
+        .join(', ')}`,
+    );
+  }
+
+  const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const customSchemaUsage = modelCustomImports.customSchema ?? '';
+  const uniqueCustomImports = rawCustomImports
+    .filter((customImport) => !customImport.isTypeOnly)
+    .filter((customImport) => {
+      if (!customSchemaUsage) {
+        return false;
+      }
+      if (!customImport.importedItems || customImport.importedItems.length === 0) {
+        return true;
+      }
+      return customImport.importedItems.some((item) =>
+        item ? new RegExp(`\\b${escapeRegExp(item)}\\b`).test(customSchemaUsage) : false,
+      );
+    });
+
   // Collect enum types used in this model to generate proper imports
   const enumTypes = Array.from(
     new Set(
@@ -2023,11 +2061,24 @@ async function generateVariantSchemaContent(
   const shouldApplyPartial = variantConfig?.partial === true;
   const partialSuffix = shouldApplyPartial ? '.partial()' : '';
 
+  // Generate custom import lines
+  const customImportLines =
+    uniqueCustomImports.length > 0
+      ? new Transformer({}).generateCustomImportStatements(uniqueCustomImports, currentDir)
+      : '';
+
+  // Apply model-level validation if present and appropriate for this variant type
+  // Model-level validation typically applies to pure/result schemas, not input schemas
+  const shouldApplyModelValidation = variantName !== 'input' && modelCustomImports.customSchema;
+  const modelLevelValidation = shouldApplyModelValidation
+    ? `.${modelCustomImports.customSchema}`
+    : '';
+
   const zImport = new Transformer({}).generateImportZodStatement();
-  return `${zImport}\n${enumImportLines}// prettier-ignore
+  return `${zImport}\n${customImportLines}${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
-}).strict()${partialSuffix};
+}).strict()${partialSuffix}${modelLevelValidation};
 
 export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;
 `;

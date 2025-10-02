@@ -2768,5 +2768,108 @@ model CombinedTestModel {
       },
       GENERATION_TIMEOUT,
     );
+
+    it(
+      'should handle @zod.import() custom imports',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-custom-imports');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+/// @zod.import(["import { validateEmail } from 'email-validator'"])
+model User {
+  id       Int      @id @default(autoincrement())
+  email    String   @unique /// @zod.import(["import { validateDomain } from 'domain-validator'"]).custom.use(z.string().refine((val) => validateDomain(val), { message: 'Invalid domain' }))
+  name     String   /// @zod.string().min(1)
+  profile  Profile?
+}
+
+/// @zod.import(["import { isValidAge } from 'age-validator'", "import { formatDate } from 'date-utils'"])
+model Profile {
+  id       Int     @id @default(autoincrement())
+  age      Int     /// @zod.number().refine((val) => isValidAge(val), { message: 'Invalid age' })
+  userId   Int     @unique
+  user     User    @relation(fields: [userId], references: [id])
+}
+`;
+
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          // Check if custom imports are generated in model schemas
+          const userModelPath = join(testEnv.outputDir, 'schemas', 'objects', 'User.schema.ts');
+          const profileModelPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'objects',
+            'Profile.schema.ts',
+          );
+
+          if (existsSync(userModelPath)) {
+            const userContent = readFileSync(userModelPath, 'utf-8');
+
+            // Should contain model-level custom import
+            expect(userContent).toMatch(/import.*validateEmail.*from.*email-validator/);
+
+            // Should contain field-level custom import
+            expect(userContent).toMatch(/import.*validateDomain.*from.*domain-validator/);
+
+            // Should contain the refine logic
+            expect(userContent).toMatch(/validateDomain\(val\)/);
+            expect(userContent).toMatch(/Invalid domain/);
+          }
+
+          if (existsSync(profileModelPath)) {
+            const profileContent = readFileSync(profileModelPath, 'utf-8');
+
+            // Should contain both model-level custom imports
+            expect(profileContent).toMatch(/import.*isValidAge.*from.*age-validator/);
+            expect(profileContent).toMatch(/import.*formatDate.*from.*date-utils/);
+
+            // Should contain the refine logic
+            expect(profileContent).toMatch(/isValidAge\(val\)/);
+            expect(profileContent).toMatch(/Invalid age/);
+          }
+
+          // Check input schemas also have the custom imports
+          const userCreateInputPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'objects',
+            'UserCreateInput.schema.ts',
+          );
+
+          if (existsSync(userCreateInputPath)) {
+            const inputContent = readFileSync(userCreateInputPath, 'utf-8');
+
+            // Field-level imports should be present in input schemas too
+            expect(inputContent).toMatch(/import.*validateDomain.*from.*domain-validator/);
+            expect(inputContent).toMatch(/validateDomain\(val\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 });

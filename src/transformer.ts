@@ -5,6 +5,7 @@ import { ResultSchemaGenerator } from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
+import type { CustomImport } from './parsers/zod-comments';
 import { TransformerParams } from './types';
 import { logger } from './utils/logger';
 import {
@@ -96,11 +97,15 @@ export default class Transformer {
     this.enumTypes = params.enumTypes ?? [];
 
     // Process models with Zod integration on initialization
+    const generatorConfig = Transformer.getGeneratorConfig();
+    const zodVersion = (generatorConfig?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
+
     this.enhancedModels = processModelsWithZodIntegration(this.models, {
       enableZodAnnotations: true,
       generateFallbackSchemas: true,
       validateTypeCompatibility: true,
       collectDetailedErrors: true,
+      zodVersion: zodVersion,
     });
   }
 
@@ -122,6 +127,10 @@ export default class Transformer {
 
   static getGeneratorConfig(): ZodGeneratorConfig | null {
     return this.generatorConfig;
+  }
+
+  private static escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   /**
@@ -1164,6 +1173,251 @@ export default class Transformer {
     }
   }
 
+  /**
+   * Generate custom import statements from @zod.import() annotations
+   *
+   * @param customImports - Array of custom import objects
+   * @param outputPath - Current output path for relative import adjustment
+   * @returns Generated import statements string
+   */
+  generateCustomImportStatements(
+    customImports: CustomImport[] | undefined,
+    outputPath: string = '',
+  ): string {
+    if (!customImports || customImports.length === 0) {
+      return '';
+    }
+
+    const importStatements: string[] = [];
+    const seenImports = new Set<string>();
+
+    for (const customImport of customImports) {
+      if (!customImport || !customImport.importStatement) {
+        continue;
+      }
+
+      let importStatement = customImport.importStatement;
+
+      // Adjust relative paths for multi-file output
+      if (outputPath && customImport.source.startsWith('.')) {
+        importStatement = this.adjustRelativeImportPath(importStatement, outputPath);
+      }
+
+      // Avoid duplicate imports
+      if (!seenImports.has(importStatement)) {
+        seenImports.add(importStatement);
+        importStatements.push(importStatement);
+      }
+    }
+
+    if (importStatements.length === 0) {
+      return '';
+    }
+
+    // Return imports with proper formatting and newline
+    return importStatements.join(';\n') + ';\n';
+  }
+
+  /**
+   * Get custom imports for a specific schema context
+   * This method is called AFTER the schema content is generated to determine which imports are actually needed
+   *
+   * @param modelName - Name of the model
+   * @param schemaContent - The generated schema content to analyze for import usage
+   * @returns Array of custom imports needed for this specific schema
+   */
+  getCustomImportsForModel(modelName: string | null, schemaContent?: string): CustomImport[] {
+    if (!modelName) return [];
+
+    // Find the enhanced model data
+    const enhancedModel = this.enhancedModels.find((em) => em.model.name === modelName);
+    if (!enhancedModel) return [];
+
+    const usedImports: CustomImport[] = [];
+    const usedImportSources = new Set<string>();
+
+    // If schema content is provided, analyze it for actual usage
+    if (schemaContent) {
+      // Collect all potential imports from field-level and model-level
+      const allPotentialImports: CustomImport[] = [];
+
+      // Add field-level imports
+      for (const enhancedField of enhancedModel.enhancedFields) {
+        if (enhancedField.customImports) {
+          allPotentialImports.push(...enhancedField.customImports);
+        }
+      }
+
+      // Add model-level imports
+      if (enhancedModel.modelCustomImports) {
+        allPotentialImports.push(...enhancedModel.modelCustomImports);
+      }
+
+      // Check which imports are actually used in the schema content
+      for (const potentialImport of allPotentialImports) {
+        if (potentialImport.importedItems) {
+          // Check if any imported function/item is used in the schema content
+          const isUsed = potentialImport.importedItems.some((item: string) => {
+            if (!item) {
+              return false;
+            }
+            const escaped = Transformer.escapeRegExp(item);
+            const re = new RegExp(`\\b${escaped}\\b`);
+            return re.test(schemaContent);
+          });
+
+          if (isUsed && !usedImportSources.has(potentialImport.importStatement)) {
+            usedImports.push(potentialImport);
+            usedImportSources.add(potentialImport.importStatement);
+          }
+        }
+      }
+
+      return usedImports;
+    }
+
+    // Fallback to the old logic if no schema content is provided
+    // Check which fields in this schema actually use custom validation
+    for (const field of this.fields) {
+      const enhancedField = enhancedModel.enhancedFields.find((ef) => ef.field.name === field.name);
+
+      // Only add imports if the field has custom imports AND the field string contains custom validation logic
+      if (enhancedField && enhancedField.customImports && enhancedField.customImports.length > 0) {
+        // Check if this field actually contains custom validation by looking for function calls
+        const hasCustomValidation = this.fieldContainsCustomValidation(field, enhancedField);
+
+        if (hasCustomValidation) {
+          for (const customImport of enhancedField.customImports) {
+            // Deduplicate imports by source
+            if (!usedImportSources.has(customImport.importStatement)) {
+              usedImports.push(customImport);
+              usedImportSources.add(customImport.importStatement);
+            }
+          }
+        }
+      }
+    }
+
+    // Only add model-level imports if this is a schema type that should include model-level validation
+    // Model-level validation (like .refine()) should only be in result/output schemas, not input aggregate schemas
+    const isResultSchema =
+      this.name.includes('Result') ||
+      this.name.includes('ModelSchema') ||
+      (!this.name.includes('Input') &&
+        !this.name.includes('Filter') &&
+        !this.name.includes('OrderBy') &&
+        !this.name.includes('Aggregate'));
+
+    if (
+      isResultSchema &&
+      enhancedModel.modelCustomImports &&
+      enhancedModel.modelCustomImports.length > 0
+    ) {
+      for (const modelImport of enhancedModel.modelCustomImports) {
+        if (!usedImportSources.has(modelImport.importStatement)) {
+          usedImports.push(modelImport);
+          usedImportSources.add(modelImport.importStatement);
+        }
+      }
+    }
+
+    return usedImports;
+  }
+
+  /**
+   * Check if a field actually contains custom validation logic
+   */
+  private fieldContainsCustomValidation(field: any, enhancedField: any): boolean {
+    // Check if the enhanced field has a custom schema or custom validation
+    if (enhancedField.hasZodAnnotations && enhancedField.zodSchema) {
+      const zodSchema = enhancedField.zodSchema;
+
+      // Check if the zodSchema contains function calls from the custom imports
+      if (enhancedField.customImports) {
+        for (const customImport of enhancedField.customImports) {
+          // Check if any of the imported function names are used in the schema
+          for (const importedItem of customImport.importedItems || []) {
+            if (zodSchema.includes(importedItem)) {
+              return true;
+            }
+          }
+        }
+      }
+
+      // Check if schema contains .refine() or .transform() which would use custom logic
+      if (zodSchema.includes('.refine(') || zodSchema.includes('.transform(')) {
+        return true;
+      }
+    }
+
+    // Check if the enhanced field has a custom schema from @zod.import().custom.use()
+    if (enhancedField.customSchema) {
+      return true;
+    }
+
+    // Convert field to string to check its content as fallback
+    const fieldString = field.toString();
+
+    // If field is just z.literal(true).optional() or similar basic patterns, it doesn't need custom imports
+    if (fieldString.includes('z.literal(true)') || fieldString.includes('z.lazy(')) {
+      return false;
+    }
+
+    // Check if field contains function calls from the custom imports as fallback
+    if (enhancedField.customImports) {
+      for (const customImport of enhancedField.customImports) {
+        // Check if any of the imported function names are used in the field
+        for (const importedItem of customImport.importedItems || []) {
+          if (fieldString.includes(importedItem)) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Get custom schema for a specific field
+   *
+   * @param fieldName - Name of the field
+   * @returns Custom schema string or null if not found
+   */
+  getCustomSchemaForField(fieldName: string): string | null {
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    if (!modelName) return null;
+
+    // Find the enhanced model data
+    const enhancedModel = this.enhancedModels.find((em) => em.model.name === modelName);
+    if (!enhancedModel) return null;
+
+    // Find the enhanced field data
+    const enhancedField = enhancedModel.enhancedFields.find((ef) => ef.field.name === fieldName);
+    if (!enhancedField) return null;
+
+    // Return ONLY the custom schema from @zod.import().custom.use() if available
+    // Regular @zod annotations should be handled by wrapWithZodValidators to avoid double-processing
+    if (enhancedField.customSchema) {
+      return enhancedField.customSchema;
+    }
+
+    return null;
+  }
+
+  /**
+   * Adjust relative import paths based on output directory structure
+   *
+   * @param importStatement - Original import statement
+   * @param outputPath - Current output path
+   * @returns Adjusted import statement
+   */
+  private adjustRelativeImportPath(importStatement: string, _outputPath: string): string {
+    // Previous logic attempted to rewrite relative paths heuristically. This is prone to
+    // breaking user-supplied paths, so we now trust the provided statement as-is.
+    return importStatement;
+  }
+
   generateExportSchemaStatement(name: string, schema: string) {
     return `export const ${name}Schema = ${schema}`;
   }
@@ -1311,13 +1565,22 @@ export default class Transformer {
       }
 
       if (inputType.type === 'String') {
-        result.push(this.wrapWithZodValidators('z.string()', field, inputType));
+        // Check for custom schema from @zod.import() annotations
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'z.string()';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Boolean') {
-        result.push(this.wrapWithZodValidators('z.boolean()', field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'z.boolean()';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Int') {
-        result.push(this.wrapWithZodValidators('z.number().int()', field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'z.number().int()';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Float' || inputType.type === 'Decimal') {
-        result.push(this.wrapWithZodValidators('z.number()', field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'z.number()';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'BigInt') {
         let bigintExpr = 'z.bigint()';
 
@@ -1333,7 +1596,9 @@ export default class Transformer {
           }
         }
 
-        result.push(this.wrapWithZodValidators(bigintExpr, field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || bigintExpr;
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'DateTime') {
         // Apply configurable DateTime strategy
         const cfg = Transformer.getGeneratorConfig();
@@ -1374,13 +1639,19 @@ export default class Transformer {
             }
           }
         }
-        result.push(this.wrapWithZodValidators(dateExpr, field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || dateExpr;
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Json') {
         this.hasJson = true;
 
-        result.push(this.wrapWithZodValidators('jsonSchema', field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'jsonSchema';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'True') {
-        result.push(this.wrapWithZodValidators('z.literal(true)', field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || 'z.literal(true)';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Bytes') {
         let bytesExpr = 'z.instanceof(Uint8Array)';
 
@@ -1398,7 +1669,9 @@ export default class Transformer {
           }
         }
 
-        result.push(this.wrapWithZodValidators(bytesExpr, field, inputType));
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || bytesExpr;
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else {
         const isEnum = inputType.location === 'enumTypes';
 
@@ -1498,6 +1771,7 @@ export default class Transformer {
     mainValidator: string,
     field: PrismaDMMF.SchemaArg,
     inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
+    skipZodAnnotations = false,
   ) {
     let line: string = mainValidator;
     let hasEnhancedZodSchema = false;
@@ -1508,7 +1782,7 @@ export default class Transformer {
       if (field.name && typeof field.name === 'string' && field.name.length > 0) {
         const zodValidations = this.extractZodValidationsForField(field.name);
 
-        if (zodValidations && zodValidations !== mainValidator) {
+        if (!skipZodAnnotations && zodValidations) {
           line = zodValidations;
           hasEnhancedZodSchema = true;
         }
@@ -1530,37 +1804,13 @@ export default class Transformer {
         if (hasEnhancedZodSchema && existingMaxConstraint !== null) {
           // Both native type and @zod.max exist - use the more restrictive one
           const finalMaxLength = Math.min(nativeMaxLength, existingMaxConstraint);
-
-          // Always replace all max constraints with the single most restrictive one
           line = this.replaceAllMaxConstraints(line, finalMaxLength);
-        } else if (!hasEnhancedZodSchema) {
-          // Only native type constraint exists - apply it to the base validator
-          line = line.replace('z.string()', `z.string().max(${nativeMaxLength})`);
         } else if (hasEnhancedZodSchema && existingMaxConstraint === null) {
           // Enhanced @zod schema exists but no max constraint - add native constraint
-          // Find the base type and add max constraint after it
-          if (line.includes('z.string()')) {
-            line = line.replace('z.string()', `z.string().max(${nativeMaxLength})`);
-          } else if (line.includes('z.email()')) {
-            // Handle Zod v4 email syntax - add max constraint after z.email()
-            line = line.replace('z.email()', `z.email().max(${nativeMaxLength})`);
-          } else {
-            // Handle cases where the string type is already transformed
-            const baseStringMatch = line.match(/(z\.string\(\)[^.]*)/);
-            const baseEmailMatch = line.match(/(z\.email\(\)[^.]*)/);
-            if (baseStringMatch) {
-              line = line.replace(
-                baseStringMatch[1],
-                `${baseStringMatch[1]}.max(${nativeMaxLength})`,
-              );
-            } else if (baseEmailMatch) {
-              // Handle Zod v4 email with potential chaining
-              line = line.replace(
-                baseEmailMatch[1],
-                `${baseEmailMatch[1]}.max(${nativeMaxLength})`,
-              );
-            }
-          }
+          line = this.replaceAllMaxConstraints(line, nativeMaxLength);
+        } else if (!hasEnhancedZodSchema) {
+          // Only native type constraint exists - apply it to the base validator
+          line = this.replaceAllMaxConstraints(line, nativeMaxLength);
         }
       }
     }
@@ -1896,28 +2146,17 @@ export default class Transformer {
    * Replace all max constraints in a validation string with a single constraint
    */
   private replaceAllMaxConstraints(validationString: string, newMaxValue: number): string {
-    // Remove all existing .max(number) constraints
-    const withoutMax = validationString.replace(/\.max\(\d+\)/g, '');
+    // Strip any existing .max() constraints
+    const result = validationString.replace(/\.max\(\s*\d+\s*\)/g, '');
 
-    // Add the new max constraint after z.string() or z.email()
-    if (withoutMax.includes('z.string()')) {
-      return withoutMax.replace('z.string()', `z.string().max(${newMaxValue})`);
-    } else if (withoutMax.includes('z.email()')) {
-      // Handle Zod v4 email syntax
-      return withoutMax.replace('z.email()', `z.email().max(${newMaxValue})`);
-    } else {
-      // Handle cases where string/email type is already transformed - add after the base type
-      const baseStringMatch = withoutMax.match(/(z\.string\(\)[^.]*)/);
-      const baseEmailMatch = withoutMax.match(/(z\.email\(\)[^.]*)/);
-
-      if (baseStringMatch) {
-        return withoutMax.replace(baseStringMatch[1], `${baseStringMatch[1]}.max(${newMaxValue})`);
-      } else if (baseEmailMatch) {
-        return withoutMax.replace(baseEmailMatch[1], `${baseEmailMatch[1]}.max(${newMaxValue})`);
-      }
+    // Insert after the first Zod constructor call (covers z.string(), z.iso.date(), z.hash(), etc.)
+    const baseCallMatch = result.match(/^(\s*z(?:\.[A-Za-z_]\w*)+\([^)]*\))/);
+    if (baseCallMatch) {
+      return result.replace(baseCallMatch[1], `${baseCallMatch[1]}.max(${newMaxValue})`);
     }
 
-    return withoutMax;
+    console.warn(`[transformer] Could not find where to insert max constraint in: ${result}`);
+    return result;
   }
 
   /**
@@ -2067,7 +2306,10 @@ export default class Transformer {
       const sanity = this.generateZodOnlySanityCheck(finalFields);
       if (sanity) objectSchema += sanity + '\n';
     }
-    const baseImports = this.generateObjectSchemaImportStatements();
+    // Get custom imports for this model by analyzing the actual schema content
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    const customImports = this.getCustomImportsForModel(modelName, objectSchema);
+    const baseImports = this.generateObjectSchemaImportStatements(customImports);
     let jsonImport = '';
     if (this.hasJson) {
       const cfg = Transformer.getGeneratorConfig();
@@ -2340,8 +2582,18 @@ export default class Transformer {
     }
   }
 
-  generateObjectSchemaImportStatements() {
+  generateObjectSchemaImportStatements(customImports: CustomImport[] = []) {
     let generatedImports = this.generateImportZodStatement();
+
+    // Add custom imports from @zod.import() annotations
+    const customImportStatements = this.generateCustomImportStatements(
+      customImports,
+      'objects', // Output path for relative import adjustment
+    );
+    if (customImportStatements) {
+      generatedImports += customImportStatements;
+    }
+
     // Only import Prisma types when emitting typed schemas
     if (Transformer.exportTypedSchemas) {
       // Ensure Prisma types import exists for type safety checks in tests
