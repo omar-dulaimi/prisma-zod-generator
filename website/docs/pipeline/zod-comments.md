@@ -26,6 +26,49 @@ export const UserSchema = z
 
 Annotations are concatenated after base type; unsafe expressions are not executed (string append model). Keep rules pure.
 
+## External Validators with `@zod.import`
+
+Bring in runtime helpers directly from doc comments when you need logic that lives outside the generated file.
+
+```prisma
+model User {
+  id    String @id @default(cuid())
+  /// @zod.import(["import { isEmail } from '../validators/email'\"])
+  /// @zod.custom.use(z.string().refine((val) => isEmail(val), { message: 'Invalid email' }))
+  email String @unique
+}
+```
+
+Generated schema (Pure Variant excerpt):
+
+```ts
+import { isEmail } from '../validators/email';
+
+export const UserSchema = z
+  .object({
+    email: z.string().refine((val) => isEmail(val), {
+      message: 'Invalid email',
+    }),
+    // ...
+  })
+  .strict();
+```
+
+- Provide one or more complete import statements inside the array. Relative paths are kept intact and rewritten per output directory.
+- Imports must produce runtime values. Type-only specifiers (e.g. `import type { Validator } ...` or `type Foo as Bar`) are detected and omitted, ensuring we never emit imports that disappear after compilation.
+- Field-level imports are merged with model-level imports. When the same statement appears multiple times it is emitted once.
+- Model-level imports can also supply chained refinements:
+
+  ```prisma
+  /// @zod.import(["import { assertCompanyDomain } from '../validators/domain'\"]).refine(assertCompanyDomain)
+  model Organisation {
+    id    String @id @default(cuid())
+    email String @unique
+  }
+  ```
+
+When both `@zod.import()` and other `@zod.*` annotations are present, the generator keeps custom schemas from `@zod.custom.use()` as the base and only appends inline validations when they do not replace the base type.
+
 ## String Format Validations
 
 The generator supports all Zod v4 string format validation methods. In Zod v4, these generate optimized base types (e.g., `z.email()` instead of `z.string().email()`).
