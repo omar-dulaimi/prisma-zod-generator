@@ -9,8 +9,47 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.25.1**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.26.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.26.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.25.1...v1.26.0) (2025-10-02)
+
+### 🚀 Features
+
+* **imports:** add custom imports feature for external validators ([fe90cd8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/fe90cd8732fbfd9de349c44d492be09a62a91272))
+
+### 🐛 Bug Fixes
+
+* **constraints:** resolve max constraint deduplication and conflict resolution ([e8a50c1](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e8a50c1a90745b51ddff722b267957b359225077))
+* **core:** align custom import helpers ([35db237](https://github.com/omar-dulaimi/prisma-zod-generator/commit/35db237dfd18a4f8c51055300732596a625059eb))
+* **generators:** emit custom imports via transformer helper ([0b32d9e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0b32d9eb8b041b1103e2970e017a221492f1af75))
+* **generators:** emit field custom imports in pure models ([ac99736](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ac99736ef7d945937a0c4db431543aab665c7bb8))
+* **generators:** normalize model-level validation chain ([12864e2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/12864e2ec5576c975a51eea356968dd3c3241bfd))
+* **generators:** use schema content during import filtering ([138fa81](https://github.com/omar-dulaimi/prisma-zod-generator/commit/138fa81df10d7b5ab32153fbfcc845e4feb26cd5))
+* **generators:** use transformer instance for zod import ([0014e1b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0014e1bceaaa052798c05a30cd481c52d87d51d3))
+* **imports:** optimize custom import detection for better performance ([72480d0](https://github.com/omar-dulaimi/prisma-zod-generator/commit/72480d023f1e1d6a3728b795f8593dcb0ebf1f7f))
+* **parser:** correct TypeScript import type statement parsing ([71a6c53](https://github.com/omar-dulaimi/prisma-zod-generator/commit/71a6c5385740b07760b5d64c55a5de49bfac8099))
+* **parsers:** drop type-only custom imports ([d794551](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d79455174df5fa0af5cb0c2fe6f5d2b95bad7977))
+* **parsers:** handle complex custom import annotations ([108dee3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/108dee333bed76fa0cf9d5dc118e63f914481a0c))
+* **parsers:** improve import parsing robustness ([7b80423](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7b804235cde9d8e0225a03419229f4da8cdc2f94))
+* **parsers:** parse combined default and named imports ([2e3a093](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2e3a093e7c46f0d1cb5fc0299fe2b7f81f36e5ec))
+* **parsers:** support iso string annotations ([803f968](https://github.com/omar-dulaimi/prisma-zod-generator/commit/803f968ec6778e01907c36f022139516b4e75dae))
+* **parsers:** tolerate loose custom import arrays ([7312460](https://github.com/omar-dulaimi/prisma-zod-generator/commit/73124605fbf85fc877840625094fd9dc34c2855d))
+* remove debug log ([7a8894e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7a8894e2733cad8442e1164048d71bb907d5d924))
+* **transformer:** escape custom import regex ([401d538](https://github.com/omar-dulaimi/prisma-zod-generator/commit/401d538b6a289b4c2a1cdc1a94f7eb2ca0d8a3a9))
+* **transformer:** insert max constraint after any Zod base ([19246b3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/19246b37157ce9848b9faf948b7f5cf6b8497299))
+* **transformer:** preserve custom schemas when applying zod annotations ([d9f03be](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d9f03be88888a219223dd33bf748e26704ff8f48))
+* **transformer:** prevent double-processing of [@zod](https://github.com/zod) annotations ([f06bf45](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f06bf454c26e66026104bb1f044a429345b569d6))
+* **variants:** adjust custom import path rewrites ([df0dd8c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/df0dd8c334d8843da8cfa31f087ccdc634ae6f9d))
+* **variants:** filter runtime custom imports ([29e7a41](https://github.com/omar-dulaimi/prisma-zod-generator/commit/29e7a41d5b00382223df0b12cd1d4654ee7f0770))
+
+### ♻️ Code Refactoring
+
+* **types:** improve type safety for custom import methods ([7743c2f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7743c2ffb7684ad92fae05f7b7571c950e0eb96b))
+
+### 📚 Documentation
+
+* add mermaid rendering workflow ([0c6f737](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0c6f737199557c6a34a2f3f1730976bf47c3dbf1))
 
 ## [1.25.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.25.0...v1.25.1) (2025-10-01)
 
@@ -1020,7 +1059,7 @@ For the complete version history including older releases, please see the [full 
 
 ## Version Support
 
-- **Current:** v1.25.x - Full support with new features and bug fixes
+- **Current:** v1.26.x - Full support with new features and bug fixes
 - **Previous:** Previous minor versions - Security and critical bug fixes only
 - **Legacy:** Older versions - Community support only
 
