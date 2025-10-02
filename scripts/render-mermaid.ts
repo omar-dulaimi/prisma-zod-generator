@@ -95,14 +95,31 @@ async function main() {
     cursor = blockEnd;
 
     // Trim any existing generated snippet immediately following the mermaid block
-    const remaining = readme.slice(cursor);
-    const commentMatch = DIAGRAM_COMMENT_REGEX.exec(remaining);
-    if (commentMatch) {
+    let remaining = readme.slice(cursor);
+    while (true) {
+      const commentMatch = DIAGRAM_COMMENT_REGEX.exec(remaining);
+      if (!commentMatch) break;
       cursor += commentMatch[0].length;
+      remaining = readme.slice(cursor);
+    }
+
+    // If the mermaid block is wrapped in <details>, move the closing tag before the snippet
+    const closingDetailsMatch = remaining.match(/^\s*<\/details>/);
+    if (closingDetailsMatch) {
+      const closing = closingDetailsMatch[0];
+      updatedReadme += closing;
+      cursor += closing.length;
+      remaining = readme.slice(cursor);
+      while (true) {
+        const commentMatch = DIAGRAM_COMMENT_REGEX.exec(remaining);
+        if (!commentMatch) break;
+        cursor += commentMatch[0].length;
+        remaining = readme.slice(cursor);
+      }
     }
 
     const relativePath = toPosix(path.relative(ROOT, path.join(DIAGRAM_DIR, outputFileName)));
-    const snippet = `\n\n<!-- diagram:${diagramId} -->\n![Diagram ${index + 1}](${relativePath})\n<!-- /diagram:${diagramId} -->\n`;
+    const snippet = `\n\n<!-- diagram:${diagramId} -->\n<p align="center">\n  <img src="${relativePath}" alt="Diagram ${index + 1}" width="720" />\n</p>\n<!-- /diagram:${diagramId} -->\n`;
     updatedReadme += snippet;
   }
 
