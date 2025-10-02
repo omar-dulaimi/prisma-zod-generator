@@ -2398,9 +2398,11 @@ export class PrismaTypeMapper {
     // Zod import
     if (imports.includes('z')) {
       // Defer to Transformer import strategy to honor zodImportTarget
-      const importLine = transformerModule.prototype.generateImportZodStatement
-        ? transformerModule.prototype.generateImportZodStatement.call(transformerModule)
-        : "import * as z from 'zod';\n";
+      const helper = new transformerModule({});
+      const importLine =
+        typeof helper.generateImportZodStatement === 'function'
+          ? helper.generateImportZodStatement()
+          : "import * as z from 'zod';\n";
       lines.push(importLine.trimEnd());
     }
 
