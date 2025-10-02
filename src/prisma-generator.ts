@@ -1,6 +1,6 @@
 import { DMMF, EnvValue, GeneratorConfig, GeneratorOptions } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
-import { promises as fs } from 'fs';
+import fsFull, { promises as fs } from 'fs';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
@@ -712,6 +712,8 @@ export async function generate(options: GeneratorOptions) {
     } else if (resolvedSafetyConfig?.skipManifest) {
       logger.debug('[prisma-generator] Skipping manifest save (skipManifest enabled)');
     }
+
+    maybeShowSponsorMessage();
   } catch (error) {
     console.error(error);
   }
@@ -2494,5 +2496,42 @@ function inferZodTypeFromValue(value: any): string {
       }
     default:
       return 'z.unknown()';
+  }
+}
+
+const green = (msg: string) => `\x1b[32m${msg}\x1b[0m`; // green
+const cyan = (msg: string) => `\x1b[36m${msg}\x1b[0m`; // cyan
+
+function maybeShowSponsorMessage() {
+  try {
+    const cacheDir = path.join(process.cwd(), 'node_modules', '.cache', 'prisma-zod-generator');
+    const counterFile = path.join(cacheDir, 'counter.json');
+
+    if (!fsFull.existsSync(cacheDir)) {
+      fsFull.mkdirSync(cacheDir, { recursive: true });
+    }
+
+    let count = 0;
+    if (fsFull.existsSync(counterFile)) {
+      const raw = fsFull.readFileSync(counterFile, 'utf8');
+      count = JSON.parse(raw).count || 0;
+    }
+
+    count++;
+    fsFull.writeFileSync(counterFile, JSON.stringify({ count }, null, 2));
+
+    if (count % 5 === 0) {
+      console.log(`
+${cyan(`🌟 You've successfully run prisma-zod-generator ${count} times! 🌟`)}
+
+If you find this project useful, please consider sponsoring me.
+It helps me cover bills and lets me replace my old Dell Latitude E6440
+with a laptop that isn’t a nightmare to run TypeScript projects on 😅  
+
+👉 ${green('https://github.com/sponsors/omar-dulaimi')}
+`);
+    }
+  } catch {
+    // Fail silently, we don’t want to break generator if fs fails
   }
 }
