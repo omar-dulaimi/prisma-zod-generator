@@ -15,6 +15,7 @@ const sidebars: SidebarsConfig = {
         'config/precedence',
         'config/modes',
         'config/variants',
+        'config/strict-mode',
         'config/naming',
         'config/optional-fields',
         'config/datetime-strategy',
@@ -51,6 +52,7 @@ const sidebars: SidebarsConfig = {
         'recipes/single-file',
         'recipes/granular-per-model',
         'recipes/hide-fields',
+        'recipes/flexible-api-validation',
         'recipes/circular-dependency-exclusion',
         'recipes/optional-field-control',
         {

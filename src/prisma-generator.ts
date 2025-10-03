@@ -15,6 +15,7 @@ import {
   VariantConfig,
   parseConfiguration,
 } from './config/parser';
+import { createStrictModeResolver } from './utils/strict-mode-resolver';
 import {
   addMissingInputObjectTypes,
   hideInputObjectTypesAndRelatedFields,
@@ -1741,7 +1742,17 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
                 })
                 .join('\n') + '\n'
             : '';
-          const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
+          // Apply strict mode based on configuration for this variant
+          const strictModeResolver = createStrictModeResolver(config);
+          const isStandardVariant = ['pure', 'input', 'result'].includes(variantDef.name);
+          const strictModeSuffix = isStandardVariant
+            ? strictModeResolver.getVariantStrictModeSuffix(
+                model.name,
+                variantDef.name as 'pure' | 'input' | 'result',
+              )
+            : strictModeResolver.getObjectStrictModeSuffix(model.name);
+
+          const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n})${strictModeSuffix};\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
           exportLines.push(`export { ${schemaName} } from './${fileBase}${importExtension}';`);
         }
@@ -2077,10 +2088,18 @@ async function generateVariantSchemaContent(
     : '';
 
   const zImport = new Transformer({}).generateImportZodStatement();
+
+  // Apply strict mode based on configuration
+  const strictModeResolver = createStrictModeResolver(config || {});
+  const strictModeSuffix = strictModeResolver.getVariantStrictModeSuffix(
+    model.name,
+    variantName as 'pure' | 'input' | 'result',
+  );
+
   return `${zImport}\n${customImportLines}${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
-}).strict()${partialSuffix}${modelLevelValidation};
+})${strictModeSuffix}${partialSuffix}${modelLevelValidation};
 
 export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;
 `;

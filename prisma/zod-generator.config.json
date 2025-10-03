@@ -2,16 +2,33 @@
   "mode": "full",
   "useMultipleFiles": true,
   "zodImportTarget": "v4",
+  "strictMode": {
+    "enabled": true,
+    "operations": false,
+    "objects": false,
+    "variants": false
+  },
+  "models": {
+    "ZodV4Examples": {
+      "strictMode": {
+        "enabled": true,
+        "operations": ["findMany", "create"],
+        "exclude": ["update"]
+      }
+    }
+  },
   "variants": {
     "pure": {
       "enabled": true,
       "suffix": ".model",
-      "partial": false
+      "partial": false,
+      "strictMode": false
     },
     "input": {
       "enabled": true,
       "suffix": ".input",
-      "partial": true
+      "partial": true,
+      "strictMode": false
     },
     "result": {
       "enabled": true,

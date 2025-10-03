@@ -360,6 +360,39 @@ export const ConfigurationSchema: JSONSchema7 = {
       description:
         "How to import Zod in generated code: 'auto' uses import * as z from 'zod'; 'v3' uses import { z } from 'zod'; 'v4' uses import * as z from 'zod/v4'",
     },
+
+    strictMode: {
+      type: 'object',
+      additionalProperties: false,
+      description: 'Global strict mode configuration for generated Zod schemas',
+      properties: {
+        enabled: {
+          type: 'boolean',
+          default: true,
+          description: 'Global default for strict mode on all schemas (backward compatibility)',
+        },
+        operations: {
+          type: 'boolean',
+          default: true,
+          description: 'Apply strict mode to operation schemas (findMany, create, etc.)',
+        },
+        objects: {
+          type: 'boolean',
+          default: true,
+          description: 'Apply strict mode to object schemas (WhereInput, CreateInput, etc.)',
+        },
+        variants: {
+          type: 'boolean',
+          default: true,
+          description: 'Apply strict mode to variant schemas (pure, input, result)',
+        },
+        enums: {
+          type: 'boolean',
+          default: true,
+          description: 'Apply strict mode to enum schemas',
+        },
+      },
+    },
   },
 
   definitions: {
@@ -394,6 +427,10 @@ export const ConfigurationSchema: JSONSchema7 = {
           type: 'boolean',
           default: false,
           description: 'Apply .partial() to the generated schema, making all fields optional',
+        },
+        strictMode: {
+          type: ['boolean', 'null'],
+          description: 'Override strict mode for this variant (null uses global/parent setting)',
         },
       },
     },
@@ -435,6 +472,102 @@ export const ConfigurationSchema: JSONSchema7 = {
           uniqueItems: true,
           minItems: 1,
           description: 'Which operations to generate schemas for',
+        },
+        strictMode: {
+          type: 'object',
+          additionalProperties: false,
+          description: 'Strict mode configuration for this model',
+          properties: {
+            enabled: {
+              type: ['boolean', 'null'],
+              description: 'Override global strict mode for this model (null uses global setting)',
+            },
+            operations: {
+              oneOf: [
+                { type: 'boolean' },
+                {
+                  type: 'array',
+                  items: {
+                    type: 'string',
+                    enum: [
+                      'findMany',
+                      'findUnique',
+                      'findUniqueOrThrow',
+                      'findFirst',
+                      'findFirstOrThrow',
+                      'create',
+                      'createMany',
+                      'createManyAndReturn',
+                      'update',
+                      'updateMany',
+                      'updateManyAndReturn',
+                      'upsert',
+                      'delete',
+                      'deleteMany',
+                      'aggregate',
+                      'groupBy',
+                      'count',
+                    ],
+                  },
+                  uniqueItems: true,
+                },
+                { type: 'null' },
+              ],
+              description:
+                'Control strict mode for specific operations (boolean for all, array for specific, null for global)',
+            },
+            exclude: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: [
+                  'findMany',
+                  'findUnique',
+                  'findUniqueOrThrow',
+                  'findFirst',
+                  'findFirstOrThrow',
+                  'create',
+                  'createMany',
+                  'createManyAndReturn',
+                  'update',
+                  'updateMany',
+                  'updateManyAndReturn',
+                  'upsert',
+                  'delete',
+                  'deleteMany',
+                  'aggregate',
+                  'groupBy',
+                  'count',
+                ],
+              },
+              uniqueItems: true,
+              description: 'Operations to exclude from strict mode',
+            },
+            objects: {
+              type: ['boolean', 'null'],
+              description:
+                'Override strict mode for object schemas of this model (null uses global setting)',
+            },
+            variants: {
+              type: 'object',
+              additionalProperties: false,
+              description: 'Per-variant strict mode overrides for this model',
+              properties: {
+                pure: {
+                  type: ['boolean', 'null'],
+                  description: 'Override strict mode for pure variant of this model',
+                },
+                input: {
+                  type: ['boolean', 'null'],
+                  description: 'Override strict mode for input variant of this model',
+                },
+                result: {
+                  type: ['boolean', 'null'],
+                  description: 'Override strict mode for result variant of this model',
+                },
+              },
+            },
+          },
         },
         variants: {
           type: 'object',

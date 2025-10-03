@@ -185,6 +185,18 @@ export interface GeneratorConfig {
    */
   zodImportTarget?: 'auto' | 'v3' | 'v4';
 
+  /** Global strict mode configuration for generated Zod schemas */
+  strictMode?: {
+    /** Global default for strict mode on all schemas (backward compatibility). Default: true */
+    enabled?: boolean;
+    /** Apply strict mode to operation schemas (findMany, create, etc.). Default: true */
+    operations?: boolean;
+    /** Apply strict mode to object schemas (WhereInput, CreateInput, etc.). Default: true */
+    objects?: boolean;
+    /** Apply strict mode to variant schemas (pure, input, result). Default: true */
+    variants?: boolean;
+  };
+
   /**
    * Explicit emission controls. When provided, these booleans override heuristic
    * behaviors (minimal mode, pure-variant-only, etc.) for the respective groups.
@@ -227,6 +239,9 @@ export interface VariantConfig {
 
   /** Apply .partial() to the generated schema, making all fields optional */
   partial?: boolean;
+
+  /** Override strict mode for this variant (null uses global/parent setting) */
+  strictMode?: boolean | null;
 }
 
 /**
@@ -238,6 +253,24 @@ export interface ModelConfig {
 
   /** Which operations to generate for this model */
   operations?: string[];
+
+  /** Strict mode configuration for this model */
+  strictMode?: {
+    /** Override global strict mode for this model (null uses global setting) */
+    enabled?: boolean | null;
+    /** Control strict mode for specific operations (boolean for all, array for specific, null for global) */
+    operations?: boolean | string[] | null;
+    /** Operations to exclude from strict mode */
+    exclude?: string[];
+    /** Override strict mode for object schemas of this model (null uses global setting) */
+    objects?: boolean | null;
+    /** Per-variant strict mode overrides for this model */
+    variants?: {
+      pure?: boolean | null;
+      input?: boolean | null;
+      result?: boolean | null;
+    };
+  };
 
   /** Variant-specific configuration for this model */
   variants?: {
