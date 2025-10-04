@@ -16,6 +16,7 @@ import {
   resolveSchemaNaming,
 } from './utils/naming-resolver';
 import type { GeneratedManifest } from './utils/safeOutputManagement';
+import { createStrictModeResolver, type StrictModeResolver } from './utils/strict-mode-resolver';
 import { writeFileSafely } from './utils/writeFileSafely';
 import { addIndexExport, writeIndexFile } from './utils/writeIndexFile';
 
@@ -51,6 +52,7 @@ export default class Transformer {
   private static isGenerateSelect: boolean = false;
   private static isGenerateInclude: boolean = false;
   private static generatorConfig: ZodGeneratorConfig | null = null;
+  private static strictModeResolver: StrictModeResolver | null = null;
   private static usedSchemaFilePaths = new Map<string, { modelName: string; operation: string }>();
   // Lightweight helpers to safely access optional JSON Schema compatibility settings
   private static isJsonSchemaModeEnabled(): boolean {
@@ -123,10 +125,15 @@ export default class Transformer {
   // Configuration setters
   static setGeneratorConfig(config: ZodGeneratorConfig) {
     this.generatorConfig = config;
+    this.strictModeResolver = createStrictModeResolver(config);
   }
 
   static getGeneratorConfig(): ZodGeneratorConfig | null {
     return this.generatorConfig;
+  }
+
+  static getStrictModeResolver(): StrictModeResolver | null {
+    return this.strictModeResolver;
   }
 
   private static escapeRegExp(value: string): string {
@@ -156,12 +163,7 @@ export default class Transformer {
     // This aligns minimal mode with full mode regarding model selection; other constraints
     // (limited operations and pared-down object schemas) are handled elsewhere.
 
-    // If models configuration exists, only enable explicitly configured models
-    if (config.models && Object.keys(config.models).length > 0) {
-      return false;
-    }
-
-    // Default: enable all models when no model filtering is configured
+    // Default: enable all models when no explicit model disabling is configured
     return true;
   }
 
@@ -2463,8 +2465,11 @@ export default class Transformer {
   addFinalWrappers({ zodStringFields }: { zodStringFields: string[] }) {
     const fields = [...zodStringFields];
 
-    // Base object + strict
-    let base = this.wrapWithZodObject(fields) + '.strict()';
+    // Base object + strict mode based on configuration
+    const modelName = this.name ? Transformer.extractModelNameFromContext(this.name) : undefined;
+    const strictModeSuffix =
+      Transformer.getStrictModeResolver()?.getObjectStrictModeSuffix(modelName || undefined) || '';
+    let base = this.wrapWithZodObject(fields) + strictModeSuffix;
 
     // Enhance WhereUniqueInput: at-least-one unique selector, plus composite completeness via superRefine
     if (this.name && /WhereUniqueInput$/.test(this.name)) {
@@ -2622,14 +2627,6 @@ export default class Transformer {
     return modelName
       .replace(/[_-\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''))
       .replace(/^\w/, (c) => c.toUpperCase());
-  }
-
-  /**
-   * Generate an import statement with the correct file extension for ESM support
-   */
-  private generateImportStatement(importName: string, importPath: string): string {
-    const extension = this.getImportFileExtension();
-    return `import { ${importName} } from '${importPath}${extension}'`;
   }
 
   /**
@@ -3111,7 +3108,12 @@ export default class Transformer {
           const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for FindUnique operation
-          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+          const strictModeSuffix =
+            Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+              modelName,
+              'findUnique',
+            ) || '';
+          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'FindUnique',
@@ -3136,7 +3138,12 @@ export default class Transformer {
           const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for FindUniqueOrThrow operation
-          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+          const strictModeSuffix =
+            Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+              modelName,
+              'findUniqueOrThrow',
+            ) || '';
+          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'FindUniqueOrThrow',
@@ -3198,7 +3205,12 @@ export default class Transformer {
           }
 
           // Generate dual schema exports for FindFirst operation
-          const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
+          const strictModeSuffix =
+            Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+              modelName,
+              'findFirst',
+            ) || '';
+          const schemaObjectDefinition = `z.object({ ${schemaFields} })${strictModeSuffix}`;
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'FindFirst',
@@ -3255,7 +3267,12 @@ export default class Transformer {
             schemaContent += `// Select schema needs to be in file to prevent circular imports\n//------------------------------------------------------\n\n${this.generateDualSelectSchemaExports(model, 'FindFirstOrThrow')}\n\n`;
           }
 
-          const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
+          const strictModeSuffix =
+            Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+              modelName,
+              'findFirstOrThrow',
+            ) || '';
+          const schemaObjectDefinition = `z.object({ ${schemaFields} })${strictModeSuffix}`;
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'FindFirstOrThrow',
@@ -3316,7 +3333,12 @@ export default class Transformer {
           }
 
           // Generate dual schema exports for FindMany operation
-          const schemaObjectDefinition = `z.object({ ${schemaFields} }).strict()`;
+          const strictModeSuffix =
+            Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+              modelName,
+              'findMany',
+            ) || '';
+          const schemaObjectDefinition = `z.object({ ${schemaFields} })${strictModeSuffix}`;
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'FindMany',
@@ -3345,7 +3367,10 @@ export default class Transformer {
           const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
           const schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
 
-          const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional() }).strict()`;
+          const strictModeSuffix =
+            Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(modelName, 'count') ||
+            '';
+          const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional() })${strictModeSuffix}`;
 
           const dualExports = this.generateDualSchemaExports(
             modelName,
@@ -3384,7 +3409,12 @@ export default class Transformer {
           const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for CreateOne operation
-          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion} }).strict()`;
+          const strictModeSuffix =
+            Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+              modelName,
+              'createOne',
+            ) || '';
+          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion} })${strictModeSuffix}`;
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'CreateOne',
@@ -3409,11 +3439,16 @@ export default class Transformer {
             const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for CreateMany operation
+            const strictModeSuffix =
+              Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+                modelName,
+                'createMany',
+              ) || '';
             const schemaObjectDefinition = `z.object({ data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
               Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
                 ? 'skipDuplicates: z.boolean().optional()'
                 : ''
-            } }).strict()`;
+            } })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'CreateMany',
@@ -3440,11 +3475,16 @@ export default class Transformer {
             const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for CreateManyAndReturn operation
+            const strictModeSuffix =
+              Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+                modelName,
+                'createManyAndReturn',
+              ) || '';
             const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
               Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
                 ? 'skipDuplicates: z.boolean().optional()'
                 : ''
-            } }).strict()`;
+            } })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'CreateManyAndReturn',
@@ -3480,7 +3520,12 @@ export default class Transformer {
               const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
               // Generate dual schema exports for DeleteOne operation
-              const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+              const strictModeSuffix =
+                Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+                  modelName,
+                  'deleteOne',
+                ) || '';
+              const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
               const dualExports = this.generateDualSchemaExports(
                 modelName,
                 'DeleteOne',
@@ -3507,7 +3552,12 @@ export default class Transformer {
             const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for DeleteOne operation
-            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+            const strictModeSuffix =
+              Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+                modelName,
+                'deleteOne',
+              ) || '';
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'DeleteOne',
@@ -3532,7 +3582,12 @@ export default class Transformer {
             const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for DeleteMany operation
-            const schemaObjectDefinition = `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() }).strict()`;
+            const strictModeSuffix =
+              Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+                modelName,
+                'deleteMany',
+              ) || '';
+            const schemaObjectDefinition = `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'DeleteMany',
@@ -3566,7 +3621,12 @@ export default class Transformer {
               const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
               // Generate dual schema exports for UpdateOne operation
-              const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+              const strictModeSuffix =
+                Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+                  modelName,
+                  'updateOne',
+                ) || '';
+              const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
               const dualExports = this.generateDualSchemaExports(
                 modelName,
                 'UpdateOne',
@@ -3595,7 +3655,12 @@ export default class Transformer {
             const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpdateOne operation
-            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} }).strict()`;
+            const strictModeSuffix =
+              Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+                modelName,
+                'updateOne',
+              ) || '';
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpdateOne',
@@ -3623,7 +3688,12 @@ export default class Transformer {
             const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpdateMany operation
-            const schemaObjectDefinition = `z.object({ data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() }).strict()`;
+            const strictModeSuffix =
+              Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+                modelName,
+                'updateMany',
+              ) || '';
+            const schemaObjectDefinition = `z.object({ data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpdateMany',
@@ -3653,7 +3723,12 @@ export default class Transformer {
             const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpdateManyAndReturn operation
-            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() }).strict()`;
+            const strictModeSuffix =
+              Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+                modelName,
+                'updateManyAndReturn',
+              ) || '';
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpdateManyAndReturn',
@@ -3690,7 +3765,12 @@ export default class Transformer {
             const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpsertOne operation
-            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ]) }).strict()`;
+            const strictModeSuffix =
+              Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+                modelName,
+                'upsertOne',
+              ) || '';
+            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ]) })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpsertOne',
@@ -3756,9 +3836,14 @@ export default class Transformer {
           const schemaContent = `import type { Prisma } from '${prismaImportPathAggregate}';\n${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for Aggregate operation
+          const strictModeSuffix =
+            Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+              modelName,
+              'aggregate',
+            ) || '';
           const aggregateSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
             ', ',
-          )} }).strict()`;
+          )} })${strictModeSuffix}`;
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'Aggregate',
@@ -3829,7 +3914,12 @@ export default class Transformer {
             );
           }
 
-          const groupBySchemaObject = `z.object({ ${baseFields.join(', ')} }).strict()`;
+          const strictModeSuffix =
+            Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
+              modelName,
+              'groupBy',
+            ) || '';
+          const groupBySchemaObject = `z.object({ ${baseFields.join(', ')} })${strictModeSuffix}`;
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'GroupBy',
@@ -4444,9 +4534,13 @@ export default class Transformer {
       selectFields.push(`  _count: z.boolean().optional()`);
     }
 
+    // Apply strict mode based on configuration for object schemas
+    const strictModeSuffix =
+      Transformer.getStrictModeResolver()?.getObjectStrictModeSuffix(modelName) || '';
+
     return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${this.getPrismaTypeName(modelName)}Select> = z.object({
 ${selectFields.join(',\n')}
-}).strict()`;
+})${strictModeSuffix}`;
   }
 
   /**
@@ -4569,8 +4663,12 @@ ${selectFields.join(',\n')}
       selectFields.push(`    _count: z.boolean().optional()`);
     }
 
+    // Apply strict mode based on configuration for object schemas
+    const strictModeSuffix =
+      Transformer.getStrictModeResolver()?.getObjectStrictModeSuffix(model.name) || '';
+
     return `z.object({
 ${selectFields.join(',\n')}
-  }).strict()`;
+  })${strictModeSuffix}`;
   }
 }

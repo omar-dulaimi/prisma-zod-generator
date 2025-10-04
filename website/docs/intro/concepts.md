@@ -36,6 +36,17 @@ You can also define **array-based custom variants** with suffix, exclusions, and
 
 **Circular Dependency Resolution**: When `pureModelsIncludeRelations` is enabled, `pureModelsExcludeCircularRelations` can intelligently exclude problematic bidirectional relations to avoid TypeScript circular dependency errors while preserving foreign keys.
 
+**Strict Mode Configuration**: Fine-grained control over when `.strict()` is applied to generated Zod schemas:
+
+- **Global Control**: Configure strict mode for all schemas or specific schema types (operations, objects, variants)
+- **Model-Level Overrides**: Set different strict mode behavior for specific models
+- **Operation-Specific**: Control strict mode for individual operations (findMany, create, update, etc.)
+- **Variant-Level**: Configure strict mode independently for pure, input, and result variants
+- **Enum Handling**: Enums are inherently strict and don't support `.strict()` method
+- **Backward Compatible**: Defaults to strict mode enabled everywhere for existing projects
+
+See the [strict mode configuration page](/docs/config/strict-mode) for complete documentation and common patterns.
+
 **Naming Customization** drives file & export shapes across all schema types:
 - **Pure Models**: `naming.preset` + `naming.pureModel` overrides
 - **CRUD Schemas**: `naming.schema` for operation file/export patterns (requires `{operation}` token to avoid collisions)

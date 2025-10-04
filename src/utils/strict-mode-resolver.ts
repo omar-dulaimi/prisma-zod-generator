@@ -1,0 +1,285 @@
+import type { GeneratorConfig } from '../config/parser';
+
+/**
+ * Context information for strict mode resolution
+ */
+export interface StrictModeContext {
+  /** The model name (if applicable) */
+  modelName?: string;
+  /** The operation name (if applicable) */
+  operation?: string;
+  /** The schema type: 'operation', 'object', 'variant' */
+  schemaType: 'operation' | 'object' | 'variant';
+  /** The variant type (if applicable) */
+  variant?: 'pure' | 'input' | 'result';
+}
+
+/**
+ * Default strict mode configuration
+ */
+const DEFAULT_STRICT_MODE = {
+  enabled: true,
+  operations: true,
+  objects: true,
+  variants: true,
+} as const;
+
+/**
+ * Utility class for resolving strict mode settings based on configuration hierarchy
+ */
+export class StrictModeResolver {
+  private config: GeneratorConfig;
+
+  constructor(config: GeneratorConfig) {
+    this.config = config;
+  }
+
+  /**
+   * Normalize operation names for backward compatibility
+   * Maps both short names (create, update) and full names (createOne, updateOne)
+   */
+  private normalizeOperationName(operationName: string): string[] {
+    const operationMapping: Record<string, string[]> = {
+      findMany: ['findMany'],
+      findUnique: ['findUnique'],
+      findFirst: ['findFirst'],
+      findUniqueOrThrow: ['findUniqueOrThrow'],
+      findFirstOrThrow: ['findFirstOrThrow'],
+      create: ['create', 'createOne'],
+      createOne: ['create', 'createOne'],
+      createMany: ['create', 'createMany'],
+      createManyAndReturn: ['createManyAndReturn'],
+      update: ['update', 'updateOne'],
+      updateOne: ['update', 'updateOne'],
+      updateMany: ['update', 'updateMany'],
+      updateManyAndReturn: ['updateManyAndReturn'],
+      delete: ['delete', 'deleteOne'],
+      deleteOne: ['delete', 'deleteOne'],
+      deleteMany: ['delete', 'deleteMany'],
+      upsert: ['upsert', 'upsertOne'],
+      upsertOne: ['upsert', 'upsertOne'],
+      aggregate: ['aggregate'],
+      groupBy: ['groupBy'],
+      count: ['count'],
+    };
+
+    return operationMapping[operationName] || [operationName];
+  }
+
+  /**
+   * Resolve whether strict mode should be applied for a given context
+   */
+  shouldApplyStrictMode(context: StrictModeContext): boolean {
+    const globalConfig = this.config.strictMode || {};
+    const schemaDefault = this.getGlobalSchemaTypeSetting(context.schemaType, globalConfig);
+
+    return this.resolveFromHierarchy(context, schemaDefault);
+  }
+
+  /**
+   * Resolve strict mode from the complete hierarchy
+   */
+  private resolveFromHierarchy(context: StrictModeContext, defaultValue: boolean): boolean {
+    const { modelName, variant } = context;
+    let result = defaultValue;
+
+    // Apply model-level overrides if applicable
+    if (modelName) {
+      const modelConfig = this.config.models?.[modelName]?.strictMode;
+      if (modelConfig) {
+        result = this.resolveModelSpecific(context, modelConfig, result);
+      }
+    }
+
+    // Apply variant-level overrides if applicable
+    if (variant && modelName) {
+      result = this.resolveVariantSpecific(modelName, variant, result);
+    }
+
+    return result;
+  }
+
+  /**
+   * Get global setting for a specific schema type
+   */
+  private getGlobalSchemaTypeSetting(
+    schemaType: 'operation' | 'object' | 'variant',
+    globalConfig: NonNullable<GeneratorConfig['strictMode']>,
+  ): boolean {
+    switch (schemaType) {
+      case 'operation':
+        if (globalConfig.operations !== undefined) return globalConfig.operations;
+        if (globalConfig.enabled !== undefined) return globalConfig.enabled;
+        return DEFAULT_STRICT_MODE.operations;
+      case 'object':
+        if (globalConfig.objects !== undefined) return globalConfig.objects;
+        if (globalConfig.enabled !== undefined) return globalConfig.enabled;
+        return DEFAULT_STRICT_MODE.objects;
+      case 'variant':
+        if (globalConfig.variants !== undefined) return globalConfig.variants;
+        if (globalConfig.enabled !== undefined) return globalConfig.enabled;
+        return DEFAULT_STRICT_MODE.variants;
+      default:
+        return globalConfig.enabled ?? DEFAULT_STRICT_MODE.enabled;
+    }
+  }
+
+  /**
+   * Resolve model-specific strict mode settings
+   */
+  private resolveModelSpecific(
+    context: StrictModeContext,
+    modelConfig: NonNullable<NonNullable<GeneratorConfig['models']>[string]['strictMode']>,
+    defaultValue: boolean,
+  ): boolean {
+    const { operation, schemaType, variant } = context;
+
+    // Start with the provided default, but allow model-level enabled to reset the baseline
+    let result = defaultValue;
+    if (modelConfig.enabled !== null && modelConfig.enabled !== undefined) {
+      result = modelConfig.enabled;
+    }
+
+    // Check operation-specific settings
+    if (operation && schemaType === 'operation') {
+      const operationVariants = this.normalizeOperationName(operation);
+
+      // Check if any variant of the operation is in exclude list
+      if (
+        modelConfig.exclude?.some((excludedOp) =>
+          operationVariants.some((variant) =>
+            this.normalizeOperationName(excludedOp).includes(variant),
+          ),
+        )
+      ) {
+        return false;
+      }
+
+      // Check operations setting
+      if (modelConfig.operations !== null && modelConfig.operations !== undefined) {
+        if (typeof modelConfig.operations === 'boolean') {
+          return modelConfig.operations;
+        }
+        if (Array.isArray(modelConfig.operations)) {
+          return modelConfig.operations.some((allowedOp) =>
+            operationVariants.some((variant) =>
+              this.normalizeOperationName(allowedOp).includes(variant),
+            ),
+          );
+        }
+      }
+    }
+
+    // Check object-specific settings
+    if (
+      schemaType === 'object' &&
+      modelConfig.objects !== null &&
+      modelConfig.objects !== undefined
+    ) {
+      return modelConfig.objects;
+    }
+
+    // Check variant-specific settings in model config
+    if (
+      variant &&
+      modelConfig.variants?.[variant] !== null &&
+      modelConfig.variants?.[variant] !== undefined
+    ) {
+      const variantValue = modelConfig.variants[variant];
+      return variantValue;
+    }
+
+    return result;
+  }
+
+  /**
+   * Resolve variant-specific strict mode settings
+   */
+  private resolveVariantSpecific(
+    modelName: string,
+    variant: 'pure' | 'input' | 'result',
+    defaultValue: boolean,
+  ): boolean {
+    const variantConfig = this.config.variants?.[variant];
+    const modelVariantConfig = this.config.models?.[modelName]?.variants?.[variant];
+
+    // Check model-specific variant config first (highest priority)
+    if (modelVariantConfig?.strictMode !== null && modelVariantConfig?.strictMode !== undefined) {
+      return modelVariantConfig.strictMode;
+    }
+
+    // Check global variant config
+    if (variantConfig?.strictMode !== null && variantConfig?.strictMode !== undefined) {
+      return variantConfig.strictMode;
+    }
+
+    return defaultValue;
+  }
+
+  /**
+   * Convenience method for operation schemas
+   */
+  shouldApplyStrictModeToOperation(modelName: string, operation: string): boolean {
+    return this.shouldApplyStrictMode({
+      modelName,
+      operation,
+      schemaType: 'operation',
+    });
+  }
+
+  /**
+   * Convenience method for object schemas
+   */
+  shouldApplyStrictModeToObject(modelName?: string): boolean {
+    return this.shouldApplyStrictMode({
+      modelName,
+      schemaType: 'object',
+    });
+  }
+
+  /**
+   * Convenience method for variant schemas
+   */
+  shouldApplyStrictModeToVariant(modelName: string, variant: 'pure' | 'input' | 'result'): boolean {
+    return this.shouldApplyStrictMode({
+      modelName,
+      variant,
+      schemaType: 'variant',
+    });
+  }
+
+  /**
+   * Get the strict mode suffix to append to schema definitions
+   */
+  getStrictModeSuffix(context: StrictModeContext): string {
+    return this.shouldApplyStrictMode(context) ? '.strict()' : '';
+  }
+
+  /**
+   * Get the strict mode suffix for operation schemas
+   */
+  getOperationStrictModeSuffix(modelName: string, operation: string): string {
+    return this.shouldApplyStrictModeToOperation(modelName, operation) ? '.strict()' : '';
+  }
+
+  /**
+   * Get the strict mode suffix for object schemas
+   */
+  getObjectStrictModeSuffix(modelName?: string): string {
+    return this.shouldApplyStrictModeToObject(modelName) ? '.strict()' : '';
+  }
+
+  /**
+   * Get the strict mode suffix for variant schemas
+   */
+  getVariantStrictModeSuffix(modelName: string, variant: 'pure' | 'input' | 'result'): string {
+    return this.shouldApplyStrictModeToVariant(modelName, variant) ? '.strict()' : '';
+  }
+}
+
+/**
+ * Create a strict mode resolver instance
+ */
+export function createStrictModeResolver(config: GeneratorConfig): StrictModeResolver {
+  return new StrictModeResolver(config);
+}

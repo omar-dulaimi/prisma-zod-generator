@@ -15,6 +15,7 @@ import {
   VariantConfig,
   parseConfiguration,
 } from './config/parser';
+import { createStrictModeResolver, StrictModeResolver } from './utils/strict-mode-resolver';
 import {
   addMissingInputObjectTypes,
   hideInputObjectTypesAndRelatedFields,
@@ -1524,6 +1525,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
       await fs.mkdir(variantsOutputPath, { recursive: true });
 
       const exportLines: string[] = [];
+      const strictModeResolver = createStrictModeResolver(config);
 
       for (const variantDef of variants as Array<{
         name: string;
@@ -1741,7 +1743,16 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
                 })
                 .join('\n') + '\n'
             : '';
-          const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n}).strict();\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
+          // Apply strict mode based on configuration for this variant
+          const isStandardVariant = ['pure', 'input', 'result'].includes(variantDef.name);
+          const strictModeSuffix = isStandardVariant
+            ? strictModeResolver.getVariantStrictModeSuffix(
+                model.name,
+                variantDef.name as 'pure' | 'input' | 'result',
+              )
+            : strictModeResolver.getObjectStrictModeSuffix(model.name);
+
+          const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n})${strictModeSuffix};\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
           exportLines.push(`export { ${schemaName} } from './${fileBase}${importExtension}';`);
         }
@@ -1832,6 +1843,7 @@ async function generateVariantType(
   if (!variantConfig) return;
 
   const exports: string[] = [];
+  const strictModeResolver = createStrictModeResolver(config);
 
   for (const model of models) {
     const modelConfig = config.models?.[model.name];
@@ -1861,6 +1873,7 @@ async function generateVariantType(
       excludeFields,
       variantName,
       config,
+      strictModeResolver,
       currentDir,
     );
 
@@ -1898,6 +1911,7 @@ async function generateVariantSchemaContent(
   excludeFields: string[],
   variantName: string,
   config: CustomGeneratorConfig | undefined,
+  strictModeResolver: StrictModeResolver,
   currentDir: string,
 ): Promise<string> {
   // Extract custom imports for this model
@@ -2077,10 +2091,17 @@ async function generateVariantSchemaContent(
     : '';
 
   const zImport = new Transformer({}).generateImportZodStatement();
+
+  // Apply strict mode based on configuration
+  const strictModeSuffix = strictModeResolver.getVariantStrictModeSuffix(
+    model.name,
+    variantName as 'pure' | 'input' | 'result',
+  );
+
   return `${zImport}\n${customImportLines}${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
-}).strict()${partialSuffix}${modelLevelValidation};
+})${strictModeSuffix}${partialSuffix}${modelLevelValidation};
 
 export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;
 `;
