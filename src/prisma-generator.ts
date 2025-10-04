@@ -2443,7 +2443,6 @@ async function generatePureModelSchemas(
             'g',
           );
 
-
           // Only replace if the old pattern is found (avoid double-processing)
           const originalContent = content;
           content = content.replace(

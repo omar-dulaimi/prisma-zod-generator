@@ -2144,10 +2144,32 @@ export class PrismaTypeMapper {
 
     addCustomImports(modelCustomImports.imports);
 
+    // Get naming configuration to apply custom patterns
+    let resolvedSchemaName = `${model.name}Schema`; // fallback default
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { resolvePureModelNaming, applyPattern } = require('../utils/naming-resolver');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const transformer = require('../transformer');
+      const cfg = transformer.Transformer
+        ? transformer.Transformer.getGeneratorConfig()
+        : transformer.default?.getGeneratorConfig();
+      const namingResolved = resolvePureModelNaming(cfg);
+      resolvedSchemaName = applyPattern(
+        namingResolved.exportNamePattern,
+        model.name,
+        namingResolved.schemaSuffix,
+        namingResolved.typeSuffix,
+      );
+    } catch {
+      // fallback to default naming if resolution fails
+      resolvedSchemaName = `${model.name}Schema`;
+    }
+
     const composition: ModelSchemaComposition = {
       modelName: model.name,
-      // Primary internal name uses Schema suffix; we'll add Model alias for legacy compatibility
-      schemaName: `${model.name}Schema`,
+      // Use resolved schema name that respects custom naming patterns
+      schemaName: resolvedSchemaName,
       fields: [],
       imports: new Set(['z']),
       exports: new Set(),
