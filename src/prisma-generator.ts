@@ -2436,15 +2436,24 @@ async function generatePureModelSchemas(
             ? `${modelName}Type`
             : desiredTypeName;
           // Match the pattern that the model generator actually produced
+          // After const replacement, need to match against the OLD schema reference (ModelSchema)
           // This pattern matches both 'PostType' and 'Post' depending on typeSuffix configuration
           const defaultTypeRegex = new RegExp(
             `export type (${modelName}(?:Type)?) = z\\.infer<typeof ${modelName}Schema>;`,
             'g',
           );
+
+
+          // Only replace if the old pattern is found (avoid double-processing)
+          const originalContent = content;
           content = content.replace(
             defaultTypeRegex,
             `export type ${finalTypeName} = z.infer<typeof ${schemaExport}>;`,
           );
+          // If no replacement happened, it means the content was already correct
+          if (content === originalContent) {
+            // Content is already in the correct format, no changes needed
+          }
           // If legacy alias requested, add it after primary export
           if (legacyAliases) {
             content += `\n// Legacy aliases\nexport const ${modelName}Schema = ${schemaExport};\nexport type ${modelName}Type = z.infer<typeof ${schemaExport}>;`;
