@@ -189,9 +189,9 @@ generator zod {
 
 ## Related Patterns
 
-- **[Gradual Migration](./gradual-migration)**: Gradually moving from strict to flexible validation
-- **[Input Validation](./input-validation)**: Different validation strategies for different schema types
-- **[API Integration](./api-integration)**: Working with external APIs that send extra data
+- **Gradual Migration**: Gradually moving from strict to flexible validation
+- **Input Validation**: Different validation strategies for different schema types
+- **API Integration**: Working with external APIs that send extra data
 
 ## Common Issues
 
