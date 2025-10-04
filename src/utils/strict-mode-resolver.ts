@@ -38,58 +38,20 @@ export class StrictModeResolver {
    * Resolve whether strict mode should be applied for a given context
    */
   shouldApplyStrictMode(context: StrictModeContext): boolean {
-    // Start with global defaults
     const globalConfig = this.config.strictMode || {};
-    const globalEnabled = globalConfig.enabled ?? DEFAULT_STRICT_MODE.enabled;
+    const globalFallback = globalConfig.enabled ?? DEFAULT_STRICT_MODE.enabled;
+    const schemaDefault =
+      this.getGlobalSchemaTypeSetting(context.schemaType, globalConfig) ?? globalFallback;
 
-    // If globally disabled, check if there are specific overrides
-    if (!globalEnabled) {
-      return this.checkForOverrides(context, false);
-    }
-
-    // Global is enabled, check for specific configurations
-    return this.resolveFromHierarchy(context);
-  }
-
-  /**
-   * Check for specific overrides when global strict mode is disabled
-   */
-  private checkForOverrides(context: StrictModeContext, defaultValue: boolean): boolean {
-    const { modelName } = context;
-
-    // Check model-level overrides
-    if (modelName) {
-      const modelConfig = this.config.models?.[modelName]?.strictMode;
-      if (modelConfig) {
-        // Model-level enabled override
-        if (modelConfig.enabled === true) {
-          return this.resolveModelSpecific(context, modelConfig, true);
-        }
-        // Model-level disabled override
-        if (modelConfig.enabled === false) {
-          return false;
-        }
-
-        // Check if there are specific operation-level overrides even when enabled is not set
-        const result = this.resolveModelSpecific(context, modelConfig, defaultValue);
-        if (result !== defaultValue) {
-          return result;
-        }
-      }
-    }
-
-    return defaultValue;
+    return this.resolveFromHierarchy(context, schemaDefault);
   }
 
   /**
    * Resolve strict mode from the complete hierarchy
    */
-  private resolveFromHierarchy(context: StrictModeContext): boolean {
-    const { modelName, schemaType, variant } = context;
-    const globalConfig = this.config.strictMode || {};
-
-    // Start with global schema type setting
-    let result = this.getGlobalSchemaTypeSetting(schemaType, globalConfig);
+  private resolveFromHierarchy(context: StrictModeContext, defaultValue: boolean): boolean {
+    const { modelName, variant } = context;
+    let result = defaultValue;
 
     // Apply model-level overrides if applicable
     if (modelName) {
@@ -113,14 +75,20 @@ export class StrictModeResolver {
   private getGlobalSchemaTypeSetting(
     schemaType: string,
     globalConfig: NonNullable<GeneratorConfig['strictMode']>,
-  ): boolean {
+  ): boolean | undefined {
     switch (schemaType) {
       case 'operation':
-        return globalConfig.operations ?? DEFAULT_STRICT_MODE.operations;
+        if (globalConfig.operations !== undefined) return globalConfig.operations;
+        if (globalConfig.enabled !== undefined) return globalConfig.enabled;
+        return DEFAULT_STRICT_MODE.operations;
       case 'object':
-        return globalConfig.objects ?? DEFAULT_STRICT_MODE.objects;
+        if (globalConfig.objects !== undefined) return globalConfig.objects;
+        if (globalConfig.enabled !== undefined) return globalConfig.enabled;
+        return DEFAULT_STRICT_MODE.objects;
       case 'variant':
-        return globalConfig.variants ?? DEFAULT_STRICT_MODE.variants;
+        if (globalConfig.variants !== undefined) return globalConfig.variants;
+        if (globalConfig.enabled !== undefined) return globalConfig.enabled;
+        return DEFAULT_STRICT_MODE.variants;
       default:
         return globalConfig.enabled ?? DEFAULT_STRICT_MODE.enabled;
     }

@@ -15,7 +15,7 @@ import {
   VariantConfig,
   parseConfiguration,
 } from './config/parser';
-import { createStrictModeResolver } from './utils/strict-mode-resolver';
+import { createStrictModeResolver, StrictModeResolver } from './utils/strict-mode-resolver';
 import {
   addMissingInputObjectTypes,
   hideInputObjectTypesAndRelatedFields,
@@ -1525,6 +1525,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
       await fs.mkdir(variantsOutputPath, { recursive: true });
 
       const exportLines: string[] = [];
+      const strictModeResolver = createStrictModeResolver(config);
 
       for (const variantDef of variants as Array<{
         name: string;
@@ -1743,7 +1744,6 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
                 .join('\n') + '\n'
             : '';
           // Apply strict mode based on configuration for this variant
-          const strictModeResolver = createStrictModeResolver(config);
           const isStandardVariant = ['pure', 'input', 'result'].includes(variantDef.name);
           const strictModeSuffix = isStandardVariant
             ? strictModeResolver.getVariantStrictModeSuffix(
@@ -1843,6 +1843,7 @@ async function generateVariantType(
   if (!variantConfig) return;
 
   const exports: string[] = [];
+  const strictModeResolver = createStrictModeResolver(config);
 
   for (const model of models) {
     const modelConfig = config.models?.[model.name];
@@ -1872,6 +1873,7 @@ async function generateVariantType(
       excludeFields,
       variantName,
       config,
+      strictModeResolver,
       currentDir,
     );
 
@@ -1909,6 +1911,7 @@ async function generateVariantSchemaContent(
   excludeFields: string[],
   variantName: string,
   config: CustomGeneratorConfig | undefined,
+  strictModeResolver: StrictModeResolver,
   currentDir: string,
 ): Promise<string> {
   // Extract custom imports for this model
@@ -2090,7 +2093,6 @@ async function generateVariantSchemaContent(
   const zImport = new Transformer({}).generateImportZodStatement();
 
   // Apply strict mode based on configuration
-  const strictModeResolver = createStrictModeResolver(config || {});
   const strictModeSuffix = strictModeResolver.getVariantStrictModeSuffix(
     model.name,
     variantName as 'pure' | 'input' | 'result',

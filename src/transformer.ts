@@ -163,23 +163,7 @@ export default class Transformer {
     // This aligns minimal mode with full mode regarding model selection; other constraints
     // (limited operations and pared-down object schemas) are handled elsewhere.
 
-    // Check if any models have explicit enabled/disabled configuration
-    // Note: models with only strictMode, variants, or operations config don't count
-    // as explicit model enabling/disabling - they should not affect which models are processed
-    // Only consider explicit enabled: false as model disabling (enabled: true is often added by defaults)
-    const hasExplicitModelEnabling =
-      config.models &&
-      Object.values(config.models).some(
-        (modelConfig) => modelConfig && modelConfig.enabled === false,
-      );
-
-    // If models configuration exists with explicit enabled/disabled settings,
-    // only enable explicitly configured models
-    if (hasExplicitModelEnabling) {
-      return false;
-    }
-
-    // Default: enable all models when no explicit model enabling/disabling is configured
+    // Default: enable all models when no explicit model disabling is configured
     return true;
   }
 
