@@ -2977,6 +2977,23 @@ export class PrismaTypeMapper {
    * Resolve model type name to avoid conflicts with enum types
    */
   private resolveModelTypeName(modelName: string): string {
+    // Get the configured type suffix from naming configuration
+    let typeSuffix = 'Type'; // fallback default
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { resolvePureModelNaming } = require('../utils/naming-resolver');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const transformer = require('../transformer');
+      const cfg = transformer.Transformer
+        ? transformer.Transformer.getGeneratorConfig()
+        : transformer.default?.getGeneratorConfig();
+      const namingResolved = resolvePureModelNaming(cfg);
+      typeSuffix = namingResolved.typeSuffix;
+    } catch {
+      // fallback to default naming
+      typeSuffix = 'Type';
+    }
+
     // Dynamically get enum names from the transformer to avoid hardcoding
     let enumNames: string[] = [];
     try {
@@ -2988,11 +3005,11 @@ export class PrismaTypeMapper {
       enumNames = [];
     }
 
-    // If the model name + "Type" would conflict with an existing enum, use a different pattern
-    const defaultTypeName = `${modelName}Type`;
+    // If the model name + typeSuffix would conflict with an existing enum, use a different pattern
+    const defaultTypeName = `${modelName}${typeSuffix}`;
 
     if (enumNames.includes(defaultTypeName)) {
-      // Use the model name directly instead of adding "Type" suffix to avoid conflict
+      // Use the model name directly instead of adding suffix to avoid conflict
       return modelName;
     }
 

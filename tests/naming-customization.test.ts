@@ -493,6 +493,52 @@ describe('Naming Customization (experimental)', () => {
     }
   });
 
+  it('generates correct z.infer references with custom exportNamePattern', async () => {
+    const env = await TestEnvironment.createTestEnv('naming-custom-export-pattern-zinfer');
+    try {
+      const config = {
+        pureModels: true,
+        pureModelsIncludeRelations: false,
+        pureModelsExcludeCircularRelations: false,
+        naming: {
+          pureModel: {
+            typeSuffix: '',
+            exportNamePattern: 'z{Model}',
+          },
+        },
+        emit: {
+          pureModels: true,
+          objects: false,
+          crud: false,
+          variants: false,
+        },
+      };
+      const configName = 'config.json';
+      const schema = prismaSchema(env.outputDir, configName);
+      await (await import('fs')).promises.writeFile(env.schemaPath, schema);
+      await (
+        await import('fs')
+      ).promises.writeFile(join(env.testDir, configName), JSON.stringify(config, null, 2));
+
+      await env.runGeneration();
+      const modelsDir = join(env.outputDir, 'schemas', 'models');
+      const postFile = join(modelsDir, 'Post.schema.ts');
+      expect(existsSync(postFile)).toBe(true);
+      const content = readFileSync(postFile, 'utf-8');
+
+      // Should export with custom pattern: zPost
+      expect(content).toMatch(/export const zPost = z\.object/);
+      // Should have correct type name (empty suffix): Post
+      expect(content).toMatch(/export type Post = /);
+      // CRITICAL: Should reference the correct schema name in z.infer
+      expect(content).toMatch(/export type Post = z\.infer<typeof zPost>/);
+      // Should NOT reference non-existent PostSchema
+      expect(content).not.toMatch(/PostSchema/);
+    } finally {
+      await env.cleanup();
+    }
+  });
+
   it('uses owning model alias for CreateMany nested inputs', async () => {
     const env = await TestEnvironment.createTestEnv('naming-create-many-alias');
     try {

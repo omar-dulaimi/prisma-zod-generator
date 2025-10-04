@@ -1752,7 +1752,17 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
               )
             : strictModeResolver.getObjectStrictModeSuffix(model.name);
 
-          const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n})${strictModeSuffix};\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
+          // Get the correct type name based on naming configuration
+          let typeName = `${model.name}Type`; // fallback default
+          try {
+            const { resolvePureModelNaming } = await import('./utils/naming-resolver');
+            const namingResolved = resolvePureModelNaming(config);
+            typeName = `${model.name}${namingResolved.typeSuffix}`;
+          } catch {
+            // fallback to default naming
+            typeName = `${model.name}Type`;
+          }
+          const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n})${strictModeSuffix};\n\nexport type ${typeName} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
           exportLines.push(`export { ${schemaName} } from './${fileBase}${importExtension}';`);
         }
@@ -2098,12 +2108,23 @@ async function generateVariantSchemaContent(
     variantName as 'pure' | 'input' | 'result',
   );
 
+  // Get the correct type name based on naming configuration
+  let typeName = `${model.name}Type`; // fallback default
+  try {
+    const { resolvePureModelNaming } = await import('./utils/naming-resolver');
+    const namingResolved = resolvePureModelNaming(config);
+    typeName = `${model.name}${namingResolved.typeSuffix}`;
+  } catch {
+    // fallback to default naming
+    typeName = `${model.name}Type`;
+  }
+
   return `${zImport}\n${customImportLines}${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
 })${strictModeSuffix}${partialSuffix}${modelLevelValidation};
 
-export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;
+export type ${typeName} = z.infer<typeof ${schemaName}>;
 `;
 }
 
@@ -2401,8 +2422,10 @@ async function generatePureModelSchemas(
           const finalTypeName = enumNames.includes(desiredTypeName)
             ? `${modelName}Type`
             : desiredTypeName;
+          // Match the pattern that the model generator actually produced
+          // This pattern matches both 'PostType' and 'Post' depending on typeSuffix configuration
           const defaultTypeRegex = new RegExp(
-            `export type ${modelName}Type = z.infer<typeof ${modelName}Schema>;`,
+            `export type (${modelName}(?:Type)?) = z\\.infer<typeof ${modelName}Schema>;`,
             'g',
           );
           content = content.replace(
