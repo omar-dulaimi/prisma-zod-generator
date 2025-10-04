@@ -9,6 +9,8 @@ mkdir package
 
 echo "Copying files..."
 cp -r lib package/lib
+mkdir -p package/scripts
+cp scripts/postinstall.js package/scripts/
 cp package.json README.md LICENSE package
 
 echo "Making package.json public..."
