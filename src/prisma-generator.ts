@@ -2108,15 +2108,28 @@ async function generateVariantSchemaContent(
     variantName as 'pure' | 'input' | 'result',
   );
 
-  // Get the correct type name based on naming configuration
-  let typeName = `${model.name}Type`; // fallback default
+  // Get the correct type name based on variant configuration
+  // Variants should have unique type names to avoid export conflicts when exported together
+  // Try to resolve from naming configuration first, fallback to variant-suffixed naming
+  let typeName = `${model.name}Type`; // default fallback
+
   try {
-    const { resolvePureModelNaming } = await import('./utils/naming-resolver');
-    const namingResolved = resolvePureModelNaming(config);
-    typeName = `${model.name}${namingResolved.typeSuffix}`;
+    // For pure variants, respect pure model naming configuration
+    if (variantName === 'pure') {
+      const { resolvePureModelNaming } = await import('./utils/naming-resolver');
+      const namingResolved = resolvePureModelNaming(config);
+      typeName = `${model.name}${namingResolved.typeSuffix}`;
+    }
+
+    // If we're using default naming (would result in conflicts), add variant suffix for uniqueness
+    if (typeName === `${model.name}Type` || typeName === model.name) {
+      const variantSuffix = variantName.charAt(0).toUpperCase() + variantName.slice(1); // 'pure' -> 'Pure'
+      typeName = `${model.name}${variantSuffix}Type`; // e.g., 'ZodV4ExamplesPureType'
+    }
   } catch {
-    // fallback to default naming
-    typeName = `${model.name}Type`;
+    // If naming resolution fails, use variant-suffixed naming to avoid conflicts
+    const variantSuffix = variantName.charAt(0).toUpperCase() + variantName.slice(1);
+    typeName = `${model.name}${variantSuffix}Type`;
   }
 
   return `${zImport}\n${customImportLines}${enumImportLines}// prettier-ignore
