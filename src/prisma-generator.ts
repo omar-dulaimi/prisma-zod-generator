@@ -1752,7 +1752,17 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
               )
             : strictModeResolver.getObjectStrictModeSuffix(model.name);
 
-          const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n})${strictModeSuffix};\n\nexport type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;\n`;
+          // Get the correct type name based on naming configuration
+          let typeName = `${model.name}Type`; // fallback default
+          try {
+            const { resolvePureModelNaming } = await import('./utils/naming-resolver');
+            const namingResolved = resolvePureModelNaming(config);
+            typeName = `${model.name}${namingResolved.typeSuffix}`;
+          } catch {
+            // fallback to default naming
+            typeName = `${model.name}Type`;
+          }
+          const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n})${strictModeSuffix};\n\nexport type ${typeName} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
           exportLines.push(`export { ${schemaName} } from './${fileBase}${importExtension}';`);
         }
@@ -2098,12 +2108,36 @@ async function generateVariantSchemaContent(
     variantName as 'pure' | 'input' | 'result',
   );
 
+  // Get the correct type name based on variant configuration
+  // Variants should have unique type names to avoid export conflicts when exported together
+  // Try to resolve from naming configuration first, fallback to variant-suffixed naming
+  let typeName = `${model.name}Type`; // default fallback
+
+  try {
+    // For pure variants, respect pure model naming configuration
+    if (variantName === 'pure') {
+      const { resolvePureModelNaming } = await import('./utils/naming-resolver');
+      const namingResolved = resolvePureModelNaming(config);
+      typeName = `${model.name}${namingResolved.typeSuffix}`;
+    }
+
+    // If we're using default naming (would result in conflicts), add variant suffix for uniqueness
+    if (typeName === `${model.name}Type` || typeName === model.name) {
+      const variantSuffix = variantName.charAt(0).toUpperCase() + variantName.slice(1); // 'pure' -> 'Pure'
+      typeName = `${model.name}${variantSuffix}Type`; // e.g., 'ZodV4ExamplesPureType'
+    }
+  } catch {
+    // If naming resolution fails, use variant-suffixed naming to avoid conflicts
+    const variantSuffix = variantName.charAt(0).toUpperCase() + variantName.slice(1);
+    typeName = `${model.name}${variantSuffix}Type`;
+  }
+
   return `${zImport}\n${customImportLines}${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
 })${strictModeSuffix}${partialSuffix}${modelLevelValidation};
 
-export type ${schemaName.replace('Schema', 'Type')} = z.infer<typeof ${schemaName}>;
+export type ${typeName} = z.infer<typeof ${schemaName}>;
 `;
 }
 
@@ -2401,14 +2435,24 @@ async function generatePureModelSchemas(
           const finalTypeName = enumNames.includes(desiredTypeName)
             ? `${modelName}Type`
             : desiredTypeName;
+          // Match the pattern that the model generator actually produced
+          // After const replacement, need to match against the OLD schema reference (ModelSchema)
+          // This pattern matches both 'PostType' and 'Post' depending on typeSuffix configuration
           const defaultTypeRegex = new RegExp(
-            `export type ${modelName}Type = z.infer<typeof ${modelName}Schema>;`,
+            `export type (${modelName}(?:Type)?) = z\\.infer<typeof ${modelName}Schema>;`,
             'g',
           );
+
+          // Only replace if the old pattern is found (avoid double-processing)
+          const originalContent = content;
           content = content.replace(
             defaultTypeRegex,
             `export type ${finalTypeName} = z.infer<typeof ${schemaExport}>;`,
           );
+          // If no replacement happened, it means the content was already correct
+          if (content === originalContent) {
+            // Content is already in the correct format, no changes needed
+          }
           // If legacy alias requested, add it after primary export
           if (legacyAliases) {
             content += `\n// Legacy aliases\nexport const ${modelName}Schema = ${schemaExport};\nexport type ${modelName}Type = z.infer<typeof ${schemaExport}>;`;
