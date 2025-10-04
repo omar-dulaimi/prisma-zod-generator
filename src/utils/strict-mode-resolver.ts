@@ -134,13 +134,10 @@ export class StrictModeResolver {
   ): boolean {
     const { operation, schemaType, variant } = context;
 
-    // Check model-level enabled override
+    // Start with the provided default, but allow model-level enabled to reset the baseline
+    let result = defaultValue;
     if (modelConfig.enabled !== null && modelConfig.enabled !== undefined) {
-      // If model explicitly disabled, return false
-      if (!modelConfig.enabled) {
-        return false;
-      }
-      // If model explicitly enabled, continue with more specific checks
+      result = modelConfig.enabled;
     }
 
     // Check operation-specific settings
@@ -192,7 +189,7 @@ export class StrictModeResolver {
       return variantValue;
     }
 
-    return defaultValue;
+    return result;
   }
 
   /**
