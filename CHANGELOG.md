@@ -1,3 +1,11 @@
+## [1.27.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.2...v1.27.3) (2025-10-04)
+
+### 🐛 Bug Fixes
+
+* **pure-models:** correct z.infer references with custom naming patterns ([44bd2b2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/44bd2b29261c26d2aafdf8145ac15633a024f956))
+* **pure-models:** correct z.infer references with custom naming patterns ([275a181](https://github.com/omar-dulaimi/prisma-zod-generator/commit/275a181e97ecc2e5ada3733d7deeae16d5e02878))
+* **variants:** prevent type name conflicts in variant exports ([caddf9d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/caddf9d23b77384ff4e187f586589cda4c60a11d))
+
 ## [1.27.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.1...v1.27.2) (2025-10-04)
 
 ### 🐛 Bug Fixes
