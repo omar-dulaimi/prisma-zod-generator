@@ -153,6 +153,10 @@
   "bugs": {
     "url": "https://github.com/omar-dulaimi/prisma-zod-generator/issues"
   },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/omar-dulaimi"
+  },
   "homepage": "https://omar-dulaimi.github.io/prisma-zod-generator",
   "private": true
 }
