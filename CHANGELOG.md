@@ -1,3 +1,9 @@
+## [1.27.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.1...v1.27.2) (2025-10-04)
+
+### 🐛 Bug Fixes
+
+* **funding:** add GitHub Sponsors funding field to package.json ([2dbe092](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2dbe09296a30a296716d23eafb3e28924e6af434))
+
 ## [1.27.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.0...v1.27.1) (2025-10-04)
 
 ### 🐛 Bug Fixes
