@@ -35,6 +35,38 @@ export class StrictModeResolver {
   }
 
   /**
+   * Normalize operation names for backward compatibility
+   * Maps both short names (create, update) and full names (createOne, updateOne)
+   */
+  private normalizeOperationName(operationName: string): string[] {
+    const operationMapping: Record<string, string[]> = {
+      findMany: ['findMany'],
+      findUnique: ['findUnique'],
+      findFirst: ['findFirst'],
+      findUniqueOrThrow: ['findUniqueOrThrow'],
+      findFirstOrThrow: ['findFirstOrThrow'],
+      create: ['create', 'createOne'],
+      createOne: ['create', 'createOne'],
+      createMany: ['create', 'createMany'],
+      createManyAndReturn: ['createManyAndReturn'],
+      update: ['update', 'updateOne'],
+      updateOne: ['update', 'updateOne'],
+      updateMany: ['update', 'updateMany'],
+      updateManyAndReturn: ['updateManyAndReturn'],
+      delete: ['delete', 'deleteOne'],
+      deleteOne: ['delete', 'deleteOne'],
+      deleteMany: ['delete', 'deleteMany'],
+      upsert: ['upsert', 'upsertOne'],
+      upsertOne: ['upsert', 'upsertOne'],
+      aggregate: ['aggregate'],
+      groupBy: ['groupBy'],
+      count: ['count'],
+    };
+
+    return operationMapping[operationName] || [operationName];
+  }
+
+  /**
    * Resolve whether strict mode should be applied for a given context
    */
   shouldApplyStrictMode(context: StrictModeContext): boolean {
@@ -73,7 +105,7 @@ export class StrictModeResolver {
    * Get global setting for a specific schema type
    */
   private getGlobalSchemaTypeSetting(
-    schemaType: string,
+    schemaType: 'operation' | 'object' | 'variant',
     globalConfig: NonNullable<GeneratorConfig['strictMode']>,
   ): boolean | undefined {
     switch (schemaType) {
@@ -115,8 +147,16 @@ export class StrictModeResolver {
 
     // Check operation-specific settings
     if (operation && schemaType === 'operation') {
-      // Check if operation is in exclude list
-      if (modelConfig.exclude?.includes(operation)) {
+      const operationVariants = this.normalizeOperationName(operation);
+
+      // Check if any variant of the operation is in exclude list
+      if (
+        modelConfig.exclude?.some((excludedOp) =>
+          operationVariants.some((variant) =>
+            this.normalizeOperationName(excludedOp).includes(variant),
+          ),
+        )
+      ) {
         return false;
       }
 
@@ -126,7 +166,11 @@ export class StrictModeResolver {
           return modelConfig.operations;
         }
         if (Array.isArray(modelConfig.operations)) {
-          return modelConfig.operations.includes(operation);
+          return modelConfig.operations.some((allowedOp) =>
+            operationVariants.some((variant) =>
+              this.normalizeOperationName(allowedOp).includes(variant),
+            ),
+          );
         }
       }
     }
@@ -147,7 +191,7 @@ export class StrictModeResolver {
       modelConfig.variants?.[variant] !== undefined
     ) {
       const variantValue = modelConfig.variants[variant];
-      return variantValue !== null && variantValue !== undefined ? variantValue : defaultValue;
+      return variantValue;
     }
 
     return defaultValue;

@@ -3412,7 +3412,7 @@ export default class Transformer {
           const strictModeSuffix =
             Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
               modelName,
-              'create',
+              'createOne',
             ) || '';
           const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion} })${strictModeSuffix}`;
           const dualExports = this.generateDualSchemaExports(
@@ -3523,7 +3523,7 @@ export default class Transformer {
               const strictModeSuffix =
                 Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
                   modelName,
-                  'delete',
+                  'deleteOne',
                 ) || '';
               const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
               const dualExports = this.generateDualSchemaExports(
@@ -3555,7 +3555,7 @@ export default class Transformer {
             const strictModeSuffix =
               Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
                 modelName,
-                'delete',
+                'deleteOne',
               ) || '';
             const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
@@ -3624,7 +3624,7 @@ export default class Transformer {
               const strictModeSuffix =
                 Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
                   modelName,
-                  'update',
+                  'updateOne',
                 ) || '';
               const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
               const dualExports = this.generateDualSchemaExports(
@@ -3658,7 +3658,7 @@ export default class Transformer {
             const strictModeSuffix =
               Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
                 modelName,
-                'update',
+                'updateOne',
               ) || '';
             const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
@@ -3768,7 +3768,7 @@ export default class Transformer {
             const strictModeSuffix =
               Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(
                 modelName,
-                'upsert',
+                'upsertOne',
               ) || '';
             const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ]) })${strictModeSuffix}`;
             const dualExports = this.generateDualSchemaExports(
