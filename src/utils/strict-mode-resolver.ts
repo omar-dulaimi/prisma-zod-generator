@@ -71,9 +71,7 @@ export class StrictModeResolver {
    */
   shouldApplyStrictMode(context: StrictModeContext): boolean {
     const globalConfig = this.config.strictMode || {};
-    const globalFallback = globalConfig.enabled ?? DEFAULT_STRICT_MODE.enabled;
-    const schemaDefault =
-      this.getGlobalSchemaTypeSetting(context.schemaType, globalConfig) ?? globalFallback;
+    const schemaDefault = this.getGlobalSchemaTypeSetting(context.schemaType, globalConfig);
 
     return this.resolveFromHierarchy(context, schemaDefault);
   }
@@ -107,7 +105,7 @@ export class StrictModeResolver {
   private getGlobalSchemaTypeSetting(
     schemaType: 'operation' | 'object' | 'variant',
     globalConfig: NonNullable<GeneratorConfig['strictMode']>,
-  ): boolean | undefined {
+  ): boolean {
     switch (schemaType) {
       case 'operation':
         if (globalConfig.operations !== undefined) return globalConfig.operations;
