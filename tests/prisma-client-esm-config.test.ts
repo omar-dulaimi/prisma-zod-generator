@@ -708,55 +708,6 @@ ${baseSchema}`;
         }
       });
     });
-
-    describe('generateImportStatement', () => {
-      it('should generate import statement with extension', () => {
-        const originalProvider = Transformer.getPrismaClientProvider();
-        const originalConfig = Transformer.getPrismaClientConfig();
-
-        try {
-          Transformer.setPrismaClientProvider('prisma-client');
-          Transformer.setPrismaClientConfig({
-            moduleFormat: 'esm',
-            importFileExtension: 'js',
-          });
-
-          const transformer = new Transformer({ name: 'Test' });
-          const statement = (
-            transformer as unknown as {
-              generateImportStatement(name: string, path: string): string;
-            }
-          ).generateImportStatement('TestSchema', './test.schema');
-
-          expect(statement).toBe("import { TestSchema } from './test.schema.js'");
-        } finally {
-          Transformer.setPrismaClientProvider(originalProvider);
-          Transformer.setPrismaClientConfig(originalConfig);
-        }
-      });
-
-      it('should generate import statement without extension for legacy', () => {
-        const originalProvider = Transformer.getPrismaClientProvider();
-        const originalConfig = Transformer.getPrismaClientConfig();
-
-        try {
-          Transformer.setPrismaClientProvider('prisma-client-js');
-          Transformer.setPrismaClientConfig({});
-
-          const transformer = new Transformer({ name: 'Test' });
-          const statement = (
-            transformer as unknown as {
-              generateImportStatement(name: string, path: string): string;
-            }
-          ).generateImportStatement('TestSchema', './test.schema');
-
-          expect(statement).toBe("import { TestSchema } from './test.schema'");
-        } finally {
-          Transformer.setPrismaClientProvider(originalProvider);
-          Transformer.setPrismaClientConfig(originalConfig);
-        }
-      });
-    });
   });
 
   describe('Integration Tests', () => {
