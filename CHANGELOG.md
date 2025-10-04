@@ -1,3 +1,25 @@
+## [1.27.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.26.0...v1.27.0) (2025-10-04)
+
+### 🚀 Features
+
+* **config:** add fine-grained strict mode configuration ([63b5946](https://github.com/omar-dulaimi/prisma-zod-generator/commit/63b59469e10006bab3d6962dc05d2ce3e578caf0))
+
+### 🐛 Bug Fixes
+
+* **strict-mode:** correct model-level enabled baseline logic ([9c63335](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9c6333569504bfbeed234754d22f68430cf5f8fe))
+* **strict-mode:** resolve multiple critical bugs in strict mode logic ([11b0ea8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/11b0ea869e9eccdb0550f493de7f63700e1ef787))
+* **strict-mode:** resolve operation name mapping and enhance resolver compatibility ([abee69a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/abee69afb022fc5d8349680380f85328e64c0411))
+* **tests:** remove broken generateImportStatement test cases ([fe09750](https://github.com/omar-dulaimi/prisma-zod-generator/commit/fe09750714fed3889356ac74ba4562c5420b8345))
+
+### ♻️ Code Refactoring
+
+* **strict-mode:** improve return type precision in getGlobalSchemaTypeSetting ([4d9b762](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4d9b7628d7aaf0e2ebe228e37d5e4a925468410c))
+
+### 📚 Documentation
+
+* enlarge README diagrams and update renderer ([de5fda6](https://github.com/omar-dulaimi/prisma-zod-generator/commit/de5fda645d3c0f9952fd0acd34136a1df24998fc))
+* explain custom import annotations ([8b15bd5](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8b15bd5467abb9565cb7a910b2bf7853e8c31fd7))
+
 ## [1.26.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.25.1...v1.26.0) (2025-10-02)
 
 ### 🚀 Features
