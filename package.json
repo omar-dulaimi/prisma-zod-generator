@@ -140,7 +140,7 @@
     "semantic-release": "^24.2.9",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.2",
+    "typescript": "^5.9.3",
     "validator": "^13.15.15",
     "vitest": "^3.2.4",
     "zod": "^4.1.11"
