@@ -16,5 +16,9 @@
     "skipLibCheck": true,
     "strict": true
   },
-  "include": ["./src/**/*.ts"]
+  "include": ["./src/**/*.ts"],
+  "exclude": [
+    "src/dsrc",
+    "src/schemas"
+  ]
 }
