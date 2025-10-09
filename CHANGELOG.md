@@ -1,3 +1,10 @@
+## [1.27.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.3...v1.27.4) (2025-10-09)
+
+### 🐛 Bug Fixes
+
+* **transformer:** target client entry file for custom outputs ([6d1ae73](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6d1ae73ae4d9bb26ee7f3f2f95852663f8346d60))
+* **tsconfig:** add exclude patterns for specific directories ([4ddcb03](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4ddcb03a9edf1f7bb56e5487efb01c77644f8c9e))
+
 ## [1.27.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.2...v1.27.3) (2025-10-04)
 
 ### 🐛 Bug Fixes
