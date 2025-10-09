@@ -957,19 +957,22 @@ export default class Transformer {
   private static resolvePrismaImportPath(targetDir: string): string {
     if (!this.isCustomPrismaClientOutputPath) return '@prisma/client';
     try {
-      // Compute relative path from the file's directory to the custom client output path
-      let rel = path.relative(targetDir, this.prismaClientOutputPath).replace(/\\/g, '/');
-      if (!rel || rel === '') return '@prisma/client';
+      let prismaClientImportTarget = this.prismaClientOutputPath;
 
       // For the new Prisma generator (provider = 'prisma-client'), the public entrypoint
-      // that re-exports the Prisma namespace is the generated 'client' module.
-      // Importing the directory itself won't resolve (no index), so ensure '/client' suffix.
+      // lives in a generated `client.*` file inside the configured output directory.
+      // The Prisma output config represents the directory, so we explicitly target the file.
       if (this.prismaClientProvider === 'prisma-client') {
-        // Avoid double-appending if already targeting 'client'
-        if (!/\/?client\/?$/.test(rel)) {
-          rel = `${rel.replace(/\/$/, '')}/client`;
+        const hasFileExtension = path.extname(prismaClientImportTarget) !== '';
+
+        if (!hasFileExtension) {
+          prismaClientImportTarget = path.join(prismaClientImportTarget, 'client');
         }
       }
+
+      // Compute relative path from the file's directory to the custom client output path
+      let rel = path.relative(targetDir, prismaClientImportTarget).replace(/\\/g, '/');
+      if (!rel || rel === '') return '@prisma/client';
 
       // Add file extension if needed (for ESM with importFileExtension)
       const extension = this.getImportFileExtension();

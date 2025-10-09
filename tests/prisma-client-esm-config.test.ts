@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, relative } from 'path';
 import { execSync } from 'child_process';
 import Transformer from '../src/transformer';
 
@@ -308,6 +308,11 @@ ${baseSchema}`;
       });
 
       it('should add .js extensions to custom Prisma client imports with ESM config', async () => {
+        const customClientOutput = join(testDir, '..', 'dsrc');
+        if (existsSync(customClientOutput)) {
+          rmSync(customClientOutput, { recursive: true, force: true });
+        }
+
         const schemaContent = `generator client {
   provider              = "prisma-client"
   output                = "../dsrc"
@@ -379,6 +384,10 @@ model Post {
         } catch (error) {
           console.warn('Skipping custom Prisma client ESM test - might not be available');
           console.error('Original error:', error);
+        } finally {
+          if (existsSync(customClientOutput)) {
+            rmSync(customClientOutput, { recursive: true, force: true });
+          }
         }
       });
 
@@ -705,6 +714,44 @@ ${baseSchema}`;
         } finally {
           Transformer.setPrismaClientProvider(originalProvider);
           Transformer.setPrismaClientConfig(originalConfig);
+        }
+      });
+    });
+
+    describe('resolvePrismaImportPath', () => {
+      it('should append the client entrypoint for custom outputs ending with client directory', () => {
+        const originalProvider = Transformer.getPrismaClientProvider();
+        const originalConfig = Transformer.getPrismaClientConfig();
+        const originalOutputPath = (Transformer as unknown as { prismaClientOutputPath: string })
+          .prismaClientOutputPath;
+
+        try {
+          Transformer.setPrismaClientProvider('prisma-client');
+          Transformer.setPrismaClientConfig({
+            moduleFormat: 'esm',
+            importFileExtension: 'ts',
+          });
+
+          const customOutput = join(process.cwd(), 'tmp', 'generated', 'client');
+          Transformer.setPrismaClientOutputPath(customOutput);
+
+          const targetDir = join(process.cwd(), 'tmp', 'zod', 'schemas');
+          const resolvedPath = (
+            Transformer as unknown as {
+              resolvePrismaImportPath(dir: string): string;
+            }
+          ).resolvePrismaImportPath(targetDir);
+
+          const expectedRelative = relative(targetDir, join(customOutput, 'client')).replace(
+            /\\/g,
+            '/',
+          );
+
+          expect(resolvedPath).toBe(`${expectedRelative}.ts`);
+        } finally {
+          Transformer.setPrismaClientProvider(originalProvider);
+          Transformer.setPrismaClientConfig(originalConfig);
+          Transformer.setPrismaClientOutputPath(originalOutputPath);
         }
       });
     });
