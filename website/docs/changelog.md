@@ -9,8 +9,23 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.27.4**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.27.5**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.27.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.4...v1.27.5) (2025-10-10)
+
+### 🐛 Bug Fixes
+
+* **naming:** align pure model relation symbols with exportNamePattern and resolve import paths via filePattern ([93a6f6f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/93a6f6fc5a2ee6df673439a9600faca046ba6c04))
+
+### ♻️ Code Refactoring
+
+* **naming:** centralize export symbol parsing ([eea46a9](https://github.com/omar-dulaimi/prisma-zod-generator/commit/eea46a94d04d743107f8f33e94f65f1430f7a8c8))
+
+### 📚 Documentation
+
+* **agents:** never commit PR body files; use temp paths ([cd3dc49](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cd3dc49c4f8df6e25c9479f9ed3e0c1f31966107))
+* **changelog:** add PR body for naming fixes ([fd40ef2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/fd40ef2a575bb3509488c0a27f3dde90d367c3d4))
 
 ## [1.27.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.3...v1.27.4) (2025-10-09)
 
