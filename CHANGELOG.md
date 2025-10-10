@@ -1,3 +1,9 @@
+## [1.27.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.5...v1.27.6) (2025-10-10)
+
+### 🐛 Bug Fixes
+
+* **core:** use Zod v4 getter recursion and keep z.lazy for v3\n\n- Apply getter-based recursion to relation fields and CRUD select/include when targeting zod v4\n- Add explicit getter return type annotations in pure models to avoid TS7023\n- Fix single-file bundling around getters (no stray commas, correct optional chaining)\n- Add tests: single-file-zod-versions, pure-models-zod-v4-recursion\n- Add scripts: test:features:single-file-zod-versions, test:features:pure-models-zod-v4-recursion\n\nCloses [#273](https://github.com/omar-dulaimi/prisma-zod-generator/issues/273) ([bcff391](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bcff39125cb7535a8060b0813bf31847c1bb123c))
+
 ## [1.27.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.4...v1.27.5) (2025-10-10)
 
 ### 🐛 Bug Fixes
