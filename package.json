@@ -148,7 +148,12 @@
   "pnpm": {
     "overrides": {
       "postcss": "^8.4.38"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma"
+    ]
   },
   "bugs": {
     "url": "https://github.com/omar-dulaimi/prisma-zod-generator/issues"
