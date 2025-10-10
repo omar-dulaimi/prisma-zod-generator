@@ -79,7 +79,6 @@
     "lint": "eslint src/ tests/ --ignore-pattern 'tests/multi-provider/schemas/*/generated/**/*' --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky",
     "prerelease": "pnpm run gen-example && pnpm run test:type-check && pnpm run lint",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run",

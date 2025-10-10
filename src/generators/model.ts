@@ -2323,16 +2323,20 @@ export class PrismaTypeMapper {
         ? transformer.Transformer.getGeneratorConfig()
         : transformer.default?.getGeneratorConfig();
       const namingResolved = resolvePureModelNaming(cfg2);
+      const effectiveTypeSuffix =
+        namingResolved.typeSuffix === undefined || namingResolved.typeSuffix === null
+          ? 'Type'
+          : namingResolved.typeSuffix;
       const defaultSchemaExport = applyPattern(
         '{Model}{SchemaSuffix}',
         model.name,
         namingResolved.schemaSuffix,
-        namingResolved.typeSuffix,
+        effectiveTypeSuffix,
       );
       if (composition.schemaName === defaultSchemaExport) {
-        composition.exports.add(`${model.name}${namingResolved.typeSuffix || 'Type'}`);
+        composition.exports.add(`${model.name}${effectiveTypeSuffix}`);
       } else {
-        const suffix = namingResolved.typeSuffix || 'Type';
+        const suffix = effectiveTypeSuffix;
         if (suffix && suffix.length > 0) {
           composition.exports.add(`${composition.schemaName}${suffix}`);
         } else {
@@ -2340,7 +2344,8 @@ export class PrismaTypeMapper {
         }
       }
     } catch {
-      composition.exports.add(`${model.name}Type`);
+      // Fallback: export model name (no forced Type suffix)
+      composition.exports.add(model.name);
     }
     // Add legacy model alias name to exports for consumers referencing previous naming
     composition.exports.add(`${model.name}Model`);
@@ -2778,17 +2783,22 @@ export class PrismaTypeMapper {
         ? transformer.Transformer.getGeneratorConfig()
         : transformer.default?.getGeneratorConfig();
       const namingResolved = resolvePureModelNaming(cfg2);
+      const effectiveTypeSuffix =
+        namingResolved.typeSuffix === undefined || namingResolved.typeSuffix === null
+          ? 'Type'
+          : namingResolved.typeSuffix;
       const defaultSchemaExport = applyPattern(
         '{Model}{SchemaSuffix}',
         composition.modelName,
         namingResolved.schemaSuffix,
-        namingResolved.typeSuffix,
+        effectiveTypeSuffix,
       );
       if (composition.schemaName === defaultSchemaExport) {
         // Legacy/default: <Model><TypeSuffix>
-        typeName = this.resolveModelTypeName(composition.modelName);
+        // Respect explicit empty string suffix if configured
+        typeName = `${composition.modelName}${effectiveTypeSuffix}`;
       } else {
-        const suffix = namingResolved.typeSuffix ?? 'Type';
+        const suffix = effectiveTypeSuffix;
         if (suffix && suffix.length > 0) {
           // Custom export name (e.g., zModel) with a non-empty type suffix: zModelType
           typeName = `${composition.schemaName}${suffix}`;
@@ -2798,8 +2808,8 @@ export class PrismaTypeMapper {
         }
       }
     } catch {
-      // Safe fallback to legacy behavior
-      typeName = this.resolveModelTypeName(composition.modelName);
+      // Safe fallback: export model name (no forced Type suffix)
+      typeName = composition.modelName;
     }
 
     lines.push(`export type ${typeName} = z.infer<typeof ${composition.schemaName}>;`);
