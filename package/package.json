@@ -1,12 +1,14 @@
 {
   "name": "prisma-zod-generator",
-  "version": "1.27.4",
+  "version": "1.27.5",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
     "prisma-zod-generator": "lib/generator.js"
   },
   "scripts": {
+    "prepare": "husky",
+    "agent:info": "node scripts/agent-banner.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "exec": "pnpm run gen-example && pnpm run test:features:filtering -- -t \"should handle combinations of model, operation, and field filtering\"",
@@ -77,7 +79,6 @@
     "lint": "eslint src/ tests/ --ignore-pattern 'tests/multi-provider/schemas/*/generated/**/*' --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky",
     "prerelease": "pnpm run gen-example && pnpm run test:type-check && pnpm run lint",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run",
@@ -148,7 +149,12 @@
   "pnpm": {
     "overrides": {
       "postcss": "^8.4.38"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma"
+    ]
   },
   "bugs": {
     "url": "https://github.com/omar-dulaimi/prisma-zod-generator/issues"
