@@ -1696,6 +1696,15 @@ export default class Transformer {
       return [];
     }
 
+    // If any alternative uses a getter-based property (v4 recursion),
+    // treat it as a complete property entry and skip wrapper/optionality tweaks.
+    const hasGetterAlternative = alternatives.some((alt) => alt.trimStart().startsWith('get '));
+    if (hasGetterAlternative) {
+      const cleaned = alternatives.map((alt) => alt.replace(/,\s*$/, ''));
+      const final = cleaned.join(', ');
+      return [[`  ${final}`, field, true]];
+    }
+
     if (alternatives.length > 1) {
       alternatives = alternatives.map((alter) => alter.replace('.optional()', ''));
     }
@@ -2250,8 +2259,19 @@ export default class Transformer {
     const needsLazyLoading = isSelfReference || (!isEnum && inputType.namespace === 'prisma');
 
     if (needsLazyLoading) {
+      const cfg = Transformer.getGeneratorConfig();
+      const target = (cfg?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
+      if (target === 'v4') {
+        // Prefer Zod v4 getter-based recursion to avoid z.lazy()
+        const ref = isSelfReference ? `${this.name}ObjectSchema` : schema;
+        if (inputsLength === 1) {
+          return `  get ${field.name}(){ return ${ref}${arr}${opt}; },`;
+        }
+        // In unions, return the bare reference; the field name wrapper is applied later
+        return `${ref}${arr}${opt}`;
+      }
       if (isSelfReference) {
-        // Use direct schema reference for better type inference (GitHub issue 214 fix)
+        // v3 and auto (legacy) use z.lazy
         return inputsLength === 1
           ? `  ${field.name}: z.lazy(() => ${this.name}ObjectSchema)${arr}${opt}`
           : `z.lazy(() => ${this.name}ObjectSchema)${arr}${opt}`;
@@ -3094,6 +3114,8 @@ export default class Transformer {
           includeZodSchemaLine,
           selectZodSchemaLineLazy,
           includeZodSchemaLineLazy,
+          selectValueExpr,
+          includeValueExpr,
         } = this.resolveSelectIncludeImportAndZodSchemaLine(model);
 
         const { orderByImport, orderByZodSchemaLine } =
@@ -3184,14 +3206,23 @@ export default class Transformer {
             : [...baseImports, selectImport];
 
           // Determine select field reference based on dual export strategy
+          const cfg1 = Transformer.getGeneratorConfig();
+          const target1 = (cfg1?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
           const selectFieldReference = shouldInline
             ? Transformer.exportTypedSchemas
               ? `${modelName}FindFirstSelect${Transformer.typedSchemaSuffix}.optional()`
               : `${modelName}FindFirstSelect${Transformer.zodSchemaSuffix}.optional()`
-            : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
-
-          const selectField = `select: ${selectFieldReference},`;
-          const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
+            : selectValueExpr || selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
+          const selectField =
+            target1 === 'v4'
+              ? `get select(){ return ${selectFieldReference}; },`
+              : `select: ${selectFieldReference},`;
+          const includeFieldRef1 =
+            includeValueExpr || includeZodSchemaLineLazy.replace('include: ', '').replace(',', '');
+          const includeField =
+            target1 === 'v4'
+              ? `get include(){ return ${includeFieldRef1}; },`
+              : `include: ${includeFieldRef1},`;
           const schemaFields =
             `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
               .trim()
@@ -3247,14 +3278,23 @@ export default class Transformer {
             ? [...baseImports, ...this.generateInlineSelectImports(model)]
             : [...baseImports, selectImport];
           // Determine select field reference based on dual export strategy
+          const cfg2 = Transformer.getGeneratorConfig();
+          const target2 = (cfg2?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
           const selectFieldReference = shouldInline
             ? Transformer.exportTypedSchemas
               ? `${modelName}FindFirstOrThrowSelect${Transformer.typedSchemaSuffix}.optional()`
               : `${modelName}FindFirstOrThrowSelect${Transformer.zodSchemaSuffix}.optional()`
-            : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
-
-          const selectField = `select: ${selectFieldReference},`;
-          const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
+            : selectValueExpr || selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
+          const selectField =
+            target2 === 'v4'
+              ? `get select(){ return ${selectFieldReference}; },`
+              : `select: ${selectFieldReference},`;
+          const includeFieldRef2 =
+            includeValueExpr || includeZodSchemaLineLazy.replace('include: ', '').replace(',', '');
+          const includeField =
+            target2 === 'v4'
+              ? `get include(){ return ${includeFieldRef2}; },`
+              : `include: ${includeFieldRef2},`;
           const schemaFields =
             `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
               .trim()
@@ -3311,15 +3351,26 @@ export default class Transformer {
             ? [...baseImports, ...this.generateInlineSelectImports(model)]
             : [...baseImports, selectImport];
 
-          // Determine select field reference based on dual export strategy
+          // Determine select/include field reference based on dual export strategy and zod target
+          const cfg3 = Transformer.getGeneratorConfig();
+          const target3 = (cfg3?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
           const selectFieldReference = shouldInline
             ? Transformer.exportTypedSchemas
               ? `${modelName}FindManySelect${Transformer.typedSchemaSuffix}.optional()`
               : `${modelName}FindManySelect${Transformer.zodSchemaSuffix}.optional()`
-            : selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
+            : selectValueExpr || selectZodSchemaLineLazy.replace('select: ', '').replace(',', '');
 
-          const selectField = `select: ${selectFieldReference},`;
-          const includeField = includeZodSchemaLineLazy; // Include always uses lazy loading
+          const selectField =
+            target3 === 'v4'
+              ? `get select(){ return ${selectFieldReference}; },`
+              : `select: ${selectFieldReference},`;
+
+          const includeFieldRef3 =
+            includeValueExpr || includeZodSchemaLineLazy.replace('include: ', '').replace(',', '');
+          const includeField =
+            target3 === 'v4'
+              ? `get include(){ return ${includeFieldRef3}; },`
+              : `include: ${includeFieldRef3},`;
           const schemaFields =
             `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
               .trim()
@@ -4448,14 +4499,25 @@ export default class Transformer {
     let includeZodSchemaLine = '';
     let selectZodSchemaLineLazy = '';
     let includeZodSchemaLineLazy = '';
+    let selectValueExpr = '';
+    let includeValueExpr = '';
+
+    const cfg = Transformer.getGeneratorConfig();
+    const target = (cfg?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
 
     if (Transformer.shouldGenerateSelectSchema(model)) {
       const selectSchemaName = Transformer.exportTypedSchemas
         ? `${modelName}SelectObjectSchema`
         : `${modelName}SelectObject${Transformer.zodSchemaSuffix}`;
       const zodSelectObjectSchema = `${selectSchemaName}.optional()`;
-      selectZodSchemaLine = `select: ${zodSelectObjectSchema},`;
-      selectZodSchemaLineLazy = `select: z.lazy(() => ${zodSelectObjectSchema}),`;
+      selectValueExpr = zodSelectObjectSchema;
+      if (target === 'v4') {
+        selectZodSchemaLine = `get select(){ return ${zodSelectObjectSchema}; },`;
+        selectZodSchemaLineLazy = selectZodSchemaLine;
+      } else {
+        selectZodSchemaLine = `select: ${zodSelectObjectSchema},`;
+        selectZodSchemaLineLazy = `select: z.lazy(() => ${zodSelectObjectSchema}),`;
+      }
     }
 
     if (Transformer.shouldGenerateIncludeSchema(model)) {
@@ -4463,8 +4525,14 @@ export default class Transformer {
         ? `${modelName}IncludeObjectSchema`
         : `${modelName}IncludeObject${Transformer.zodSchemaSuffix}`;
       const zodIncludeObjectSchema = `${includeSchemaName}.optional()`;
-      includeZodSchemaLine = `include: ${zodIncludeObjectSchema},`;
-      includeZodSchemaLineLazy = `include: z.lazy(() => ${zodIncludeObjectSchema}),`;
+      includeValueExpr = zodIncludeObjectSchema;
+      if (target === 'v4') {
+        includeZodSchemaLine = `get include(){ return ${zodIncludeObjectSchema}; },`;
+        includeZodSchemaLineLazy = includeZodSchemaLine;
+      } else {
+        includeZodSchemaLine = `include: ${zodIncludeObjectSchema},`;
+        includeZodSchemaLineLazy = `include: z.lazy(() => ${zodIncludeObjectSchema}),`;
+      }
     }
 
     return {
@@ -4474,6 +4542,8 @@ export default class Transformer {
       includeZodSchemaLine,
       selectZodSchemaLineLazy,
       includeZodSchemaLineLazy,
+      selectValueExpr,
+      includeValueExpr,
     };
   }
 
