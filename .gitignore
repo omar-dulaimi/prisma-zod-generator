@@ -72,3 +72,5 @@ app
 src/dsrc
 src/schemas
 dsrc/
+.github/PR_BODY.md
+.tmp/

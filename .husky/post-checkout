@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Show repository guidelines after switching branches
+node scripts/agent-banner.js >/dev/null 2>&1 || true
+

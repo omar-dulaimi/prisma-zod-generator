@@ -18,7 +18,8 @@
   },
   "include": ["./src/**/*.ts"],
   "exclude": [
-    "src/dsrc",
-    "src/schemas"
+    "src/schemas/**",
+    "src/dsrc/**",
+    "src/generated/**"
   ]
 }

@@ -1152,15 +1152,36 @@ export class PrismaTypeMapper {
     // For pure model schemas, we typically don't include full relation objects
     // Instead, we might include just the foreign key fields or omit relations entirely
     if (field.relationName) {
-      // Relation field -> always reference the primary Schema export
+      // Determine the correct export symbol for the related model based on naming config
+      let relatedExportName = `${relatedModelName}Schema`;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { resolvePureModelNaming, applyPattern } = require('../utils/naming-resolver');
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const transformer = require('../transformer');
+        const cfg = transformer.Transformer
+          ? transformer.Transformer.getGeneratorConfig()
+          : transformer.default?.getGeneratorConfig();
+        const namingResolved = resolvePureModelNaming(cfg);
+        relatedExportName = applyPattern(
+          namingResolved.exportNamePattern,
+          relatedModelName,
+          namingResolved.schemaSuffix,
+          namingResolved.typeSuffix,
+        );
+      } catch {
+        relatedExportName = `${relatedModelName}Schema`;
+      }
+
+      // Relation field -> always reference the resolved export name
       if (field.relationFromFields && field.relationFromFields.length > 0) {
-        result.zodSchema = `z.lazy(() => ${relatedModelName}Schema)`;
-        result.imports.add(`${relatedModelName}Schema`);
+        result.zodSchema = `z.lazy(() => ${relatedExportName})`;
+        result.imports.add(relatedExportName);
         result.requiresSpecialHandling = true;
         result.additionalValidations.push(`// Relation to ${relatedModelName}`);
       } else {
-        result.zodSchema = `z.lazy(() => ${relatedModelName}Schema)`;
-        result.imports.add(`${relatedModelName}Schema`);
+        result.zodSchema = `z.lazy(() => ${relatedExportName})`;
+        result.imports.add(relatedExportName);
         result.requiresSpecialHandling = true;
         result.additionalValidations.push(`// Back-relation to ${relatedModelName}`);
       }
@@ -2292,7 +2313,40 @@ export class PrismaTypeMapper {
 
     // Generate exports
     composition.exports.add(composition.schemaName);
-    composition.exports.add(`${model.name}Type`);
+    // Add the type export name in alignment with the configured naming strategy
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { resolvePureModelNaming, applyPattern } = require('../utils/naming-resolver');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const transformer = require('../transformer');
+      const cfg2 = transformer.Transformer
+        ? transformer.Transformer.getGeneratorConfig()
+        : transformer.default?.getGeneratorConfig();
+      const namingResolved = resolvePureModelNaming(cfg2);
+      const effectiveTypeSuffix =
+        namingResolved.typeSuffix === undefined || namingResolved.typeSuffix === null
+          ? 'Type'
+          : namingResolved.typeSuffix;
+      const defaultSchemaExport = applyPattern(
+        '{Model}{SchemaSuffix}',
+        model.name,
+        namingResolved.schemaSuffix,
+        effectiveTypeSuffix,
+      );
+      if (composition.schemaName === defaultSchemaExport) {
+        composition.exports.add(`${model.name}${effectiveTypeSuffix}`);
+      } else {
+        const suffix = effectiveTypeSuffix;
+        if (suffix && suffix.length > 0) {
+          composition.exports.add(`${composition.schemaName}${suffix}`);
+        } else {
+          composition.exports.add(model.name);
+        }
+      }
+    } catch {
+      // Fallback: export model name (no forced Type suffix)
+      composition.exports.add(model.name);
+    }
     // Add legacy model alias name to exports for consumers referencing previous naming
     composition.exports.add(`${model.name}Model`);
 
@@ -2546,15 +2600,24 @@ export class PrismaTypeMapper {
       }
     });
 
-    // Related model schema imports (exclude current schema + enums)
-    const relatedSchemaImports = imports.filter(
-      (imp) =>
-        /Schema$/.test(imp) &&
-        imp !== composition.schemaName &&
-        !enumNames.has(imp.replace(/Schema$/, '')),
+    // Related model schema imports (exclude current schema + enums).
+    // After naming resolution in mapObjectType, related symbols may not end with 'Schema'.
+    const enumImportNameSet = new Set(enumSchemaImports);
+    const relatedModelImports = imports.filter(
+      (imp) => imp !== 'z' && imp !== composition.schemaName && !enumImportNameSet.has(imp),
     );
-    relatedSchemaImports.forEach((schemaImport) => {
-      const base = schemaImport.replace(/Schema$/, '');
+    // Helper: derive PascalCase model name from an import symbol using the exportNamePattern
+    // Centralized in naming-resolver.parseExportSymbol for maintainability
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { parseExportSymbol } = require('../utils/naming-resolver');
+
+    relatedModelImports.forEach((importSymbol) => {
+      const base = parseExportSymbol(
+        importSymbol,
+        namingResolved.exportNamePattern as string,
+        namingResolved.schemaSuffix || '',
+        namingResolved.typeSuffix || '',
+      );
 
       // Generate the correct file path using the naming pattern
       const fileName = applyPattern(
@@ -2564,9 +2627,8 @@ export class PrismaTypeMapper {
         namingResolved.typeSuffix,
       );
 
-      // Remove file extension for import path base and append configured extension
       const importPath = fileName.replace(/\.(ts|js)$/, '');
-      lines.push(`import { ${schemaImport} } from './${importPath}${ext}';`);
+      lines.push(`import { ${importSymbol} } from './${importPath}${ext}';`);
     });
 
     return lines;
@@ -2656,10 +2718,49 @@ export class PrismaTypeMapper {
       lines.push(` * Inferred TypeScript type for ${composition.modelName}`);
       lines.push(' */');
     }
-    // Avoid naming conflicts with enum types by using a different pattern for model types
-    // If modelName ends with common enum suffixes or conflicts with known enums, use ModelSchema pattern
-    const modelTypeName = this.resolveModelTypeName(composition.modelName);
-    lines.push(`export type ${modelTypeName} = z.infer<typeof ${composition.schemaName}>;`);
+    // Determine type name. If using the default schema export pattern (Model + SchemaSuffix),
+    // keep the legacy type naming (<Model><TypeSuffix>). Otherwise, align the type name with
+    // the configured schema export name (e.g., zUser -> zUserType).
+    let typeName: string;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { resolvePureModelNaming, applyPattern } = require('../utils/naming-resolver');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const transformer = require('../transformer');
+      const cfg2 = transformer.Transformer
+        ? transformer.Transformer.getGeneratorConfig()
+        : transformer.default?.getGeneratorConfig();
+      const namingResolved = resolvePureModelNaming(cfg2);
+      const effectiveTypeSuffix =
+        namingResolved.typeSuffix === undefined || namingResolved.typeSuffix === null
+          ? 'Type'
+          : namingResolved.typeSuffix;
+      const defaultSchemaExport = applyPattern(
+        '{Model}{SchemaSuffix}',
+        composition.modelName,
+        namingResolved.schemaSuffix,
+        effectiveTypeSuffix,
+      );
+      if (composition.schemaName === defaultSchemaExport) {
+        // Legacy/default: <Model><TypeSuffix>
+        // Respect explicit empty string suffix if configured
+        typeName = `${composition.modelName}${effectiveTypeSuffix}`;
+      } else {
+        const suffix = effectiveTypeSuffix;
+        if (suffix && suffix.length > 0) {
+          // Custom export name (e.g., zModel) with a non-empty type suffix: zModelType
+          typeName = `${composition.schemaName}${suffix}`;
+        } else {
+          // Empty suffix: preserve legacy model-based type name to avoid surprises
+          typeName = composition.modelName;
+        }
+      }
+    } catch {
+      // Safe fallback: export model name (no forced Type suffix)
+      typeName = composition.modelName;
+    }
+
+    lines.push(`export type ${typeName} = z.infer<typeof ${composition.schemaName}>;`);
     // Only emit legacy alias when NOT in pureModels mode. In pureModels mode we transform
     // the *Schema export into *Model directly and an alias would cause a duplicate export
     // and reference to a non-existent *Schema symbol after transformation.
