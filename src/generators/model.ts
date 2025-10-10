@@ -2610,7 +2610,9 @@ export class PrismaTypeMapper {
       // Helper to compute pre/post with actual suffix values
       const splitWith = (token: string) => {
         const [preRaw, postRaw] = pattern.split(token);
-        const pre = preRaw.replace(/\{SchemaSuffix\}/g, schemaSuffix).replace(/\{TypeSuffix\}/g, typeSuffix);
+        const pre = preRaw
+          .replace(/\{SchemaSuffix\}/g, schemaSuffix)
+          .replace(/\{TypeSuffix\}/g, typeSuffix);
         const post = postRaw
           .replace(/\{SchemaSuffix\}/g, schemaSuffix)
           .replace(/\{TypeSuffix\}/g, typeSuffix);
