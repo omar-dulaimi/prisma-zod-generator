@@ -35,4 +35,3 @@ try {
 } catch (err) {
   // Fail quietly if AGENTS.md not present
 }
-
