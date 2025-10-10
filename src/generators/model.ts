@@ -214,6 +214,9 @@ export interface ComposedFieldSchema {
   /** Generated Zod schema string */
   zodSchema: string;
 
+  /** Whether this field is a relation (object kind) */
+  isRelation?: boolean;
+
   /** Field documentation */
   documentation?: string;
 
@@ -1173,14 +1176,33 @@ export class PrismaTypeMapper {
         relatedExportName = `${relatedModelName}Schema`;
       }
 
+      // Determine zod target to choose recursion strategy
+      let target: 'auto' | 'v3' | 'v4' = 'auto';
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const transformer = require('../transformer').default;
+        target = (transformer.getGeneratorConfig?.().zodImportTarget ?? 'auto') as
+          | 'auto'
+          | 'v3'
+          | 'v4';
+      } catch {
+        /* ignore */
+      }
+
+      const useGetterRecursion = target === 'v4';
+
       // Relation field -> always reference the resolved export name
       if (field.relationFromFields && field.relationFromFields.length > 0) {
-        result.zodSchema = `z.lazy(() => ${relatedExportName})`;
+        result.zodSchema = useGetterRecursion
+          ? `${relatedExportName}`
+          : `z.lazy(() => ${relatedExportName})`;
         result.imports.add(relatedExportName);
         result.requiresSpecialHandling = true;
         result.additionalValidations.push(`// Relation to ${relatedModelName}`);
       } else {
-        result.zodSchema = `z.lazy(() => ${relatedExportName})`;
+        result.zodSchema = useGetterRecursion
+          ? `${relatedExportName}`
+          : `z.lazy(() => ${relatedExportName})`;
         result.imports.add(relatedExportName);
         result.requiresSpecialHandling = true;
         result.additionalValidations.push(`// Back-relation to ${relatedModelName}`);
@@ -2255,6 +2277,7 @@ export class PrismaTypeMapper {
           fieldName: field.name,
           prismaType: field.type,
           zodSchema: fieldMapping.zodSchema,
+          isRelation: field.kind === 'object',
           documentation: fieldMapping.documentation,
           validations: fieldMapping.additionalValidations,
           imports: fieldMapping.imports,
@@ -2643,6 +2666,8 @@ export class PrismaTypeMapper {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const cfg = require('../transformer').default.getGeneratorConfig?.();
     const lean = cfg?.pureModelsLean === true;
+    const zodTarget = (cfg?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
+    const useGetterRecursion = zodTarget === 'v4';
     // Variants config removed (not used in current logic)
     // Optional field behavior parser (avoid any)
     const optBehavior = ((): 'optional' | 'nullable' | 'nullish' => {
@@ -2678,7 +2703,35 @@ export class PrismaTypeMapper {
         else modifierSuffix = '.nullable()';
       }
 
-      lines.push(`  ${field.fieldName}: ${base}${chain}${modifierSuffix},`);
+      if (useGetterRecursion && field.isRelation) {
+        const hasOpt = /\.optional\(\)/.test(chain) || /\.optional\(\)/.test(modifierSuffix);
+        const hasNull = /\.nullable\(\)/.test(chain) || /\.nullable\(\)/.test(modifierSuffix);
+        const hasNullish = /\.nullish\(\)/.test(chain) || /\.nullish\(\)/.test(modifierSuffix);
+
+        // Derive the inner Zod type for the getter return type annotation
+        const arrayMatch = base.match(/^z\.array\(\s*(.+)\s*\)$/);
+        let innerType = '';
+        if (arrayMatch) {
+          const el = arrayMatch[1];
+          innerType = `z.ZodArray<typeof ${el}>`;
+        } else {
+          innerType = `typeof ${base}`;
+        }
+
+        let returnType = innerType;
+        if (hasNullish) {
+          returnType = `z.ZodOptional<z.ZodNullable<${returnType}>>`;
+        } else {
+          if (hasNull) returnType = `z.ZodNullable<${returnType}>`;
+          if (hasOpt) returnType = `z.ZodOptional<${returnType}>`;
+        }
+
+        lines.push(
+          `  get ${field.fieldName}(): ${returnType} { return ${base}${chain}${modifierSuffix}; },`,
+        );
+      } else {
+        lines.push(`  ${field.fieldName}: ${base}${chain}${modifierSuffix},`);
+      }
 
       if (!lean) {
         commentValidations.forEach((cv) => lines.push(`  ${cv}`));
