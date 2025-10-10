@@ -36,6 +36,10 @@ Use pnpm.
 - Choose `type` intentionally based on impact: `feat`, `fix`, `docs`, `refactor`, `chore`, etc.
 - Keep commits small and atomic; update/add tests with behavior changes.
 - Before push: run and commit `pnpm format` and `pnpm lint` fixes; ensure `pnpm build`, `pnpm test`, and `pnpm format:check` pass.
-- Create PRs with the preinstalled GitHub CLI and a dedicated Markdown body file, e.g.:
-  - `gh pr create --base master --head <branch> --title "fix(scope): concise title" --body-file .github/PR_BODY.md`
-  - The body file must be properly formatted (summary, rationale, linked issues like `Fixes #234`, and verification steps).
+
+### Pull request body files (important)
+- Never commit PR body files to the repository.
+- Use a temporary file outside the repo (e.g., `/tmp/pr-body.md`) when running `gh pr create`:
+  - `gh pr create --base master --head <branch> --title "fix(scope): concise title" --body-file /tmp/pr-body.md`
+- If a body file must be created within the workspace for tooling reasons, it must be placed under a temp path that is ignored by git (e.g., `.tmp/pr-body.md`), and deleted immediately after PR creation.
+- Ensure the PR body contains: Summary, Motivation/Context, Changes, Testing/Validation, Breaking changes, Related issues (e.g., `Closes #123`), and a short checklist.
