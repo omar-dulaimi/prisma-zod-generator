@@ -7,6 +7,8 @@
     "prisma-zod-generator": "lib/generator.js"
   },
   "scripts": {
+    "prepare": "husky",
+    "agent:info": "node scripts/agent-banner.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "exec": "pnpm run gen-example && pnpm run test:features:filtering -- -t \"should handle combinations of model, operation, and field filtering\"",
