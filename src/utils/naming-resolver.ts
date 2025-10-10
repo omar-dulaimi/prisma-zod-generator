@@ -234,3 +234,61 @@ export function generateExportName(
 
   return applyUniversalPattern(pattern, tokens);
 }
+
+/**
+ * Reverse-derive a PascalCase model name from an export symbol and pattern.
+ *
+ * Supports patterns containing one of {Model}, {model}, {camel}, or {kebab} and
+ * accounts for dynamic suffix tokens {SchemaSuffix}/{TypeSuffix} when computing
+ * the static prefix/suffix surrounding the model token. Falls back to stripping
+ * configured suffixes when a direct match is not possible.
+ */
+export function parseExportSymbol(
+  symbol: string,
+  pattern: string,
+  schemaSuffix: string = '',
+  typeSuffix: string = '',
+): string {
+  const replaceSuffixTokens = (segment: string): string =>
+    segment.replace(/\{SchemaSuffix\}/g, schemaSuffix).replace(/\{TypeSuffix\}/g, typeSuffix);
+
+  const tryExtract = (token: '{Model}' | '{model}' | '{camel}' | '{kebab}') => {
+    if (!pattern.includes(token)) return null;
+    const [preRaw, postRaw] = pattern.split(token);
+    const pre = replaceSuffixTokens(preRaw || '');
+    const post = replaceSuffixTokens(postRaw || '');
+    if (symbol.startsWith(pre) && symbol.endsWith(post)) {
+      const core = symbol.substring(pre.length, symbol.length - post.length);
+      switch (token) {
+        case '{Model}':
+          return core; // Already PascalCase
+        case '{model}':
+        case '{camel}':
+          return core ? core.charAt(0).toUpperCase() + core.slice(1) : core;
+        case '{kebab}':
+          return core
+            .split('-')
+            .map((seg) => (seg ? seg[0].toUpperCase() + seg.slice(1) : ''))
+            .join('');
+      }
+    }
+    return null;
+  };
+
+  // Prefer explicit {Model} first, then lowercase/camel, then kebab
+  const viaModel =
+    tryExtract('{Model}') ||
+    tryExtract('{model}') ||
+    tryExtract('{camel}') ||
+    tryExtract('{kebab}');
+  if (viaModel !== null) return viaModel;
+
+  // Heuristics: if the symbol ends with known suffixes, strip them
+  if (schemaSuffix && symbol.endsWith(schemaSuffix)) {
+    return symbol.slice(0, -schemaSuffix.length);
+  }
+  if (typeSuffix && symbol.endsWith(typeSuffix)) {
+    return symbol.slice(0, -typeSuffix.length);
+  }
+  return symbol;
+}

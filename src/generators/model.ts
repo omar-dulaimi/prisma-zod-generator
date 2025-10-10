@@ -2607,69 +2607,17 @@ export class PrismaTypeMapper {
       (imp) => imp !== 'z' && imp !== composition.schemaName && !enumImportNameSet.has(imp),
     );
     // Helper: derive PascalCase model name from an import symbol using the exportNamePattern
-    const deriveModelNameFromSymbol = (symbol: string): string => {
-      const pattern = namingResolved.exportNamePattern as string;
-      const schemaSuffix = namingResolved.schemaSuffix || '';
-      const typeSuffix = namingResolved.typeSuffix || '';
-
-      // Helper to compute pre/post with actual suffix values
-      const splitWith = (token: string) => {
-        const [preRaw, postRaw] = pattern.split(token);
-        const pre = preRaw
-          .replace(/\{SchemaSuffix\}/g, schemaSuffix)
-          .replace(/\{TypeSuffix\}/g, typeSuffix);
-        const post = postRaw
-          .replace(/\{SchemaSuffix\}/g, schemaSuffix)
-          .replace(/\{TypeSuffix\}/g, typeSuffix);
-        return { pre, post };
-      };
-
-      // Prefer explicit {Model}
-      if (pattern.includes('{Model}')) {
-        const { pre, post } = splitWith('{Model}');
-        if (symbol.startsWith(pre) && symbol.endsWith(post)) {
-          return symbol.substring(pre.length, symbol.length - post.length);
-        }
-      }
-      // Handle {model}
-      if (pattern.includes('{model}')) {
-        const { pre, post } = splitWith('{model}');
-        if (symbol.startsWith(pre) && symbol.endsWith(post)) {
-          const lower = symbol.substring(pre.length, symbol.length - post.length);
-          return lower.charAt(0).toUpperCase() + lower.slice(1);
-        }
-      }
-      // Handle {camel}
-      if (pattern.includes('{camel}')) {
-        const { pre, post } = splitWith('{camel}');
-        if (symbol.startsWith(pre) && symbol.endsWith(post)) {
-          const camel = symbol.substring(pre.length, symbol.length - post.length);
-          return camel.charAt(0).toUpperCase() + camel.slice(1);
-        }
-      }
-      // Handle {kebab}
-      if (pattern.includes('{kebab}')) {
-        const { pre, post } = splitWith('{kebab}');
-        if (symbol.startsWith(pre) && symbol.endsWith(post)) {
-          const kebab = symbol.substring(pre.length, symbol.length - post.length);
-          return kebab
-            .split('-')
-            .map((seg) => (seg ? seg[0].toUpperCase() + seg.slice(1) : ''))
-            .join('');
-        }
-      }
-      // Heuristic: strip known suffixes if attached directly
-      if (schemaSuffix && symbol.endsWith(schemaSuffix)) {
-        return symbol.slice(0, -schemaSuffix.length);
-      }
-      if (typeSuffix && symbol.endsWith(typeSuffix)) {
-        return symbol.slice(0, -typeSuffix.length);
-      }
-      return symbol;
-    };
+    // Centralized in naming-resolver.parseExportSymbol for maintainability
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { parseExportSymbol } = require('../utils/naming-resolver');
 
     relatedModelImports.forEach((importSymbol) => {
-      const base = deriveModelNameFromSymbol(importSymbol);
+      const base = parseExportSymbol(
+        importSymbol,
+        namingResolved.exportNamePattern as string,
+        namingResolved.schemaSuffix || '',
+        namingResolved.typeSuffix || '',
+      );
 
       // Generate the correct file path using the naming pattern
       const fileName = applyPattern(
