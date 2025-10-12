@@ -1,3 +1,9 @@
+## [1.27.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.6...v1.27.7) (2025-10-12)
+
+### 🐛 Bug Fixes
+
+* **transformer:** prevent empty include syntax in generated schemas ([3d1349b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3d1349ba89d0e8dbec431bb46342a520cb51d0b3))
+
 ## [1.27.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.5...v1.27.6) (2025-10-10)
 
 ### 🐛 Bug Fixes
