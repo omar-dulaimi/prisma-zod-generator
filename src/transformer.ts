@@ -3219,10 +3219,11 @@ export default class Transformer {
               : `select: ${selectFieldReference},`;
           const includeFieldRef1 =
             includeValueExpr || includeZodSchemaLineLazy.replace('include: ', '').replace(',', '');
-          const includeField =
-            target1 === 'v4'
+          const includeField = includeFieldRef1
+            ? target1 === 'v4'
               ? `get include(){ return ${includeFieldRef1}; },`
-              : `include: ${includeFieldRef1},`;
+              : `include: ${includeFieldRef1},`
+            : '';
           const schemaFields =
             `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
               .trim()
@@ -3291,10 +3292,11 @@ export default class Transformer {
               : `select: ${selectFieldReference},`;
           const includeFieldRef2 =
             includeValueExpr || includeZodSchemaLineLazy.replace('include: ', '').replace(',', '');
-          const includeField =
-            target2 === 'v4'
+          const includeField = includeFieldRef2
+            ? target2 === 'v4'
               ? `get include(){ return ${includeFieldRef2}; },`
-              : `include: ${includeFieldRef2},`;
+              : `include: ${includeFieldRef2},`
+            : '';
           const schemaFields =
             `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
               .trim()
@@ -3367,10 +3369,11 @@ export default class Transformer {
 
           const includeFieldRef3 =
             includeValueExpr || includeZodSchemaLineLazy.replace('include: ', '').replace(',', '');
-          const includeField =
-            target3 === 'v4'
+          const includeField = includeFieldRef3
+            ? target3 === 'v4'
               ? `get include(){ return ${includeFieldRef3}; },`
-              : `include: ${includeFieldRef3},`;
+              : `include: ${includeFieldRef3},`
+            : '';
           const schemaFields =
             `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
               .trim()

@@ -59,6 +59,7 @@ describe('Single-file mode: Zod versions (v4 getters vs v3 lazy)', () => {
           ...ConfigGenerator.createBasicConfig(),
           useMultipleFiles: false,
           zodImportTarget: 'v4' as const,
+          addIncludeType: true,
         };
         const configPath = join(env.testDir, 'config.json');
         writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -171,6 +172,40 @@ describe('Single-file mode: Zod versions (v4 getters vs v3 lazy)', () => {
         const content = readFileSync(bundlePath, 'utf-8');
         expect(content).not.toMatch(/\bget\s+[A-Za-z_][A-Za-z0-9_]*\s*\(/);
         expect(content).not.toContain('},,');
+      } finally {
+        await env.cleanup();
+      }
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
+    'auto: no empty include syntax when model has no relations',
+    async () => {
+      const env = await TestEnvironment.createTestEnv('single-file-empty-include-fix');
+      try {
+        const config = {
+          ...ConfigGenerator.createBasicConfig(),
+          useMultipleFiles: false,
+          zodImportTarget: 'auto' as const,
+        };
+        const configPath = join(env.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          models: ['Profile'],
+          outputPath: `${env.outputDir}/schemas`,
+          generatorOptions: { config: './config.json' },
+        });
+        writeFileSync(env.schemaPath, schema);
+        await env.runGeneration();
+
+        const bundlePath = join(env.outputDir, 'schemas', 'schemas.ts');
+        expect(existsSync(bundlePath)).toBe(true);
+        const content = readFileSync(bundlePath, 'utf-8');
+
+        expect(content).not.toMatch(/include:\s*,/);
+        expect(content).not.toMatch(/get\s+include\(\)\s*\{\s*return\s*;\s*\}/);
       } finally {
         await env.cleanup();
       }
