@@ -64,16 +64,7 @@ Last updated: 2025-10-13 • Version: 1.27.7
 
 ## Quick start
 
-- Install: `npm i -D prisma-zod-generator`
-- In `schema.prisma`:
-  ```prisma
-  generator zod { provider = "prisma-zod-generator" }
-  ```
-- Generate: `npx prisma generate`
-- Import:
-  ```ts
-  import { UserSchema } from "./prisma/generated/schemas";
-  ```
+1) Star this repo 🌟
 
 ## Highlights
 

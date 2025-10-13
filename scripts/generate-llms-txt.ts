@@ -99,6 +99,32 @@ function todayISO(): string {
 }
 
 /**
+ * Compute last updated date from latest mtime of README, docs, and package.json.
+ * Falls back to today's date if stats are unavailable.
+ */
+async function computeLastUpdatedISO(): Promise<string> {
+  try {
+    const docFiles = await fg(DOC_GLOBS, {
+      cwd: ROOT,
+      absolute: true,
+      dot: false,
+      onlyFiles: true,
+    });
+    const candidates = new Set<string>([README_PATH, PKG_PATH, ...docFiles]);
+    let max = 0;
+    for (const f of candidates) {
+      try {
+        const s = await fs.stat(f);
+        if (s.mtimeMs > max) max = s.mtimeMs;
+      } catch {}
+    }
+    return max ? new Date(max).toISOString().slice(0, 10) : todayISO();
+  } catch {
+    return todayISO();
+  }
+}
+
+/**
  * Read package.json version, fallback to 0.0.0 on error.
  */
 async function getVersion(): Promise<string> {
@@ -118,14 +144,12 @@ async function getVersion(): Promise<string> {
 function extractReadmeSection(readme: string, heading: string): string | null {
   // Normalize line endings
   const src = readme.replace(/\r\n/g, '\n');
-  const pattern = new RegExp(
-    `^##\s+${heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*\n([\s\S]*?)(^##\s+|\n\n##\s+|\n$)`,
-    'm',
-  );
-  const m = pattern.exec(src + '\n');
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Capture after "## <heading>" until the next H2 or end
+  const pattern = new RegExp(`^##\\s+${escaped}\\s*\\n([\\s\\S]*?)(?:\\n(?=##\\s)|$)`, 'mi');
+  const m = pattern.exec(src);
   if (!m) return null;
   let body = m[1] ?? '';
-  // Trim trailing whitespace and ensure code fences remain intact
   body = body.trim();
   return body || null;
 }
@@ -135,7 +159,7 @@ function extractReadmeSection(readme: string, heading: string): string | null {
  */
 async function buildCuratedTop(): Promise<string> {
   const version = await getVersion();
-  const lastUpdated = todayISO();
+  const lastUpdated = await computeLastUpdatedISO();
   const title = 'Prisma Zod Generator';
   const tagline = 'Prisma → Zod in one generate. Ship validated, typed data everywhere.';
 
@@ -240,14 +264,19 @@ function shouldSkipDoc(file: string): boolean {
  */
 async function buildDocsAggregate(): Promise<string | null> {
   // Discover docs files (optional)
-  const files = await fg(DOC_GLOBS, { cwd: ROOT, absolute: true, dot: false });
+  const files = await fg(DOC_GLOBS, {
+    cwd: ROOT,
+    absolute: true,
+    dot: false,
+    onlyFiles: true,
+  });
   if (!files?.length) return null;
 
   const unique = Array.from(new Set(files.map((f) => path.resolve(f))));
   unique.sort((a, b) => normalizeToPosix(a).localeCompare(normalizeToPosix(b)));
 
   const parts: string[] = [];
-  let total = 0;
+  let totalBytes = 0;
   const softCap = 300 * 1024; // ~300KB
 
   for (const file of unique) {
@@ -256,10 +285,10 @@ async function buildDocsAggregate(): Promise<string | null> {
     if (!res) continue;
     const title = res.title ?? path.basename(file);
     const pageText = `# ${title}\n\n${res.text}`.trim();
-    const nextLen = pageText.length + 2; // incl. separator
-    if (total + nextLen > softCap) break;
+    const nextBytes = Buffer.byteLength(pageText, 'utf8') + 2; // incl. separator
+    if (totalBytes + nextBytes > softCap) break;
     parts.push(pageText);
-    total += nextLen;
+    totalBytes += nextBytes;
   }
 
   if (!parts.length) return null;
@@ -277,6 +306,7 @@ async function buildDocsLinks(): Promise<string | null> {
     cwd: ROOT,
     absolute: true,
     dot: false,
+    onlyFiles: true,
   });
   if (!files?.length) return null;
 
@@ -420,7 +450,9 @@ async function main() {
   const finalText = sections.join('\n\n').trim() + '\n';
   await fs.writeFile(OUTPUT_PATH, finalText, 'utf8');
   // eslint-disable-next-line no-console
-  console.log(`Wrote ${path.relative(ROOT, OUTPUT_PATH)} (${finalText.length} bytes)`);
+  console.log(
+    `Wrote ${path.relative(ROOT, OUTPUT_PATH)} (${Buffer.byteLength(finalText, 'utf8')} bytes)`,
+  );
 }
 
 main().catch((err) => {
