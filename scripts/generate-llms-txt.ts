@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
 import fg from 'fast-glob';
+import { pathToFileURL } from 'node:url';
 import { remark } from 'remark';
 import gfm from 'remark-gfm';
 import mdx from 'remark-mdx';
@@ -279,6 +280,15 @@ async function buildDocsLinks(): Promise<string | null> {
   });
   if (!files?.length) return null;
 
+  // Map slug -> absolute file path
+  const slugToPath = new Map<string, string>();
+  for (const abs of files) {
+    const rel = path.relative(path.join(ROOT, 'website', 'docs'), abs);
+    const relPosix = normalizeToPosix(rel);
+    const withoutExt = relPosix.replace(/\.(md|mdx)$/i, '');
+    slugToPath.set(withoutExt, abs);
+  }
+
   // Site base from package.json homepage (e.g., https://omar-dulaimi.github.io/prisma-zod-generator)
   let homepage = 'https://omar-dulaimi.github.io/prisma-zod-generator';
   try {
@@ -290,17 +300,60 @@ async function buildDocsLinks(): Promise<string | null> {
 
   const routeBase = 'docs';
 
-  const unique = Array.from(new Set(files.map((f) => path.resolve(f))));
-  unique.sort((a, b) => normalizeToPosix(a).localeCompare(normalizeToPosix(b)));
+  // Try to import Docusaurus sidebars to mirror order
+  const sidebarPath = path.join(ROOT, 'website', 'sidebars.ts');
+  let orderedSlugs: string[] | null = null;
+  try {
+    const url = pathToFileURL(sidebarPath).href;
+    const mod: any = await import(url);
+    const sidebars = (mod?.default ?? mod) as any;
+
+    function flatten(items: any): string[] {
+      const out: string[] = [];
+      for (const it of items ?? []) {
+        if (!it) continue;
+        if (typeof it === 'string') {
+          out.push(it);
+        } else if (typeof it === 'object') {
+          if (it.type === 'doc' && typeof it.id === 'string') {
+            out.push(it.id);
+          } else if (it.type === 'category' && Array.isArray(it.items)) {
+            out.push(...flatten(it.items));
+          }
+        }
+      }
+      return out;
+    }
+
+    if (sidebars && sidebars.docs) {
+      orderedSlugs = flatten(sidebars.docs);
+    }
+  } catch {
+    // Ignore and fall back to lexicographic order
+    orderedSlugs = null;
+  }
+
+  // If no sidebar or parse failed, default to lexicographic slugs
+  const allSlugs = Array.from(slugToPath.keys());
+  allSlugs.sort();
+
+  const finalOrder: string[] = [];
+  const seen = new Set<string>();
+  if (orderedSlugs && orderedSlugs.length) {
+    for (const s of orderedSlugs) {
+      if (slugToPath.has(s) && !seen.has(s)) {
+        finalOrder.push(s);
+        seen.add(s);
+      }
+    }
+  }
+  for (const s of allSlugs) {
+    if (!seen.has(s)) finalOrder.push(s);
+  }
 
   const lines: string[] = [];
-  for (const file of unique) {
-    // Relative slug
-    const rel = path.relative(path.join(ROOT, 'website', 'docs'), file);
-    const relPosix = normalizeToPosix(rel);
-    const withoutExt = relPosix.replace(/\.(md|mdx)$/i, '');
-
-    // Read frontmatter for optional title
+  for (const slug of finalOrder) {
+    const file = slugToPath.get(slug)!;
     const raw = await readTextIfExists(file);
     let title: string | null = null;
     if (raw) {
@@ -308,14 +361,11 @@ async function buildDocsLinks(): Promise<string | null> {
       if (typeof fm.data?.title === 'string' && fm.data.title.trim()) {
         title = String(fm.data.title).trim();
       } else {
-        // Fallback: infer H1 from content
         const m = /^#\s+(.+)$/m.exec(fm.content || raw);
         if (m) title = m[1].trim();
       }
     }
-
-    // Compose absolute URL
-    const url = `${homepage}/${routeBase}/${withoutExt}`;
+    const url = `${homepage}/${routeBase}/${slug}`;
     if (title) lines.push(`- ${title}: ${url}`);
     else lines.push(`- ${url}`);
   }
