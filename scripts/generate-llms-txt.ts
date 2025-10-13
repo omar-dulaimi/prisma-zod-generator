@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
 import fg from 'fast-glob';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { remark } from 'remark';
 import gfm from 'remark-gfm';
 import mdx from 'remark-mdx';
@@ -18,7 +18,7 @@ import stringify from 'remark-stringify';
  * - Remain resilient when optional folders are missing
  */
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const README_PATH = path.join(ROOT, 'README.md');
 const PKG_PATH = path.join(ROOT, 'package.json');
 const OUTPUT_PATH = path.join(ROOT, 'llms.txt');
