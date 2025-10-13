@@ -46,8 +46,8 @@ importers:
         specifier: ^13.0.1
         version: 13.0.1(semantic-release@24.2.9(typescript@5.9.3))
       '@semantic-release/exec':
-        specifier: ^6.0.3
-        version: 6.0.3(semantic-release@24.2.9(typescript@5.9.3))
+        specifier: ^7.1.0
+        version: 7.1.0(semantic-release@24.2.9(typescript@5.9.3))
       '@semantic-release/git':
         specifier: ^10.0.1
         version: 10.0.1(semantic-release@24.2.9(typescript@5.9.3))
@@ -809,11 +809,11 @@ packages:
     resolution: {integrity: sha512-mgdxrHTLOjOddRVYIYDo0fR3/v61GNN1YGkfbrjuIKg/uMgCd+Qzo3UAXJ+woLQQpos4pl5Esuw5A7AoNlzjUQ==}
     engines: {node: '>=18'}
 
-  '@semantic-release/exec@6.0.3':
-    resolution: {integrity: sha512-bxAq8vLOw76aV89vxxICecEa8jfaWwYITw6X74zzlO0mc/Bgieqx9kBRz9z96pHectiTAtsCwsQcUyLYWnp3VQ==}
-    engines: {node: '>=14.17'}
+  '@semantic-release/exec@7.1.0':
+    resolution: {integrity: sha512-4ycZ2atgEUutspPZ2hxO6z8JoQt4+y/kkHvfZ1cZxgl9WKJId1xPj+UadwInj+gMn2Gsv+fLnbrZ4s+6tK2TFQ==}
+    engines: {node: '>=20.8.1'}
     peerDependencies:
-      semantic-release: '>=18.0.0'
+      semantic-release: '>=24.1.0'
 
   '@semantic-release/git@10.0.1':
     resolution: {integrity: sha512-eWrx5KguUcU2wUPaO6sfvZI0wPafUKAMNC18aXY4EnNcrZL86dEmpNVnC9uMpGZkmZJ9EfCVJBQx4pV4EMGT1w==}
@@ -2267,8 +2267,8 @@ packages:
     resolution: {integrity: sha512-m6FAo/spmsW2Ab2fU35JTYwtOKa2yAwXSwgjSv1TJzh4Mh7mC3lzAOVLBprb72XsTrgkEIsl7YrFNAiDiRhIGg==}
     engines: {node: '>=12'}
 
-  index-to-position@1.1.0:
-    resolution: {integrity: sha512-XPdx9Dq4t9Qk1mTMbWONJqU7boCoumEH7fRET37HX5+khDUl3J2W6PdALxhILYlIYx2amlwYcRPp28p0tSiojg==}
+  index-to-position@1.2.0:
+    resolution: {integrity: sha512-Yg7+ztRkqslMAS2iFaU+Oa4KTSidr63OsFGlOrJoW981kIYO3CGCS3wA95P1mUi/IVSJkn0D479KTJpVpvFNuw==}
     engines: {node: '>=18'}
 
   inherits@2.0.4:
@@ -4675,14 +4675,14 @@ snapshots:
 
   '@semantic-release/error@4.0.0': {}
 
-  '@semantic-release/exec@6.0.3(semantic-release@24.2.9(typescript@5.9.3))':
+  '@semantic-release/exec@7.1.0(semantic-release@24.2.9(typescript@5.9.3))':
     dependencies:
-      '@semantic-release/error': 3.0.0
+      '@semantic-release/error': 4.0.0
       aggregate-error: 3.1.0
       debug: 4.4.3
-      execa: 5.1.1
-      lodash: 4.17.21
-      parse-json: 5.2.0
+      execa: 9.6.0
+      lodash-es: 4.17.21
+      parse-json: 8.3.0
       semantic-release: 24.2.9(typescript@5.9.3)
     transitivePeerDependencies:
       - supports-color
@@ -6326,7 +6326,7 @@ snapshots:
 
   indent-string@5.0.0: {}
 
-  index-to-position@1.1.0: {}
+  index-to-position@1.2.0: {}
 
   inherits@2.0.4: {}
 
@@ -7246,7 +7246,7 @@ snapshots:
   parse-json@8.3.0:
     dependencies:
       '@babel/code-frame': 7.27.1
-      index-to-position: 1.1.0
+      index-to-position: 1.2.0
       type-fest: 4.41.0
 
   parse-ms@4.0.0: {}
