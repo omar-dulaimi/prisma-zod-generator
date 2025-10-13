@@ -748,6 +748,7 @@ if (!parsed.success) console.error(parsed.error.format());
 
 - Guides and recipes: https://omar-dulaimi.github.io/prisma-zod-generator/
 - See `recipes/` in this repo for ready‑to‑copy setups
+ - For AI tools: see `llms.txt` for an LLM‑friendly project summary
 
 ## Sponsor ❤️
 
