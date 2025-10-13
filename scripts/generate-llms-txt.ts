@@ -10,11 +10,11 @@ import stringify from 'remark-stringify';
 /**
  * Prisma Zod Generator — llms.txt generator
  *
- * MVP behavior:
- * - Curates a stable, minimal-noise text surface combining key info and README extracts
- * - Optionally appends docs pages (if present), excluding very large/noisy pages
- * - Deterministic ordering and headings
- * - Resilient to missing folders/files
+ * Responsibilities
+ * - Curate a stable, minimal-noise text surface for LLMs (README + docs)
+ * - Include top-of-file navigation links and a complete docs link index
+ * - Normalize markdown (MD/MDX), strip frontmatter, and enforce deterministic ordering
+ * - Remain resilient when optional folders are missing
  */
 
 const ROOT = path.resolve(__dirname, '..');
@@ -44,10 +44,16 @@ const processor = remark()
     listItemIndent: 'one',
   });
 
+/**
+ * Create a level-1 markdown header with optional body.
+ */
 function header(title: string, body = ''): string {
   return `# ${title}\n\n${body}`.trim();
 }
 
+/**
+ * Read a text file if it exists; return null if it doesn't.
+ */
 async function readTextIfExists(filePath: string): Promise<string | null> {
   try {
     return await fs.readFile(filePath, 'utf8');
@@ -56,6 +62,12 @@ async function readTextIfExists(filePath: string): Promise<string | null> {
   }
 }
 
+/**
+ * Read and process a markdown/MDX file:
+ * - strips frontmatter (gray-matter)
+ * - runs remark pipeline to normalize
+ * - returns normalized text and inferred title (frontmatter title or first H1)
+ */
 async function readAndProcess(
   filePath: string,
 ): Promise<{ title: string | null; text: string } | null> {
@@ -76,12 +88,18 @@ async function readAndProcess(
   return { title, text };
 }
 
+/**
+ * Current date in YYYY-MM-DD.
+ */
 function todayISO(): string {
   const d = new Date();
   // YYYY-MM-DD
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Read package.json version, fallback to 0.0.0 on error.
+ */
 async function getVersion(): Promise<string> {
   try {
     const pkgRaw = await fs.readFile(PKG_PATH, 'utf8');
@@ -92,7 +110,10 @@ async function getVersion(): Promise<string> {
   }
 }
 
-// Extract a subsection from README by heading label (e.g., "Quick start")
+/**
+ * Extract a subsection from README by heading label (e.g., "Quick start").
+ * Returns the inner body, or null when not found.
+ */
 function extractReadmeSection(readme: string, heading: string): string | null {
   // Normalize line endings
   const src = readme.replace(/\r\n/g, '\n');
@@ -108,7 +129,9 @@ function extractReadmeSection(readme: string, heading: string): string | null {
   return body || null;
 }
 
-// Build curated, stable top sections
+/**
+ * Build curated, stable top sections (title, tagline, quick start, links...).
+ */
 async function buildCuratedTop(): Promise<string> {
   const version = await getVersion();
   const lastUpdated = todayISO();
@@ -193,11 +216,16 @@ async function buildCuratedTop(): Promise<string> {
     .trim();
 }
 
+/**
+ * Normalize path separators to POSIX (forward slashes) for stable sorting.
+ */
 function normalizeToPosix(p: string): string {
   return p.split(path.sep).join(path.posix.sep);
 }
 
-// Decide whether to skip a docs page to keep output small and focused
+/**
+ * Decide whether to skip a docs page for aggregation to keep output concise.
+ */
 function shouldSkipDoc(file: string): boolean {
   const name = path.basename(file).toLowerCase();
   if (name.includes('changelog')) return true;
@@ -205,6 +233,10 @@ function shouldSkipDoc(file: string): boolean {
   return false;
 }
 
+/**
+ * Aggregate docs content into a single normalized plain-text stream.
+ * Applies deterministic ordering and a soft size cap (~300KB).
+ */
 async function buildDocsAggregate(): Promise<string | null> {
   // Discover docs files (optional)
   const files = await fg(DOC_GLOBS, { cwd: ROOT, absolute: true, dot: false });
@@ -233,9 +265,12 @@ async function buildDocsAggregate(): Promise<string | null> {
   return parts.join('\n\n');
 }
 
+/**
+ * Build a list of absolute links for all docs pages under website/docs.
+ * Titles are derived from frontmatter title or first H1 fallback.
+ */
 async function buildDocsLinks(): Promise<string | null> {
   // Focus on the docs site content under website/docs
-  const docsRoot = path.join(ROOT, 'website', 'docs');
   // Existence detection via glob (covers both md and mdx)
   const files = await fg(['website/docs/**/*.md', 'website/docs/**/*.mdx'], {
     cwd: ROOT,
@@ -280,7 +315,7 @@ async function buildDocsLinks(): Promise<string | null> {
     }
 
     // Compose absolute URL
-    const url = `${homepage}/${routeBase}/${withoutExt}`.replace(/([^:]\/)\/+/, '$1');
+    const url = `${homepage}/${routeBase}/${withoutExt}`;
     if (title) lines.push(`- ${title}: ${url}`);
     else lines.push(`- ${url}`);
   }
@@ -289,6 +324,9 @@ async function buildDocsLinks(): Promise<string | null> {
   return ['## All Docs Links', ...lines].join('\n');
 }
 
+/**
+ * Build a short set of top navigation links (Home, Docs, Changelog, GitHub).
+ */
 async function buildNavbarLinks(): Promise<string> {
   // Use homepage and repository from package.json to form absolute links
   let homepage = 'https://omar-dulaimi.github.io/prisma-zod-generator';
@@ -298,7 +336,10 @@ async function buildNavbarLinks(): Promise<string> {
     const pkg = JSON.parse(raw);
     if (typeof pkg?.homepage === 'string' && pkg.homepage)
       homepage = pkg.homepage.replace(/\/?$/, '');
-    if (typeof pkg?.repository === 'string' && pkg.repository) repository = pkg.repository;
+    if (pkg?.repository) {
+      if (typeof pkg.repository === 'string') repository = pkg.repository;
+      else if (typeof pkg.repository?.url === 'string') repository = pkg.repository.url;
+    }
   } catch {}
 
   const siteHome = homepage.replace(/\/docs\/?$/, '');
@@ -311,6 +352,9 @@ async function buildNavbarLinks(): Promise<string> {
   return ['## Navbar Links', ...links].join('\n');
 }
 
+/**
+ * Entry point: assemble sections and write llms.txt at repo root.
+ */
 async function main() {
   const curatedTop = await buildCuratedTop();
   const docs = await buildDocsAggregate();
