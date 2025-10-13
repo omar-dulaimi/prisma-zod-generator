@@ -1,3 +1,24 @@
+## [1.28.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.7...v1.28.0) (2025-10-13)
+
+### 🚀 Features
+
+* **scripts:** add llms.txt generator and docs links index ([4f077fa](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4f077fa1b3d35a626f09adb51a9d0e68d8a7964f))
+
+### 🐛 Bug Fixes
+
+* **scripts:** derive ROOT from import.meta.url for ESM (tsx) ([4fa69fb](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4fa69fb6e28844c350472a54998804ab6e883f76))
+* **scripts:** robust README section parsing, content-based lastUpdated, byte-accurate size cap and logging ([d4a6b98](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d4a6b984c6d80efbc7c20e32963445665a8d98ca))
+
+### ♻️ Code Refactoring
+
+* **scripts:** add jsdoc and harden docs link building ([bd37db8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bd37db815a9f4d6eaf005e4c29147e3d998d5fb1))
+* **scripts:** mirror docs sidebar order in llms links ([17b762d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/17b762db49e38fa237ac9320f899397083324239))
+
+### 📚 Documentation
+
+* **readme:** fix list indentation for markdownlint (MD005/MD007) ([bb4d84e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bb4d84ee491f8a1912719593af1e55112f27f2a1))
+* **readme:** reference llms.txt for AI tools ([70c8291](https://github.com/omar-dulaimi/prisma-zod-generator/commit/70c82913e23d1295226cd8d0d1f3bacf7db37d1e))
+
 ## [1.27.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.27.6...v1.27.7) (2025-10-12)
 
 ### 🐛 Bug Fixes
