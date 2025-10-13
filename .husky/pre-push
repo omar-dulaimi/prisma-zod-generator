@@ -1,6 +1,12 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Skip hook in CI (e.g., GitHub Actions / semantic-release)
+if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ]; then
+  echo "Skipping pre-push in CI"
+  exit 0
+fi
+
 # Fail on first error
 set -e
 

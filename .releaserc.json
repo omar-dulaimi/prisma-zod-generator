@@ -62,6 +62,12 @@
       }
     ],
     [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "pnpm llms:gen"
+      }
+    ],
+    [
       "@semantic-release/npm",
       {
         "pkgRoot": "package"
@@ -74,7 +80,8 @@
           "package.json",
           "package-lock.json",
           "package/package.json",
-          "CHANGELOG.md"
+          "CHANGELOG.md",
+          "llms.txt"
         ],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
