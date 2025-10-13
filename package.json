@@ -154,7 +154,7 @@
     "remark-stringify": "^11.0.0",
     "validator": "^13.15.15",
     "vitest": "^3.2.4",
-    "zod": "^4.1.11"
+    "zod": "^4.1.12"
   },
   "pnpm": {
     "overrides": {
