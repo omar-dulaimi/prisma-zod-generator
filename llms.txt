@@ -1,0 +1,5345 @@
+## Navbar Links
+- Home: https://omar-dulaimi.github.io/prisma-zod-generator/
+- Docs: https://omar-dulaimi.github.io/prisma-zod-generator/docs
+- Changelog: https://omar-dulaimi.github.io/prisma-zod-generator/docs/changelog
+- GitHub: https://github.com/omar-dulaimi/prisma-zod-generator
+
+## All Docs Links
+- Changelog: https://omar-dulaimi.github.io/prisma-zod-generator/docs/changelog
+- DateTime Strategy: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/datetime-strategy
+- Dual Schema Exports: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/dual-exports
+- Emission Controls: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/emission-controls
+- File Layout & Single File Mode: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/file-layout
+- Model / Operation / Field Filtering: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/filtering
+- JSON Schema Compatibility: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/json-schema-compatibility
+- Generation Modes: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/modes
+- Naming & Presets: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/naming
+- Optional Field Behavior: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/optional-fields
+- Configuration Precedence: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/precedence
+- Strict Mode Configuration: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/strict-mode
+- Variants System: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/variants
+- Contributing: https://omar-dulaimi.github.io/prisma-zod-generator/docs/contributing
+- Core Concepts: https://omar-dulaimi.github.io/prisma-zod-generator/docs/intro/concepts
+- Quick Start: https://omar-dulaimi.github.io/prisma-zod-generator/docs/intro/quick-start
+- Prisma Zod Generator: https://omar-dulaimi.github.io/prisma-zod-generator/docs/intro/what-is
+- Performance & Build Tips: https://omar-dulaimi.github.io/prisma-zod-generator/docs/performance
+- Object & CRUD Generation: https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/objects-crud
+- Pure Model Schemas: https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/pure-models
+- Single File Mode: https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/single-file
+- Special Type Mapping: https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/special-types
+- @zod Comment Annotations: https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/zod-comments
+- Circular Dependency Exclusion: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/circular-dependency-exclusion
+- CRUD Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/crud-only
+- Flexible API Validation: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/flexible-api-validation
+- Granular Per Model: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/granular-per-model
+- Hide Sensitive Fields: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/hide-fields
+- Input Variant Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/input-only
+- JSON-friendly DateTime (Split Strategy Default): https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/json-friendly-datetime
+- Minimal CRUD: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/minimal-crud
+- Models Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/models-only
+- Optional Field Control: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/optional-field-control
+- Pure Models Lean: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/pure-models-lean
+- Result Variant Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/result-only
+- Custom Safety Configuration: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/safety-custom-configuration
+- Disable Safety System Completely: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/safety-disable-completely
+- Force Using Dangerous Paths: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/safety-force-dangerous-path
+- Project Migration Safety Guide: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/safety-project-migration
+- Single File Bundle: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/single-file
+- tRPC Optimized: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/trpc-optimized
+- Zod import targets: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/zod-import-targets
+- Bytes & JSON Details: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/bytes-json
+- FAQ: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/faq
+- Logging & Debug Output: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/logging-debug
+- Naming Preset Map: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/naming-preset-map
+- Safety System: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/safety-system
+- Troubleshooting: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/troubleshooting
+- Upgrade Guide: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade-guide
+- Usage Patterns: https://omar-dulaimi.github.io/prisma-zod-generator/docs/usage-patterns
+
+# Prisma Zod Generator
+
+> Prisma → Zod in one generate. Ship validated, typed data everywhere.
+
+Last updated: 2025-10-13 • Version: 1.27.7
+
+## Quick start
+
+- Install: `npm i -D prisma-zod-generator`
+- In `schema.prisma`:
+  ```prisma
+  generator zod { provider = "prisma-zod-generator" }
+  ```
+- Generate: `npx prisma generate`
+- Import:
+  ```ts
+  import { UserSchema } from "./prisma/generated/schemas";
+  ```
+
+## Highlights
+
+- Zero‑boilerplate Zod schemas from Prisma models
+- Multiple variants: input, result, pure
+- Fast minimal mode & selective filtering
+- Strict types • ESM/CJS friendly • TypeScript‑first
+
+## Links
+
+- Docs: https://omar-dulaimi.github.io/prisma-zod-generator/
+- NPM: https://www.npmjs.com/package/prisma-zod-generator
+- Repo: https://github.com/omar-dulaimi/prisma-zod-generator
+- Issues: https://github.com/omar-dulaimi/prisma-zod-generator/issues
+- Sponsor: https://github.com/sponsors/omar-dulaimi
+
+## Configuration
+
+Add to your Prisma schema:
+```prisma
+generator zod {
+  provider = "prisma-zod-generator"
+  // optional: output, disabledModels, modelNameStrategy, etc.
+}
+```
+Run `npx prisma generate` to emit schemas.
+
+## Recipes
+
+- See `recipes/` in the repo and docs site.
+
+## Notes
+
+- Requires Node.js 18+
+- Works with Prisma's `prisma generate` lifecycle
+
+# DateTime Strategy
+
+# DateTime Strategy
+
+Configure how Prisma `DateTime` fields are validated in your generated Zod schemas.
+
+## Overview
+
+The generator supports two complementary controls for DateTime behavior:
+
+- dateTimeSplitStrategy (boolean, default: true) controls the default behavior when no explicit dateTimeStrategy is set.
+- dateTimeStrategy ('date' | 'coerce' | 'isoString') forces a specific mapping across all variants.
+
+When dateTimeSplitStrategy is true and dateTimeStrategy is NOT set:
+
+- Input schemas default to z.coerce.date() (JSON-friendly — accepts ISO strings and coerces to Date)
+- Pure model and result schemas default to z.date()
+
+When dateTimeStrategy is set, it takes precedence and applies to all variants.
+
+## Split Strategy (Default)
+
+With split enabled (default):
+
+- Inputs: z.coerce.date() (accepts ISO strings)
+- Pure/Results: z.date()
+  This provides a JSON-first default for APIs while keeping strict Date objects in read models.
+
+Disable split by setting "dateTimeSplitStrategy": false to revert to a single global default (see strategies below).
+
+## Available Strategies
+
+### `date` (Default)
+
+Generates strict `z.date()` validation that only accepts JavaScript Date objects.
+
+```jsonc
+{
+  "dateTimeStrategy": "date"
+}
+```
+
+**Generated schema:**
+
+```typescript
+// For a createdAt: DateTime field
+createdAt: z.date()
+```
+
+**Usage:**
+
+```typescript
+// ✅ Valid
+const data = { createdAt: new Date() };
+
+// ❌ Invalid - string not accepted
+const data = { createdAt: "2023-01-01T00:00:00Z" };
+```
+
+### `coerce`
+
+Generates `z.coerce.date()` validation that automatically converts valid date strings to Date objects.
+
+```jsonc
+{
+  "dateTimeStrategy": "coerce"
+}
+```
+
+**Generated schema:**
+
+```typescript
+// For a createdAt: DateTime field
+createdAt: z.coerce.date()
+```
+
+**Usage:**
+
+```typescript
+// ✅ Both valid - string automatically converted
+const data1 = { createdAt: new Date() };
+const data2 = { createdAt: "2023-01-01T00:00:00Z" };
+```
+
+### `isoString`
+
+Generates string validation with ISO 8601 regex pattern and transform to Date object.
+
+```jsonc
+{
+  "dateTimeStrategy": "isoString"
+}
+```
+
+**Generated schema:**
+
+```typescript
+// For a createdAt: DateTime field
+createdAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/).transform(v => new Date(v))
+```
+
+**Usage:**
+
+```typescript
+// ✅ Valid - ISO string accepted and transformed
+const data = { createdAt: "2023-01-01T00:00:00.000Z" };
+
+// ❌ Invalid - must be valid ISO string
+const data = { createdAt: "invalid-date" };
+```
+
+## Configuration Examples
+
+### Schema Generator Block
+
+```prisma
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated/zod"
+  config   = "./zod-generator.config.json"
+}
+```
+
+### JSON Configuration File
+
+```jsonc
+// zod-generator.config.json
+{
+  "mode": "custom",
+  "dateTimeStrategy": "coerce",
+  "pureModels": true,
+  "variants": {
+    "pure": { "enabled": true, "suffix": ".model" },
+    "input": { "enabled": true, "suffix": ".input" },
+    "result": { "enabled": true, "suffix": ".result" }
+  }
+}
+```
+
+### Direct Generator Options
+
+```prisma
+generator zod {
+  provider         = "prisma-zod-generator"
+  output           = "./generated/zod"
+  dateTimeStrategy = "isoString"
+}
+```
+
+## Use Cases
+
+### `date` Strategy
+
+- **Best for:** Type-safe applications where you work with Date objects
+- **API validation:** When your frontend sends Date objects directly
+- **Internal validation:** Component props, function parameters
+
+### `coerce` Strategy
+
+- **Best for:** API endpoints accepting flexible date input
+- **Form handling:** User input from date pickers or text fields
+- **Data migration:** Converting between different date formats
+
+### `isoString` Strategy
+
+- **Best for:** Strict API contracts requiring ISO 8601 format
+- **Database consistency:** Ensuring standardized date string format
+- **Logging/serialization:** When you need predictable string representation
+
+## Impact on Generated Schemas
+
+The `dateTimeStrategy` affects all DateTime fields across:
+
+- **Pure models** (when `pureModels: true`)
+- **Input variants** (create, update operations)
+- **Result variants** (query responses)
+- **CRUD operation schemas**
+
+### Example Model
+
+```prisma
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+### Generated Output Comparison
+
+```typescript
+// dateTimeStrategy: "date"
+export const PostModel = z.object({
+  id: z.string(),
+  title: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+// dateTimeStrategy: "coerce"  
+export const PostModel = z.object({
+  id: z.string(),
+  title: z.string(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+
+// dateTimeStrategy: "isoString"
+export const PostModel = z.object({
+  id: z.string(),
+  title: z.string(),
+  createdAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/).transform(v => new Date(v)),
+  updatedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/).transform(v => new Date(v)),
+});
+```
+
+## Migration Guide
+
+When changing `dateTimeStrategy`, regenerate your schemas and update consuming code:
+
+### From `date` to `coerce`
+
+- No breaking changes for existing Date object usage
+- New: string inputs now accepted and converted
+
+### From `date` to `isoString`
+
+- **Breaking:** Only ISO strings accepted, Date objects rejected
+- Update client code to send ISO string format
+
+### From `coerce` to `isoString`
+
+- **Breaking:** More restrictive validation
+- Non-ISO date strings will be rejected
+
+## Related Configuration
+
+- [`pureModels`](./modes.md): When enabled, affects pure model DateTime fields
+- [`variants`](./variants.md): Controls which schema variants include DateTime strategy
+- [`optionalFieldBehavior`](./optional-fields.md): May affect nullable DateTime fields
+
+## Troubleshooting
+
+### Date Validation Errors
+
+```typescript
+// If using "date" strategy but sending strings
+const result = PostModel.safeParse({
+  title: "Hello",
+  createdAt: "2023-01-01" // ❌ String not accepted
+});
+
+// Solution: Convert to Date or use "coerce" strategy
+const result = PostModel.safeParse({
+  title: "Hello", 
+  createdAt: new Date("2023-01-01") // ✅ Date object
+});
+```
+
+### ISO String Format Issues
+
+```typescript
+// If using "isoString" strategy
+const result = PostModel.safeParse({
+  title: "Hello",
+  createdAt: "2023-1-1" // ❌ Invalid ISO format
+});
+
+// Solution: Use proper ISO 8601 format
+const result = PostModel.safeParse({
+  title: "Hello",
+  createdAt: "2023-01-01T00:00:00.000Z" // ✅ Valid ISO
+});
+```
+
+# Dual Schema Exports
+
+Type-safe + method-friendly exports for CRUD argument schemas.
+
+## Rationale
+
+Traditional choice: bind `z.ZodType<Prisma.X>` (great inference, limited chaining) vs plain Zod (full chaining, looser typing). Generator emits both.
+
+## What You Get
+
+```ts
+export const PostFindManySchema: z.ZodType<Prisma.PostFindManyArgs> = base;
+export const PostFindManyZodSchema = base;
+```
+
+Typed one locks inference to Prisma.\*; Zod one supports all refinements/extensions.
+
+## Enabling / Disabling
+
+Generator block flags (not JSON config):
+
+```prisma
+generator zod {
+  provider           = "prisma-zod-generator"
+  exportTypedSchemas = true   // default
+  exportZodSchemas   = true   // default
+  typedSchemaSuffix  = "Schema"    // default
+  zodSchemaSuffix    = "ZodSchema" // default
+}
+```
+
+Disable one side to shrink surface:
+
+```prisma
+exportTypedSchemas = false
+```
+
+## Suffix Customization
+
+Change names to fit convention:
+
+```prisma
+typedSchemaSuffix = "Args"
+zodSchemaSuffix   = "Validator"
+```
+
+Produces `PostFindManyArgs` and `PostFindManyValidator`.
+
+## Single File Mode
+
+Both exports inlined; tree-shakers can drop unused variant if imported selectively.
+
+## When to Prefer One
+
+- Library boundary: use typed version for stable contract.
+- App code needing transformation: use Zod version then `.parse`.
+
+## Interactions
+
+- No effect on pure model schemas (they are single export each).
+- Result schemas follow same pattern.
+
+## Troubleshooting
+
+If you only see one export: verify flags or earlier README examples; ensure no custom fork removed dual export logic.
+
+# Emission Controls
+
+Flags under `emit` can disable whole categories early:
+
+- `enums`
+- `objects` (input object schemas)
+- `crud` (operation argument/result grouping)
+- `pureModels`
+- `variants` (wrapper / variant sets)
+- `results` (result schemas)
+
+Skipping enums while generating objects or CRUD may break references → warning emitted.
+
+Heuristic shortcuts (`pureModelsOnlyMode`, `pureVariantOnlyMode`) suppress objects / CRUD regardless of their flags.
+
+See also: [Dual Schema Exports](./dual-exports.md) for typed vs method-friendly CRUD/result schema pairs.
+
+# File Layout & Single File Mode
+
+Options:
+
+- `useMultipleFiles` (default true)
+- `singleFileName` (default `schemas.ts`)
+- `placeSingleFileAtRoot` (default true) – root of output vs `schemas/` subdir
+- `placeArrayVariantsAtRoot` (only for array variants)
+
+Single-file mode:
+
+1. Aggregates generated content (initSingleFile)
+2. Writes final bundle (flushSingleFile)
+3. Cleans sibling files in target directory
+4. Disables variant emission path
+
+Layout conflicts between generator block & JSON config are surfaced (generator block wins).
+
+# Model / Operation / Field Filtering
+
+Model enable check: `isModelEnabled` (minimal mode defaults to disabled unless configured).
+
+Operation filtering: `isOperationEnabled` with alias mapping (createOne→create, etc.). Minimal mode reduces allowed ops unless overridden.
+
+## Schema-Level Filtering
+
+In minimal mode, entire schema types are filtered out to reduce complexity:
+
+**Blocked in minimal mode:**
+
+- `*CreateInput` schemas (use `*UncheckedCreateInput` instead)
+- Nested relation inputs (`*CreateNestedInput`, `*UpdateNestedInput`)
+- Complex relation patterns (`*CreateWithoutInput`, `*CreateOrConnectWithoutInput`)
+- Aggregation inputs (`*AggregateInput`, etc.)
+- Select/Include helper schemas
+
+**Always allowed:**
+
+- `*UncheckedCreateInput` (simple foreign key-based creation)
+- `*UpdateInput` and `*UncheckedUpdateInput` (update flexibility)
+- `*WhereInput` and `*WhereUniqueInput` (query filtering)
+- `*OrderByWithRelationInput` (sorting)
+
+## Field-Level Filtering
+
+Field filtering precedence (stop at first include win):
+
+1. `model.fields.include`
+2. Model variant `excludeFields`
+3. Legacy `model.fields.exclude`
+4. `globalExclusions[variant]`
+5. Global array legacy excludes
+
+Wildcard patterns supported: `field*`, `*field`, `*middle*`.
+
+WhereUniqueInput & strict base create inputs bypass variant exclusions to preserve shape fidelity.
+
+Excluded relation fields cause foreign key scalar preservation for create inputs (maintain referential integrity constraints).
+
+# JSON Schema Compatibility
+
+# JSON Schema Compatibility
+
+Generate schemas that are fully compatible with [Zod's JSON Schema conversion](https://zod.dev/json-schema) (`z.toJSONSchema()`), enabling seamless integration with OpenAPI documentation tools, API validators, and JSON Schema-based systems.
+
+## Overview
+
+By default, Prisma Zod Generator creates schemas using Zod types that cannot be represented in JSON Schema:
+
+- `z.date()` for DateTime fields
+- `z.bigint()` for BigInt fields
+- `z.instanceof(Uint8Array)` for Bytes fields
+- `z.unknown()` for relations and JSON fields
+
+When `jsonSchemaCompatible` is enabled, these types are automatically converted to JSON Schema-compatible alternatives while preserving validation logic.
+
+## Configuration
+
+### Basic Setup
+
+```json
+{
+  "jsonSchemaCompatible": true
+}
+```
+
+### Advanced Options
+
+```json
+{
+  "jsonSchemaCompatible": true,
+  "jsonSchemaOptions": {
+    "dateTimeFormat": "isoString",
+    "bigIntFormat": "string", 
+    "bytesFormat": "base64String",
+    "conversionOptions": {
+      "unrepresentable": "any",
+      "cycles": "throw",
+      "reused": "inline"
+    }
+  }
+}
+```
+
+## Type Conversions
+
+### DateTime Fields
+
+**Default Behavior:**
+
+```typescript
+// Generated schema (not JSON Schema compatible)
+z.date()
+```
+
+**JSON Schema Compatible:**
+
+```typescript
+// ISO String format (default)
+z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/, "Invalid ISO datetime")
+
+// ISO Date format
+z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid ISO date")
+```
+
+**Configuration:**
+
+- `dateTimeFormat: "isoString"` - Full ISO 8601 datetime (default)
+- `dateTimeFormat: "isoDate"` - ISO date only (YYYY-MM-DD)
+
+### BigInt Fields
+
+**Default Behavior:**
+
+```typescript
+// Generated schema (not JSON Schema compatible)
+z.bigint()
+```
+
+**JSON Schema Compatible:**
+
+```typescript
+// String format (default)
+z.string().regex(/^\d+$/, "Invalid bigint string")
+
+// Number format (may lose precision for very large numbers)
+z.number().int()
+```
+
+**Configuration:**
+
+- `bigIntFormat: "string"` - Represents as string (default, preserves precision)
+- `bigIntFormat: "number"` - Represents as number (potential precision loss)
+
+### Bytes Fields
+
+**Default Behavior:**
+
+```typescript
+// Generated schema (not JSON Schema compatible)
+z.instanceof(Uint8Array)
+```
+
+**JSON Schema Compatible:**
+
+```typescript
+// Base64 string format (default)
+z.string().regex(/^[A-Za-z0-9+/]*={0,2}$/, "Invalid base64 string")
+
+// Hexadecimal string format
+z.string().regex(/^[0-9a-fA-F]*$/, "Invalid hex string")
+```
+
+**Configuration:**
+
+- `bytesFormat: "base64String"` - Base64 encoded string (default)
+- `bytesFormat: "hexString"` - Hexadecimal encoded string
+
+### Relations and JSON Fields
+
+**Default Behavior:**
+
+```typescript
+// Generated schema (not JSON Schema compatible)
+z.unknown()
+```
+
+**JSON Schema Compatible:**
+
+```typescript
+// Allows any value (JSON Schema compatible)
+z.any()
+```
+
+## Usage Examples
+
+### Basic Usage
+
+```typescript
+import { z } from 'zod';
+import { UserModelSchema } from './generated/schemas/variants/pure/User.pure';
+
+// Convert to JSON Schema
+const jsonSchema = z.toJSONSchema(UserModelSchema);
+
+// Use with OpenAPI
+const openApiSpec = {
+  components: {
+    schemas: {
+      User: jsonSchema
+    }
+  }
+};
+```
+
+### OpenAPI Integration
+
+```typescript
+import { z } from 'zod';
+import { 
+  UserCreateInputSchema,
+  UserUpdateInputSchema,
+  UserModelSchema 
+} from './generated/schemas';
+
+// Generate OpenAPI schemas
+const schemas = {
+  UserCreateRequest: z.toJSONSchema(UserCreateInputSchema),
+  UserUpdateRequest: z.toJSONSchema(UserUpdateInputSchema),
+  UserResponse: z.toJSONSchema(UserModelSchema)
+};
+
+// Use in OpenAPI spec
+const openApiSpec = {
+  openapi: '3.0.0',
+  components: { schemas },
+  paths: {
+    '/users': {
+      post: {
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/UserCreateRequest' }
+            }
+          }
+        },
+        responses: {
+          '201': {
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/UserResponse' }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
+```
+
+### API Documentation Generation
+
+```typescript
+import { z } from 'zod';
+
+// Import any generated schema
+import { PostModelSchema } from './generated/schemas/variants/pure/Post.pure';
+
+// Generate documentation-friendly JSON Schema
+const postSchema = z.toJSONSchema(PostModelSchema, {
+  target: 'openApi3',
+  unrepresentable: 'any'
+});
+
+// Use with documentation generators like @apidevtools/swagger-jsdoc
+const swaggerSpec = {
+  openapi: '3.0.0',
+  info: { title: 'API', version: '1.0.0' },
+  components: {
+    schemas: {
+      Post: postSchema
+    }
+  }
+};
+```
+
+## Schema Variants Support
+
+JSON Schema compatibility works across all schema variants:
+
+### Pure Models
+
+```typescript
+import { UserModelSchema } from './generated/schemas/variants/pure/User.pure';
+const userJsonSchema = z.toJSONSchema(UserModelSchema);
+```
+
+### Input Schemas
+
+```typescript
+import { UserCreateInputSchema } from './generated/schemas/variants/input/User.input';
+const createUserJsonSchema = z.toJSONSchema(UserCreateInputSchema);
+```
+
+### Result Schemas
+
+```typescript
+import { UserFindManyResultSchema } from './generated/schemas/variants/result/User.result';
+const findManyJsonSchema = z.toJSONSchema(UserFindManyResultSchema);
+```
+
+## Conversion Options
+
+Configure how `z.toJSONSchema()` handles edge cases:
+
+```json
+{
+  "jsonSchemaCompatible": true,
+  "jsonSchemaOptions": {
+    "conversionOptions": {
+      "unrepresentable": "any",
+      "cycles": "throw", 
+      "reused": "inline"
+    }
+  }
+}
+```
+
+### Options Reference
+
+- **`unrepresentable`**: How to handle unrepresentable types
+  - `"any"` - Convert to `any` type (default)
+  - `"throw"` - Throw error on unrepresentable types
+
+- **`cycles`**: How to handle circular references
+  - `"throw"` - Throw error on cycles (default)
+  - `"ref"` - Use JSON Schema references
+
+- **`reused`**: How to handle reused schemas
+  - `"inline"` - Inline repeated schemas (default)
+  - `"ref"` - Use JSON Schema references
+
+## Validation Behavior
+
+JSON Schema compatible schemas maintain validation while changing representation:
+
+```typescript
+// DateTime validation
+const dateString = "2023-12-25T10:30:00.000Z";
+const result = UserModelSchema.parse({ createdAt: dateString });
+// ✅ Validates against ISO datetime regex
+
+// BigInt validation  
+const bigIntString = "12345678901234567890";
+const result2 = PostModelSchema.parse({ likes: bigIntString });
+// ✅ Validates against numeric string regex
+
+// Bytes validation
+const base64String = "SGVsbG8gV29ybGQ=";
+const result3 = PostModelSchema.parse({ data: base64String });
+// ✅ Validates against base64 regex
+```
+
+## Performance Considerations
+
+- **Regex Validation**: JSON Schema compatible mode uses regex validation which may be slightly slower than native type checking
+- **String Conversion**: Applications need to handle string-to-type conversion in business logic
+- **Memory Usage**: Regex patterns add minimal memory overhead
+
+## Migration Guide
+
+### From Regular Schemas
+
+1. **Enable compatibility mode:**
+
+```json
+{
+  "jsonSchemaCompatible": true
+}
+```
+
+2. **Update application code:**
+
+```typescript
+// Before: Date objects
+const user = { createdAt: new Date() };
+
+// After: ISO strings  
+const user = { createdAt: new Date().toISOString() };
+```
+
+3. **Update validation:**
+
+```typescript
+// Before: Direct usage
+const result = UserModelSchema.parse(userData);
+
+// After: Convert types as needed
+const result = UserModelSchema.parse({
+  ...userData,
+  createdAt: userData.createdAt.toISOString(),
+  likes: userData.likes.toString()
+});
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Error: "Cannot be represented in JSON Schema"**
+
+```
+Solution: Ensure jsonSchemaCompatible is enabled in configuration
+```
+
+**Validation failing with valid data**
+
+```typescript
+// Check that data matches expected string formats
+const validDateTime = "2023-12-25T10:30:00.000Z"; // ✅
+const invalidDateTime = "Dec 25, 2023";           // ❌
+```
+
+**Precision loss with BigInt**
+
+```typescript
+// Use string format for large numbers
+{
+  "jsonSchemaOptions": {
+    "bigIntFormat": "string"  // Preserves precision
+  }
+}
+```
+
+### Debugging
+
+Enable debug logging to see conversion details:
+
+```bash
+DEBUG_PRISMA_ZOD=1 prisma generate
+```
+
+## Related
+
+- [DateTime Strategy](./datetime-strategy) - Configure DateTime handling
+- [Variants](./variants) - Schema variant configuration
+- [Zod JSON Schema Documentation](https://zod.dev/json-schema) - Official Zod JSON Schema docs
+
+# Generation Modes
+
+| Mode    | Models default                        | Variants default                        | Operations                  | Notes                                                 |
+| ------- | ------------------------------------- | --------------------------------------- | --------------------------- | ----------------------------------------------------- |
+| full    | all enabled                           | all enabled                             | all Prisma ops              | Richest output                                        |
+| minimal | disabled unless explicitly configured | input & pure enabled (result often off) | Restricted core CRUD + find | Prunes complex nested inputs, disables select/include |
+| custom  | all enabled unless disabled           | respect `variants.*.enabled`            | all unless filtered         | Explicit control                                      |
+
+Minimal mode specifics:
+
+- Forces `select/include` disabled even if flags set.
+- Applies `MINIMAL_OPERATIONS` (or `minimalOperations` override) for unspecified models.
+- Skips many heavy nested input object schemas (allow-list basics).
+- **Create operations use `UncheckedCreateInput` only**: Blocks regular `*CreateInput` schemas that require complex nested relations, favoring simple foreign key-based `*UncheckedCreateInput` schemas.
+- **Update operations support both variants**: Allows both `*UpdateInput` and `*UncheckedUpdateInput` for flexibility.
+
+## Emission Heuristics
+
+| Condition                                                              | Effect                                                            |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `pureModels=true` AND all `variants.*.enabled=false` AND `mode=custom` | Pure-models-only (emit only pure model schemas)                   |
+| `pureModels=true` AND only `variants.pure.enabled=true`                | Pure-variant-only (skip CRUD/input/result schemas)                |
+| `emit.results=false`                                                   | Internally sets `variants.result.enabled=false` before generation |
+| `useMultipleFiles=false`                                               | Single-file bundle; directory cleanup after flush                 |
+| `mode=minimal`                                                         | Suppresses select/include + prunes deep input objects             |
+
+Explicit `emit.*` booleans, when provided, override heuristics for that category (except minimal’s enforced suppressions).
+
+# Naming & Presets
+
+## Pure Model Naming
+
+Pure model naming resolved by `resolvePureModelNaming`:
+
+### Presets:
+
+- `default`: `{Model}.schema.ts`, export `{Model}Schema` / type `{Model}Type`.
+- `zod-prisma`: same as default + legacy aliases.
+- `zod-prisma-types`: file `{Model}.schema.ts`, export `{Model}` (no suffixes), legacy aliases.
+- `legacy-model-suffix`: `{Model}.model.ts`, export `{Model}Model`.
+
+### Overrides via `naming.pureModel`:
+
+- `filePattern` (`{Model}.schema.ts`, supports tokens `{Model}{SchemaSuffix}` etc.)
+- `schemaSuffix`, `typeSuffix`, `exportNamePattern`, `legacyAliases`.
+
+Relation import rewriting adapts when using `.model` pattern.
+
+## Schema Naming (CRUD Operations)
+
+Schema naming resolved by `resolveSchemaNaming`:
+
+### Default Patterns:
+
+- `filePattern`: `{operation}{Model}.schema.ts`
+- `exportNamePattern`: `{Model}{Operation}Schema`
+
+### Examples:
+
+- `findManyUser.schema.ts` with export `UserFindManySchema`
+- `createOnePost.schema.ts` with export `PostCreateOneSchema`
+
+### Overrides via `naming.schema`:
+
+```json
+{
+  "naming": {
+    "schema": {
+      "filePattern": "{kebab}-{operation}-{model}.schema.ts",
+      "exportNamePattern": "{Model}{Operation}ValidationSchema"
+    }
+  }
+}
+```
+
+### ⚠️ Important Pattern Requirements
+
+**Operation Token Required**: Your `filePattern` MUST include an operation token (`{operation}` or `{Operation}`) to avoid file collisions. Without it, all CRUD operations for the same model will overwrite each other, resulting in only the last operation being generated.
+
+**Examples**:
+
+- ✅ `{kebab}-{operation}-schema.ts` → `user-findMany-schema.ts`, `user-createOne-schema.ts`
+- ✅ `{operation}{Model}.schema.ts` → `findManyUser.schema.ts`, `createOneUser.schema.ts`
+- ❌ `{kebab}-schema.ts` → `user-schema.ts` (all operations overwrite each other!)
+
+**Collision Detection**: The generator will detect filename collisions and throw an error during generation. Always include `{operation}` or `{Operation}` in your pattern.
+
+### Available Tokens:
+
+- `{Model}`: PascalCase model name (e.g., `User`, `BlogPost`)
+- `{model}`: camelCase model name (e.g., `user`, `blogPost`)
+- `{kebab}`: kebab-case model name (e.g., `user`, `blog-post`)
+- `{Operation}`: PascalCase operation (e.g., `FindMany`, `CreateOne`)
+- `{operation}`: camelCase operation (e.g., `findMany`, `createOne`)
+
+## Input Object Naming
+
+Input object naming resolved by `resolveInputNaming`:
+
+### Default Patterns:
+
+- `filePattern`: `{InputType}.schema.ts`
+- `exportNamePattern`: `{Model}{InputType}ObjectSchema`
+
+### Examples:
+
+- `UserWhereInput.schema.ts` with export `UserWhereInputObjectSchema`
+- `PostCreateInput.schema.ts` with export `PostCreateInputObjectSchema`
+
+### Overrides via `naming.input`:
+
+```json
+{
+  "naming": {
+    "input": {
+      "filePattern": "{kebab}-{InputType}-input.ts",
+      "exportNamePattern": "{Model}{InputType}"
+    }
+  }
+}
+```
+
+### Available Tokens:
+
+- `{Model}`: PascalCase model name extracted from input type
+- `{model}`: camelCase model name
+- `{kebab}`: kebab-case model name (e.g., `user`, `blog-post`)
+- `{InputType}`: Full input type name (e.g., `UserWhereInput`, `PostCreateInput`)
+
+### ⚠️ Important Pattern Requirements
+
+**File Pattern Must Include Unique Identifiers**: Your `filePattern` must include tokens that make each input type unique. Without proper uniqueness, multiple input types for the same model will generate identical filenames and overwrite each other.
+
+**Recommended Patterns**:
+
+- ✅ `{kebab}-{InputType}-input.ts` → `book-BookCreateInput-input.ts`
+- ✅ `{InputType}.schema.ts` → `BookCreateInput.schema.ts`
+- ✅ `inputs/{Model}/{InputType}.ts` → `inputs/Book/BookCreateInput.ts`
+- ❌ `{kebab}-input.ts` → `book-input.ts` (all Book inputs collide!)
+
+**Pattern Collision Detection**: The generator will detect filename collisions and report errors during generation. If you see errors about duplicate filenames, ensure your pattern includes sufficient tokens to uniquely identify each input type.
+
+**Note**: When your pattern includes a model token (`{Model}` or `{model}`) together with `{InputType}`, duplicate model prefixes are automatically stripped for both export names and file names to avoid results like `UserUserWhereInput*`.
+
+## Enum Naming
+
+Enum naming resolved by `resolveEnumNaming`:
+
+### Default Patterns:
+
+- `filePattern`: `{Enum}.schema.ts`
+- `exportNamePattern`: `{Enum}Schema`
+
+### Examples:
+
+- `Role.schema.ts` with export `RoleSchema`
+- `UserStatus.schema.ts` with export `UserStatusSchema`
+
+### Overrides via `naming.enum`:
+
+```json
+{
+  "naming": {
+    "enum": {
+      "filePattern": "{Enum}Validator.schema.ts",
+      "exportNamePattern": "{Enum}ValidatorSchema"
+    }
+  }
+}
+```
+
+### Available Tokens:
+
+- `{Enum}`: PascalCase enum name (e.g., `Role`, `UserStatus`)
+- `{enum}`: camelCase enum name (e.g., `role`, `userStatus`)
+- `{camel}`: camelCase alias (same as `{enum}` for enums)
+
+## Complete Configuration Example
+
+```json
+{
+  "naming": {
+    "preset": "default",
+    "pureModel": {
+      "filePattern": "{Model}.model.ts",
+      "exportNamePattern": "{Model}Model"
+    },
+    "schema": {
+      "filePattern": "{operation}-{kebab}.schema.ts",
+      "exportNamePattern": "{Model}{Operation}ValidationSchema"
+    },
+    "input": {
+      "filePattern": "inputs/{InputType}.schema.ts",
+      "exportNamePattern": "{InputType}Schema"
+    },
+    "enum": {
+      "filePattern": "enums/{Enum}.enum.ts",
+      "exportNamePattern": "{Enum}EnumSchema"
+    }
+  }
+}
+```
+
+This would generate:
+
+- Pure models: `User.model.ts` → `UserModel`
+- Schemas: `findMany-user.schema.ts` → `UserFindManyValidationSchema`
+- Inputs: `inputs/UserWhereInput.schema.ts` → `UserWhereInputSchema`
+- Enums: `enums/Role.enum.ts` → `RoleEnumSchema`
+
+# Optional Field Behavior
+
+The `optionalFieldBehavior` configuration option controls how optional Prisma fields (marked with `?`) are mapped to Zod validation schemas.
+
+## Configuration Options
+
+| Value               | Zod Output    | TypeScript Type          | Description                                            |
+| ------------------- | ------------- | ------------------------ | ------------------------------------------------------ |
+| `nullish` (default) | `.nullish()`  | `T \| null \| undefined` | Field can be omitted, explicitly null, or have a value |
+| `optional`          | `.optional()` | `T \| undefined`         | Field can be omitted or have a value, but not null     |
+| `nullable`          | `.nullable()` | `T \| null`              | Field must be present but can be null or have a value  |
+
+## Usage
+
+### Generator Block Configuration
+
+Configure directly in your `schema.prisma`:
+
+```prisma
+generator zod {
+  provider = "prisma-zod-generator"
+  optionalFieldBehavior = "optional"
+}
+```
+
+### JSON Configuration
+
+Or in your `zod-generator.config.json`:
+
+```json
+{
+  "optionalFieldBehavior": "nullish"
+}
+```
+
+## Examples
+
+Given this Prisma model:
+
+```prisma
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?  // Optional field
+  bio   String?  // Optional field
+}
+```
+
+### Nullish Behavior (Default)
+
+```typescript
+// Generated schema
+const UserCreateInputSchema = z.object({
+  email: z.string(),
+  name: z.string().nullish(),
+  bio: z.string().nullish()
+});
+
+// Valid inputs
+{ email: "test@example.com", name: "John", bio: "Developer" }
+{ email: "test@example.com", name: null, bio: undefined }
+{ email: "test@example.com" } // name and bio omitted
+```
+
+### Optional Behavior
+
+```typescript
+// Generated schema
+const UserCreateInputSchema = z.object({
+  email: z.string(),
+  name: z.string().optional(),
+  bio: z.string().optional()
+});
+
+// Valid inputs
+{ email: "test@example.com", name: "John", bio: "Developer" }
+{ email: "test@example.com", name: undefined, bio: undefined }
+{ email: "test@example.com" } // name and bio omitted
+
+// Invalid input
+{ email: "test@example.com", name: null } // ❌ null not allowed
+```
+
+### Nullable Behavior
+
+```typescript
+// Generated schema
+const UserCreateInputSchema = z.object({
+  email: z.string(),
+  name: z.string().nullable(),
+  bio: z.string().nullable()
+});
+
+// Valid inputs
+{ email: "test@example.com", name: "John", bio: "Developer" }
+{ email: "test@example.com", name: null, bio: null }
+
+// Invalid input
+{ email: "test@example.com" } // ❌ name and bio must be present
+```
+
+## Type Compatibility
+
+All three behaviors maintain full compatibility with Prisma's generated TypeScript types:
+
+```typescript
+import { User } from '@prisma/client';
+
+// All generated schemas are compatible with Prisma types
+const prismaUser: Prisma.UserCreateInput = {
+  email: 'test@example.com',
+  name: null, // Prisma allows null for optional fields
+};
+
+// Works with any optionalFieldBehavior setting
+UserCreateInputSchema.parse(prismaUser); // ✅ Always valid
+```
+
+## Use Cases
+
+### API Validation
+
+**Nullish** (default) is recommended for most API scenarios where clients can:
+
+- Omit fields entirely
+- Explicitly send null values
+- Send actual values
+
+### Strict Input Validation
+
+**Optional** is useful when you want to:
+
+- Allow fields to be omitted
+- Reject explicit null values
+- Maintain clean undefined-only semantics
+
+### Always-Present Fields
+
+**Nullable** is suitable when:
+
+- Fields must always be included in requests
+- Null is a meaningful value
+- You want to distinguish between "not set" and "explicitly null"
+
+## Object Schemas: Optional vs Nullable (Behavior Note)
+
+For input object schemas under `objects/` (e.g., `UserCreateInput.schema.ts`, `PostUpdateInput.schema.ts`), the generator applies a policy that aligns Prisma optionality with practical API usage:
+
+- Optional non‑relation fields (scalars/enums/unions) are emitted as `.optional().nullable()` to accept both omission and explicit `null`.
+- Optional relation‑shaped fields remain `.optional()` only and reject `null` (use omission to skip).
+
+Examples:
+
+```ts
+// Optional non-relation scalar
+name: z.string().optional().nullable()
+
+// Optional non-relation union (e.g., update operations)
+title: z.union([z.string(), TitleFieldUpdateOperationsInputObjectSchema]).optional().nullable()
+
+// Optional relation-shaped fields
+author: z.lazy(() => UserCreateNestedOneWithoutPostsInputObjectSchema).optional()         // ✅ undefined ok
+// author: null  // ❌ invalid, use omission instead
+```
+
+Additionally, in filter/where inputs, optional non-relation unions (e.g., `AND`, `OR`, `NOT`, or scalar filter unions) are treated as optional + nullable to allow `null` as a shorthand for “not applied”.
+
+Rationale:
+
+- Prisma optional fields often map to nullable columns; allowing `null` and omission improves ergonomics for JSON clients while keeping relation operations explicit and unambiguous.
+
+This policy applies to object input schemas irrespective of `optionalFieldBehavior` (which continues to control pure model and variant schema generation).
+
+## Migration
+
+When changing `optionalFieldBehavior`, regenerate your schemas:
+
+```bash
+npx prisma generate
+```
+
+All behaviors are functionally equivalent for validation - the choice depends on your API design preferences.
+
+# Configuration Precedence
+
+Final config is assembled in stages:
+
+1. Generator block options (Prisma `schema.prisma`) – highest priority.
+2. JSON config file (explicit `config` path or auto-discovered: `zod-generator.config.json`, `prisma/config.json`, `config.json`).
+3. Internal defaults (`processConfiguration`).
+
+## Config File Path Resolution
+
+Config file paths are resolved **relative to the Prisma schema file directory**, not the project root:
+
+```prisma title="prisma/schema.prisma"
+generator zod {
+  provider = "prisma-zod-generator"
+  config   = "./my-config.json"  // → prisma/my-config.json
+}
+```
+
+```prisma title="apps/api/schema.prisma"
+generator zod {
+  provider = "prisma-zod-generator"
+  config   = "../../shared/zod.config.json"  // → shared/zod.config.json
+}
+```
+
+This allows flexible config placement in monorepos and projects with custom schema locations.
+
+## Output Path Resolution
+
+Output path resolution is deferred until after merging so a JSON `output` applies when the generator block omits `output`. Like config paths, output paths are also resolved relative to the schema file location.
+
+Conflict warnings are logged (file layout options) via `warnOnFileLayoutConflicts`—generator block wins.
+
+Legacy flags (e.g. `isGenerateSelect`, `isGenerateInclude`) are folded into the unified config; minimal mode forcibly disables select/include even if legacy flags true.
+
+# Strict Mode Configuration
+
+The strict mode feature provides granular control over when `.strict()` is applied to generated Zod schemas. By default, all schemas include `.strict()` for backward compatibility, but you can now configure this behavior globally, per-model, per-operation, or per-variant.
+
+## Overview
+
+Zod's `.strict()` method prevents unknown properties from being accepted during validation. While this provides type safety, there are scenarios where you might want more flexible validation:
+
+- **API integration**: External APIs might return additional fields
+- **Gradual migration**: Transitioning from loose to strict validation
+- **Development flexibility**: Allowing extra fields during development
+
+## Global Configuration
+
+Configure strict mode globally for all schemas:
+
+```json
+{
+  "strictMode": {
+    "enabled": true,        // Global default for all schemas
+    "operations": true,     // CRUD operation schemas (findMany, create, etc.)
+    "objects": true,        // Input object schemas (WhereInput, CreateInput, etc.)
+    "variants": true        // Variant schemas (pure, input, result)
+  }
+}
+```
+
+### Default Behavior
+
+Without any `strictMode` configuration, all schemas include `.strict()` for backward compatibility:
+
+```typescript
+// Default behavior
+export const UserCreateInputSchema = z.object({
+  name: z.string(),
+  email: z.string()
+}).strict(); // ← Applied by default
+```
+
+### Disabling Globally
+
+To disable strict mode for all schemas:
+
+```json
+{
+  "strictMode": {
+    "enabled": false
+  }
+}
+```
+
+```typescript
+// Result: no .strict() suffix
+export const UserCreateInputSchema = z.object({
+  name: z.string(),
+  email: z.string()
+}); // ← No .strict()
+```
+
+## Schema Type Control
+
+Control strict mode for specific schema types:
+
+```json
+{
+  "strictMode": {
+    "enabled": true,
+    "operations": true,    // findMany, create, update operations
+    "objects": false,      // WhereInput, CreateInput objects
+    "variants": true       // Pure, input, result variants
+  }
+}
+```
+
+This configuration results in:
+
+```typescript
+// Operations: strict (operations: true)
+export const FindManyUserArgsSchema = z.object({
+  where: UserWhereInputSchema.optional()
+}).strict(); // ← Has .strict()
+
+// Objects: not strict (objects: false)
+export const UserWhereInputSchema = z.object({
+  name: z.string().optional()
+}); // ← No .strict()
+
+// Variants: strict (variants: true)
+export const UserPureSchema = z.object({
+  id: z.number(),
+  name: z.string()
+}).strict(); // ← Has .strict()
+
+// Enums: always strict (inherently strict, no .strict() method)
+export const StatusSchema = z.enum(['ACTIVE', 'INACTIVE']); // ← No .strict() needed
+```
+
+## Model-Level Configuration
+
+Override strict mode settings for specific models:
+
+```json
+{
+  "strictMode": {
+    "enabled": true,
+    "operations": false,
+    "objects": false
+  },
+  "models": {
+    "User": {
+      "strictMode": {
+        "enabled": true,      // Enable for User model
+        "operations": true,   // Override: User operations get .strict()
+        "objects": true      // Override: User objects get .strict()
+      }
+    },
+    "Post": {
+      "strictMode": {
+        "enabled": false     // Disable all strict mode for Post
+      }
+    }
+  }
+}
+```
+
+Result:
+
+- **User**: All schemas get `.strict()` (model override)
+- **Post**: No schemas get `.strict()` (model disabled)
+- **Other models**: Follow global settings (operations and objects disabled)
+
+## Operation-Level Control
+
+Control strict mode for specific operations within a model:
+
+```json
+{
+  "models": {
+    "User": {
+      "strictMode": {
+        "operations": ["findMany", "create"],  // Only these operations get .strict()
+        "exclude": ["update"]                  // Exclude update operations
+      }
+    }
+  }
+}
+```
+
+```typescript
+// Gets .strict() (in operations list)
+export const FindManyUserArgsSchema = z.object({...}).strict();
+
+// Gets .strict() (in operations list)
+export const CreateOneUserArgsSchema = z.object({...}).strict();
+
+// No .strict() (not in operations list)
+export const UpdateOneUserArgsSchema = z.object({...});
+
+// No .strict() (in exclude list)
+export const UpdateManyUserArgsSchema = z.object({...});
+```
+
+### Operation Names
+
+Valid operation names include:
+
+- `findUnique`, `findUniqueOrThrow`
+- `findFirst`, `findFirstOrThrow`
+- `findMany`
+- `create`, `createMany`, `createManyAndReturn`
+- `update`, `updateMany`, `updateManyAndReturn`
+- `delete`, `deleteMany`
+- `upsert`
+- `aggregate`, `groupBy`, `count`
+
+## Variant-Level Control
+
+Configure strict mode for specific variants:
+
+### Global Variant Settings
+
+```json
+{
+  "strictMode": {
+    "variants": false  // Disable for all variants globally
+  },
+  "variants": {
+    "pure": {
+      "enabled": true,
+      "strictMode": true    // Override: pure variants get .strict()
+    },
+    "input": {
+      "enabled": true,
+      "strictMode": false   // Explicit: input variants don't get .strict()
+    },
+    "result": {
+      "enabled": true
+      // Uses global variants setting (false)
+    }
+  }
+}
+```
+
+### Model-Specific Variant Settings
+
+```json
+{
+  "models": {
+    "User": {
+      "strictMode": {
+        "variants": {
+          "pure": true,     // User pure variant gets .strict()
+          "input": false,   // User input variant doesn't get .strict()
+          "result": null    // Uses global/parent setting
+        }
+      }
+    }
+  }
+}
+```
+
+## Configuration Hierarchy
+
+Strict mode settings follow a hierarchy (most specific wins):
+
+1. **Operation-level** (`models.ModelName.strictMode.operations` array)
+2. **Model-level** (`models.ModelName.strictMode.*`)
+3. **Global schema type** (`strictMode.operations`, `strictMode.objects`, etc.)
+4. **Global default** (`strictMode.enabled`)
+
+### Example Hierarchy
+
+```json
+{
+  "strictMode": {
+    "enabled": false,      // 4. Global default: disabled
+    "operations": true     // 3. Global operations: enabled
+  },
+  "models": {
+    "User": {
+      "strictMode": {
+        "enabled": true,         // 2. Model-level: enabled
+        "operations": ["findMany"] // 1. Operation-level: only findMany
+      }
+    }
+  }
+}
+```
+
+Result for User model:
+
+- `findMany`: **strict** (operation-level wins)
+- `create`: **not strict** (not in operation list)
+- `objects`: **strict** (inherits from model-level enabled)
+
+## Common Patterns
+
+### API-Friendly Configuration
+
+Disable strict mode for operations but keep it for internal schemas:
+
+```json
+{
+  "strictMode": {
+    "enabled": true,
+    "operations": false,  // Allow extra fields in API requests
+    "objects": true,      // Keep strict for internal validation
+    "variants": true
+  }
+}
+```
+
+### Development vs Production
+
+Development configuration (more permissive):
+
+```json
+{
+  "strictMode": {
+    "enabled": false,
+    "operations": false,
+    "objects": false,
+    "variants": true     // Keep variants strict for type safety
+  }
+}
+```
+
+Production configuration (strict validation):
+
+```json
+{
+  "strictMode": {
+    "enabled": true,
+    "operations": true,
+    "objects": true,
+    "variants": true
+  }
+}
+```
+
+### Gradual Migration
+
+Start with loose validation and gradually enable strict mode:
+
+```json
+{
+  "strictMode": {
+    "enabled": false  // Start permissive
+  },
+  "models": {
+    "User": {
+      "strictMode": {
+        "enabled": true  // Migrate User model first
+      }
+    }
+  }
+}
+```
+
+## Backward Compatibility
+
+The strict mode feature maintains full backward compatibility:
+
+- **No configuration**: All schemas get `.strict()` (existing behavior)
+- **Existing projects**: Continue working without changes
+- **New projects**: Can opt into flexible validation
+
+## Examples
+
+### Basic Usage
+
+Disable strict mode for all operations but keep it for objects:
+
+```json
+{
+  "strictMode": {
+    "enabled": true,
+    "operations": false,
+    "objects": true
+  }
+}
+```
+
+### Advanced Model Configuration
+
+Different strict mode settings per model:
+
+```json
+{
+  "strictMode": {
+    "enabled": false,
+    "operations": false,
+    "objects": false
+  },
+  "models": {
+    "User": {
+      "strictMode": {
+        "enabled": true,
+        "operations": ["findMany", "create"],
+        "objects": true,
+        "variants": {
+          "pure": true,
+          "input": false
+        }
+      }
+    },
+    "Post": {
+      "strictMode": {
+        "operations": true,
+        "exclude": ["update", "delete"]
+      }
+    }
+  }
+}
+```
+
+### Variant-Specific Configuration
+
+```json
+{
+  "strictMode": {
+    "enabled": true,
+    "variants": false
+  },
+  "variants": {
+    "pure": {
+      "enabled": true,
+      "strictMode": true
+    },
+    "input": {
+      "enabled": true,
+      "strictMode": false
+    }
+  },
+  "models": {
+    "User": {
+      "strictMode": {
+        "variants": {
+          "result": true
+        }
+      }
+    }
+  }
+}
+```
+
+## Migration Guide
+
+### From Always Strict (Default)
+
+If you're upgrading and want to maintain existing behavior, no changes are needed. All schemas will continue to include `.strict()`.
+
+### To Flexible Validation
+
+To allow extra fields in API requests:
+
+```json
+{
+  "strictMode": {
+    "operations": false,  // Allow extra fields in operation inputs
+    "objects": true       // Keep strict for internal objects
+  }
+}
+```
+
+### Per-Model Migration
+
+Migrate models gradually:
+
+```json
+{
+  "strictMode": {
+    "enabled": true  // Keep existing strict behavior
+  },
+  "models": {
+    "NewModel": {
+      "strictMode": {
+        "operations": false  // New model allows extra fields
+      }
+    }
+  }
+}
+```
+
+## Best Practices
+
+1. **Start Conservative**: Begin with strict mode enabled and selectively disable where needed
+2. **Test Thoroughly**: Validate that your application handles extra fields correctly when strict mode is disabled
+3. **Document Decisions**: Comment your configuration to explain why certain models/operations have different strict mode settings
+4. **Environment-Specific**: Consider different configurations for development vs production
+5. **Gradual Migration**: When changing existing projects, migrate model by model rather than all at once
+
+## Troubleshooting
+
+### Schemas Still Have .strict()
+
+Check the configuration hierarchy. More specific settings override general ones:
+
+```json
+{
+  "strictMode": {
+    "enabled": false  // This might be overridden
+  },
+  "models": {
+    "User": {
+      "strictMode": {
+        "enabled": true  // This overrides the global setting
+      }
+    }
+  }
+}
+```
+
+### Configuration Not Applied
+
+1. Ensure your configuration file is properly referenced in the Prisma schema
+2. Check for JSON syntax errors
+3. Verify the configuration file path is correct
+4. Run generation again after configuration changes
+
+### Unexpected Behavior
+
+- **Model not found**: Ensure model names match exactly (case-sensitive)
+- **Operation not working**: Check operation names against the valid list above
+- **Variant issues**: Verify variant is enabled before configuring strict mode
+
+# Variants System
+
+Two forms:
+
+1. Object-based (`variants.pure/input/result`) – enable flags + suffix + excludeFields + partial.
+2. Array-based custom variants – each element: `{ name, suffix?, exclude?, additionalValidation?, makeOptional?, transformRequiredToOptional?, transformOptionalToRequired?, removeValidation?, partial? }`.
+
+Generation behavior:
+
+- Skips entirely if `emit.variants=false` or single-file mode active (variants suppressed in strict single-file).
+- Pure models may still generate separately (`emit.pureModels`).
+- `pureVariantOnlyMode` & `pureModelsOnlyMode` heuristics reduce other schema categories.
+
+Custom variant field building applies:
+
+- Base inferred zod type
+- Optionality transforms
+- Additional validations from variant def or `@zod` doc comments
+- Enum imports resolved relative to variants directory
+
+## Partial Flag
+
+The `partial` flag automatically applies `.partial()` to generated Zod schemas, making all fields optional. This is useful for update operations where you only want to provide some fields.
+
+### Configuration
+
+Object-based variants:
+
+```json
+{
+  "variants": {
+    "input": {
+      "enabled": true,
+      "partial": true
+    },
+    "result": {
+      "enabled": true,
+      "partial": false
+    }
+  }
+}
+```
+
+Array-based custom variants:
+
+```json
+{
+  "variants": [
+    {
+      "name": "UpdateInput",
+      "suffix": "UpdateInput",
+      "partial": true
+    },
+    {
+      "name": "CreateInput",
+      "suffix": "CreateInput",
+      "partial": false
+    }
+  ]
+}
+```
+
+### Example Output
+
+With `partial: true`:
+
+```typescript
+export const UserInputSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  email: z.string().email()
+}).strict().partial();
+```
+
+With `partial: false` (default):
+
+```typescript
+export const UserResultSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  email: z.string().email()
+}).strict();
+```
+
+### Use Cases
+
+- **Update operations**: Use `partial: true` for PATCH/PUT endpoints where users provide only fields to update
+- **Create operations**: Use `partial: false` for POST endpoints where all required fields must be provided
+- **Form handling**: Partial schemas for progressive form completion
+- **API flexibility**: Allow clients to send minimal payloads
+
+# Core Concepts
+
+**Variants**: Parallel schema sets expressing different contexts.
+
+| Variant | Intent                                     | Typical Fields             |
+| ------- | ------------------------------------------ | -------------------------- |
+| pure    | Canonical model snapshot (optionally lean) | All / minus excluded       |
+| input   | Data accepted for create/update ops        | Often omits id, timestamps |
+| result  | Data returned to callers                   | Usually full model         |
+
+You can also define **array-based custom variants** with suffix, exclusions, and optional field transforms.
+
+**Modes**:
+
+- `full` – everything enabled by default.
+- `minimal` – lean subset: restricts operations, disables select/include, prunes complex nested inputs.
+- `custom` – you explicitly enable/disable.
+
+**Filtering Layers** (highest precedence first):
+
+1. `model.fields.include`
+2. model variant excludes (`models[Model].variants.variant.excludeFields`)
+3. legacy `model.fields.exclude`
+4. global variant excludes (`globalExclusions.variant`)
+5. global array excludes (legacy array form)
+
+**Emission Controls**: `emit.enums`, `emit.objects`, `emit.crud`, `emit.pureModels`, `emit.variants`, `emit.results`—each can short‑circuit generation to reduce output.
+
+**Heuristics**:
+
+- `pureModelsOnlyMode`: pureModels + all variants disabled (custom mode) ⇒ only pure models emitted.
+- `pureVariantOnlyMode`: pureModels + only pure variant enabled ⇒ skip CRUD/input/result scaffolding.
+
+**Circular Dependency Resolution**: When `pureModelsIncludeRelations` is enabled, `pureModelsExcludeCircularRelations` can intelligently exclude problematic bidirectional relations to avoid TypeScript circular dependency errors while preserving foreign keys.
+
+**Strict Mode Configuration**: Fine-grained control over when `.strict()` is applied to generated Zod schemas:
+
+- **Global Control**: Configure strict mode for all schemas or specific schema types (operations, objects, variants)
+- **Model-Level Overrides**: Set different strict mode behavior for specific models
+- **Operation-Specific**: Control strict mode for individual operations (findMany, create, update, etc.)
+- **Variant-Level**: Configure strict mode independently for pure, input, and result variants
+- **Enum Handling**: Enums are inherently strict and don't support `.strict()` method
+- **Backward Compatible**: Defaults to strict mode enabled everywhere for existing projects
+
+See the [strict mode configuration page](/docs/config/strict-mode) for complete documentation and common patterns.
+
+**Naming Customization** drives file & export shapes across all schema types:
+
+- **Pure Models**: `naming.preset` + `naming.pureModel` overrides
+- **CRUD Schemas**: `naming.schema` for operation file/export patterns (requires `{operation}` token to avoid collisions)
+- **Input Objects**: `naming.input` for input type file/export patterns
+- **Enums**: `naming.enum` for enum file/export patterns
+
+See the [naming configuration page](/docs/config/naming) for complete documentation.
+
+# Quick Start
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## 1. Install
+
+### Requirements
+
+| Component                | Minimum |
+| ------------------------ | ------- |
+| Node.js                  | 18.x    |
+| Prisma                   | 6.12.0  |
+| Zod                      | 4.0.5   |
+| TypeScript (recommended) | 5.2+    |
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    ```bash
+    npm install prisma-zod-generator zod @prisma/client
+    ```
+  </TabItem>
+
+  <TabItem value="yarn" label="yarn">
+    ```bash
+    yarn add prisma-zod-generator zod @prisma/client
+    ```
+  </TabItem>
+
+  <TabItem value="pnpm" label="pnpm">
+    ```bash
+    pnpm add prisma-zod-generator zod @prisma/client
+    ```
+  </TabItem>
+</Tabs>
+
+## 2. Add generator to `schema.prisma`
+
+```prisma
+generator client {
+  provider = "prisma-client"
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  // optional output = "./prisma/generated" (JSON config can supply if omitted)
+  // optional config = "./zod-generator.config.json" (relative to schema file)
+}
+```
+
+:::info Config Path Resolution
+Config file paths (e.g., `config = "./my-config.json"`) are resolved **relative to the Prisma schema file location**, not the project root. If your schema is at `prisma/schema.prisma`, then `config = "./my-config.json"` will look for the config file at `prisma/my-config.json`.
+:::
+
+## 3. (Optional) Create configuration file
+
+Create `prisma/zod-generator.config.json` (next to your schema file):
+
+```jsonc
+{
+  "mode": "full",
+  "pureModels": true,
+  "variants": {
+    "pure": { "enabled": true },
+    "input": { "enabled": true },
+    "result": { "enabled": true },
+  },
+}
+```
+
+## 4. Generate
+
+```bash
+npx prisma generate
+```
+
+## 5. Consume
+
+```ts
+import { UserSchema, UserInputSchema } from './prisma/generated/schemas';
+UserSchema.parse(data);
+```
+
+## Directory Layout (multi-file default)
+
+```
+prisma/generated/
+  schemas/
+    enums/
+    objects/
+    variants/
+    index.ts
+  models/
+```
+
+Single-file mode collapses to `schemas.ts` via config (`useMultipleFiles:false`).
+
+# Prisma Zod Generator
+
+Generate strongly-typed, configurable Zod schemas directly from your Prisma schema (DMMF). Supports:
+
+- Multiple schema variants (pure / input / result) and custom variant arrays
+- Pure model schemas with customizable naming presets and patterns
+- CRUD schema, input object, and enum naming customization
+- Minimal, full, and custom generation modes
+- Fine-grained model / operation / field filtering with wildcard patterns
+- Emission controls (enums, objects, CRUD, variants, pure models, results)
+- Single-file or multi-file output layouts
+- Enhanced Bytes & JSON handling, relation heuristics, aggregate support
+- `@zod` comment annotations for inline validation rules
+
+Why this matters:
+
+- Eliminates drift between Prisma types and runtime validation
+- Gives you adjustable surface area (lean minimal mode → full CRUD)
+- Enables domain-specific filtered bundles (e.g. public API vs internal tools)
+
+# Performance & Build Tips
+
+Strategies to reduce generation time and bundle size.
+
+## Use Minimal Mode for Fast Iteration
+
+`mode: "minimal"` prunes deep nested inputs and disables select/include.
+
+## Targeted Model Generation
+
+Restrict models via `models: { ModelName: {...} }` to skip unused ones.
+
+## Disable Unused Categories
+
+Turn off `emit.crud`, `emit.results`, or `emit.variants` when not needed.
+
+## Single File for Deployment
+
+`useMultipleFiles: false` produces one file—ideal for serverless bundling.
+
+## Lean Pure Models
+
+`pureModelsLean: true` + exclude heavy relations globally.
+
+## Avoid Enum Explosion
+
+Exclude enums or limit variants if you have large enum sets.
+
+## CI Parallelization
+
+Combine with `VITEST_PARALLEL=true` tests to overlap generation and testing in pipelines.
+
+# Object & CRUD Generation
+
+Steps:
+
+1. Prisma DMMF loaded via `getDMMF`.
+2. Input object & model operation lists cloned.
+3. Hidden models/fields resolved from model comments.
+4. Missing input object types added (legacy support) before filtering.
+5. Object schemas generated if `emit.objects` and not pure-only heuristics; each object pre-filtered with `filterFields`.
+6. CRUD operation schemas assembled (model args, aggregate support) if `emit.crud`.
+7. Objects index synthesized (for integration consistency).
+
+`isObjectSchemaEnabled` checks model enablement + required operations + minimal mode pruning heuristics.
+
+Aggregate result schemas produced via `generateResultSchemas` (if results not forcibly disabled).
+
+# Pure Model Schemas
+
+Activated when `pureModels` true (implicitly in minimal mode) or `emit.pureModels`.
+
+Flow:
+
+- Enabled models filtered.
+- Per-model exclusions combined (global pure exclusions + legacy + variant pure excludes).
+- Naming preset resolved → fileName, export names, optional legacy aliases.
+- Relation imports & enum imports normalized for custom patterns.
+- If single-file mode: still written individually, then bundled.
+
+Lean vs relations:
+
+- `pureModelsLean` keeps scalar + enum fields (default true).
+- `pureModelsIncludeRelations` can include relation lazy refs.
+- `pureModelsExcludeCircularRelations` excludes problematic circular relations when `pureModelsIncludeRelations` is true.
+
+Bytes default: base64 string; set `complexTypes.bytes.useBase64=false` (in config) for Uint8Array.
+
+# Single File Mode
+
+Enable with `useMultipleFiles: false`.
+
+Mechanics:
+
+- Initializes aggregator with resolved bundle path.
+- Writes all schema content through in-memory collection.
+- After generation, flushes aggregator and deletes sibling entries (keeps bundle only).
+- Adjusts Prisma Client import to relative path if custom client output.
+- Suppresses variant emission to avoid directory clutter.
+
+Use when embedding schemas directly into application packages or publishing a lightweight distribution.
+
+# Special Type Mapping
+
+| Prisma   | Zod (I/O)                          | Pure Models Default | Notes                                                     |
+| -------- | ---------------------------------- | ------------------- | --------------------------------------------------------- |
+| String   | z.string()                         | same                | optional + .nullable() when optional string input variant |
+| Int      | z.number().int()                   | same                |                                                           |
+| Float    | z.number()                         | same                |                                                           |
+| Boolean  | z.boolean()                        | same                |                                                           |
+| DateTime | z.date()                           | same                | (strategy: date)                                          |
+| Json     | z.unknown() + optional refinements | same                | Optional depth/length validations                         |
+| Bytes    | z.instanceof(Uint8Array)           | z.string() (base64) | Override to Uint8Array by `useBase64:false`               |
+| BigInt   | z.bigint()                         | same                |                                                           |
+| Decimal  | z.number()                         | same                | Simplified mapping                                        |
+| Enums    | \<Enum>Schema                      | \<Enum>Schema       | Generated enum schemas                                    |
+
+**Bytes**: adds size constraints & base64 regex or length refinements depending on representation.
+
+**JSON**: Can enforce serializability, depth, and length; adds descriptive comments in generated file.
+
+# @zod Comment Annotations
+
+Use triple-slash Prisma doc comments with `@zod` to append validations.
+
+```prisma
+model User {
+  id    String @id @default(cuid())
+  /// @zod .email().min(5)
+  email String @unique
+}
+```
+
+Result:
+
+```ts
+export const UserSchema = z
+  .object({
+    email: z.string().email().min(5),
+    // ...
+  })
+  .strict();
+```
+
+Annotations are concatenated after base type; unsafe expressions are not executed (string append model). Keep rules pure.
+
+## External Validators with `@zod.import`
+
+Bring in runtime helpers directly from doc comments when you need logic that lives outside the generated file.
+
+```prisma
+model User {
+  id    String @id @default(cuid())
+  /// @zod.import(["import { isEmail } from '../validators/email'\"])
+  /// @zod.custom.use(z.string().refine((val) => isEmail(val), { message: 'Invalid email' }))
+  email String @unique
+}
+```
+
+Generated schema (Pure Variant excerpt):
+
+```ts
+import { isEmail } from '../validators/email';
+
+export const UserSchema = z
+  .object({
+    email: z.string().refine((val) => isEmail(val), {
+      message: 'Invalid email',
+    }),
+    // ...
+  })
+  .strict();
+```
+
+- Provide one or more complete import statements inside the array. Relative paths are kept intact and rewritten per output directory.
+- Imports must produce runtime values. Type-only specifiers (e.g. `import type { Validator } ...` or `type Foo as Bar`) are detected and omitted, ensuring we never emit imports that disappear after compilation.
+- Field-level imports are merged with model-level imports. When the same statement appears multiple times it is emitted once.
+- Model-level imports can also supply chained refinements:
+
+  ```prisma
+  /// @zod.import(["import { assertCompanyDomain } from '../validators/domain'\"]).refine(assertCompanyDomain)
+  model Organisation {
+    id    String @id @default(cuid())
+    email String @unique
+  }
+  ```
+
+When both `@zod.import()` and other `@zod.*` annotations are present, the generator keeps custom schemas from `@zod.custom.use()` as the base and only appends inline validations when they do not replace the base type.
+
+## String Format Validations
+
+The generator supports all Zod v4 string format validation methods. In Zod v4, these generate optimized base types (e.g., `z.email()` instead of `z.string().email()`).
+
+### Network & URL Formats
+
+```prisma
+model WebData {
+  id       String @id @default(cuid())
+  /// @zod.email()
+  email    String @unique
+  /// @zod.url()
+  website  String?
+  /// @zod.httpUrl()
+  apiUrl   String
+  /// @zod.hostname()
+  server   String
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const WebDataCreateInputSchema = z.object({
+  email: z.email(),      // Base type in v4
+  website: z.url().optional(),
+  apiUrl: z.httpUrl(),   // Base type in v4
+  server: z.hostname(),  // Base type in v4
+});
+```
+
+### Identifier Formats
+
+```prisma
+model Identifiers {
+  id       String @id @default(cuid())
+  /// @zod.uuid()
+  uuid     String
+  /// @zod.nanoid()
+  nanoid   String
+  /// @zod.cuid()
+  cuid     String
+  /// @zod.cuid2()
+  cuid2    String
+  /// @zod.ulid()
+  ulid     String
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const IdentifiersCreateInputSchema = z.object({
+  uuid: z.uuid(),       // Base type in v4
+  nanoid: z.nanoid(),   // Base type in v4
+  cuid: z.cuid(),       // Base type in v4
+  cuid2: z.cuid2(),     // Base type in v4
+  ulid: z.ulid(),       // Base type in v4
+});
+```
+
+### Encoding & Character Formats
+
+```prisma
+model EncodingData {
+  id        String @id @default(cuid())
+  /// @zod.base64()
+  base64    String
+  /// @zod.base64url()
+  base64url String
+  /// @zod.hex()
+  hex       String
+  /// @zod.emoji()
+  reaction  String
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const EncodingDataCreateInputSchema = z.object({
+  base64: z.base64(),       // Base type in v4
+  base64url: z.base64url(), // Base type in v4
+  hex: z.hex(),             // Base type in v4
+  reaction: z.emoji(),      // Base type in v4
+});
+```
+
+### Security & Network Formats
+
+```prisma
+model SecurityData {
+  id        String @id @default(cuid())
+  /// @zod.jwt()
+  token     String?
+  /// @zod.hash("sha256")
+  checksum  String
+  /// @zod.ipv4()
+  ipv4Addr  String
+  /// @zod.ipv6()
+  ipv6Addr  String?
+  /// @zod.cidrv4()
+  subnet    String
+  /// @zod.datetime()
+  timestamp String
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const SecurityDataCreateInputSchema = z.object({
+  token: z.jwt().optional(),        // Base type in v4
+  checksum: z.hash("sha256"),       // Base type with parameter
+  ipv4Addr: z.ipv4(),              // Base type in v4
+  ipv6Addr: z.ipv6().optional(),   // Base type in v4
+  subnet: z.cidrv4(),              // Base type in v4
+  timestamp: z.datetime(),         // Base type in v4
+});
+```
+
+### Chaining with String Format Methods
+
+String format methods can be chained with other Zod validations:
+
+```prisma
+model ChainedValidations {
+  id       String @id @default(cuid())
+  /// @zod.email().max(100).toLowerCase()
+  email    String @unique
+  /// @zod.nanoid().min(21)
+  publicId String
+  /// @zod.httpUrl().max(200)
+  website  String?
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const ChainedValidationsCreateInputSchema = z.object({
+  email: z.email().max(100).toLowerCase(),
+  publicId: z.nanoid().min(21),
+  website: z.httpUrl().max(200).optional(),
+});
+```
+
+### Version Compatibility
+
+The generator automatically detects your Zod version:
+
+- **Zod v4**: Uses optimized base types like `z.email()`, `z.nanoid()`
+- **Zod v3**: Falls back to chaining methods like `z.string().email()` where supported, or `z.string()` for unsupported methods
+
+### Regular Expression Validation
+
+```prisma
+model ValidationData {
+  id          String @id @default(cuid())
+  /// @zod.regex(/^[A-Z]+$/, "Must be uppercase letters only")
+  upperCode   String
+  /// @zod.regex(/^\d{4}-\d{2}-\d{2}$/)
+  dateFormat  String
+  /// @zod.regex(new RegExp('[0-9]+'))
+  numberStr   String
+}
+```
+
+Generated schema (Zod v4):
+
+```ts
+export const ValidationDataCreateInputSchema = z.object({
+  upperCode: z.regex(/^[A-Z]+$/, 'Must be uppercase letters only'),
+  dateFormat: z.regex(/^\d{4}-\d{2}-\d{2}$/),
+  numberStr: z.regex(new RegExp('[0-9]+')),
+});
+```
+
+### Advanced Parameter Support
+
+The generator supports complex parameter expressions, including:
+
+#### JavaScript Object Literals
+
+```prisma
+model AdvancedValidation {
+  id       String @id @default(cuid())
+  /// @zod.nanoid({ abort: true, error: 'Custom nanoid error' })
+  customId String
+  /// @zod.nanoid({ abort: true, pattern: new RegExp('.'), error: 'Complex validation' })
+  complexId String
+}
+```
+
+Generated schema:
+
+```ts
+export const AdvancedValidationCreateInputSchema = z.object({
+  customId: z.nanoid({"abort":true,"error":"Custom nanoid error"}),
+  complexId: z.nanoid({"abort":true,"pattern":new RegExp('.'),"error":"Complex validation"}),
+});
+```
+
+### Parameter Types Supported
+
+The generator preserves all JavaScript parameter types:
+
+- **Strings**: `@zod.nanoid('Custom error')` → `z.nanoid('Custom error')`
+- **Objects**: `@zod.nanoid({ abort: true })` → `z.nanoid({"abort":true})`
+- **Numbers**: `@zod.min(10)` → `z.string().min(10)` (valid usage)
+- **Booleans**: `@zod.optional()` → `z.string().optional()` (parameter-less)
+- **Arrays**: `@zod.custom([1, 2, 3])` → `z.custom([1,2,3])`
+- **RegExp**: `@zod.regex(/pattern/)` → `z.regex(/pattern/)`
+- **Function calls**: `@zod.custom(Date.now())` → `z.custom(Date.now())`
+- **Nested expressions**: `@zod.custom(new RegExp('.'))` → `z.custom(new RegExp('.'))`
+
+### Complete Reference
+
+| Method              | Parameters                           | Description                   | Zod v4 Output        | Zod v3 Fallback               |
+| ------------------- | ------------------------------------ | ----------------------------- | -------------------- | ----------------------------- |
+| `@zod.email()`      | Optional error message/config        | Email validation              | `z.email()`          | `z.string().email()`          |
+| `@zod.url()`        | Optional error message/config        | URL validation                | `z.url()`            | `z.string().url()`            |
+| `@zod.httpUrl()`    | Optional error message/config        | HTTP/HTTPS URLs               | `z.httpUrl()`        | `z.string()`                  |
+| `@zod.hostname()`   | Optional error message/config        | Hostname validation           | `z.hostname()`       | `z.string()`                  |
+| `@zod.uuid()`       | Optional error message/config        | UUID validation               | `z.uuid()`           | `z.string().uuid()`           |
+| `@zod.datetime()`   | Optional error message/config        | ISO datetime validation       | `z.datetime()`       | `z.string().datetime()`       |
+| `@zod.nanoid()`     | Optional config object/error message | Nanoid validation             | `z.nanoid()`         | `z.string()`                  |
+| `@zod.cuid()`       | Optional error message/config        | CUID validation               | `z.cuid()`           | `z.string()`                  |
+| `@zod.cuid2()`      | Optional error message/config        | CUID v2 validation            | `z.cuid2()`          | `z.string()`                  |
+| `@zod.ulid()`       | Optional error message/config        | ULID validation               | `z.ulid()`           | `z.string()`                  |
+| `@zod.base64()`     | Optional config object/error message | Base64 validation             | `z.base64()`         | `z.string()`                  |
+| `@zod.base64url()`  | Optional config object/error message | Base64URL validation          | `z.base64url()`      | `z.string()`                  |
+| `@zod.hex()`        | Optional error message/config        | Hexadecimal validation        | `z.hex()`            | `z.string()`                  |
+| `@zod.jwt()`        | Optional config object/error message | JWT validation                | `z.jwt()`            | `z.string()`                  |
+| `@zod.regex()`      | Pattern, optional error message      | Regular expression validation | `z.regex(/pattern/)` | `z.string().regex(/pattern/)` |
+| `@zod.hash("algo")` | Algorithm, optional config           | Hash validation               | `z.hash("sha256")`   | `z.string()`                  |
+| `@zod.ipv4()`       | Optional error message/config        | IPv4 validation               | `z.ipv4()`           | `z.string()`                  |
+| `@zod.ipv6()`       | Optional error message/config        | IPv6 validation               | `z.ipv6()`           | `z.string()`                  |
+| `@zod.cidrv4()`     | Optional error message/config        | CIDR v4 validation            | `z.cidrv4()`         | `z.string()`                  |
+| `@zod.emoji()`      | Optional error message/config        | Single emoji validation       | `z.emoji()`          | `z.string()`                  |
+
+## Custom Inline Override (@zod.custom.use)
+
+Replace an entire field schema inline:
+
+```prisma
+model AiChat {
+  id        String @id @default(cuid())
+  /// @zod.custom.use(z.array(z.object({ role: z.enum(['user','assistant','system']), parts: z.array(z.object({ type: z.enum(['text','image']), text: z.string() })) })))
+  messages  Json   @default("[]")
+}
+```
+
+Result (excerpt):
+
+```ts
+messages: z.array(
+  z.object({
+    role: z.enum(['user', 'assistant', 'system']),
+    parts: z.array(z.object({ type: z.enum(['text', 'image']), text: z.string() })),
+  }),
+).default('[]');
+```
+
+This short-circuits other annotations for that field.
+
+Optional helper for deep JSON arrays:
+
+```ts
+import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
+const ChatMessagesSchema = z.array(MessageSchema)${'${jsonMaxDepthRefinement(10)}'};
+```
+
+## Custom Object Schema (@zod.custom)
+
+For JSON fields, use `@zod.custom()` to define structured object schemas using JavaScript object literals:
+
+```prisma
+model User {
+  id String @id @default(cuid())
+
+  /// @zod.custom({ "title": "User Profile", "description": "User details", "isActive": true })
+  profile Json
+
+  /// @zod.custom({ "settings": { "theme": "dark", "notifications": true }, "preferences": ["email", "sms"] })
+  metadata Json
+}
+```
+
+Result:
+
+```ts
+// Creates type-safe object schemas
+profile: z.union([JsonNullValueInputSchema, z.object({
+  title: z.string(),
+  description: z.string(),
+  isActive: z.boolean()
+})]).optional(),
+
+metadata: z.union([JsonNullValueInputSchema, z.object({
+  settings: z.object({
+    theme: z.string(),
+    notifications: z.boolean()
+  }),
+  preferences: z.array(z.string())
+})]).optional()
+```
+
+### Supported Value Types
+
+- **Strings** → `z.string()`
+- **Numbers** → `z.number().int()` or `z.number()`
+- **Booleans** → `z.boolean()`
+- **Arrays** → `z.array(T)` (inferred from first element)
+- **Nested Objects** → `z.object({...})`
+- **null** → `z.null()`
+
+### Key Differences from @zod.custom.use()
+
+| Feature             | `@zod.custom()`                 | `@zod.custom.use()`                           |
+| ------------------- | ------------------------------- | --------------------------------------------- |
+| **Use Case**        | Structured object/array schemas | Complete schema replacement with custom logic |
+| **Syntax**          | JavaScript object literals      | Raw Zod schema expressions                    |
+| **Field Types**     | JSON fields only                | Any field type                                |
+| **Complexity**      | Simple structured data          | Advanced validation (refine, transform)       |
+| **Auto-conversion** | ✅ Automatic type inference      | ❌ Manual Zod syntax                           |
+
+### Example Comparison
+
+```prisma
+// @zod.custom() - Simple structured schema
+/// @zod.custom({ "name": "John", "age": 30, "active": true })
+profile Json
+
+// @zod.custom.use() - Advanced custom validation
+/// @zod.custom.use(z.object({ name: z.string().min(2), age: z.number().positive() }).refine(data => data.age >= 18))
+profile Json
+```
+
+## Native Type Max Length Validation
+
+The generator automatically extracts max length constraints from database native types and applies them as Zod `.max()` validations.
+
+### Supported Native Types
+
+| Database       | Native Types                                       | Example             | Generated Validation  |
+| -------------- | -------------------------------------------------- | ------------------- | --------------------- |
+| **PostgreSQL** | `VarChar(n)`, `Char(n)`                            | `@db.VarChar(255)`  | `z.string().max(255)` |
+| **MySQL**      | `VarChar(n)`, `Char(n)`                            | `@db.VarChar(100)`  | `z.string().max(100)` |
+| **SQL Server** | `VarChar(n)`, `Char(n)`, `NVarChar(n)`, `NChar(n)` | `@db.NVarChar(500)` | `z.string().max(500)` |
+| **SQLite**     | No length constraints                              | -                   | No auto-validation    |
+| **MongoDB**    | `ObjectId`                                         | `@db.ObjectId`      | `z.string().max(24)`  |
+
+### Basic Usage
+
+```prisma
+model User {
+  id          String  @id @default(cuid())
+  email       String  @db.VarChar(320)  // → z.string().max(320)
+  displayName String? @db.VarChar(100)  // → z.string().max(100).optional()
+  bio         String? @db.Char(500)     // → z.string().max(500).optional()
+}
+```
+
+Generated schema:
+
+```ts
+export const UserCreateInputSchema = z.object({
+  email: z.string().max(320),
+  displayName: z.string().max(100).optional(),
+  bio: z.string().max(500).optional(),
+});
+```
+
+### Conflict Resolution with @zod Comments
+
+When both native types and `@zod.max()` exist, the **more restrictive** constraint is used:
+
+```prisma
+model Product {
+  id          String  @id @default(cuid())
+
+  // Native type wins (more restrictive)
+  shortName   String  @db.VarChar(50) /// @zod.max(100)
+
+  // @zod wins (more restrictive)
+  description String? @db.VarChar(1000) /// @zod.max(500)
+
+  // Only native constraint
+  category    String  @db.VarChar(80)
+
+  // Only @zod constraint
+  tags        String? /// @zod.max(200)
+}
+```
+
+Generated result:
+
+```ts
+export const ProductCreateInputSchema = z.object({
+  shortName: z.string().max(50), // Native type (50) < @zod (100)
+  description: z.string().max(500).optional(), // @zod (500) < Native (1000)
+  category: z.string().max(80), // Only native constraint
+  tags: z.string().max(200).optional(), // Only @zod constraint
+});
+```
+
+### Complex Validations
+
+Native constraints work alongside other `@zod` validations:
+
+```prisma
+model Account {
+  id       String @id @default(cuid())
+  /// @zod.email().toLowerCase()
+  email    String @unique @db.VarChar(320)
+  /// @zod.min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+  password String @db.VarChar(255)
+}
+```
+
+Generated schema:
+
+```ts
+export const AccountCreateInputSchema = z.object({
+  email: z.string().max(320).email().toLowerCase(),
+  password: z
+    .string()
+    .max(255)
+    .min(8)
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/),
+});
+```
+
+### Array Support
+
+Native constraints are applied to array elements:
+
+```prisma
+model Tags {
+  id    String   @id @default(cuid())
+  names String[] @db.VarChar(50)  // Each string max 50 chars
+}
+```
+
+Generated schema:
+
+```ts
+export const TagsCreateInputSchema = z.object({
+  names: z.string().max(50).array(),
+});
+```
+
+### Edge Cases
+
+The generator handles various edge cases gracefully:
+
+- **Zero length**: `@db.VarChar(0)` is ignored (invalid constraint)
+- **Very large lengths**: `@db.VarChar(65535)` works normally
+- **Multiple max constraints**: Duplicate `.max()` calls are consolidated into the most restrictive value
+- **Non-string fields**: Native types on Int/DateTime/etc. are ignored for max length extraction
+- **Text types**: `@db.Text` (without length parameter) doesn't generate max constraints
+
+### MongoDB ObjectId
+
+MongoDB ObjectId fields automatically get a max length of 24 characters:
+
+```prisma
+// MongoDB schema
+model User {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  email String @unique
+}
+```
+
+Generated schema:
+
+```ts
+export const UserCreateInputSchema = z.object({
+  id: z.string().max(24), // ObjectId is 24 hex chars
+  email: z.string(),
+});
+```
+
+# Circular Dependency Exclusion
+
+## Problem
+
+When using `pureModelsIncludeRelations: true` with bidirectional relationships, you may encounter TypeScript circular dependency errors:
+
+```
+'DealSchema' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer
+```
+
+This happens with relationships like:
+
+- `Deal` ↔ `Opportunity` (one-to-one bidirectional)
+- `User` ↔ `Profile` (one-to-one with FK)
+- `Category` → `Category` (self-referencing hierarchies)
+
+## Solution
+
+Use the `pureModelsExcludeCircularRelations` option to intelligently exclude problematic relation fields while preserving foreign keys and important relationships.
+
+```json title="zod-generator.config.json"
+{
+  "mode": "custom",
+  "pureModels": true,
+  "pureModelsIncludeRelations": true,
+  "pureModelsExcludeCircularRelations": true,
+  "variants": {
+    "pure": { "enabled": true }
+  },
+  "emit": {
+    "objects": false,
+    "crud": false
+  }
+}
+```
+
+## Schema Example
+
+```prisma title="schema.prisma"
+model Deal {
+  id          String  @id @default(uuid())
+  name        String?
+  status      String  @default("DRAFT")
+
+  // This back-reference will be excluded
+  opportunity Opportunity?
+}
+
+model Opportunity {
+  id     String @id @default(uuid())
+  name   String
+
+  // Foreign key preserved, relation preserved
+  dealId String? @unique
+  deal   Deal?   @relation(fields: [dealId], references: [id])
+}
+```
+
+## What gets excluded
+
+The feature uses smart heuristics to determine which relations to exclude:
+
+1. **Preserves required relations** over optional ones
+2. **Preserves single relations** over list relations
+3. **Preserves FK-side relations** over back-references
+4. **Handles self-references** by excluding one of multiple self-referencing fields
+
+## Generated Output
+
+**Before (with circular dependency):**
+
+```typescript
+// Deal.model.ts
+import { OpportunitySchema } from './Opportunity.model'; // ❌ Circular import
+export const DealSchema = z.object({
+  opportunity: z.lazy(() => OpportunitySchema).nullish(),
+});
+
+// Opportunity.model.ts
+import { DealSchema } from './Deal.model'; // ❌ Circular import
+export const OpportunitySchema = z.object({
+  dealId: z.string().nullish(),
+  deal: z.lazy(() => DealSchema).nullish(), // ❌ Causes circular dependency
+});
+```
+
+**After (circular dependency resolved):**
+
+```typescript
+// Deal.model.ts
+import { OpportunitySchema } from './Opportunity.model'; // ✅ One-way import
+export const DealSchema = z.object({
+  opportunity: z.lazy(() => OpportunitySchema).nullish(), // ✅ Works!
+});
+
+// Opportunity.model.ts
+export const OpportunitySchema = z.object({
+  dealId: z.string().nullish(), // ✅ Foreign key preserved
+  // deal field excluded to break circular reference
+});
+```
+
+## Configuration Methods
+
+### Via JSON Config
+
+```json title="zod-generator.config.json"
+{
+  "pureModelsExcludeCircularRelations": true
+}
+```
+
+### Via Generator Block
+
+```prisma title="schema.prisma"
+generator zod {
+  provider = "prisma-zod-generator"
+  pureModelsExcludeCircularRelations = "true"
+}
+```
+
+## Use Cases
+
+- **API validation** - Clean schemas without circular dependencies
+- **Form validation** - Include relations but avoid TypeScript errors
+- **Data transformation** - Preserve essential relationships while maintaining type safety
+- **Legacy migration** - Smooth transition from other schema generators like `zod-prisma`
+
+## Migration from zod-prisma
+
+This feature helps migrate from `zod-prisma`, which would "just use dealId and not include the self reference to the DealSchema." The new option provides the same clean output while giving you control over when to include relations.
+
+# CRUD Only
+
+Skip pure model variant and focus on object + CRUD argument schemas:
+
+```jsonc
+{
+  "pureModels": false,
+  "emit": { "pureModels": false, "objects": true, "crud": true, "variants": false },
+}
+```
+
+# Flexible API Validation
+
+This recipe shows how to configure the generator to allow extra fields in API requests while maintaining strict validation for internal schemas.
+
+## Problem
+
+By default, all generated Zod schemas include `.strict()`, which rejects any extra properties. This can be problematic when:
+
+- Integrating with external APIs that send additional fields
+- Building APIs that should ignore unknown fields
+- Developing frontend applications that might send extra data
+
+## Solution
+
+Use strict mode configuration to disable `.strict()` for operation schemas while keeping it for internal object schemas:
+
+```json title="zod-generator.config.json"
+{
+  "strictMode": {
+    "enabled": true,      // Keep strict by default
+    "operations": false,  // Allow extra fields in API operations
+    "objects": true,      // Keep strict for internal validation
+    "variants": true      // Keep strict for type variants
+  }
+}
+```
+
+## Result
+
+### Before (Default Strict)
+
+```typescript
+// API operation schema - rejects extra fields
+export const CreateOneUserArgsSchema = z.object({
+  data: UserCreateInputSchema
+}).strict(); // ← Rejects extra fields
+
+// Internal object schema - rejects extra fields
+export const UserCreateInputSchema = z.object({
+  name: z.string(),
+  email: z.string()
+}).strict(); // ← Rejects extra fields
+```
+
+### After (Flexible Operations)
+
+```typescript
+// API operation schema - allows extra fields
+export const CreateOneUserArgsSchema = z.object({
+  data: UserCreateInputSchema
+}); // ← No .strict() - allows extra fields
+
+// Internal object schema - still strict
+export const UserCreateInputSchema = z.object({
+  name: z.string(),
+  email: z.string()
+}).strict(); // ← Still strict for internal validation
+```
+
+## Usage Example
+
+### Client Request (Now Works)
+
+```typescript
+// This request now succeeds even with extra fields
+const response = await fetch('/api/users', {
+  method: 'POST',
+  body: JSON.stringify({
+    data: {
+      name: 'John Doe',
+      email: 'john@example.com',
+      // Extra fields from frontend - now ignored instead of rejected
+      clientVersion: '1.2.3',
+      trackingId: 'abc123',
+      timestamp: Date.now()
+    }
+  })
+});
+```
+
+### Server Validation
+
+```typescript
+import { CreateOneUserArgsSchema } from './generated/schemas';
+
+export async function createUser(req: Request) {
+  // Parse and validate - extra fields are ignored
+  const parsed = CreateOneUserArgsSchema.parse(req.body);
+
+  // Only the defined fields are present
+  console.log(parsed);
+  // { data: { name: 'John Doe', email: 'john@example.com' } }
+
+  // Safe to pass to Prisma
+  const user = await prisma.user.create(parsed);
+  return user;
+}
+```
+
+## Advanced Configuration
+
+### Per-Model Flexibility
+
+Allow extra fields only for specific models:
+
+```json title="zod-generator.config.json"
+{
+  "strictMode": {
+    "enabled": true,      // Strict by default
+    "operations": true    // Operations strict by default
+  },
+  "models": {
+    "User": {
+      "strictMode": {
+        "operations": false  // Only User operations allow extra fields
+      }
+    },
+    "PublicProfile": {
+      "strictMode": {
+        "enabled": false     // All PublicProfile schemas allow extra fields
+      }
+    }
+  }
+}
+```
+
+### Operation-Specific Control
+
+Allow extra fields only for specific operations:
+
+```json title="zod-generator.config.json"
+{
+  "models": {
+    "User": {
+      "strictMode": {
+        "operations": ["create", "update"],  // Only create/update allow extras
+        "exclude": ["findMany"]              // findMany remains strict
+      }
+    }
+  }
+}
+```
+
+## Environment-Based Configuration
+
+### Development (Permissive)
+
+```json title="zod-generator.config.dev.json"
+{
+  "strictMode": {
+    "enabled": false,     // Allow extra fields everywhere
+    "variants": true,     // Keep variants strict for type safety
+    "enums": true        // Keep enums strict
+  }
+}
+```
+
+### Production (Strict)
+
+```json title="zod-generator.config.prod.json"
+{
+  "strictMode": {
+    "enabled": true,      // Strict everywhere
+    "operations": false   // Except operations (for API flexibility)
+  }
+}
+```
+
+Use different configs based on environment:
+
+```prisma title="schema.prisma"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated/schemas"
+  config   = env("NODE_ENV") == "production" ? "./zod-generator.config.prod.json" : "./zod-generator.config.dev.json"
+}
+```
+
+## Best Practices
+
+1. **Start Conservative**: Begin with strict validation and selectively allow flexibility
+2. **Validate Boundaries**: Keep internal schemas strict while allowing flexibility at API boundaries
+3. **Test Thoroughly**: Ensure your application handles extra fields gracefully
+4. **Document Decisions**: Comment why certain models/operations allow extra fields
+5. **Monitor Production**: Log when extra fields are received to understand usage patterns
+
+## Related Patterns
+
+- **Gradual Migration**: Gradually moving from strict to flexible validation
+- **Input Validation**: Different validation strategies for different schema types
+- **API Integration**: Working with external APIs that send extra data
+
+## Common Issues
+
+### Still Getting Validation Errors
+
+If you're still getting strict validation errors:
+
+1. Check that you're using operation schemas (e.g., `CreateOneUserArgsSchema`) not object schemas
+2. Verify your configuration is properly loaded
+3. Ensure you've regenerated schemas after configuration changes
+
+### Performance Considerations
+
+Allowing extra fields has minimal performance impact, but consider:
+
+- Extra fields are parsed but ignored (not passed to Prisma)
+- Large payloads with many extra fields use more memory during parsing
+- Consider request size limits for APIs that accept extra fields
+
+# Granular Per Model
+
+```jsonc
+{
+  "mode": "custom",
+  "models": {
+    "User": {
+      "operations": ["findMany", "create"],
+      "variants": { "input": { "excludeFields": ["role"] } },
+    },
+    "Post": {
+      "operations": ["findMany", "findUnique"],
+      "variants": { "result": { "excludeFields": ["internalFlag"] } },
+    },
+  },
+}
+```
+
+Enables partial surface per model.
+
+# Hide Sensitive Fields
+
+```jsonc
+{
+  "globalExclusions": { "result": ["password", "hashedPassword", "secret*"] },
+}
+```
+
+Removes sensitive fields from outward-facing result schemas.
+
+# Input Variant Only
+
+```jsonc
+{
+  "variants": {
+    "pure": { "enabled": false },
+    "input": { "enabled": true },
+    "result": { "enabled": false },
+  },
+  "emit": { "pureModels": false },
+}
+```
+
+For update operations, enable the partial flag to make all fields optional:
+
+```jsonc
+{
+  "variants": {
+    "pure": { "enabled": false },
+    "input": {
+      "enabled": true,
+      "partial": true  // Makes all fields optional with .partial()
+    },
+    "result": { "enabled": false },
+  },
+  "emit": { "pureModels": false },
+}
+```
+
+Good for request validation only.
+
+# JSON-friendly DateTime (Split Strategy Default)
+
+This recipe shows how the default split strategy for DateTime improves JSON API ergonomics:
+
+- Input schemas accept ISO datetime strings via `z.coerce.date()`
+- Pure model and result schemas remain strict `z.date()`
+
+The split behavior is enabled by default via `dateTimeSplitStrategy: true`. You can still override globally with `dateTimeStrategy`.
+
+Why this matters
+
+- Most clients send ISO strings in JSON. With the split default, creates/updates parse ISO strings without extra code, while output and model snapshots keep strong Date objects.
+
+Minimal configuration
+
+```jsonc
+// zod-generator.config.json
+{
+  "mode": "custom",
+  "output": "./generated",
+  // enabled by default; shown here for clarity
+  "dateTimeSplitStrategy": true,
+  "variants": {
+    "pure":   { "enabled": true, "suffix": ".model" },
+    "input":  { "enabled": true, "suffix": ".input" },
+    "result": { "enabled": true, "suffix": ".result" }
+  }
+}
+```
+
+Example model
+
+```prisma
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts     Post[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   User?     @relation(fields: [authorId], references: [id])
+  authorId Int?
+}
+```
+
+Sample JSON payload accepted by Create/Update inputs
+
+```json
+{
+  "data": {
+    "title": "Hello World",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "author": { "connect": { "email": "alice@example.com" } }
+  }
+}
+```
+
+Overrides (optional)
+
+- Force `coerce` across all variants:
+
+```jsonc
+{ "dateTimeStrategy": "coerce" }
+```
+
+- Force strict `date` across all variants:
+
+```jsonc
+{ "dateTimeStrategy": "date" }
+```
+
+- Force `isoString` across all variants:
+
+```jsonc
+{ "dateTimeStrategy": "isoString" }
+```
+
+Related changes
+
+- `WhereUniqueInput` now accepts “at least one unique selector” (e.g., `{ email: "alice@example.com" }`) and enforces completeness for composite uniques. This is built-in and requires no configuration.
+
+References
+
+- Configuration → DateTime Strategy: config/datetime-strategy
+- Reference → WhereUniqueInput Semantics: reference/where-unique-input
+
+# Minimal CRUD
+
+```jsonc
+{
+  "mode": "minimal",
+  "pureModels": true,
+  "variants": {
+    "pure": { "enabled": true },
+    "input": { "enabled": true },
+    "result": { "enabled": false },
+  },
+}
+```
+
+Produces lean create/update/find schemas, prunes deep nested inputs, disables select/include.
+
+## Schema Generation Behavior
+
+In minimal mode, the generator optimizes schema generation for simplicity and performance:
+
+### Create Operations
+
+- **Uses `UncheckedCreateInput` schemas only**: Create operations (e.g., `UserCreateOne`) use only `UncheckedCreateInputObjectSchema` instead of the union of both `CreateInput` and `UncheckedCreateInput`
+- **Blocks complex `CreateInput` schemas**: Regular `*CreateInput.schema.ts` files are not generated since they require complex nested relation objects
+- **Favors foreign keys**: `UncheckedCreateInput` schemas use simple foreign key fields (e.g., `userId: string`) instead of nested relation objects (e.g., `user: UserCreateNestedOneInput`)
+
+### Update Operations
+
+- **Allows both variants**: Update operations continue to support both `UpdateInput` and `UncheckedUpdateInput` schemas
+- **Maintains flexibility**: Users can choose between relation-based updates or foreign key-based updates
+
+### Blocked Schema Types
+
+Minimal mode blocks generation of these complex input types:
+
+- `*CreateInput` (regular, relation-based)
+- `*CreateNestedInput`
+- `*CreateWithoutInput`
+- `*CreateOrConnectWithoutInput`
+- `*CreateManyWithoutInput`
+- Various nested and relation-heavy input schemas
+
+### Example Output
+
+```typescript
+// ✅ Generated in minimal mode
+export const UserCreateOneSchema = z.object({
+  data: UserUncheckedCreateInputObjectSchema  // Only unchecked variant
+})
+
+// ✅ Generated - UncheckedCreateInput with foreign keys
+export const UserUncheckedCreateInputObjectSchema = z.object({
+  id: z.string().optional(),
+  companyId: z.string(),  // Foreign key instead of nested relation
+  name: z.string(),
+  email: z.string()
+})
+
+// ❌ Not generated in minimal mode - would require complex relations
+// UserCreateInputObjectSchema with nested { company: CompanyCreateNestedOneInput }
+```
+
+This approach ensures TypeScript compatibility while keeping the generated schemas lean and focused on essential CRUD operations.
+
+# Models Only
+
+Emit only pure model schemas (no CRUD/object scaffolding):
+
+```jsonc
+{
+  "mode": "custom",
+  "pureModels": true,
+  "variants": {
+    "pure": { "enabled": true },
+    "input": { "enabled": false },
+    "result": { "enabled": false },
+  },
+  "emit": { "objects": false, "crud": false, "variants": false },
+}
+```
+
+Triggers "pureModelsOnly" heuristic; keeps output minimal.
+
+# Optional Field Control
+
+Configure how optional Prisma fields are validated using different Zod patterns.
+
+## Use Cases
+
+### API with Null Values
+
+When your API accepts explicit null values alongside undefined/omitted fields:
+
+```prisma
+generator zod {
+  provider = "prisma-zod-generator"
+  optionalFieldBehavior = "nullish"  # default
+}
+
+model User {
+  id   Int     @id
+  name String?
+  bio  String?
+}
+```
+
+Generated schema accepts all these patterns:
+
+```typescript
+// All valid
+{ id: 1, name: "John", bio: "Developer" }
+{ id: 1, name: null, bio: undefined }
+{ id: 1 } // name and bio omitted
+```
+
+### Strict No-Null API
+
+When you want to reject explicit null values:
+
+```prisma
+generator zod {
+  provider = "prisma-zod-generator"
+  optionalFieldBehavior = "optional"
+}
+```
+
+Generated validation:
+
+```typescript
+// Valid
+{ id: 1, name: "John" }
+{ id: 1 } // name omitted
+
+// Invalid - null rejected
+{ id: 1, name: null } // ❌ Validation error
+```
+
+### Always-Present Fields
+
+When optional fields must always be included in requests:
+
+```prisma
+generator zod {
+  provider = "prisma-zod-generator"
+  optionalFieldBehavior = "nullable"
+}
+```
+
+Generated validation:
+
+```typescript
+// Valid
+{ id: 1, name: "John", bio: "Developer" }
+{ id: 1, name: null, bio: null }
+
+// Invalid - fields must be present
+{ id: 1 } // ❌ Missing name and bio
+```
+
+## Configuration Options
+
+### Generator Block
+
+```prisma
+generator zod {
+  provider = "prisma-zod-generator"
+  optionalFieldBehavior = "nullish" | "optional" | "nullable"
+}
+```
+
+### JSON Config
+
+```json
+{
+  "optionalFieldBehavior": "nullish"
+}
+```
+
+## Comparison Table
+
+| Behavior   | Zod Output    | Accepts `undefined` | Accepts `null` | Allows Omitted |
+| ---------- | ------------- | ------------------- | -------------- | -------------- |
+| `nullish`  | `.nullish()`  | ✅                   | ✅              | ✅              |
+| `optional` | `.optional()` | ✅                   | ❌              | ✅              |
+| `nullable` | `.nullable()` | ❌                   | ✅              | ❌              |
+
+## Migration Example
+
+Changing from the legacy `.optional().nullable()` pattern:
+
+**Before:**
+
+```typescript
+// Legacy behavior (equivalent to nullish)
+name: z.string().optional().nullable();
+```
+
+**After with explicit configuration:**
+
+```typescript
+// With optionalFieldBehavior = "nullish"
+name: z.string().nullish();
+
+// With optionalFieldBehavior = "optional"
+name: z.string().optional();
+
+// With optionalFieldBehavior = "nullable"
+name: z.string().nullable();
+```
+
+## Type Safety
+
+All behaviors maintain compatibility with Prisma types:
+
+```typescript
+import { Prisma } from '@prisma/client';
+
+// Prisma type: { name?: string | null }
+const data: Prisma.UserCreateInput = {
+  id: 1,
+  name: null, // Prisma allows null
+};
+
+// All optionalFieldBehavior settings accept this
+UserCreateInputSchema.parse(data); // ✅ Always works
+```
+
+## Related: Variant Partial Flag
+
+The `optionalFieldBehavior` setting controls how **Prisma optional fields** (like `String?`) are handled. For making **all fields optional** in specific variants, use the [partial flag in variants configuration](../config/variants.md#partial-flag):
+
+```json
+{
+  "optionalFieldBehavior": "optional",  // Controls Prisma optional fields
+  "variants": {
+    "input": {
+      "enabled": true,
+      "partial": true  // Makes ALL fields optional with .partial()
+    }
+  }
+}
+```
+
+Key differences:
+
+- **`optionalFieldBehavior`**: Controls only Prisma optional fields (`String?`)
+- **`partial` flag**: Makes ALL fields optional in specific variants
+
+# Pure Models Lean
+
+Remove heavy relation fields globally:
+
+```jsonc
+{
+  "pureModels": true,
+  "pureModelsLean": true,
+  "pureModelsIncludeRelations": false,
+  "globalExclusions": { "pure": ["*Relation", "posts", "comments"] },
+}
+```
+
+Generates scalar-centric schemas for simpler validation surfaces.
+
+# Result Variant Only
+
+Focus on response shaping for outbound APIs:
+
+```jsonc
+{
+  "mode": "custom",
+  "variants": {
+    "pure": { "enabled": false },
+    "input": { "enabled": false },
+    "result": { "enabled": true },
+  },
+  "emit": { "pureModels": false },
+}
+```
+
+# Custom Safety Configuration
+
+# Custom Safety Configuration
+
+This recipe demonstrates how to create custom safety configurations tailored to your specific project needs.
+
+## Overview
+
+The safety system offers granular control over different types of protections. You can mix and match settings to create a configuration that works for your project structure.
+
+## Complete Configuration Example
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "standard",
+    "allowDangerousPaths": false,
+    "allowProjectRoots": false,
+    "allowUserFiles": false,
+    "skipManifest": false,
+    "warningsOnly": false,
+    "maxUserFiles": 10,
+    "customDangerousPaths": ["modules", "widgets"],
+    "customProjectFiles": ["project.config.js", "build.config.js"]
+  }
+}
+```
+
+## Configuration Options
+
+### Safety Levels (Presets)
+
+Choose a base level, then override specific settings:
+
+```json
+{
+  "safety": {
+    "level": "strict",        // strict | standard | permissive | disabled
+    "allowUserFiles": true    // Override the preset
+  }
+}
+```
+
+**Available levels**:
+
+- `strict` - Maximum protection, blocks even small numbers of user files
+- `standard` - Balanced protection (default)
+- `permissive` - Warnings-heavy, minimal blocking
+- `disabled` - No safety checks
+
+### Individual Controls
+
+#### allowDangerousPaths
+
+Controls whether common source directory names are allowed:
+
+```json
+{
+  "safety": {
+    "allowDangerousPaths": true  // Allow src, lib, components, etc.
+  }
+}
+```
+
+**Default dangerous paths**: `src`, `lib`, `components`, `pages`, `app`, `utils`, `hooks`, `services`, `api`
+
+#### allowProjectRoots
+
+Controls whether directories containing project files are allowed:
+
+```json
+{
+  "safety": {
+    "allowProjectRoots": true  // Allow dirs with package.json, tsconfig.json, etc.
+  }
+}
+```
+
+#### allowUserFiles
+
+Controls whether directories with user files are allowed:
+
+```json
+{
+  "safety": {
+    "allowUserFiles": true,
+    "maxUserFiles": 20  // Only relevant when allowUserFiles is false
+  }
+}
+```
+
+#### skipManifest
+
+Disables manifest tracking and smart cleanup:
+
+```json
+{
+  "safety": {
+    "skipManifest": true  // No manifest file, no selective cleanup
+  }
+}
+```
+
+#### warningsOnly
+
+Converts all safety errors to warnings:
+
+```json
+{
+  "safety": {
+    "warningsOnly": true  // Never block generation, only warn
+  }
+}
+```
+
+### Custom Patterns
+
+#### customDangerousPaths
+
+Add your own dangerous directory patterns:
+
+```json
+{
+  "safety": {
+    "customDangerousPaths": ["modules", "widgets", "core"]
+  }
+}
+```
+
+#### customProjectFiles
+
+Add your own project file patterns:
+
+```json
+{
+  "safety": {
+    "customProjectFiles": [
+      "nuxt.config.js",
+      "svelte.config.js", 
+      "astro.config.mjs"
+    ]
+  }
+}
+```
+
+## Common Scenarios
+
+### Scenario 1: Strict Enterprise Environment
+
+Maximum safety for large teams:
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "strict",
+    "maxUserFiles": 0,
+    "customProjectFiles": [
+      ".eslintrc.js",
+      "jest.config.js",
+      "docker-compose.yml"
+    ]
+  }
+}
+```
+
+### Scenario 2: Flexible Development Environment
+
+Balanced approach for active development:
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "standard",
+    "allowDangerousPaths": true,
+    "maxUserFiles": 15,
+    "warningsOnly": false
+  }
+}
+```
+
+### Scenario 3: Legacy Project Migration
+
+Permissive settings for migrating existing projects:
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "permissive", 
+    "allowUserFiles": true,
+    "customDangerousPaths": ["legacy", "old-modules"]
+  }
+}
+```
+
+### Scenario 4: CI/CD Environment
+
+Automated environments with controlled paths:
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "standard",
+    "skipManifest": true,      // No state between runs
+    "allowDangerousPaths": false,
+    "warningsOnly": true       // Don't fail builds on warnings
+  }
+}
+```
+
+## Multiple Configuration Sources
+
+Configurations are merged with this precedence:
+
+1. **Environment variables** (highest priority)
+2. **Generator block options**
+3. **Config file settings**
+4. **Default values** (lowest priority)
+
+### Environment Variables
+
+```bash title=".env"
+PRISMA_ZOD_SAFETY_LEVEL=permissive
+PRISMA_ZOD_SAFETY_ALLOW_DANGEROUS_PATHS=true
+PRISMA_ZOD_SAFETY_MAX_USER_FILES=25
+PRISMA_ZOD_SAFETY_CUSTOM_DANGEROUS_PATHS=modules,widgets
+```
+
+### Generator Block
+
+```prisma title="schema.prisma"
+generator zod {
+  provider                      = "prisma-zod-generator"
+  output                        = "./src/generated"
+  safetyLevel                  = "standard"
+  safetyAllowDangerousPaths    = false
+  safetyMaxUserFiles           = "10"
+  safetyCustomDangerousPaths   = "modules,widgets"
+}
+```
+
+### Config File
+
+```json title="zod-generator.config.json"
+{
+  "output": "./generated",
+  "safety": {
+    "level": "strict",
+    "customDangerousPaths": ["legacy"]
+  }
+}
+```
+
+## Testing Your Configuration
+
+Create a test directory structure to verify your safety configuration:
+
+```bash
+mkdir -p test-safety/{src,components,package.json}
+echo '{"name":"test"}' > test-safety/package.json
+echo 'const x = 1;' > test-safety/src/test.ts
+```
+
+Then test with different configurations:
+
+```prisma title="test-schema.prisma"
+generator zod {
+  provider    = "prisma-zod-generator" 
+  output      = "./test-safety/src"
+  safetyLevel = "standard"  // Try different levels
+}
+
+model User {
+  id String @id
+}
+```
+
+## Configuration Validation
+
+The system validates your configuration and provides helpful error messages:
+
+```json title="Invalid configuration"
+{
+  "safety": {
+    "level": "invalid-level",     // ❌ Error: Invalid safety level
+    "maxUserFiles": -5            // ❌ Error: Must be non-negative
+  }
+}
+```
+
+## Debugging Safety Issues
+
+Enable debug logging to understand safety decisions:
+
+```bash
+DEBUG=prisma-zod-generator* npx prisma generate
+```
+
+Or check the generated manifest file:
+
+```json title=".prisma-zod-generator-manifest.json"
+{
+  "version": "1.0",
+  "generatedAt": "2024-01-15T10:30:00.000Z",
+  "files": ["User.schema.ts", "Post.schema.ts"],
+  "directories": ["enums"]
+}
+```
+
+## Best Practices
+
+1. **Start Strict**: Begin with `"level": "strict"` and relax as needed
+2. **Test Configurations**: Use a copy of your project to test safety settings
+3. **Document Choices**: Comment your configuration choices for team members
+4. **Review Regularly**: Periodically review if you can tighten safety settings
+5. **Use Version Control**: Always commit before changing safety configurations
+
+## Migration Path
+
+When changing safety configurations:
+
+1. **Commit Current State**: Save your work
+2. **Test New Configuration**: Try on a project copy first
+3. **Update Gradually**: Make incremental changes
+4. **Monitor Warnings**: Watch for new warning patterns
+5. **Update Team**: Inform team members of configuration changes
+
+***
+
+:::tip Pro Tip
+Use environment variables for temporary safety overrides during debugging, but keep your permanent configuration in the config file or generator block for consistency.
+:::
+
+# Disable Safety System Completely
+
+# Disable Safety System Completely
+
+This recipe shows how to completely disable the safety system that protects against dangerous output paths.
+
+:::danger
+Only disable safety checks if you fully understand the risks. The safety system prevents accidental deletion of your source code. Use this configuration with extreme caution.
+:::
+
+## When to Use
+
+- You're an experienced user who fully understands the implications
+- You have robust backup and version control practices
+- You're using the generator in automated environments with careful path management
+- You need to temporarily bypass safety for migration purposes
+
+## Configuration
+
+### Method 1: Config File
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "enabled": false
+  }
+}
+```
+
+### Method 2: Prisma Generator Block
+
+```prisma title="schema.prisma"
+generator zod {
+  provider      = "prisma-zod-generator"
+  output        = "./src"  // Now allowed (dangerous!)
+  safetyEnabled = false
+}
+```
+
+### Method 3: Environment Variable
+
+```bash title=".env"
+PRISMA_ZOD_SAFETY_ENABLED=false
+```
+
+```bash title="Command line"
+PRISMA_ZOD_SAFETY_ENABLED=false npx prisma generate
+```
+
+## What This Does
+
+With safety disabled:
+
+- ✅ All output paths are allowed, including dangerous ones
+- ✅ No warnings or errors about path safety
+- ✅ No manifest tracking or cleanup protection
+- ❌ **Your files can be deleted without warning**
+
+## Example Output
+
+```bash
+# Before (with safety enabled)
+❌ ERROR: Unsafe output path detected: Output directory contains project file "package.json"
+
+# After (with safety disabled)  
+✅ Generation completed successfully
+```
+
+## Alternative: Use Permissive Mode
+
+Instead of completely disabling safety, consider using permissive mode which still provides some protection:
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "permissive"  // Warns but doesn't block
+  }
+}
+```
+
+## Safety Recommendations
+
+If you disable safety:
+
+1. **Always use version control** - Commit your changes before running the generator
+2. **Use specific paths** - Point to dedicated directories, not source roots
+3. **Test carefully** - Run on a copy of your project first
+4. **Re-enable when possible** - Turn safety back on once you've restructured
+
+## Re-enabling Safety
+
+To re-enable safety later:
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "enabled": true,
+    "level": "standard"  // or "strict" for maximum protection
+  }
+}
+```
+
+Or remove the configuration entirely to use defaults.
+
+***
+
+:::tip
+Consider using [force dangerous paths](./safety-force-dangerous-path.md) or [custom safety configuration](./safety-custom-configuration.md) instead of completely disabling safety.
+:::
+
+# Force Using Dangerous Paths
+
+# Force Using Dangerous Paths
+
+This recipe shows how to configure the generator to allow potentially dangerous output paths while keeping basic safety protections.
+
+:::warning
+This configuration allows dangerous paths but still protects against the worst scenarios like project root directories. Use with caution.
+:::
+
+## When to Use
+
+- You need to output directly to source directories (e.g., `./src`, `./lib`)
+- You have existing projects with schemas in source folders
+- You want warnings but not blocking behavior
+- You understand the risks but need flexibility
+
+## Configuration Options
+
+### Method 1: Allow Dangerous Paths Only
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "allowDangerousPaths": true
+  }
+}
+```
+
+```prisma title="schema.prisma"
+generator zod {
+  provider                    = "prisma-zod-generator"
+  output                      = "./src"
+  safetyAllowDangerousPaths  = true
+}
+```
+
+### Method 2: Permissive Mode (Recommended)
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "permissive"
+  }
+}
+```
+
+```prisma title="schema.prisma"
+generator zod {
+  provider    = "prisma-zod-generator"
+  output      = "./src"
+  safetyLevel = "permissive"
+}
+```
+
+### Method 3: Warnings Only
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "warningsOnly": true
+  }
+}
+```
+
+## What Each Approach Does
+
+### Allow Dangerous Paths Only
+
+- ✅ Allows `src`, `lib`, `components` etc. directories
+- ⚠️  Still warns about user files if no manifest exists
+- ❌ Still blocks project root directories (with `package.json`)
+- ✅ Maintains manifest tracking and smart cleanup
+
+### Permissive Mode
+
+- ✅ Allows dangerous paths with warnings
+- ✅ Allows user files (with warnings)
+- ❌ Still blocks project roots (safer)
+- ✅ Only shows warnings, never blocks generation
+- ✅ Full manifest tracking
+
+### Warnings Only
+
+- ⚠️  Shows warnings for all safety issues
+- ✅ Never blocks generation
+- ✅ Maintains all safety protections except blocking
+- ✅ Full manifest tracking
+
+## Example Scenarios
+
+### Scenario 1: Existing Project with Schemas in src/
+
+```prisma title="schema.prisma"
+generator zod {
+  provider                   = "prisma-zod-generator"
+  output                     = "./src/schemas"
+  safetyAllowDangerousPaths = true
+}
+```
+
+**Result**:
+
+- ✅ Generates to `src/schemas/`
+- ⚠️  Warning about "src" being dangerous
+- ✅ Manifest tracking prevents deleting your other `src/` files
+
+### Scenario 2: Component-Colocated Schemas
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "permissive",
+    "customDangerousPaths": ["components"]
+  }
+}
+```
+
+```prisma title="schema.prisma"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./components/schemas"
+}
+```
+
+**Result**:
+
+- ✅ Generates to `components/schemas/`
+- ⚠️  Warnings but no blocking
+- ✅ Your existing components remain safe
+
+## Still Protected Against
+
+Even with dangerous paths allowed, you're still protected from:
+
+- **Project root directories** - Directories with `package.json`, `tsconfig.json` etc.
+- **Too many user files** - If manifest is missing and many user files exist
+- **Complete chaos** - Basic sanity checks remain active
+
+## Environment Variable Override
+
+You can temporarily allow dangerous paths via environment variables:
+
+```bash
+PRISMA_ZOD_SAFETY_ALLOW_DANGEROUS_PATHS=true npx prisma generate
+```
+
+## Safety Progression
+
+Here's a recommended progression from safest to most permissive:
+
+### 1. Default (Safest)
+
+```json
+{
+  "safety": {
+    "level": "standard"  // Default
+  }
+}
+```
+
+### 2. Allow Your Specific Dangerous Path
+
+```json
+{
+  "safety": {
+    "allowDangerousPaths": true
+  }
+}
+```
+
+### 3. Permissive Mode
+
+```json
+{
+  "safety": {
+    "level": "permissive"
+  }
+}
+```
+
+### 4. Warnings Only
+
+```json
+{
+  "safety": {
+    "warningsOnly": true
+  }
+}
+```
+
+### 5. Disabled (Most Dangerous)
+
+```json
+{
+  "safety": {
+    "enabled": false
+  }
+}
+```
+
+## Best Practices
+
+1. **Start Conservative**: Begin with `allowDangerousPaths: true` rather than disabling safety entirely
+
+2. **Use Specific Paths**: Instead of outputting to `./src`, use `./src/generated` or `./src/schemas`
+
+3. **Monitor Warnings**: Pay attention to warning messages - they guide you toward safer configurations
+
+4. **Backup First**: Always commit your changes before running generation with relaxed safety
+
+5. **Review Manifest**: Check the `.prisma-zod-generator-manifest.json` file to understand what will be cleaned up
+
+## Migration Strategy
+
+If you're migrating from a setup that pointed to dangerous paths:
+
+```prisma title="Before (dangerous)"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./src"
+}
+```
+
+```prisma title="After (safer, but compatible)"
+generator zod {
+  provider                   = "prisma-zod-generator"
+  output                     = "./src/generated"  // Dedicated subdirectory
+  safetyAllowDangerousPaths = false              // Can remove this line
+}
+```
+
+Then update your imports:
+
+```typescript
+// Before
+import { UserSchema } from './User.schema';
+
+// After  
+import { UserSchema } from './generated/User.schema';
+```
+
+***
+
+:::info
+This approach provides a good balance between safety and flexibility. You get protection against the worst scenarios while still being able to use source directories when necessary.
+:::
+
+# Project Migration Safety Guide
+
+# Project Migration Safety Guide
+
+This guide helps you migrate existing projects that may have unsafe generator configurations to use the new safety system.
+
+## Common Migration Scenarios
+
+### Scenario 1: Generator Points to Source Directory
+
+**Before (Unsafe)**:
+
+```prisma title="schema.prisma"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./src"  // Dangerous - points to entire src directory
+}
+```
+
+**Migration Options**:
+
+#### Option A: Move to Dedicated Directory (Recommended)
+
+```prisma title="schema.prisma"  
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated"  // Safe dedicated directory
+}
+```
+
+**Steps**:
+
+1. Update schema.prisma
+2. Run generator to create new location
+3. Update all imports in your code
+4. Delete old generated files from src/
+5. Test thoroughly
+
+#### Option B: Use Subdirectory in Source
+
+```prisma title="schema.prisma"
+generator zod {
+  provider = "prisma-zod-generator" 
+  output   = "./src/generated"  // Safer subdirectory
+}
+```
+
+#### Option C: Allow Dangerous Path Temporarily
+
+```prisma title="schema.prisma"
+generator zod {
+  provider                   = "prisma-zod-generator"
+  output                     = "./src"
+  safetyAllowDangerousPaths = true  # Temporary workaround
+}
+```
+
+:::warning
+Option C is a temporary solution. Plan to migrate to Option A or B.
+:::
+
+### Scenario 2: Generator in Project Root
+
+**Before (Very Unsafe)**:
+
+```prisma title="schema.prisma"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "."  // Extremely dangerous - project root!
+}
+```
+
+This configuration is now **blocked by default**. You must migrate:
+
+**Migration (Required)**:
+
+```prisma title="schema.prisma"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./prisma/generated"  // Safe location
+}
+```
+
+### Scenario 3: Mixed Generated and Source Files
+
+**Before**: Generated files mixed with your code in `src/`
+
+**Migration Strategy**:
+
+1. **Identify Generated Files**: Look for files that match typical generated patterns
+2. **Create Manifest**: Use the manifest system to track future generations
+3. **Separate Gradually**: Move generated files to dedicated directories
+
+```bash title="Identify generated files"
+# Look for common patterns
+find src/ -name "*.schema.ts"
+find src/ -name "*CreateInput.ts" 
+find src/ -name "*WhereInput.ts"
+```
+
+```prisma title="New configuration"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./src/generated"
+  
+  # Allow the dangerous src path temporarily during migration
+  safetyLevel = "permissive"
+}
+```
+
+## Migration Strategies
+
+### Strategy 1: Big Bang Migration
+
+Move everything at once:
+
+1. **Backup Project**: Commit all changes
+2. **Update Configuration**: Change output path
+3. **Run Generator**: Generate in new location
+4. **Update Imports**: Use find-and-replace for import paths
+5. **Clean Up**: Delete old files
+6. **Test**: Verify everything works
+
+```bash title="Find and replace imports"
+# Example: Update imports from src/ to generated/
+find . -name "*.ts" -exec sed -i 's|from "\.\/.*\.schema"|from "../generated/&"|g' {} \;
+```
+
+### Strategy 2: Gradual Migration
+
+Migrate module by module:
+
+1. **Dual Configuration**: Run generator in both old and new locations temporarily
+2. **Migrate Modules**: Update imports module by module
+3. **Clean Up Gradually**: Remove old files as you migrate imports
+4. **Final Switch**: Once all imports updated, switch to new location only
+
+### Strategy 3: Safety-First Migration
+
+Use safety system to guide migration:
+
+1. **Enable Warnings**: Use `warningsOnly: true` to see issues without blocking
+2. **Analyze Warnings**: Understand what files would be affected
+3. **Create Migration Plan**: Based on warning analysis
+4. **Execute Plan**: Make changes guided by safety feedback
+
+## Safety Configuration for Migration
+
+### Phase 1: Assessment
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "strict",
+    "warningsOnly": true  // See all issues without blocking
+  }
+}
+```
+
+### Phase 2: Active Migration
+
+```json title="zod-generator.config.json"  
+{
+  "safety": {
+    "level": "permissive",
+    "allowDangerousPaths": true,
+    "allowUserFiles": true
+  }
+}
+```
+
+### Phase 3: Post-Migration
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "standard"  // Return to normal safety
+  }
+}
+```
+
+## Handling Specific Error Messages
+
+### Error: "Output directory contains project file"
+
+```
+❌ Output directory contains project file "package.json"
+```
+
+**Solutions**:
+
+1. **Change Output**: Use a subdirectory instead
+2. **Override Temporarily**: Set `allowProjectRoots: true`
+3. **Environment Override**: `PRISMA_ZOD_SAFETY_ALLOW_PROJECT_ROOTS=true`
+
+### Error: "Too many potentially user-generated files"
+
+```
+❌ Too many potentially user-generated files (15) found. Maximum allowed: 5.
+```
+
+**Solutions**:
+
+1. **Increase Limit**: Set `maxUserFiles: 20`
+2. **Allow User Files**: Set `allowUserFiles: true`
+3. **Clean Directory**: Remove non-generated files first
+4. **Use Manifest**: Let the system learn what's generated
+
+### Warning: "Common source code directory name"
+
+```
+⚠️ Output directory "src" is a common source code directory name
+```
+
+**Solutions**:
+
+1. **Use Subdirectory**: Change to `./src/generated`
+2. **Allow Dangerous**: Set `allowDangerousPaths: true`
+3. **Accept Warning**: Warnings don't block generation
+
+## Import Update Strategies
+
+### Automated Import Updates
+
+```javascript title="update-imports.js"
+const fs = require('fs');
+const path = require('path');
+
+function updateImports(directory, oldPath, newPath) {
+  const files = fs.readdirSync(directory);
+  
+  files.forEach(file => {
+    if (file.endsWith('.ts') || file.endsWith('.tsx')) {
+      const filePath = path.join(directory, file);
+      let content = fs.readFileSync(filePath, 'utf8');
+      
+      // Update relative imports
+      content = content.replace(
+        new RegExp(`from ['"]${oldPath}`, 'g'),
+        `from "${newPath}`
+      );
+      
+      fs.writeFileSync(filePath, content);
+    }
+  });
+}
+
+// Usage
+updateImports('./src', './schemas/', '../generated/schemas/');
+```
+
+### VSCode Find and Replace
+
+1. Open Find and Replace (Ctrl/Cmd + Shift + H)
+2. Enable regex mode
+3. Find: `from ['"]\.\/schemas\/`
+4. Replace: `from "../generated/schemas/`
+
+### TypeScript-Aware Refactoring
+
+If using VSCode or WebStorm:
+
+1. Rename the generated directory
+2. Let the IDE update imports automatically
+3. Run TypeScript compiler to catch any missed imports
+
+## Validation After Migration
+
+### Check 1: No TypeScript Errors
+
+```bash
+npx tsc --noEmit
+```
+
+### Check 2: All Imports Resolved
+
+```bash
+npm run build
+```
+
+### Check 3: Tests Pass
+
+```bash
+npm test
+```
+
+### Check 4: No Old Generated Files
+
+```bash
+# Look for old generated files in dangerous locations
+find src/ -name "*.schema.ts" -not -path "*/generated/*"
+```
+
+## Rollback Plan
+
+Always have a rollback plan:
+
+1. **Git Branch**: Create a migration branch
+2. **Backup Configuration**: Save old generator config
+3. **Document Changes**: Keep notes of what imports were changed
+4. **Test Rollback**: Verify you can revert changes
+
+```bash title="Rollback commands"
+git checkout main
+git reset --hard HEAD~1  # If committed
+# OR restore specific files
+git checkout HEAD~1 -- schema.prisma src/
+```
+
+## Team Coordination
+
+For team projects:
+
+1. **Announce Migration**: Warn team about upcoming changes
+2. **Create PR**: Use pull requests for review
+3. **Document Process**: Share migration steps with team
+4. **Coordinate Timing**: Choose low-activity periods
+5. **Support Team**: Be available for migration questions
+
+***
+
+:::info
+Migration can be complex, but the safety system is designed to help guide you through the process. Start with permissive settings and gradually tighten them as you clean up your project structure.
+:::
+
+# Single File Bundle
+
+```jsonc
+{
+  "useMultipleFiles": false,
+  "singleFileName": "schemas.ts",
+  "pureModels": true,
+  "variants": {
+    "pure": { "enabled": true },
+    "input": { "enabled": true },
+    "result": { "enabled": false },
+  },
+}
+```
+
+Produces one portable file; variants directory suppressed.
+
+# tRPC Optimized
+
+```jsonc
+{
+  "mode": "custom",
+  "output": "./generated/zod",
+  "globalExclusions": {
+    "input": ["id", "createdAt", "updatedAt"],
+    "result": [],
+    "pure": ["password", "hashedPassword"],
+  },
+  "variants": {
+    "pure": { "enabled": true, "suffix": ".model" },
+    "input": { "enabled": true, "suffix": ".input" },
+    "result": { "enabled": true, "suffix": ".output" },
+  },
+}
+```
+
+Aligns with typical request/response patterns + internal model snapshot.
+
+# Zod import targets
+
+Control how generated schemas import Zod via the `zodImportTarget` config option.
+
+Install Zod in your app (peer dependency), then pick one of:
+
+- auto (default): `import * as z from 'zod'` (namespace import for better tree-shaking)
+- v3: `import { z } from 'zod'` (named import for compatibility)
+- v4: `import * as z from 'zod/v4'`
+
+Notes
+
+- In single‑file bundles, a single Zod import is hoisted at the top.
+- This setting affects all generated files and variants.
+
+Quick recipes
+
+- Copy one of these into your config JSON:
+
+```json title="zod-generator.config.json"
+{ "zodImportTarget": "auto" }
+```
+
+```json title="zod-generator.config.json"
+{ "zodImportTarget": "v4" }
+```
+
+See also
+
+- Reference → Bytes and JSON
+- Configuration → Modes and Variants
+
+# Bytes & JSON Details
+
+**Bytes** mapping logic:
+
+- Default pure model output: base64 string + regex validation.
+- Set `complexTypes.bytes.useBase64=false` to emit `Uint8Array` schemas.
+- Size limits: `minSize` / `maxSize` adjust validation (base64 length scaled 4/3).
+- Allowed MIME types recorded as comments (binary mode needs external detection).
+
+**JSON** mapping options (when enhanced config present):
+
+- Serializability refine (JSON.stringify guard)
+- Max depth & length checks
+- Null allowance toggles (record vs strict modes)
+
+### Helper: jsonMaxDepthRefinement
+
+Utility to append a depth guard to complex JSON array/object schemas.
+
+```ts
+import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
+const DeepJson = z.array(z.any())${'${jsonMaxDepthRefinement(8)}'};
+```
+
+Pass desired max depth; nodes beyond trigger validation error. Prefer modest limits (5–12) to avoid costly traversals.
+
+# FAQ
+
+**Why are select/include schemas missing?** Minimal mode disables them unconditionally to keep surface lean.
+
+**Why didn’t my JSON config output path apply?** Generator block `output` attribute (if explicitly present) takes precedence.
+
+**How do I exclude a field across all variants?** Use `globalExclusions` or legacy global array; variant-specific overrides for finer control.
+
+**Can I only emit pure models?** Enable `pureModels`, disable variants or set all variant enabled flags false (custom mode) → pureModelsOnly heuristic.
+
+**Why enums missing?** `emit.enums=false` was set; object/CRUD schemas referencing enums may fail.
+
+**How do I control optional field validation?** Use `optionalFieldBehavior` to choose between `.nullish()` (default), `.optional()`, or `.nullable()` for optional Prisma fields.
+
+**Where should I place my config file?** Config file paths are resolved relative to your Prisma schema file, not the project root. If your schema is at `prisma/schema.prisma` and you use `config = "./my-config.json"`, the generator will look for `prisma/my-config.json`.
+
+**My config file isn't being found, what's wrong?** Check that:
+
+1. The path in `config = "./path/to/config.json"` is relative to your schema file location
+2. The file exists at the resolved path (generator will show the full resolved path in error messages)
+3. The config file contains valid JSON
+4. You're not using an empty config path (`config = ""` will throw an error)
+
+# Logging & Debug Output
+
+Minimal by default; enable debug for deep diagnostics.
+
+## Default Output
+
+Shows only warnings that affect emission (layout conflicts, minimal mode suppressions, config load fallback).
+
+## Enable Debug
+
+```bash
+DEBUG_PRISMA_ZOD=1 npx prisma generate
+# or
+DEBUG=prisma-zod npx prisma generate
+```
+
+Add npm script:
+
+```jsonc
+"gen:debug": "DEBUG_PRISMA_ZOD=1 prisma generate"
+```
+
+## Warning Categories
+
+- File layout conflicts (generator block vs JSON) – precedence reminder.
+- Minimal mode suppression of select/include.
+- Config load failure fallback.
+- Validation warnings (filter combinations).
+
+## Tips
+
+- Keep logs with issues to speed triage.
+- Disable after debugging to reduce CI noise.
+
+# Naming Preset Map
+
+| Preset              | filePattern        | schemaSuffix | typeSuffix | exportNamePattern       | legacyAliases |
+| ------------------- | ------------------ | ------------ | ---------- | ----------------------- | ------------- |
+| default             | \{Model}.schema.ts | Schema       | Type       | \{Model}\{SchemaSuffix} | false         |
+| zod-prisma          | \{Model}.schema.ts | Schema       | Type       | \{Model}Schema          | true          |
+| zod-prisma-types    | \{Model}.schema.ts | (empty)      | (empty)    | \{Model}                | true          |
+| legacy-model-suffix | \{Model}.model.ts  | Model        | ModelType  | \{Model}Model           | false         |
+
+Override tokens:
+
+- `\{Model\}`, `\{model\}`, `\{camel\}`, `\{kebab\}`, `\{SchemaSuffix\}`, `\{TypeSuffix\}`
+
+# Safety System
+
+# Safety System
+
+The prisma-zod-generator includes a comprehensive safety system that protects your source code from accidental deletion when using custom output paths.
+
+:::tip
+This safety system was introduced to solve [Issue #71](https://github.com/omar-dulaimi/prisma-zod-generator/issues/71) - a critical bug where the generator could delete entire directories containing user source code.
+:::
+
+## Overview
+
+Prior to the safety system, the generator would delete **all contents** of the output directory before generating new schemas. This created a dangerous situation where users could accidentally lose their work by pointing the output to directories containing their source code.
+
+```prisma title="schema.prisma - DANGEROUS (without safety system)"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./src"  // ⚠️ This would delete all files in src/
+}
+```
+
+## How It Works
+
+The safety system uses a **hybrid manifest-based approach** with multiple layers of protection:
+
+### 1. Path Validation
+
+The system analyzes output paths for common patterns that suggest user source code:
+
+#### ⚠️ Warned Paths (Common Source Directories)
+
+- `src` - Source code directory
+- `lib` - Library code
+- `components` - React/Vue components
+- `pages` - Next.js pages
+- `app` - Application code
+- `utils` - Utility functions
+- `hooks` - React hooks
+- `services` - Service layer code
+- `api` - API endpoints
+
+#### ❌ Blocked Paths (Project Directories)
+
+Any directory containing these files is **completely blocked**:
+
+- `package.json` - Node.js project
+- `tsconfig.json` - TypeScript project
+- `next.config.js` - Next.js project
+- `vite.config.js` - Vite project
+- `webpack.config.js` - Webpack project
+- `rollup.config.js` - Rollup project
+- `.gitignore` - Git repository
+- `README.md` - Project documentation
+
+### 2. Manifest Tracking
+
+The generator creates and maintains a manifest file (`.prisma-zod-generator-manifest.json`) that tracks exactly which files and directories it creates:
+
+```json title=".prisma-zod-generator-manifest.json"
+{
+  "version": "1.0",
+  "generatorVersion": "1.16.6",
+  "generatedAt": "2024-01-15T10:30:00.000Z",
+  "outputPath": "/path/to/output",
+  "files": [
+    "User.schema.ts",
+    "Post.schema.ts",
+    "enums/Role.ts"
+  ],
+  "directories": [
+    "enums",
+    "objects"
+  ]
+}
+```
+
+### 3. Smart Cleanup
+
+#### First Run (No Manifest)
+
+Uses pattern detection to identify likely generated files:
+
+- Analyzes file content for generator signatures
+- Only removes files that contain generated code patterns
+- Preserves files that don't match generator signatures
+
+#### Subsequent Runs (With Manifest)
+
+Uses precise manifest-based cleanup:
+
+- Only removes files listed in the previous manifest
+- Only removes directories that were created by the generator
+- Never touches files not tracked in the manifest
+
+### 4. Content Analysis
+
+The system analyzes existing files to determine if they're user-generated:
+
+- Checks file extensions (`.ts`, `.js`, `.tsx`, `.jsx`, etc.)
+- Counts suspicious files that look like user code
+- Blocks generation if too many user files are found (> 5 files)
+
+## Safety Messages
+
+### Warning Messages
+
+When potentially risky paths are detected, you'll see helpful warnings:
+
+```bash
+⚠️  WARNING: Output directory "src" is a common source code directory name. 
+Consider using a dedicated subdirectory like "src/generated" instead.
+
+⚠️  WARNING: Output directory contains 3 files that may be user code: 
+auth.service.ts, user.model.ts, config.ts. 
+No manifest file found from previous generator runs.
+```
+
+### Error Messages
+
+For dangerous configurations, generation is blocked with clear guidance:
+
+```bash
+❌ ERROR: Unsafe output path detected: Output directory contains project file "package.json".
+
+To resolve this issue:
+1. Use a dedicated directory for generated schemas (e.g., "./generated" or "./src/generated")
+2. Or use a subdirectory within your source folder (e.g., "./src/zod-schemas")  
+3. Avoid pointing directly to directories containing your source code
+
+This safety check prevents accidental deletion of your work.
+```
+
+## Configuration Options
+
+The safety system can be configured to match your project's needs. You can control safety behavior through configuration files, generator options, or environment variables.
+
+### Safety Levels
+
+Quick configuration using preset levels:
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "level": "strict"    // strict | standard | permissive | disabled
+  }
+}
+```
+
+```prisma title="schema.prisma"
+generator zod {
+  provider    = "prisma-zod-generator"
+  safetyLevel = "permissive"
+}
+```
+
+**Available levels:**
+
+- **`strict`** - Maximum protection, blocks even small numbers of user files
+- **`standard`** - Balanced protection (default)
+- **`permissive`** - Warnings-heavy, minimal blocking
+- **`disabled`** - No safety checks (⚠️ dangerous)
+
+### Granular Controls
+
+For fine-tuned control, use individual safety options:
+
+```json title="zod-generator.config.json"
+{
+  "safety": {
+    "enabled": true,
+    "allowDangerousPaths": false,
+    "allowProjectRoots": false, 
+    "allowUserFiles": false,
+    "skipManifest": false,
+    "warningsOnly": false,
+    "maxUserFiles": 5,
+    "customDangerousPaths": ["modules", "widgets"],
+    "customProjectFiles": ["custom.config.js"]
+  }
+}
+```
+
+#### Configuration Options
+
+| Option                 | Type      | Default | Description                                               |
+| ---------------------- | --------- | ------- | --------------------------------------------------------- |
+| `enabled`              | boolean   | `true`  | Master switch for all safety features                     |
+| `allowDangerousPaths`  | boolean   | `false` | Allow common source directories (src, lib, etc.)          |
+| `allowProjectRoots`    | boolean   | `false` | Allow directories with project files (package.json, etc.) |
+| `allowUserFiles`       | boolean   | `false` | Allow directories containing user files                   |
+| `skipManifest`         | boolean   | `false` | Disable manifest tracking and cleanup                     |
+| `warningsOnly`         | boolean   | `false` | Convert all errors to warnings (never block)              |
+| `maxUserFiles`         | number    | `5`     | Maximum user files allowed before blocking                |
+| `customDangerousPaths` | string\[] | `[]`    | Additional dangerous directory patterns                   |
+| `customProjectFiles`   | string\[] | `[]`    | Additional project file patterns                          |
+
+### Configuration Methods
+
+#### Method 1: Config File (Recommended)
+
+```json title="zod-generator.config.json"
+{
+  "output": "./generated",
+  "safety": {
+    "level": "standard",
+    "allowDangerousPaths": true
+  }
+}
+```
+
+#### Method 2: Generator Block
+
+```prisma title="schema.prisma"
+generator zod {
+  provider                   = "prisma-zod-generator"
+  output                     = "./generated"
+  safetyLevel               = "standard"
+  safetyAllowDangerousPaths = true
+}
+```
+
+#### Method 3: Environment Variables
+
+```bash title=".env"
+PRISMA_ZOD_SAFETY_LEVEL=permissive
+PRISMA_ZOD_SAFETY_ALLOW_DANGEROUS_PATHS=true
+PRISMA_ZOD_SAFETY_MAX_USER_FILES=10
+```
+
+### Configuration Precedence
+
+Configurations are merged with this precedence (highest to lowest):
+
+1. **Environment variables**
+2. **Generator block options**
+3. **Config file settings**
+4. **Default values**
+
+### Quick Configuration Examples
+
+#### Allow Dangerous Paths
+
+```json
+{
+  "safety": {
+    "allowDangerousPaths": true
+  }
+}
+```
+
+#### Warnings Only Mode
+
+```json
+{
+  "safety": {
+    "warningsOnly": true
+  }
+}
+```
+
+#### Disable Safety (⚠️ Use with Caution)
+
+```json
+{
+  "safety": {
+    "enabled": false
+  }
+}
+```
+
+## Recommended Usage
+
+### ✅ Safe Configurations
+
+```prisma title="schema.prisma - RECOMMENDED"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated"        // ✅ Dedicated directory
+}
+```
+
+```prisma title="schema.prisma - ALSO SAFE"
+generator zod {
+  provider = "prisma-zod-generator"  
+  output   = "./src/generated"    // ✅ Subdirectory in src
+}
+```
+
+```prisma title="schema.prisma - ALSO SAFE"  
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./schemas"          // ✅ Schema-specific directory
+}
+```
+
+### ⚠️ Configurations That Trigger Warnings
+
+These will work but generate warnings encouraging better practices:
+
+```prisma title="schema.prisma - WARNS BUT WORKS"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./src"              // ⚠️ Common source directory
+}
+```
+
+```prisma title="schema.prisma - WARNS BUT WORKS"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./lib"              // ⚠️ Common library directory  
+}
+```
+
+### ❌ Configurations That Are Blocked
+
+These will prevent generation with error messages:
+
+```prisma title="schema.prisma - BLOCKED"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "."                  // ❌ Project root
+}
+```
+
+```prisma title="schema.prisma - BLOCKED"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./my-app"           // ❌ If contains package.json
+}
+```
+
+## Best Practices
+
+### 1. Use Dedicated Directories
+
+Always use directories specifically for generated code:
+
+```
+project/
+├── src/                    # Your source code (protected)
+│   ├── components/
+│   ├── services/
+│   └── utils/
+├── generated/              # Generated schemas (safe to clean)
+│   ├── schemas/
+│   ├── enums/
+│   └── objects/
+├── prisma/
+│   └── schema.prisma
+└── package.json
+```
+
+### 2. Use Descriptive Directory Names
+
+Make it obvious that directories contain generated code:
+
+- `./generated`
+- `./schemas`
+- `./zod-schemas`
+- `./prisma-zod`
+- `./src/generated`
+- `./lib/schemas`
+
+### 3. Don't Point to Source Directories
+
+Avoid pointing directly to directories containing your source code:
+
+```prisma title="❌ AVOID"
+output = "./src"
+output = "./lib"  
+output = "./components"
+```
+
+```prisma title="✅ PREFERRED"
+output = "./src/generated"
+output = "./lib/schemas"
+output = "./generated"
+```
+
+## Troubleshooting
+
+### Problem: "Unsafe output path detected" Error
+
+**Cause**: You're trying to use a directory that contains project files or appears to contain user source code.
+
+**Solution**:
+
+1. Use a dedicated directory: `output = "./generated"`
+2. Use a subdirectory: `output = "./src/generated"`
+3. Remove project files from the target directory (if appropriate)
+
+### Problem: Generator Warns About User Files
+
+**Cause**: The output directory contains files that look like user code.
+
+**Solutions**:
+
+1. Use a different, empty directory for generated files
+2. If the files are actually old generated files, delete them manually
+3. If you're sure it's safe, the generator will still work (with warnings)
+
+### Problem: Old Generated Files Not Cleaned Up
+
+**Cause**: The manifest file might be missing or corrupted.
+
+**Solution**:
+
+1. Delete the `.prisma-zod-generator-manifest.json` file
+2. Manually clean the output directory
+3. Run the generator again to create a fresh manifest
+
+### Problem: Need to Override Safety Checks
+
+**Note**: There's currently no way to disable safety checks, and this is intentional. The safety system prevents data loss and encourages best practices.
+
+**Alternative**: Use a dedicated subdirectory within your preferred location:
+
+- Instead of `./src`, use `./src/generated`
+- Instead of `./lib`, use `./lib/schemas`
+
+## Technical Details
+
+### Manifest File Structure
+
+The manifest file tracks generation metadata:
+
+```typescript
+interface GeneratedManifest {
+  version: string;              // Manifest format version
+  generatorVersion?: string;    // Generator version that created it
+  generatedAt: string;          // ISO timestamp
+  outputPath: string;           // Absolute path to output directory
+  files: string[];             // Relative paths of generated files
+  directories: string[];       // Relative paths of generated directories
+  singleFileMode?: boolean;    // Whether single-file mode was used
+  singleFileName?: string;     // Name of single file (if applicable)
+}
+```
+
+### Safety Validation Logic
+
+The safety system uses this decision tree:
+
+1. **Path Analysis**: Check directory name against known dangerous patterns
+2. **Project Detection**: Look for project configuration files
+3. **Content Analysis**: Count and analyze existing files
+4. **Manifest Check**: Look for previous generation manifest
+5. **Risk Assessment**: Combine all factors to determine safety level
+
+### File Pattern Recognition
+
+Generated files are identified by these signatures:
+
+```typescript
+const generatorSignatures = [
+  '// Generated by prisma-zod-generator',
+  '/* Generated by prisma-zod-generator',
+  'from "@prisma/client"',
+  'from "./objects/',
+  'from "./enums/',
+  'export const',
+  'z.object({',
+  'z.enum([',
+  'PrismaClient',
+  'Prisma.'
+];
+```
+
+Files need multiple signature matches to be considered generated.
+
+## Migration from Pre-Safety Versions
+
+If you're upgrading from a version before the safety system:
+
+### 1. Review Your Configuration
+
+Check your current `output` setting:
+
+```prisma title="schema.prisma"
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "???"  // What's your current setting?
+}
+```
+
+### 2. If Using a Dangerous Path
+
+If your output points to `./src` or another source directory:
+
+1. **Option A**: Move to a dedicated directory
+   ```prisma
+   generator zod {
+     provider = "prisma-zod-generator"
+     output   = "./generated"  // New safe location
+   }
+   ```
+
+2. **Option B**: Use a subdirectory
+   ```prisma
+   generator zod {
+     provider = "prisma-zod-generator" 
+     output   = "./src/generated"  // Subdirectory in src
+   }
+   ```
+
+3. Update your imports:
+   ```typescript
+   // Old imports
+   import { UserSchema } from './User.schema';
+
+   // New imports (Option A)
+   import { UserSchema } from '../generated/User.schema';
+
+   // New imports (Option B)  
+   import { UserSchema } from './generated/User.schema';
+   ```
+
+### 3. If Receiving Warnings
+
+If you see warnings but want to keep your current setup:
+
+- The generator will still work
+- Consider the suggestions in the warning messages
+- Plan to migrate to a safer configuration when convenient
+
+### 4. Clean Up Old Files
+
+After changing your output path:
+
+1. Delete old generated files from the previous location
+2. Run the generator to create files in the new location
+3. Update your imports to use the new paths
+
+## Backwards Compatibility
+
+The safety system is designed to be **completely backwards compatible**:
+
+- ✅ Existing safe configurations continue to work unchanged
+- ✅ No breaking changes to the generation process
+- ✅ All existing features and options work as before
+- ✅ Generated code format is identical
+
+The only change is the addition of safety checks and the manifest file for tracking.
+
+## Recipe Guides
+
+For practical examples of configuring the safety system, see our recipe guides:
+
+- **[Custom Safety Configuration](../recipes/safety-custom-configuration.md)** - Detailed guide to all configuration options
+- **[Force Using Dangerous Paths](../recipes/safety-force-dangerous-path.md)** - How to safely use dangerous paths like `./src`
+- **[Project Migration Guide](../recipes/safety-project-migration.md)** - Migrate existing projects to use safety system
+- **[Disable Safety Completely](../recipes/safety-disable-completely.md)** - How to disable safety (with warnings about risks)
+
+These recipes provide step-by-step instructions for common safety configuration scenarios.
+
+***
+
+:::info
+The safety system represents a major improvement in user experience and data protection. It transforms the generator from a tool that could accidentally destroy your work into a safe, user-friendly utility that protects your code while providing helpful guidance.
+:::
+
+# Troubleshooting
+
+| Symptom                                                                 | Likely Cause                                                                    | Fix                                                                           |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Config file not found                                                   | Path resolved relative to schema file, not project root                         | Check path is relative to schema location                                     |
+| Config validation error                                                 | Empty config string (`config = ""`)                                             | Remove config attribute or provide valid path                                 |
+| Output path unexpected                                                  | JSON config `output` ignored due to explicit generator block output             | Remove block `output` or align paths                                          |
+| Missing model schemas                                                   | Model disabled (minimal mode default)                                           | Add model config or switch mode                                               |
+| Missing variant files                                                   | `emit.variants=false` or single-file mode                                       | Enable flag / disable single-file                                             |
+| Enum reference errors                                                   | `emit.enums=false`                                                              | Enable enums or remove enum fields                                            |
+| Nested inputs missing                                                   | Minimal mode pruning                                                            | Switch to full/custom or explicitly enable operations                         |
+| `*CreateInput` missing relation fields                                  | Minimal mode blocks regular CreateInput schemas                                 | Use `*UncheckedCreateInput` schemas or switch to full mode                    |
+| TypeScript errors about missing relation fields                         | Importing blocked CreateInput schemas in minimal mode                           | Import UncheckedCreateInput variants instead                                  |
+| TypeScript errors: `Module has no exported member '*InputObjectSchema'` | Input file pattern doesn't include `{InputType}` token, causing file collisions | Update `naming.input.filePattern` to include `{InputType}` token              |
+| Missing input schema files (only generic files exist)                   | Input file pattern generates identical names for all input types                | Use pattern like `{kebab}-{InputType}-input.ts` instead of `{kebab}-input.ts` |
+
+# Upgrade Guide
+
+This guide highlights actions needed when upgrading between notable versions.
+
+## 1.x → 1.8.x
+
+No breaking changes in generator output shape; internal docs site added. If you relied on undocumented script names for docs, update to the new `docs:*` scripts.
+
+## Future (placeholder)
+
+When a breaking change occurs, a section will be added here with migration steps and affected config fields.
+
+# Usage Patterns
+
+Common integration scenarios.
+
+## tRPC Procedures
+
+```ts
+import { UserInputSchema, UserResultSchema } from './prisma/generated/schemas';
+
+export const userRouter = t.router({
+  create: t.procedure
+    .input(UserInputSchema)
+    .mutation(({ ctx, input }) => ctx.prisma.user.create({ data: input })),
+});
+```
+
+## Express / Fastify
+
+```ts
+app.post('/users', (req, res) => {
+  const parsed = UserInputSchema.parse(req.body);
+  // ...
+});
+```
+
+## Next.js Route Handler
+
+```ts
+export async function POST(req: Request) {
+  const body = await req.json();
+  const data = UserInputSchema.parse(body);
+  return NextResponse.json(data);
+}
+```
+
+## Form Validation
+
+Use `safeParse` for user-facing error messaging.
