@@ -74,6 +74,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'reference/safety-system',
         'reference/bytes-json',
+        'reference/where-unique-input',
         'reference/naming-preset-map',
         'reference/logging-debug',
         'reference/faq',

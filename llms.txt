@@ -45,6 +45,7 @@
 - Disable Safety System Completely: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/safety-disable-completely
 - Safety System: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/safety-system
 - Bytes & JSON Details: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/bytes-json
+- WhereUniqueInput Semantics: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/where-unique-input
 - Naming Preset Map: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/naming-preset-map
 - Logging & Debug Output: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/logging-debug
 - FAQ: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/faq
@@ -518,6 +519,21 @@ Wildcard patterns supported: `field*`, `*field`, `*middle*`.
 WhereUniqueInput & strict base create inputs bypass variant exclusions to preserve shape fidelity.
 
 Excluded relation fields cause foreign key scalar preservation for create inputs (maintain referential integrity constraints).
+
+## Optional Early Validation for WhereUniqueInput
+
+By default, `WhereUniqueInput` schemas include only unique selector fields (single-field uniques and named composite unique objects). Top-level keys are optional to match Prisma, and completeness for composite selectors is enforced by the nested composite object schemas themselves.
+
+If you want early failure when no selector is present (e.g., rejecting `{}` before reaching Prisma), enable this opt-in flag in your JSON config:
+
+```jsonc
+// zod-generator.config.json
+{
+  "validateWhereUniqueAtLeastOne": true
+}
+```
+
+This adds a minimal superRefine that checks only the presence of at least one top-level selector. It does not enforce “exactly one” (Prisma will still validate that at runtime) and does not attempt to peek into nested composite fields (those are already required by their own schemas).
 
 # JSON Schema Compatibility
 
@@ -3240,7 +3256,7 @@ Overrides (optional)
 
 Related changes
 
-- `WhereUniqueInput` now accepts “at least one unique selector” (e.g., `{ email: "alice@example.com" }`) and enforces completeness for composite uniques. This is built-in and requires no configuration.
+- WhereUniqueInput relies on base object validation. Composite unique selectors are enforced by their nested schemas. If you want early failure when no selector is provided, enable `validateWhereUniqueAtLeastOne: true` in your config.
 
 References
 
@@ -5283,6 +5299,63 @@ The safety system represents a major improvement in user experience and data pro
 | TypeScript errors about missing relation fields                         | Importing blocked CreateInput schemas in minimal mode                           | Import UncheckedCreateInput variants instead                                  |
 | TypeScript errors: `Module has no exported member '*InputObjectSchema'` | Input file pattern doesn't include `{InputType}` token, causing file collisions | Update `naming.input.filePattern` to include `{InputType}` token              |
 | Missing input schema files (only generic files exist)                   | Input file pattern generates identical names for all input types                | Use pattern like `{kebab}-{InputType}-input.ts` instead of `{kebab}-input.ts` |
+
+# WhereUniqueInput Semantics
+
+This page explains how `WhereUniqueInput` schemas are generated and validated, and how to enable an optional early validation check.
+
+Overview
+
+- Only unique selector fields are included at the top level (single-field uniques like `id` or `email`, plus named composite unique selectors like `userFolderPathIdx`).
+- Top-level keys are optional by default to match Prisma’s runtime behavior.
+- Composite uniqueness is enforced by nested selector schemas. For example, `{ adminFolderPathIdx: { adminId, path } }` requires both `adminId` and `path`.
+- No cross-field superRefine is applied by default, to avoid false negatives on models with multiple composite unique keys.
+
+Optional early validation
+
+If you want to fail early when no selector is provided (reject `{}` at the Zod layer), enable the opt-in flag:
+
+```jsonc
+// zod-generator.config.json
+{
+  "validateWhereUniqueAtLeastOne": true
+}
+```
+
+What it does
+
+- Adds a minimal `.superRefine` to `*WhereUniqueInput` schemas that checks the presence of at least one top-level selector.
+- Does not enforce “exactly one” (Prisma will still validate that constraint at runtime).
+- Does not inspect nested composite fields; nested composite schemas already require all of their fields.
+
+Examples
+
+- Valid (one composite selector provided):
+
+```ts
+MediaFolderWhereUniqueInputObjectZodSchema.parse({
+  adminFolderPathIdx: { adminId: 'A', path: '/root' },
+});
+```
+
+- Invalid (composite selector present but empty): field-level errors from the nested schema:
+
+```ts
+MediaFolderWhereUniqueInputObjectZodSchema.parse({
+  adminFolderPathIdx: {},
+});
+// → ZodError: adminFolderPathIdx.adminId and adminFolderPathIdx.path are required
+```
+
+- No selector provided:
+  - With `validateWhereUniqueAtLeastOne=false` (default): parse may succeed; Prisma rejects later when used.
+  - With `validateWhereUniqueAtLeastOne=true`: Zod rejects with “Provide at least one unique selector”.
+
+Rationale
+
+- Removing global superRefine avoids redundant and brittle cross-field logic.
+- The nested composite schemas produce precise, actionable errors.
+- For teams that want earlier feedback, the opt-in flag provides a safe, minimal check without re-implementing Prisma’s uniqueness rules.
 
 # Upgrade Guide
 

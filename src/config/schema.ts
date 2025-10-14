@@ -361,6 +361,13 @@ export const ConfigurationSchema: JSONSchema7 = {
         "How to import Zod in generated code: 'auto' uses import * as z from 'zod'; 'v3' uses import { z } from 'zod'; 'v4' uses import * as z from 'zod/v4'",
     },
 
+    validateWhereUniqueAtLeastOne: {
+      type: 'boolean',
+      default: false,
+      description:
+        'Opt-in: add a minimal Zod superRefine to WhereUniqueInput schemas requiring at least one top-level unique selector to be present. Disabled by default.',
+    },
+
     strictMode: {
       type: 'object',
       additionalProperties: false,

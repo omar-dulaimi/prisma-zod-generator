@@ -39,3 +39,18 @@ Wildcard patterns supported: `field*`, `*field`, `*middle*`.
 WhereUniqueInput & strict base create inputs bypass variant exclusions to preserve shape fidelity.
 
 Excluded relation fields cause foreign key scalar preservation for create inputs (maintain referential integrity constraints).
+
+## Optional Early Validation for WhereUniqueInput
+
+By default, `WhereUniqueInput` schemas include only unique selector fields (single-field uniques and named composite unique objects). Top-level keys are optional to match Prisma, and completeness for composite selectors is enforced by the nested composite object schemas themselves.
+
+If you want early failure when no selector is present (e.g., rejecting `{}` before reaching Prisma), enable this opt-in flag in your JSON config:
+
+```jsonc
+// zod-generator.config.json
+{
+  "validateWhereUniqueAtLeastOne": true
+}
+```
+
+This adds a minimal superRefine that checks only the presence of at least one top-level selector. It does not enforce “exactly one” (Prisma will still validate that at runtime) and does not attempt to peek into nested composite fields (those are already required by their own schemas).

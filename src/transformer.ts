@@ -2505,87 +2505,21 @@ export default class Transformer {
       Transformer.getStrictModeResolver()?.getObjectStrictModeSuffix(modelName || undefined) || '';
     let base = this.wrapWithZodObject(fields) + strictModeSuffix;
 
-    // Enhance WhereUniqueInput: at-least-one unique selector, plus composite completeness via superRefine
+    // WhereUniqueInput optional refinement (opt-in): require at least one selector
     if (this.name && /WhereUniqueInput$/.test(this.name)) {
-      const modelName = Transformer.extractModelNameFromContext(this.name);
-      let singleUnique: string[] = [];
-      let compositeGroups: string[][] = [];
-
-      if (modelName) {
-        const model = this.models.find((m) => m.name === modelName);
-        if (model) {
-          // Single-field uniques: id or individually unique fields
-          singleUnique = model.fields.filter((f) => f.isId || f.isUnique).map((f) => f.name);
-
-          // Composite groups: prefer uniqueIndexes[].fields, then uniqueFields if available
-          const mAny = model as unknown as {
-            uniqueIndexes?: Array<{ fields: string[] }>;
-            uniqueFields?: string[][];
-            primaryKey?: { fields: string[] } | null;
-          };
-
-          if (Array.isArray(mAny?.uniqueIndexes)) {
-            compositeGroups = (mAny.uniqueIndexes as Array<{ fields: string[] }>)
-              .map((ui) => ui.fields)
-              .filter((arr) => Array.isArray(arr) && arr.length > 1);
-          } else if (Array.isArray(mAny?.uniqueFields)) {
-            compositeGroups = (mAny.uniqueFields as string[][]).filter(
-              (arr) => Array.isArray(arr) && arr.length > 1,
-            );
-          }
-
-          // Include composite primary key as a group if present
-          if (mAny?.primaryKey?.fields && mAny.primaryKey.fields.length > 1) {
-            compositeGroups.push(mAny.primaryKey.fields);
-          }
-        }
+      const cfg = Transformer.getGeneratorConfig() as
+        | (ZodGeneratorConfig & { validateWhereUniqueAtLeastOne?: boolean })
+        | null;
+      if (cfg?.validateWhereUniqueAtLeastOne) {
+        // Use the current object's top-level field names as valid selector keys
+        // (includes single-field uniques and composite unique selectors)
+        const selectorKeys = Array.from(
+          new Set((this.fields || []).map((f) => f.name).filter(Boolean)),
+        );
+        const selectorKeysJson = JSON.stringify(selectorKeys);
+        const refineAtLeastOne = `.superRefine((obj, ctx) => {\n  const keys: string[] = ${selectorKeysJson} as string[];\n  const present = (k: string) => (obj as any)[k] != null;\n  if (!Array.isArray(keys) || keys.length === 0) return;\n  if (!keys.some(present)) {\n    ctx.addIssue({ code: 'custom', message: 'Provide at least one unique selector' });\n  }\n})`;
+        base = base + refineAtLeastOne;
       }
-
-      // Stringify arrays to embed in generated code
-      const singleUniqueJson = JSON.stringify(Array.from(new Set(singleUnique)));
-      const compositeGroupsJson = JSON.stringify(
-        compositeGroups.map((g) => Array.from(new Set(g))),
-      );
-
-      // Build superRefine that:
-      // - requires at least one single unique OR one complete composite group
-      // - enforces composite completeness when any field from a group is provided
-      const refine = `.superRefine((obj, ctx) => {
-        const presentTop = (k: string) => (obj as any)[k] != null;
-        const singles: string[] = ${singleUniqueJson} as string[];
-        const groups: string[][] = ${compositeGroupsJson} as string[][];
-
-        const anySingle = Array.isArray(singles) && singles.length > 0 ? singles.some(presentTop) : false;
-
-        let anyComposite = false;
-        if (Array.isArray(groups) && groups.length > 0) {
-          // Iterate over nested composite selectors (e.g., { composite_key_name: { a: ..., b: ... } })
-          for (const [propKey, composite] of Object.entries(obj as Record<string, unknown>)) {
-            if (!composite || typeof composite !== 'object') continue;
-            for (const g of groups as string[][]) {
-              if (!Array.isArray(g) || g.length === 0) continue;
-              const presentInComposite = (k: string) => (composite as any)[k] != null;
-              const provided = (g as string[]).filter(presentInComposite).length;
-              if (provided > 0 && provided < g.length) {
-                for (const f of g as string[]) {
-                  if (!presentInComposite(f)) {
-                    ctx.addIssue({ code: 'custom', message: 'All fields of composite unique must be provided', path: [propKey, f] });
-                  }
-                }
-              }
-              if (provided === g.length && g.length > 0) {
-                anyComposite = true;
-              }
-            }
-          }
-        }
-
-        if (!anySingle && !anyComposite) {
-          ctx.addIssue({ code: 'custom', message: 'Provide at least one unique selector' });
-        }
-      })`;
-
-      base = base + refine;
     }
 
     return base;

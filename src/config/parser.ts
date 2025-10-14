@@ -222,6 +222,17 @@ export interface GeneratorConfig {
    * Controls how the generator handles potentially dangerous output paths.
    */
   safety?: SafetyOptions;
+
+  /**
+   * Validation: add an opt-in check to WhereUniqueInput schemas requiring
+   * at least one top-level unique selector to be present. Default: false.
+   *
+   * Notes:
+   * - This does NOT enforce "exactly one" and does NOT inspect nested
+   *   composite fields; it only checks top-level selector keys.
+   * - Prisma still enforces selector correctness at runtime.
+   */
+  validateWhereUniqueAtLeastOne?: boolean;
 }
 
 /**
