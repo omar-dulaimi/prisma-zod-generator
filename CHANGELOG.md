@@ -1,3 +1,9 @@
+## [1.28.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.28.2...v1.28.3) (2025-10-14)
+
+### 🐛 Bug Fixes
+
+* **where-unique:** make cross-field refine optional; add opt-in at-least-one selector ([a6e6674](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a6e6674002afcab045ca5f849d5a87b6a494b506)), closes [#285](https://github.com/omar-dulaimi/prisma-zod-generator/issues/285)
+
 ## [1.28.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.28.1...v1.28.2) (2025-10-14)
 
 ### 🐛 Bug Fixes
