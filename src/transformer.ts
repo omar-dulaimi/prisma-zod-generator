@@ -264,6 +264,17 @@ export default class Transformer {
       return isEnabled;
     }
 
+    // Provider capability gating for AndReturn operations (not supported on all connectors)
+    if (operationName === 'createManyAndReturn' || operationName === 'updateManyAndReturn') {
+      const supportsAndReturn = ['postgresql', 'cockroachdb'].includes(this.provider);
+      if (!supportsAndReturn) {
+        logger.debug(
+          `🔍 Operation check: ${modelName}.${operationName} = false (provider=${this.provider} lacks AndReturn support)`,
+        );
+        return false;
+      }
+    }
+
     // Default: enable all operations not explicitly disabled
     logger.debug(`🔍 Operation check: ${modelName}.${operationName} = true (default)`);
     return true;
