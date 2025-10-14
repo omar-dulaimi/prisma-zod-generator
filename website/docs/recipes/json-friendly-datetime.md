@@ -84,7 +84,7 @@ Overrides (optional)
 
 Related changes
 
-- `WhereUniqueInput` now accepts “at least one unique selector” (e.g., `{ email: "alice@example.com" }`) and enforces completeness for composite uniques. This is built-in and requires no configuration.
+- WhereUniqueInput relies on base object validation. Composite unique selectors are enforced by their nested schemas. If you want early failure when no selector is provided, enable `validateWhereUniqueAtLeastOne: true` in your config.
 
 References
 
