@@ -2109,9 +2109,17 @@ function formatSingleParameter(param: unknown): string {
 
   if (typeof param === 'string') {
     // Check if it's a complex expression that shouldn't be quoted
-    // Complex expressions include: new Date(), RegExp(), function calls, or dotted calls like z.string()
-    if (param.match(/^(new\s+\w+\(|RegExp\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\()/)) {
-      return param; // Return complex expressions as-is
+    // Complex expressions include: new Date(), RegExp(), function calls,
+    // arrow functions (value => ... or (value) => ...), async arrows, or dotted calls like z.string()
+    const isDottedOrCtorCall = /^(new\s+\w+\(|RegExp\(|[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\()/;
+    const isFunctionKeyword = /^\s*function\b/;
+    const isArrowFunction = /^\s*(?:async\s+)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>/;
+    if (
+      isDottedOrCtorCall.test(param) ||
+      isFunctionKeyword.test(param) ||
+      isArrowFunction.test(param)
+    ) {
+      return param; // Return complex/functional expressions as-is
     }
     // Prefer double quotes for URL-like strings (e.g., https://) to match snapshots
     if (/^https?:\/\//i.test(param)) {
