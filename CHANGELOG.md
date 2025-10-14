@@ -1,3 +1,9 @@
+## [1.28.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.28.1...v1.28.2) (2025-10-14)
+
+### 🐛 Bug Fixes
+
+* **parsers:** do not quote arrow/function params in [@zod](https://github.com/zod) ([8fac95a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8fac95acdd5ede12f5ee45e7933e7ce8c43f8633)), closes [#292](https://github.com/omar-dulaimi/prisma-zod-generator/issues/292)
+
 ## [1.28.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.28.0...v1.28.1) (2025-10-14)
 
 ### 🐛 Bug Fixes
