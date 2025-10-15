@@ -30,7 +30,7 @@ async function extractMetrics() {
     let weeklyDownloads = '7k+'; // fallback
     try {
       console.log('📊 Fetching npm download stats...');
-      const fetch = (await import('node-fetch')).default;
+      const fetch = globalThis.fetch;
       const response = await fetch(
         'https://api.npmjs.org/downloads/point/last-week/prisma-zod-generator',
       );
@@ -53,7 +53,7 @@ async function extractMetrics() {
     let githubStars = '650+'; // fallback
     try {
       console.log('⭐ Fetching GitHub stars...');
-      const fetch = (await import('node-fetch')).default;
+      const fetch = globalThis.fetch;
       const response = await fetch(
         'https://api.github.com/repos/omar-dulaimi/prisma-zod-generator',
       );
