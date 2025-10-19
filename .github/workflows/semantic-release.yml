@@ -50,8 +50,8 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: pnpm run release
 
-      - name: Sync changelog to docs
-        run: cd website && node scripts/sync-changelog.js
+      # Removed changelog sync: docs page now links to GitHub
+      # Keeping commit step below to capture version/lockfile changes
 
       - name: Commit and push workflow mutations (if any)
         env:
