@@ -92,7 +92,7 @@
     "docs:dev": "cd website && pnpm run dev",
     "docs:build": "cd website && pnpm run build",
     "docs:serve": "cd website && pnpm run serve",
-    "postrelease": "cd website && node scripts/sync-changelog.js",
+    "postrelease": "echo 'Changelog is maintained on GitHub; no docs sync needed.'",
     "postinstall": "node scripts/postinstall.js"
   },
   "author": {
