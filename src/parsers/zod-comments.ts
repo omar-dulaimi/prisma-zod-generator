@@ -1115,6 +1115,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'toUpperCase',
     'uppercase',
     'lowercase',
+    'brand',
     'readonly',
   ];
 
@@ -2000,7 +2001,7 @@ function getValidationMethodConfig(
     },
     { methodName: 'catch', zodMethod: 'catch', parameterCount: 1 },
     { methodName: 'pipe', zodMethod: 'pipe', parameterCount: 1 },
-    { methodName: 'brand', zodMethod: 'brand', parameterCount: 'variable' },
+    { methodName: 'brand', zodMethod: 'brand', parameterCount: 0 },
     { methodName: 'readonly', zodMethod: 'readonly', parameterCount: 0 },
 
     // New Zod v4 string format methods - Issue #233
