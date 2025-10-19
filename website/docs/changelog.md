@@ -9,8 +9,24 @@ sidebar_position: 100
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 :::tip Latest Release
-The latest version is **v1.28.3**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
+The latest version is **v1.29.0**. See the [GitHub Releases](https://github.com/omar-dulaimi/prisma-zod-generator/releases) page for downloads and detailed release notes.
 :::
+
+## [1.29.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.28.3...v1.29.0) (2025-10-19)
+
+### 🚀 Features
+
+* **zod-comments:** add comprehensive Zod v3/v4 validation methods support ([c98340f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c98340fa01274b0eed6ab6f8487da730dbae58ee))
+
+### 🐛 Bug Fixes
+
+* **scripts:** make llms.txt generator resilient to MDX parse errors ([940ad3d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/940ad3d5a4e794925c9ddf6d5bab70fd4bd9eba4)), closes [#303](https://github.com/omar-dulaimi/prisma-zod-generator/issues/303)
+* **zod-comments:** preserve brand<T> generic args across parsing and emission ([5f8d849](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5f8d849e4bb694bc1face05642098542d6006363)), closes [#303](https://github.com/omar-dulaimi/prisma-zod-generator/issues/303)
+* **zod-comments:** treat brand() as no-parameter method ([2ea2623](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2ea26233620aefd842ef91ef5f0f84abd662d58a)), closes [#303](https://github.com/omar-dulaimi/prisma-zod-generator/issues/303)
+
+### 📚 Documentation
+
+* **zod-comments:** add blank lines around tables to satisfy MD058 ([cdc0697](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cdc0697a98535d3dfa302caa722587f17d0bc431)), closes [#303](https://github.com/omar-dulaimi/prisma-zod-generator/issues/303)
 
 ## [1.28.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.28.2...v1.28.3) (2025-10-14)
 
@@ -1178,7 +1194,7 @@ For the complete version history including older releases, please see the [full 
 
 ## Version Support
 
-- **Current:** v1.28.x - Full support with new features and bug fixes
+- **Current:** v1.29.x - Full support with new features and bug fixes
 - **Previous:** Previous minor versions - Security and critical bug fixes only
 - **Legacy:** Older versions - Community support only
 
