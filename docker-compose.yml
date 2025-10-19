@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgresql:
+    image: postgres:15-alpine
+    container_name: prisma-zod-generator-postgresql
+    environment:
+      POSTGRES_DB: test
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user -d test']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - prisma-zod-generator-network
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: prisma-zod-generator-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: test
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'user', '-ppassword']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - prisma-zod-generator-network
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: prisma-zod-generator-mongodb
+    environment:
+      MONGO_INITDB_DATABASE: test
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - prisma-zod-generator-network
+
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: prisma-zod-generator-sqlserver
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: password
+      MSSQL_PID: Developer
+    ports:
+      - '1433:1433'
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test:
+        ['CMD-SHELL', "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P password -Q 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - prisma-zod-generator-network
+
+volumes:
+  postgresql_data:
+  mysql_data:
+  mongodb_data:
+  sqlserver_data:
+
+networks:
+  prisma-zod-generator-network:
+    driver: bridge
