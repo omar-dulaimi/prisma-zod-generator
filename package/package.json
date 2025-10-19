@@ -1,6 +1,6 @@
 {
   "name": "prisma-zod-generator",
-  "version": "1.28.3",
+  "version": "1.29.0",
   "description": "Prisma 2+ generator to emit Zod schemas from your Prisma schema",
   "repository": "https://github.com/omar-dulaimi/prisma-zod-generator",
   "bin": {
@@ -17,7 +17,7 @@
     "check-uncommitted": "git diff-index --quiet HEAD --",
     "package:publish": "pnpm update && pnpm run check-uncommitted && ./package.sh && cd package && pnpm publish",
     "render:diagrams": "pnpm tsx scripts/render-mermaid.ts",
-    "llms:gen": "pnpm tsx scripts/generate-llms-txt.ts",
+    "llms:gen": "node scripts/generate-llms-txt.mjs",
     "test": "pnpm test:features:parallel",
     "test:watch": "vitest --config vitest.config.mjs --watch",
     "test:basic": "vitest --config vitest.config.mjs run tests/generated-schema.test.ts --reporter=default",
