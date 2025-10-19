@@ -301,6 +301,18 @@ function extractZodAnnotations(comment: string): string[] {
       currentIndex++;
     }
 
+    // Optional generic args after method name (e.g., <"UserId">)
+    if (currentIndex < comment.length && comment[currentIndex] === '<') {
+      const genericRes = parseGenericArgs(comment, currentIndex);
+      if (genericRes) {
+        currentIndex = genericRes.nextIndex;
+        // Skip whitespace after generics
+        while (currentIndex < comment.length && /\s/.test(comment[currentIndex])) {
+          currentIndex++;
+        }
+      }
+    }
+
     // Check if there are parameters
     if (currentIndex < comment.length && comment[currentIndex] === '(') {
       // Find the matching closing parenthesis with proper nesting
@@ -335,7 +347,7 @@ function extractZodAnnotations(comment: string): string[] {
         annotations.push(comment.substring(startIndex, currentIndex));
       }
     } else {
-      // No parameters, just method name
+      // No parameters, just method name (and possible generics)
       annotations.push(comment.substring(startIndex, currentIndex));
     }
   }
@@ -368,7 +380,23 @@ function parseZodAnnotationsWithNestedParentheses(
       if (!methodMatch) continue;
 
       const methodName = methodMatch[1];
-      const paramStart = annotationStr.indexOf('(');
+      // Scan after method token for optional generics before params
+      const methodToken = methodMatch[0];
+      const methodTokenIndex = annotationStr.indexOf(methodToken);
+      let scanIndex = methodTokenIndex + methodToken.length;
+      while (scanIndex < annotationStr.length && /\s/.test(annotationStr[scanIndex])) scanIndex++;
+      let genericArgs = '';
+      if (annotationStr[scanIndex] === '<') {
+        const genericRes = parseGenericArgs(annotationStr, scanIndex);
+        if (genericRes) {
+          genericArgs = genericRes.segment;
+          scanIndex = genericRes.nextIndex;
+          while (scanIndex < annotationStr.length && /\s/.test(annotationStr[scanIndex]))
+            scanIndex++;
+        }
+      }
+
+      const paramStart = annotationStr.indexOf('(', scanIndex);
 
       if (paramStart !== -1) {
         const paramEnd = annotationStr.lastIndexOf(')');
@@ -381,14 +409,14 @@ function parseZodAnnotationsWithNestedParentheses(
           ] as unknown as RegExpExecArray;
           fakeMatch.index = 0;
 
-          const annotation = parseZodAnnotation(fakeMatch, context);
+          const annotation = parseZodAnnotation(fakeMatch, context, genericArgs);
           result.annotations.push(annotation);
         }
       } else {
         const fakeMatch = [annotationStr, methodName, ''] as unknown as RegExpExecArray;
         fakeMatch.index = 0;
 
-        const annotation = parseZodAnnotation(fakeMatch, context);
+        const annotation = parseZodAnnotation(fakeMatch, context, genericArgs);
         result.annotations.push(annotation);
       }
     } catch (error) {
@@ -503,6 +531,8 @@ export interface ParsedZodAnnotation {
   parameters: unknown[];
   rawMatch: string;
   position: number;
+  /** Optional generic type arguments captured after the method name, e.g., `<"UserId">` */
+  genericArgs?: string;
 }
 
 /**
@@ -611,6 +641,7 @@ export function parseZodAnnotations(
 function parseZodAnnotation(
   match: RegExpExecArray,
   context: FieldCommentContext,
+  genericArgs = '',
 ): ParsedZodAnnotation {
   const [fullMatch, methodName, parameterString] = match;
   const position = match.index || 0;
@@ -632,6 +663,7 @@ function parseZodAnnotation(
     parameters,
     rawMatch: fullMatch,
     position,
+    genericArgs: genericArgs || undefined,
   };
 }
 
@@ -714,12 +746,29 @@ function parseMethodChain(
       methodEnd++;
     }
 
+    // Optional generic arguments after method name
+    let iAfterName = methodEnd;
+    while (iAfterName < chainString.length && /\s/.test(chainString[iAfterName])) {
+      iAfterName++;
+    }
+    let genericArgs = '';
+    if (iAfterName < chainString.length && chainString[iAfterName] === '<') {
+      const genRes = parseGenericArgs(chainString, iAfterName);
+      if (genRes) {
+        genericArgs = genRes.segment;
+        iAfterName = genRes.nextIndex;
+        while (iAfterName < chainString.length && /\s/.test(chainString[iAfterName])) {
+          iAfterName++;
+        }
+      }
+    }
+
     // Check for parameter list
     let parameterString = '';
-    if (methodEnd < chainString.length && chainString[methodEnd] === '(') {
+    if (iAfterName < chainString.length && chainString[iAfterName] === '(') {
       // Find matching closing parenthesis, handling nested parentheses
       let parenCount = 1;
-      const paramStart = methodEnd + 1;
+      const paramStart = iAfterName + 1;
       let paramEnd = paramStart;
 
       while (paramEnd < chainString.length && parenCount > 0) {
@@ -733,7 +782,7 @@ function parseMethodChain(
       }
 
       if (parenCount === 0) {
-        parameterString = chainString.slice(methodEnd, paramEnd);
+        parameterString = chainString.slice(iAfterName, paramEnd);
         i = paramEnd;
       } else {
         throw new Error(`Unmatched parentheses in method ${methodName}`);
@@ -741,7 +790,7 @@ function parseMethodChain(
     } else {
       // No parameters
       parameterString = '()';
-      i = methodEnd;
+      i = iAfterName;
     }
 
     // Parse parameters
@@ -759,8 +808,9 @@ function parseMethodChain(
     annotations.push({
       method: methodName,
       parameters,
-      rawMatch: `.${methodName}${parameterString}`,
+      rawMatch: `.${methodName}${genericArgs}${parameterString}`,
       position: dotIndex,
+      genericArgs: genericArgs || undefined,
     });
   }
 
@@ -840,6 +890,44 @@ function isSimpleParameter(paramString: string): boolean {
   }
 
   return true;
+}
+
+/**
+ * Parse generic arguments starting at the given index (which must point to '<').
+ * Handles nested angle brackets and quoted strings.
+ * Returns the captured segment and the index immediately after it.
+ */
+function parseGenericArgs(
+  source: string,
+  startIndex: number,
+): { segment: string; nextIndex: number } | null {
+  if (source[startIndex] !== '<') return null;
+  let i = startIndex;
+  let depth = 0;
+  let inString = false;
+  let stringChar = '';
+  while (i < source.length) {
+    const char = source[i];
+    if (!inString && (char === '"' || char === "'")) {
+      inString = true;
+      stringChar = char;
+    } else if (inString && char === stringChar && source[i - 1] !== '\\') {
+      inString = false;
+      stringChar = '';
+    } else if (!inString) {
+      if (char === '<') {
+        depth++;
+      } else if (char === '>') {
+        depth--;
+        if (depth === 0) {
+          const segment = source.slice(startIndex, i + 1);
+          return { segment, nextIndex: i + 1 };
+        }
+      }
+    }
+    i++;
+  }
+  return null;
 }
 
 /**
@@ -1028,9 +1116,18 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'toLowerCase',
     'toUpperCase',
     'datetime',
+    'ip',
+    'cidr',
+    'date',
+    'time',
+    'duration',
+    'normalize',
+    'uppercase',
+    'lowercase',
     // New Zod v4 string format methods - Issue #233
     'httpUrl',
     'hostname',
+    'guid',
     'nanoid',
     'cuid',
     'cuid2',
@@ -1063,6 +1160,10 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'finite',
     'multipleOf',
     'step',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
   ];
 
   // Common array validation methods
@@ -1083,13 +1184,28 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'transform',
     'multipleOf',
     'step',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+    'catch',
+    'pipe',
     // New methods that require parameters - Issue #233
     'hash', // hash requires algorithm parameter like "sha256"
     'custom', // custom requires object/array schema parameter
   ];
 
   // Methods that don't allow parameters
-  const noParams = ['nonempty', 'trim', 'toLowerCase', 'toUpperCase'];
+  const noParams = [
+    'nonempty',
+    'trim',
+    'toLowerCase',
+    'toUpperCase',
+    'uppercase',
+    'lowercase',
+    'brand',
+    'readonly',
+  ];
 
   // Methods that accept optional parameters (format validation methods)
   const optionalParams = [
@@ -1098,9 +1214,16 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'url',
     'uuid',
     'datetime',
+    'ip',
+    'cidr',
+    'date',
+    'time',
+    'duration',
+    'normalize',
     // New Zod v4 string format methods - Issue #233
     'httpUrl',
     'hostname',
+    'guid',
     'nanoid',
     'cuid',
     'cuid2',
@@ -1143,6 +1266,10 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'array',
     'record',
     'json',
+    'catch',
+    'pipe',
+    'brand',
+    'readonly',
   ];
 
   // Check if method is known
@@ -1577,6 +1704,7 @@ function mapAnnotationToZodMethod(
     'uuid',
     'httpUrl',
     'hostname',
+    'guid',
     'nanoid',
     'cuid',
     'cuid2',
@@ -1662,7 +1790,7 @@ function mapAnnotationToZodMethod(
 
   // Generate the method call for regular chaining methods
   const formattedParams = formatParameters(parameters);
-  const methodCall = `.${methodConfig.zodMethod}(${formattedParams})`;
+  const methodCall = `.${methodConfig.zodMethod}${annotation.genericArgs ?? ''}(${formattedParams})`;
 
   return {
     methodCall,
@@ -1761,6 +1889,54 @@ function getValidationMethodConfig(
       parameterCount: 0,
       fieldTypeCompatibility: ['String'],
     },
+    {
+      methodName: 'ip',
+      zodMethod: 'ip',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'cidr',
+      zodMethod: 'cidr',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'date',
+      zodMethod: 'date',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'time',
+      zodMethod: 'time',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'duration',
+      zodMethod: 'duration',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'normalize',
+      zodMethod: 'normalize',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'uppercase',
+      zodMethod: 'uppercase',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'lowercase',
+      zodMethod: 'lowercase',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
 
     // Number validation methods
     {
@@ -1823,6 +1999,36 @@ function getValidationMethodConfig(
       parameterCount: 'variable',
       fieldTypeCompatibility: ['Int', 'Float'],
     },
+    {
+      methodName: 'gt',
+      zodMethod: 'gt',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'gte',
+      zodMethod: 'gte',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'lt',
+      zodMethod: 'lt',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'lte',
+      zodMethod: 'lte',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'step',
+      zodMethod: 'multipleOf',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float'],
+    },
 
     // Array validation methods
     { methodName: 'min', zodMethod: 'min', parameterCount: 1, fieldTypeCompatibility: ['Array'] },
@@ -1881,6 +2087,10 @@ function getValidationMethodConfig(
       parameterCount: 0,
       fieldTypeCompatibility: ['Json'],
     },
+    { methodName: 'catch', zodMethod: 'catch', parameterCount: 1 },
+    { methodName: 'pipe', zodMethod: 'pipe', parameterCount: 1 },
+    { methodName: 'brand', zodMethod: 'brand', parameterCount: 0 },
+    { methodName: 'readonly', zodMethod: 'readonly', parameterCount: 0 },
 
     // New Zod v4 string format methods - Issue #233
     // Network/URL validation methods
@@ -1898,6 +2108,12 @@ function getValidationMethodConfig(
     },
 
     // Identifier validation methods
+    {
+      methodName: 'guid',
+      zodMethod: 'guid',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
     {
       methodName: 'nanoid',
       zodMethod: 'nanoid',

@@ -8,7 +8,7 @@ Use triple-slash Prisma doc comments with `@zod` to append validations.
 ```prisma
 model User {
   id    String @id @default(cuid())
-  /// @zod .email().min(5)
+  /// @zod.email().min(5)
   email String @unique
 }
 ```
@@ -26,6 +26,375 @@ export const UserSchema = z
 
 Annotations are concatenated after base type; unsafe expressions are not executed (string append model). Keep rules pure.
 
+## Complete Feature Reference
+
+### String Validations
+
+#### Length & Content Validation
+```prisma
+model StringValidation {
+  id       String @id @default(cuid())
+  /// @zod.min(2, "Too short")
+  name     String
+  /// @zod.max(100)
+  title    String
+  /// @zod.length(10)
+  code     String
+  /// @zod.includes("@")
+  email    String
+  /// @zod.startsWith("https://")
+  website  String
+  /// @zod.endsWith(".com")
+  domain   String
+  /// @zod.regex(/^[A-Z]+$/, "Must be uppercase")
+  acronym  String
+}
+```
+
+#### String Transformation
+```prisma
+model StringTransform {
+  id         String @id @default(cuid())
+  /// @zod.trim()
+  cleaned    String
+  /// @zod.toLowerCase()
+  slug       String
+  /// @zod.toUpperCase()
+  code       String
+  /// @zod.uppercase()
+  acronym    String
+  /// @zod.lowercase()
+  text       String
+  /// @zod.normalize()
+  normalized String
+}
+```
+
+#### Standard Format Validation
+```prisma
+model StandardFormats {
+  id        String @id @default(cuid())
+  /// @zod.email("Invalid email format")
+  email     String @unique
+  /// @zod.url()
+  website   String?
+  /// @zod.uuid()
+  reference String
+  /// @zod.datetime()
+  timestamp String
+  /// @zod.ip()
+  ipAddress String
+  /// @zod.cidr()
+  network   String
+  /// @zod.date()
+  dateStr   String
+  /// @zod.time()
+  timeStr   String
+  /// @zod.duration()
+  period    String
+}
+```
+
+### Zod v4 String Format Methods
+
+The generator automatically detects your Zod version and uses optimized base types in v4.
+
+#### Network & URL Formats
+```prisma
+model NetworkFormats {
+  id       String @id @default(cuid())
+  /// @zod.httpUrl()
+  apiUrl   String
+  /// @zod.hostname()
+  server   String
+  /// @zod.ipv4()
+  ipAddress String
+  /// @zod.ipv6()
+  ipv6Addr String?
+  /// @zod.cidrv4()
+  subnet   String
+  /// @zod.cidrv6()
+  subnet6  String?
+}
+```
+
+Generated schema (Zod v4):
+```ts
+export const NetworkFormatsCreateInputSchema = z.object({
+  apiUrl: z.httpUrl(),      // Base type in v4
+  server: z.hostname(),     // Base type in v4
+  ipAddress: z.ipv4(),      // Base type in v4
+  ipv6Addr: z.ipv6().optional(),
+  subnet: z.cidrv4(),
+  subnet6: z.cidrv6().optional(),
+});
+```
+
+#### Identifier Formats
+```prisma
+model Identifiers {
+  id       String @id @default(cuid())
+  /// @zod.guid()
+  guid     String
+  /// @zod.nanoid()
+  nanoid   String
+  /// @zod.cuid()
+  cuid     String
+  /// @zod.cuid2()
+  cuid2    String
+  /// @zod.ulid()
+  ulid     String
+}
+```
+
+Generated schema (Zod v4):
+```ts
+export const IdentifiersCreateInputSchema = z.object({
+  guid: z.guid(),       // Base type in v4
+  nanoid: z.nanoid(),   // Base type in v4
+  cuid: z.cuid(),       // Base type in v4
+  cuid2: z.cuid2(),     // Base type in v4
+  ulid: z.ulid(),       // Base type in v4
+});
+```
+
+#### Encoding & Character Formats
+```prisma
+model EncodingData {
+  id        String @id @default(cuid())
+  /// @zod.base64()
+  base64    String
+  /// @zod.base64url()
+  base64url String
+  /// @zod.hex()
+  hex       String
+  /// @zod.emoji()
+  reaction  String
+}
+```
+
+Generated schema (Zod v4):
+```ts
+export const EncodingDataCreateInputSchema = z.object({
+  base64: z.base64(),       // Base type in v4
+  base64url: z.base64url(), // Base type in v4
+  hex: z.hex(),             // Base type in v4
+  reaction: z.emoji(),      // Base type in v4
+});
+```
+
+#### Security & Crypto Formats
+```prisma
+model SecurityData {
+  id        String @id @default(cuid())
+  /// @zod.jwt()
+  token     String?
+  /// @zod.hash("sha256")
+  checksum  String
+}
+```
+
+Generated schema (Zod v4):
+```ts
+export const SecurityDataCreateInputSchema = z.object({
+  token: z.jwt().optional(),        // Base type in v4
+  checksum: z.hash("sha256"),       // Base type with parameter
+});
+```
+
+#### ISO Date/Time Formats
+```prisma
+model ISOFormats {
+  id         String @id @default(cuid())
+  /// @zod.isoDate()
+  date       String
+  /// @zod.isoTime()
+  time       String
+  /// @zod.isoDatetime()
+  datetime   String
+  /// @zod.isoDuration()
+  duration   String
+}
+```
+
+Generated schema (Zod v4):
+```ts
+export const ISOFormatsCreateInputSchema = z.object({
+  date: z.iso.date(),         // ISO methods use z.iso namespace
+  time: z.iso.time(),
+  datetime: z.iso.datetime(),
+  duration: z.iso.duration(),
+});
+```
+
+### Number Validations
+
+```prisma
+model NumberValidation {
+  id       String @id @default(cuid())
+  /// @zod.min(0, "Cannot be negative")
+  score    Int
+  /// @zod.max(100)
+  percent  Int
+  /// @zod.gt(0, "Must be greater than 0")
+  revenue  Float
+  /// @zod.gte(0, "Cannot be negative")
+  assets   Float
+  /// @zod.lt(100, "Must be less than 100")
+  discount Float
+  /// @zod.lte(100, "Cannot exceed 100")
+  capacity Float
+  /// @zod.step(0.01, "Must be in 0.01 increments")
+  price    Float
+  /// @zod.positive("Must be positive")
+  amount   Float
+  /// @zod.negative()
+  debt     Float?
+  /// @zod.nonnegative()
+  balance  Float
+  /// @zod.nonpositive()
+  loss     Float?
+  /// @zod.int()
+  whole    Float
+  /// @zod.finite()
+  measured Float
+  /// @zod.safe()
+  counter  Int
+  /// @zod.multipleOf(5, "Must be multiple of 5")
+  rating   Int
+}
+```
+
+Generated schema:
+```ts
+export const NumberValidationCreateInputSchema = z.object({
+  score: z.number().int().min(0, "Cannot be negative"),
+  percent: z.number().int().max(100),
+  revenue: z.number().gt(0, "Must be greater than 0"),
+  assets: z.number().gte(0, "Cannot be negative"),
+  discount: z.number().lt(100, "Must be less than 100"),
+  capacity: z.number().lte(100, "Cannot exceed 100"),
+  price: z.number().multipleOf(0.01, "Must be in 0.01 increments"),
+  amount: z.number().positive("Must be positive"),
+  debt: z.number().negative().optional(),
+  balance: z.number().nonnegative(),
+  loss: z.number().nonpositive().optional(),
+  whole: z.number().int(),
+  measured: z.number().finite(),
+  counter: z.number().int().safe(),
+  rating: z.number().int().multipleOf(5, "Must be multiple of 5"),
+});
+```
+
+### Array Validations
+
+```prisma
+model ArrayValidation {
+  id      String   @id @default(cuid())
+  /// @zod.min(1, "At least one item required")
+  tags    String[]
+  /// @zod.max(10)
+  items   String[]
+  /// @zod.length(3)
+  coords  Float[]
+  /// @zod.nonempty()
+  colors  String[]
+  /// @zod.nullable()
+  options String[]?
+}
+```
+
+Generated schema:
+```ts
+export const ArrayValidationCreateInputSchema = z.object({
+  tags: z.string().array().min(1, "At least one item required"),
+  items: z.string().array().max(10),
+  coords: z.number().array().length(3),
+  colors: z.string().array().nonempty(),
+  options: z.string().array().nullable().optional(),
+});
+```
+
+### Date Validations
+
+```prisma
+model DateValidation {
+  id        String   @id @default(cuid())
+  /// @zod.min(new Date('2020-01-01'))
+  startDate DateTime
+  /// @zod.max(new Date('2030-12-31'))
+  endDate   DateTime
+}
+```
+
+### Field Modifiers
+
+```prisma
+model FieldModifiers {
+  id          String @id @default(cuid())
+  /// @zod.optional()
+  description String
+  /// @zod.nullable()
+  notes       String?
+  /// @zod.nullish()
+  metadata    String?
+  /// @zod.default("active")
+  status      String
+}
+```
+
+### Advanced Modifiers
+
+```prisma
+model AdvancedModifiers {
+  id         String @id @default(cuid())
+  /// @zod.catch("fallback")
+  safeData   String
+  /// @zod.pipe(z.string().transform(s => s.toUpperCase()))
+  processed  String
+  /// @zod.brand<"UserId">()
+  userId     String
+  /// @zod.readonly()
+  immutable  String
+}
+```
+
+Generated schema:
+```ts
+export const AdvancedModifiersCreateInputSchema = z.object({
+  safeData: z.string().catch("fallback"),
+  processed: z.string().pipe(z.string().transform(s => s.toUpperCase())),
+  userId: z.string().brand<"UserId">(),
+  immutable: z.string().readonly(),
+});
+```
+
+### Custom Validation & Transformation
+
+```prisma
+model CustomValidation {
+  id       String @id @default(cuid())
+  /// @zod.refine((val) => val.length > 0, { message: "Cannot be empty" })
+  content  String
+  /// @zod.transform((val) => val.trim().toLowerCase())
+  slug     String
+  /// @zod.enum(["admin", "user", "guest"])
+  role     String
+}
+```
+
+### Special Field Types
+
+```prisma
+model SpecialTypes {
+  id       String @id @default(cuid())
+  /// @zod.json()
+  metadata Json
+  /// @zod.custom({ "name": "John", "age": 30, "active": true })
+  profile  Json
+}
+```
+
 ## External Validators with `@zod.import`
 
 Bring in runtime helpers directly from doc comments when you need logic that lives outside the generated file.
@@ -33,7 +402,7 @@ Bring in runtime helpers directly from doc comments when you need logic that liv
 ```prisma
 model User {
   id    String @id @default(cuid())
-  /// @zod.import(["import { isEmail } from '../validators/email'\"])
+  /// @zod.import(["import { isEmail } from '../validators/email'"])
   /// @zod.custom.use(z.string().refine((val) => isEmail(val), { message: 'Invalid email' }))
   email String @unique
 }
@@ -54,261 +423,23 @@ export const UserSchema = z
   .strict();
 ```
 
-- Provide one or more complete import statements inside the array. Relative paths are kept intact and rewritten per output directory.
-- Imports must produce runtime values. Type-only specifiers (e.g. `import type { Validator } ...` or `type Foo as Bar`) are detected and omitted, ensuring we never emit imports that disappear after compilation.
-- Field-level imports are merged with model-level imports. When the same statement appears multiple times it is emitted once.
-- Model-level imports can also supply chained refinements:
+### Import Features
+- Provide one or more complete import statements inside the array
+- Relative paths are kept intact and rewritten per output directory
+- Imports must produce runtime values. Type-only specifiers are detected and omitted
+- Field-level imports are merged with model-level imports
+- Duplicate statements are emitted once
 
-  ```prisma
-  /// @zod.import(["import { assertCompanyDomain } from '../validators/domain'\"]).refine(assertCompanyDomain)
-  model Organisation {
-    id    String @id @default(cuid())
-    email String @unique
-  }
-  ```
-
-When both `@zod.import()` and other `@zod.*` annotations are present, the generator keeps custom schemas from `@zod.custom.use()` as the base and only appends inline validations when they do not replace the base type.
-
-## String Format Validations
-
-The generator supports all Zod v4 string format validation methods. In Zod v4, these generate optimized base types (e.g., `z.email()` instead of `z.string().email()`).
-
-### Network & URL Formats
+### Model-level imports
+Model-level imports can also supply chained refinements:
 
 ```prisma
-model WebData {
-  id       String @id @default(cuid())
-  /// @zod.email()
-  email    String @unique
-  /// @zod.url()
-  website  String?
-  /// @zod.httpUrl()
-  apiUrl   String
-  /// @zod.hostname()
-  server   String
+/// @zod.import(["import { assertCompanyDomain } from '../validators/domain'"]).refine(assertCompanyDomain)
+model Organisation {
+  id    String @id @default(cuid())
+  email String @unique
 }
 ```
-
-Generated schema (Zod v4):
-
-```ts
-export const WebDataCreateInputSchema = z.object({
-  email: z.email(),      // Base type in v4
-  website: z.url().optional(),
-  apiUrl: z.httpUrl(),   // Base type in v4
-  server: z.hostname(),  // Base type in v4
-});
-```
-
-### Identifier Formats
-
-```prisma
-model Identifiers {
-  id       String @id @default(cuid())
-  /// @zod.uuid()
-  uuid     String
-  /// @zod.nanoid()
-  nanoid   String
-  /// @zod.cuid()
-  cuid     String
-  /// @zod.cuid2()
-  cuid2    String
-  /// @zod.ulid()
-  ulid     String
-}
-```
-
-Generated schema (Zod v4):
-
-```ts
-export const IdentifiersCreateInputSchema = z.object({
-  uuid: z.uuid(),       // Base type in v4
-  nanoid: z.nanoid(),   // Base type in v4
-  cuid: z.cuid(),       // Base type in v4
-  cuid2: z.cuid2(),     // Base type in v4
-  ulid: z.ulid(),       // Base type in v4
-});
-```
-
-### Encoding & Character Formats
-
-```prisma
-model EncodingData {
-  id        String @id @default(cuid())
-  /// @zod.base64()
-  base64    String
-  /// @zod.base64url()
-  base64url String
-  /// @zod.hex()
-  hex       String
-  /// @zod.emoji()
-  reaction  String
-}
-```
-
-Generated schema (Zod v4):
-
-```ts
-export const EncodingDataCreateInputSchema = z.object({
-  base64: z.base64(),       // Base type in v4
-  base64url: z.base64url(), // Base type in v4
-  hex: z.hex(),             // Base type in v4
-  reaction: z.emoji(),      // Base type in v4
-});
-```
-
-### Security & Network Formats
-
-```prisma
-model SecurityData {
-  id        String @id @default(cuid())
-  /// @zod.jwt()
-  token     String?
-  /// @zod.hash("sha256")
-  checksum  String
-  /// @zod.ipv4()
-  ipv4Addr  String
-  /// @zod.ipv6()
-  ipv6Addr  String?
-  /// @zod.cidrv4()
-  subnet    String
-  /// @zod.datetime()
-  timestamp String
-}
-```
-
-Generated schema (Zod v4):
-
-```ts
-export const SecurityDataCreateInputSchema = z.object({
-  token: z.jwt().optional(),        // Base type in v4
-  checksum: z.hash("sha256"),       // Base type with parameter
-  ipv4Addr: z.ipv4(),              // Base type in v4
-  ipv6Addr: z.ipv6().optional(),   // Base type in v4
-  subnet: z.cidrv4(),              // Base type in v4
-  timestamp: z.datetime(),         // Base type in v4
-});
-```
-
-### Chaining with String Format Methods
-
-String format methods can be chained with other Zod validations:
-
-```prisma
-model ChainedValidations {
-  id       String @id @default(cuid())
-  /// @zod.email().max(100).toLowerCase()
-  email    String @unique
-  /// @zod.nanoid().min(21)
-  publicId String
-  /// @zod.httpUrl().max(200)
-  website  String?
-}
-```
-
-Generated schema (Zod v4):
-
-```ts
-export const ChainedValidationsCreateInputSchema = z.object({
-  email: z.email().max(100).toLowerCase(),
-  publicId: z.nanoid().min(21),
-  website: z.httpUrl().max(200).optional(),
-});
-```
-
-### Version Compatibility
-
-The generator automatically detects your Zod version:
-
-- **Zod v4**: Uses optimized base types like `z.email()`, `z.nanoid()`
-- **Zod v3**: Falls back to chaining methods like `z.string().email()` where supported, or `z.string()` for unsupported methods
-
-### Regular Expression Validation
-
-```prisma
-model ValidationData {
-  id          String @id @default(cuid())
-  /// @zod.regex(/^[A-Z]+$/, "Must be uppercase letters only")
-  upperCode   String
-  /// @zod.regex(/^\d{4}-\d{2}-\d{2}$/)
-  dateFormat  String
-  /// @zod.regex(new RegExp('[0-9]+'))
-  numberStr   String
-}
-```
-
-Generated schema (Zod v4):
-
-```ts
-export const ValidationDataCreateInputSchema = z.object({
-  upperCode: z.regex(/^[A-Z]+$/, 'Must be uppercase letters only'),
-  dateFormat: z.regex(/^\d{4}-\d{2}-\d{2}$/),
-  numberStr: z.regex(new RegExp('[0-9]+')),
-});
-```
-
-### Advanced Parameter Support
-
-The generator supports complex parameter expressions, including:
-
-#### JavaScript Object Literals
-
-```prisma
-model AdvancedValidation {
-  id       String @id @default(cuid())
-  /// @zod.nanoid({ abort: true, error: 'Custom nanoid error' })
-  customId String
-  /// @zod.nanoid({ abort: true, pattern: new RegExp('.'), error: 'Complex validation' })
-  complexId String
-}
-```
-
-Generated schema:
-
-```ts
-export const AdvancedValidationCreateInputSchema = z.object({
-  customId: z.nanoid({"abort":true,"error":"Custom nanoid error"}),
-  complexId: z.nanoid({"abort":true,"pattern":new RegExp('.'),"error":"Complex validation"}),
-});
-```
-
-### Parameter Types Supported
-
-The generator preserves all JavaScript parameter types:
-
-- **Strings**: `@zod.nanoid('Custom error')` → `z.nanoid('Custom error')`
-- **Objects**: `@zod.nanoid({ abort: true })` → `z.nanoid({"abort":true})`
-- **Numbers**: `@zod.min(10)` → `z.string().min(10)` (valid usage)
-- **Booleans**: `@zod.optional()` → `z.string().optional()` (parameter-less)
-- **Arrays**: `@zod.custom([1, 2, 3])` → `z.custom([1,2,3])`
-- **RegExp**: `@zod.regex(/pattern/)` → `z.regex(/pattern/)`
-- **Function calls**: `@zod.custom(Date.now())` → `z.custom(Date.now())`
-- **Nested expressions**: `@zod.custom(new RegExp('.'))` → `z.custom(new RegExp('.'))`
-
-### Complete Reference
-
-| Method | Parameters | Description | Zod v4 Output | Zod v3 Fallback |
-|--------|------------|-------------|---------------|-----------------|
-| `@zod.email()` | Optional error message/config | Email validation | `z.email()` | `z.string().email()` |
-| `@zod.url()` | Optional error message/config | URL validation | `z.url()` | `z.string().url()` |
-| `@zod.httpUrl()` | Optional error message/config | HTTP/HTTPS URLs | `z.httpUrl()` | `z.string()` |
-| `@zod.hostname()` | Optional error message/config | Hostname validation | `z.hostname()` | `z.string()` |
-| `@zod.uuid()` | Optional error message/config | UUID validation | `z.uuid()` | `z.string().uuid()` |
-| `@zod.datetime()` | Optional error message/config | ISO datetime validation | `z.datetime()` | `z.string().datetime()` |
-| `@zod.nanoid()` | Optional config object/error message | Nanoid validation | `z.nanoid()` | `z.string()` |
-| `@zod.cuid()` | Optional error message/config | CUID validation | `z.cuid()` | `z.string()` |
-| `@zod.cuid2()` | Optional error message/config | CUID v2 validation | `z.cuid2()` | `z.string()` |
-| `@zod.ulid()` | Optional error message/config | ULID validation | `z.ulid()` | `z.string()` |
-| `@zod.base64()` | Optional config object/error message | Base64 validation | `z.base64()` | `z.string()` |
-| `@zod.base64url()` | Optional config object/error message | Base64URL validation | `z.base64url()` | `z.string()` |
-| `@zod.hex()` | Optional error message/config | Hexadecimal validation | `z.hex()` | `z.string()` |
-| `@zod.jwt()` | Optional config object/error message | JWT validation | `z.jwt()` | `z.string()` |
-| `@zod.regex()` | Pattern, optional error message | Regular expression validation | `z.regex(/pattern/)` | `z.string().regex(/pattern/)` |
-| `@zod.hash("algo")` | Algorithm, optional config | Hash validation | `z.hash("sha256")` | `z.string()` |
-| `@zod.ipv4()` | Optional error message/config | IPv4 validation | `z.ipv4()` | `z.string()` |
-| `@zod.ipv6()` | Optional error message/config | IPv6 validation | `z.ipv6()` | `z.string()` |
-| `@zod.cidrv4()` | Optional error message/config | CIDR v4 validation | `z.cidrv4()` | `z.string()` |
-| `@zod.emoji()` | Optional error message/config | Single emoji validation | `z.emoji()` | `z.string()` |
 
 ## Custom Inline Override (@zod.custom.use)
 
@@ -334,13 +465,6 @@ messages: z.array(
 ```
 
 This short-circuits other annotations for that field.
-
-Optional helper for deep JSON arrays:
-
-```ts
-import { jsonMaxDepthRefinement } from 'prisma-zod-generator';
-const ChatMessagesSchema = z.array(MessageSchema)${'${jsonMaxDepthRefinement(10)}'};
-```
 
 ## Custom Object Schema (@zod.custom)
 
@@ -377,7 +501,7 @@ metadata: z.union([JsonNullValueInputSchema, z.object({
 })]).optional()
 ```
 
-### Supported Value Types
+### Supported Value Types in @zod.custom()
 
 - **Strings** → `z.string()`
 - **Numbers** → `z.number().int()` or `z.number()`
@@ -386,26 +510,33 @@ metadata: z.union([JsonNullValueInputSchema, z.object({
 - **Nested Objects** → `z.object({...})`
 - **null** → `z.null()`
 
-### Key Differences from @zod.custom.use()
+## Chaining Support
 
-| Feature | `@zod.custom()` | `@zod.custom.use()` |
-|---------|-----------------|---------------------|
-| **Use Case** | Structured object/array schemas | Complete schema replacement with custom logic |
-| **Syntax** | JavaScript object literals | Raw Zod schema expressions |
-| **Field Types** | JSON fields only | Any field type |
-| **Complexity** | Simple structured data | Advanced validation (refine, transform) |
-| **Auto-conversion** | ✅ Automatic type inference | ❌ Manual Zod syntax |
-
-### Example Comparison
+All methods can be chained together:
 
 ```prisma
-// @zod.custom() - Simple structured schema
-/// @zod.custom({ "name": "John", "age": 30, "active": true })
-profile Json
+model ChainedValidations {
+  id       String @id @default(cuid())
+  /// @zod.email().max(100).toLowerCase()
+  email    String @unique
+  /// @zod.nanoid().min(21)
+  publicId String
+  /// @zod.min(1).max(50).trim().regex(/^[A-Za-z\s]+$/)
+  name     String
+  /// @zod.positive().int().multipleOf(5)
+  score    Int
+}
+```
 
-// @zod.custom.use() - Advanced custom validation
-/// @zod.custom.use(z.object({ name: z.string().min(2), age: z.number().positive() }).refine(data => data.age >= 18))
-profile Json
+Generated schema (Zod v4):
+
+```ts
+export const ChainedValidationsCreateInputSchema = z.object({
+  email: z.email().max(100).toLowerCase(),
+  publicId: z.nanoid().min(21),
+  name: z.string().min(1).max(50).trim().regex(/^[A-Za-z\s]+$/),
+  score: z.number().int().positive().multipleOf(5),
+});
 ```
 
 ## Native Type Max Length Validation
@@ -522,33 +653,125 @@ export const TagsCreateInputSchema = z.object({
 });
 ```
 
-### Edge Cases
+## Version Compatibility
 
-The generator handles various edge cases gracefully:
+The generator automatically detects your Zod version:
 
-- **Zero length**: `@db.VarChar(0)` is ignored (invalid constraint)
-- **Very large lengths**: `@db.VarChar(65535)` works normally
-- **Multiple max constraints**: Duplicate `.max()` calls are consolidated into the most restrictive value
-- **Non-string fields**: Native types on Int/DateTime/etc. are ignored for max length extraction
-- **Text types**: `@db.Text` (without length parameter) doesn't generate max constraints
+- **Zod v4**: Uses optimized base types like `z.email()`, `z.nanoid()`
+- **Zod v3**: Falls back to chaining methods like `z.string().email()` where supported, or `z.string()` for unsupported methods
 
-### MongoDB ObjectId
+## Complete Method Reference
 
-MongoDB ObjectId fields automatically get a max length of 24 characters:
+### String Methods
 
-```prisma
-// MongoDB schema
-model User {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId
-  email String @unique
-}
-```
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `@zod.min(n)` | number, optional error message | Minimum string length |
+| `@zod.max(n)` | number, optional error message | Maximum string length |
+| `@zod.length(n)` | number, optional error message | Exact string length |
+| `@zod.email()` | optional error message/config | Email validation |
+| `@zod.url()` | optional error message/config | URL validation |
+| `@zod.uuid()` | optional error message/config | UUID validation |
+| `@zod.regex()` | pattern, optional error message | Regular expression validation |
+| `@zod.includes()` | substring | String must contain substring |
+| `@zod.startsWith()` | prefix | String must start with prefix |
+| `@zod.endsWith()` | suffix | String must end with suffix |
+| `@zod.trim()` | none | Remove leading/trailing whitespace |
+| `@zod.toLowerCase()` | none | Convert to lowercase |
+| `@zod.toUpperCase()` | none | Convert to uppercase |
+| `@zod.datetime()` | optional error message/config | ISO datetime validation |
 
-Generated schema:
+### Zod v4 String Format Methods
 
-```ts
-export const UserCreateInputSchema = z.object({
-  id: z.string().max(24), // ObjectId is 24 hex chars
-  email: z.string(),
-});
-```
+| Method | Description | Zod v4 Output | Zod v3 Fallback |
+|--------|-------------|---------------|-----------------|
+| `@zod.httpUrl()` | HTTP/HTTPS URL validation | `z.httpUrl()` | `z.string()` |
+| `@zod.hostname()` | Hostname validation | `z.hostname()` | `z.string()` |
+| `@zod.nanoid()` | Nanoid validation | `z.nanoid()` | `z.string()` |
+| `@zod.cuid()` | CUID validation | `z.cuid()` | `z.string()` |
+| `@zod.cuid2()` | CUID v2 validation | `z.cuid2()` | `z.string()` |
+| `@zod.ulid()` | ULID validation | `z.ulid()` | `z.string()` |
+| `@zod.base64()` | Base64 validation | `z.base64()` | `z.string()` |
+| `@zod.base64url()` | Base64URL validation | `z.base64url()` | `z.string()` |
+| `@zod.hex()` | Hexadecimal validation | `z.hex()` | `z.string()` |
+| `@zod.jwt()` | JWT token validation | `z.jwt()` | `z.string()` |
+| `@zod.hash(algo)` | Hash validation | `z.hash("sha256")` | `z.string()` |
+| `@zod.ipv4()` | IPv4 address validation | `z.ipv4()` | `z.string()` |
+| `@zod.ipv6()` | IPv6 address validation | `z.ipv6()` | `z.string()` |
+| `@zod.cidrv4()` | CIDR v4 validation | `z.cidrv4()` | `z.string()` |
+| `@zod.cidrv6()` | CIDR v6 validation | `z.cidrv6()` | `z.string()` |
+| `@zod.emoji()` | Single emoji validation | `z.emoji()` | `z.string()` |
+| `@zod.isoDate()` | ISO date validation | `z.iso.date()` | `z.string()` |
+| `@zod.isoTime()` | ISO time validation | `z.iso.time()` | `z.string()` |
+| `@zod.isoDatetime()` | ISO datetime validation | `z.iso.datetime()` | `z.string()` |
+| `@zod.isoDuration()` | ISO duration validation | `z.iso.duration()` | `z.string()` |
+
+### Number Methods
+
+| Method | Parameters | Field Types | Description |
+|--------|------------|-------------|-------------|
+| `@zod.min(n)` | number, optional error message | Int, Float, BigInt | Minimum value |
+| `@zod.max(n)` | number, optional error message | Int, Float, BigInt | Maximum value |
+| `@zod.int()` | none | Int, Float | Integer validation |
+| `@zod.positive()` | optional error message | Int, Float, BigInt | Positive number (> 0) |
+| `@zod.negative()` | none | Int, Float, BigInt | Negative number (< 0) |
+| `@zod.nonnegative()` | none | Int, Float, BigInt | Non-negative number (>= 0) |
+| `@zod.nonpositive()` | none | Int, Float, BigInt | Non-positive number (<= 0) |
+| `@zod.finite()` | none | Float | Finite number |
+| `@zod.safe()` | none | Int, Float | Safe integer |
+| `@zod.multipleOf(n)` | number, optional error message | Int, Float | Multiple of validation |
+
+### Array Methods
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `@zod.min(n)` | number | Minimum array length |
+| `@zod.max(n)` | number | Maximum array length |
+| `@zod.length(n)` | number | Exact array length |
+| `@zod.nonempty()` | none | Non-empty array |
+
+### Date Methods
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `@zod.min(date)` | Date | Minimum date |
+| `@zod.max(date)` | Date | Maximum date |
+
+### Field Modifiers
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `@zod.optional()` | none | Make field optional |
+| `@zod.nullable()` | none | Make field nullable |
+| `@zod.nullish()` | none | Make field nullish (null or undefined) |
+| `@zod.default(value)` | any value | Set default value |
+
+### Custom Validation
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `@zod.refine(fn)` | function | Custom validation function |
+| `@zod.transform(fn)` | function | Value transformation |
+| `@zod.enum(options)` | array | Enum validation |
+
+### Special Types
+
+| Method | Parameters | Field Types | Description |
+|--------|------------|-------------|-------------|
+| `@zod.json()` | none | Json | JSON validation |
+| `@zod.object()` | none | Any | Object validation |
+| `@zod.array()` | optional schema | Any | Array validation |
+| `@zod.custom(schema)` | object literal | Json | Structured object schema |
+
+## Parameter Types Supported
+
+The generator preserves all JavaScript parameter types:
+
+- **Strings**: `@zod.nanoid('Custom error')` → `z.nanoid('Custom error')`
+- **Objects**: `@zod.nanoid({ abort: true })` → `z.nanoid({"abort":true})`
+- **Numbers**: `@zod.min(10)` → `z.string().min(10)`
+- **Booleans**: `@zod.optional()` → `z.string().optional()`
+- **Arrays**: `@zod.custom([1, 2, 3])` → `z.custom([1,2,3])`
+- **RegExp**: `@zod.regex(/pattern/)` → `z.regex(/pattern/)`
+- **Function calls**: `@zod.custom(Date.now())` → `z.custom(Date.now())`
+- **Nested expressions**: `@zod.custom(new RegExp('.'))` → `z.custom(new RegExp('.'))`

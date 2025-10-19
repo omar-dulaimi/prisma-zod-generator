@@ -2872,4 +2872,299 @@ model Profile {
       GENERATION_TIMEOUT,
     );
   });
+
+  describe('New Zod v3/v4 Methods', () => {
+    it(
+      'should handle number comparison methods (gt, gte, lt, lte, step)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-number-comparison');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model NumberTest {
+  id       Int   @id @default(autoincrement())
+  /// @zod.gt(0, "Must be greater than 0")
+  revenue  Float
+  /// @zod.gte(0, "Cannot be negative")
+  assets   Float
+  /// @zod.lt(100, "Must be less than 100")
+  discount Float
+  /// @zod.lte(100, "Cannot exceed 100")
+  capacity Float
+  /// @zod.step(0.01, "Must be in 0.01 increments")
+  price    Float
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const createInputPath = join(objectsDir, 'NumberTestCreateInput.schema.ts');
+
+          if (existsSync(createInputPath)) {
+            const content = readFileSync(createInputPath, 'utf-8');
+
+            // Should contain gt validation
+            expect(content).toMatch(/\.gt\(0,\s*['"]Must be greater than 0['"]\)/);
+
+            // Should contain gte validation
+            expect(content).toMatch(/\.gte\(0,\s*['"]Cannot be negative['"]\)/);
+
+            // Should contain lt validation
+            expect(content).toMatch(/\.lt\(100,\s*['"]Must be less than 100['"]\)/);
+
+            // Should contain lte validation
+            expect(content).toMatch(/\.lte\(100,\s*['"]Cannot exceed 100['"]\)/);
+
+            // Should contain step validation (maps to multipleOf)
+            expect(content).toMatch(/\.multipleOf\(0\.01,\s*['"]Must be in 0\.01 increments['"]\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle additional string format methods in Zod v3 (fallback)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-string-formats-v3');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            zodImportTarget: 'v3' as const,
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model StringFormats {
+  id         String @id @default(cuid())
+  /// @zod.ip()
+  ipAddress  String
+  /// @zod.cidr()
+  network    String
+  /// @zod.date()
+  dateStr    String
+  /// @zod.time()
+  timeStr    String
+  /// @zod.duration()
+  period     String
+  /// @zod.guid()
+  guid       String
+  /// @zod.normalize()
+  normalized String
+  /// @zod.uppercase()
+  upper      String
+  /// @zod.lowercase()
+  lower      String
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const createInputPath = join(objectsDir, 'StringFormatsCreateInput.schema.ts');
+
+          if (existsSync(createInputPath)) {
+            const content = readFileSync(createInputPath, 'utf-8');
+
+            // Common format validations should be present (chain methods)
+            expect(content).toMatch(/\.ip\(\)/);
+            expect(content).toMatch(/\.cidr\(\)/);
+            expect(content).toMatch(/\.date\(\)/);
+            expect(content).toMatch(/\.time\(\)/);
+            expect(content).toMatch(/\.duration\(\)/);
+            expect(content).toMatch(/\.normalize\(\)/);
+            expect(content).toMatch(/\.uppercase\(\)/);
+            expect(content).toMatch(/\.lowercase\(\)/);
+
+            // v3 fallback: should NOT use z.guid() or .guid(); field should remain a plain string
+            expect(content).not.toMatch(/z\.guid\(\)/);
+            expect(content).not.toMatch(/\.guid\(\)/);
+            expect(content).toMatch(/guid:\s*z\.string\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle additional string format methods in Zod v4 (native)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-string-formats-v4');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            zodImportTarget: 'v4' as const,
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model StringFormats {
+  id         String @id @default(cuid())
+  /// @zod.ip()
+  ipAddress  String
+  /// @zod.cidr()
+  network    String
+  /// @zod.date()
+  dateStr    String
+  /// @zod.time()
+  timeStr    String
+  /// @zod.duration()
+  period     String
+  /// @zod.guid()
+  guid       String
+  /// @zod.normalize()
+  normalized String
+  /// @zod.uppercase()
+  upper      String
+  /// @zod.lowercase()
+  lower      String
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const createInputPath = join(objectsDir, 'StringFormatsCreateInput.schema.ts');
+
+          if (existsSync(createInputPath)) {
+            const content = readFileSync(createInputPath, 'utf-8');
+
+            // Common format validations should be present (chain methods)
+            expect(content).toMatch(/\.ip\(\)/);
+            expect(content).toMatch(/\.cidr\(\)/);
+            expect(content).toMatch(/\.date\(\)/);
+            expect(content).toMatch(/\.time\(\)/);
+            expect(content).toMatch(/\.duration\(\)/);
+            expect(content).toMatch(/\.normalize\(\)/);
+            expect(content).toMatch(/\.uppercase\(\)/);
+            expect(content).toMatch(/\.lowercase\(\)/);
+
+            // v4 native: should use base method for guid
+            expect(content).toMatch(/z\.guid\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle advanced modifiers (catch, pipe, brand, readonly)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-advanced-modifiers');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model AdvancedModifiers {
+  id        String @id @default(cuid())
+  /// @zod.catch("fallback")
+  safeData  String
+  /// @zod.pipe(z.string().transform(s => s.toUpperCase()))
+  processed String
+  /// @zod.brand()
+  branded   String
+  /// @zod.readonly()
+  immutable String
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const createInputPath = join(objectsDir, 'AdvancedModifiersCreateInput.schema.ts');
+
+          if (existsSync(createInputPath)) {
+            const content = readFileSync(createInputPath, 'utf-8');
+
+            // Should contain advanced modifier validations
+            expect(content).toMatch(/\.catch\(['"]fallback['"]\)/);
+            expect(content).toMatch(/\.pipe\(/);
+            expect(content).toMatch(/\.brand\(\)/);
+            expect(content).toMatch(/\.readonly\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });
