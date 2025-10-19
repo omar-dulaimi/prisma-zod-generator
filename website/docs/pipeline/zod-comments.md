@@ -714,9 +714,9 @@ The generator automatically detects your Zod version:
 | `@zod.max(n)` | number, optional error message | Int, Float, BigInt | Maximum value |
 | `@zod.int()` | none | Int, Float | Integer validation |
 | `@zod.positive()` | optional error message | Int, Float, BigInt | Positive number (> 0) |
-| `@zod.negative()` | none | Int, Float, BigInt | Negative number (< 0) |
-| `@zod.nonnegative()` | none | Int, Float, BigInt | Non-negative number (>= 0) |
-| `@zod.nonpositive()` | none | Int, Float, BigInt | Non-positive number (<= 0) |
+| `@zod.negative()` | none | Int, Float, BigInt | Negative number (&lt; 0) |
+| `@zod.nonnegative()` | none | Int, Float, BigInt | Non-negative number (&ge; 0) |
+| `@zod.nonpositive()` | none | Int, Float, BigInt | Non-positive number (&le; 0) |
 | `@zod.finite()` | none | Float | Finite number |
 | `@zod.safe()` | none | Int, Float | Safe integer |
 | `@zod.multipleOf(n)` | number, optional error message | Int, Float | Multiple of validation |
