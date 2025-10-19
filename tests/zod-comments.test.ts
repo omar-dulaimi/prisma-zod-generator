@@ -2946,12 +2946,15 @@ model NumberTest {
     );
 
     it(
-      'should handle additional string format methods',
+      'should handle additional string format methods in Zod v3 (fallback)',
       async () => {
-        const testEnv = await TestEnvironment.createTestEnv('zod-string-formats');
+        const testEnv = await TestEnvironment.createTestEnv('zod-string-formats-v3');
 
         try {
-          const config = ConfigGenerator.createBasicConfig();
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            zodImportTarget: 'v3' as const,
+          };
           const configPath = join(testEnv.testDir, 'config.json');
           const schema = `
 generator client {
@@ -3002,7 +3005,7 @@ model StringFormats {
           if (existsSync(createInputPath)) {
             const content = readFileSync(createInputPath, 'utf-8');
 
-            // Should contain all string format validations
+            // Common format validations should be present (chain methods)
             expect(content).toMatch(/\.ip\(\)/);
             expect(content).toMatch(/\.cidr\(\)/);
             expect(content).toMatch(/\.date\(\)/);
@@ -3012,12 +3015,90 @@ model StringFormats {
             expect(content).toMatch(/\.uppercase\(\)/);
             expect(content).toMatch(/\.lowercase\(\)/);
 
-            // For Zod v4, should use base types
-            if (content.includes('z.guid()')) {
-              expect(content).toMatch(/z\.guid\(\)/);
-            } else {
-              expect(content).toMatch(/\.guid\(\)/);
-            }
+            // v3 fallback: should NOT use z.guid() or .guid(); field should remain a plain string
+            expect(content).not.toMatch(/z\.guid\(\)/);
+            expect(content).not.toMatch(/\.guid\(\)/);
+            expect(content).toMatch(/guid:\s*z\.string\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should handle additional string format methods in Zod v4 (native)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-string-formats-v4');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            zodImportTarget: 'v4' as const,
+          };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model StringFormats {
+  id         String @id @default(cuid())
+  /// @zod.ip()
+  ipAddress  String
+  /// @zod.cidr()
+  network    String
+  /// @zod.date()
+  dateStr    String
+  /// @zod.time()
+  timeStr    String
+  /// @zod.duration()
+  period     String
+  /// @zod.guid()
+  guid       String
+  /// @zod.normalize()
+  normalized String
+  /// @zod.uppercase()
+  upper      String
+  /// @zod.lowercase()
+  lower      String
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const createInputPath = join(objectsDir, 'StringFormatsCreateInput.schema.ts');
+
+          if (existsSync(createInputPath)) {
+            const content = readFileSync(createInputPath, 'utf-8');
+
+            // Common format validations should be present (chain methods)
+            expect(content).toMatch(/\.ip\(\)/);
+            expect(content).toMatch(/\.cidr\(\)/);
+            expect(content).toMatch(/\.date\(\)/);
+            expect(content).toMatch(/\.time\(\)/);
+            expect(content).toMatch(/\.duration\(\)/);
+            expect(content).toMatch(/\.normalize\(\)/);
+            expect(content).toMatch(/\.uppercase\(\)/);
+            expect(content).toMatch(/\.lowercase\(\)/);
+
+            // v4 native: should use base method for guid
+            expect(content).toMatch(/z\.guid\(\)/);
           }
         } finally {
           await testEnv.cleanup();
