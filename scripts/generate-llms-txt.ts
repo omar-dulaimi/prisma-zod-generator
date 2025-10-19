@@ -43,6 +43,18 @@ const processor = remark()
     bullet: '-',
     fences: true,
     listItemIndent: 'one',
+    // Be lenient with HTML/MDX fragments in docs
+    allowDangerousHtml: true as any,
+  });
+
+// Fallback processor without MDX, for non-compliant MDX/MD docs
+const fallbackProcessor = remark()
+  .use(gfm)
+  .use(stringify, {
+    bullet: '-',
+    fences: true,
+    listItemIndent: 'one',
+    allowDangerousHtml: true as any,
   });
 
 /**
@@ -75,8 +87,20 @@ async function readAndProcess(
   const raw = await readTextIfExists(filePath);
   if (!raw) return null;
   const { content, data } = matter(raw);
-  const processed = await processor.process({ path: filePath, value: content });
-  const text = String(processed).trim();
+  let text: string;
+  try {
+    const processed = await processor.process({ path: filePath, value: content });
+    text = String(processed).trim();
+  } catch (err) {
+    // Gracefully degrade on MDX parse failures: try without MDX, then fall back to raw
+    try {
+      const processedLite = await fallbackProcessor.process({ path: filePath, value: content });
+      text = String(processedLite).trim();
+    } catch {
+      // Last resort: include frontmatter-stripped content verbatim
+      text = String(content).trim();
+    }
+  }
   let title: string | null = null;
   // Prefer frontmatter title if present
   if (typeof data?.title === 'string' && data.title.trim()) {
