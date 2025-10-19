@@ -1028,9 +1028,18 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'toLowerCase',
     'toUpperCase',
     'datetime',
+    'ip',
+    'cidr',
+    'date',
+    'time',
+    'duration',
+    'normalize',
+    'uppercase',
+    'lowercase',
     // New Zod v4 string format methods - Issue #233
     'httpUrl',
     'hostname',
+    'guid',
     'nanoid',
     'cuid',
     'cuid2',
@@ -1063,6 +1072,10 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'finite',
     'multipleOf',
     'step',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
   ];
 
   // Common array validation methods
@@ -1083,13 +1096,27 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'transform',
     'multipleOf',
     'step',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+    'catch',
+    'pipe',
     // New methods that require parameters - Issue #233
     'hash', // hash requires algorithm parameter like "sha256"
     'custom', // custom requires object/array schema parameter
   ];
 
   // Methods that don't allow parameters
-  const noParams = ['nonempty', 'trim', 'toLowerCase', 'toUpperCase'];
+  const noParams = [
+    'nonempty',
+    'trim',
+    'toLowerCase',
+    'toUpperCase',
+    'uppercase',
+    'lowercase',
+    'readonly',
+  ];
 
   // Methods that accept optional parameters (format validation methods)
   const optionalParams = [
@@ -1098,9 +1125,16 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'url',
     'uuid',
     'datetime',
+    'ip',
+    'cidr',
+    'date',
+    'time',
+    'duration',
+    'normalize',
     // New Zod v4 string format methods - Issue #233
     'httpUrl',
     'hostname',
+    'guid',
     'nanoid',
     'cuid',
     'cuid2',
@@ -1143,6 +1177,10 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'array',
     'record',
     'json',
+    'catch',
+    'pipe',
+    'brand',
+    'readonly',
   ];
 
   // Check if method is known
@@ -1577,6 +1615,7 @@ function mapAnnotationToZodMethod(
     'uuid',
     'httpUrl',
     'hostname',
+    'guid',
     'nanoid',
     'cuid',
     'cuid2',
@@ -1761,6 +1800,54 @@ function getValidationMethodConfig(
       parameterCount: 0,
       fieldTypeCompatibility: ['String'],
     },
+    {
+      methodName: 'ip',
+      zodMethod: 'ip',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'cidr',
+      zodMethod: 'cidr',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'date',
+      zodMethod: 'date',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'time',
+      zodMethod: 'time',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'duration',
+      zodMethod: 'duration',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'normalize',
+      zodMethod: 'normalize',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'uppercase',
+      zodMethod: 'uppercase',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
+    {
+      methodName: 'lowercase',
+      zodMethod: 'lowercase',
+      parameterCount: 0,
+      fieldTypeCompatibility: ['String'],
+    },
 
     // Number validation methods
     {
@@ -1823,6 +1910,36 @@ function getValidationMethodConfig(
       parameterCount: 'variable',
       fieldTypeCompatibility: ['Int', 'Float'],
     },
+    {
+      methodName: 'gt',
+      zodMethod: 'gt',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'gte',
+      zodMethod: 'gte',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'lt',
+      zodMethod: 'lt',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'lte',
+      zodMethod: 'lte',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt'],
+    },
+    {
+      methodName: 'step',
+      zodMethod: 'multipleOf',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Int', 'Float'],
+    },
 
     // Array validation methods
     { methodName: 'min', zodMethod: 'min', parameterCount: 1, fieldTypeCompatibility: ['Array'] },
@@ -1881,6 +1998,10 @@ function getValidationMethodConfig(
       parameterCount: 0,
       fieldTypeCompatibility: ['Json'],
     },
+    { methodName: 'catch', zodMethod: 'catch', parameterCount: 1 },
+    { methodName: 'pipe', zodMethod: 'pipe', parameterCount: 1 },
+    { methodName: 'brand', zodMethod: 'brand', parameterCount: 'variable' },
+    { methodName: 'readonly', zodMethod: 'readonly', parameterCount: 0 },
 
     // New Zod v4 string format methods - Issue #233
     // Network/URL validation methods
@@ -1898,6 +2019,12 @@ function getValidationMethodConfig(
     },
 
     // Identifier validation methods
+    {
+      methodName: 'guid',
+      zodMethod: 'guid',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['String'],
+    },
     {
       methodName: 'nanoid',
       zodMethod: 'nanoid',
