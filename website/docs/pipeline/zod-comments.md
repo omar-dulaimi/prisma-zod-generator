@@ -663,6 +663,7 @@ The generator automatically detects your Zod version:
 ## Complete Method Reference
 
 ### String Methods
+
 | Method | Parameters | Description |
 |--------|------------|-------------|
 | `@zod.min(n)` | number, optional error message | Minimum string length |
@@ -681,6 +682,7 @@ The generator automatically detects your Zod version:
 | `@zod.datetime()` | optional error message/config | ISO datetime validation |
 
 ### Zod v4 String Format Methods
+
 | Method | Description | Zod v4 Output | Zod v3 Fallback |
 |--------|-------------|---------------|-----------------|
 | `@zod.httpUrl()` | HTTP/HTTPS URL validation | `z.httpUrl()` | `z.string()` |
@@ -705,6 +707,7 @@ The generator automatically detects your Zod version:
 | `@zod.isoDuration()` | ISO duration validation | `z.iso.duration()` | `z.string()` |
 
 ### Number Methods
+
 | Method | Parameters | Field Types | Description |
 |--------|------------|-------------|-------------|
 | `@zod.min(n)` | number, optional error message | Int, Float, BigInt | Minimum value |
@@ -719,6 +722,7 @@ The generator automatically detects your Zod version:
 | `@zod.multipleOf(n)` | number, optional error message | Int, Float | Multiple of validation |
 
 ### Array Methods
+
 | Method | Parameters | Description |
 |--------|------------|-------------|
 | `@zod.min(n)` | number | Minimum array length |
@@ -727,12 +731,14 @@ The generator automatically detects your Zod version:
 | `@zod.nonempty()` | none | Non-empty array |
 
 ### Date Methods
+
 | Method | Parameters | Description |
 |--------|------------|-------------|
 | `@zod.min(date)` | Date | Minimum date |
 | `@zod.max(date)` | Date | Maximum date |
 
 ### Field Modifiers
+
 | Method | Parameters | Description |
 |--------|------------|-------------|
 | `@zod.optional()` | none | Make field optional |
@@ -741,6 +747,7 @@ The generator automatically detects your Zod version:
 | `@zod.default(value)` | any value | Set default value |
 
 ### Custom Validation
+
 | Method | Parameters | Description |
 |--------|------------|-------------|
 | `@zod.refine(fn)` | function | Custom validation function |
@@ -748,6 +755,7 @@ The generator automatically detects your Zod version:
 | `@zod.enum(options)` | array | Enum validation |
 
 ### Special Types
+
 | Method | Parameters | Field Types | Description |
 |--------|------------|-------------|-------------|
 | `@zod.json()` | none | Json | JSON validation |
