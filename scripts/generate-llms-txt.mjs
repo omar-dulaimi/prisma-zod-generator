@@ -24,24 +24,19 @@ const DOC_GLOBS = [
   'website/docs/**/*.mdx',
 ];
 
-const processor = remark()
-  .use(mdx)
-  .use(gfm)
-  .use(stringify, {
-    bullet: '-',
-    fences: true,
-    listItemIndent: 'one',
-    allowDangerousHtml: true,
-  });
+const processor = remark().use(mdx).use(gfm).use(stringify, {
+  bullet: '-',
+  fences: true,
+  listItemIndent: 'one',
+  allowDangerousHtml: true,
+});
 
-const fallbackProcessor = remark()
-  .use(gfm)
-  .use(stringify, {
-    bullet: '-',
-    fences: true,
-    listItemIndent: 'one',
-    allowDangerousHtml: true,
-  });
+const fallbackProcessor = remark().use(gfm).use(stringify, {
+  bullet: '-',
+  fences: true,
+  listItemIndent: 'one',
+  allowDangerousHtml: true,
+});
 
 function header(title, body = '') {
   return `# ${title}\n\n${body}`.trim();
@@ -88,7 +83,12 @@ function todayISO() {
 
 async function computeLastUpdatedISO() {
   try {
-    const docFiles = await fg(DOC_GLOBS, { cwd: ROOT, absolute: true, dot: false, onlyFiles: true });
+    const docFiles = await fg(DOC_GLOBS, {
+      cwd: ROOT,
+      absolute: true,
+      dot: false,
+      onlyFiles: true,
+    });
     const candidates = new Set([README_PATH, PKG_PATH, ...docFiles]);
     let max = 0;
     for (const f of candidates) {
@@ -174,7 +174,10 @@ async function buildCuratedTop() {
     'Run `npx prisma generate` to emit schemas.',
   ].join('\n');
 
-  const notes = ['- Requires Node.js 18+', "- Works with Prisma's `prisma generate` lifecycle"].join('\n');
+  const notes = [
+    '- Requires Node.js 18+',
+    "- Works with Prisma's `prisma generate` lifecycle",
+  ].join('\n');
 
   return [
     header(title),
@@ -256,7 +259,8 @@ async function buildDocsLinks() {
   try {
     const raw = await fs.readFile(PKG_PATH, 'utf8');
     const pkg = JSON.parse(raw);
-    if (typeof pkg?.homepage === 'string' && pkg.homepage) homepage = pkg.homepage.replace(/\/?$/, '');
+    if (typeof pkg?.homepage === 'string' && pkg.homepage)
+      homepage = pkg.homepage.replace(/\/?$/, '');
   } catch {}
 
   const routeBase = 'docs';
@@ -274,7 +278,8 @@ async function buildDocsLinks() {
         if (typeof it === 'string') out.push(it);
         else if (typeof it === 'object') {
           if (it.type === 'doc' && typeof it.id === 'string') out.push(it.id);
-          else if (it.type === 'category' && Array.isArray(it.items)) out.push(...flatten(it.items));
+          else if (it.type === 'category' && Array.isArray(it.items))
+            out.push(...flatten(it.items));
         }
       }
       return out;
@@ -308,7 +313,8 @@ async function buildDocsLinks() {
     let title = null;
     if (raw) {
       const fm = matter(raw);
-      if (typeof fm.data?.title === 'string' && fm.data.title.trim()) title = String(fm.data.title).trim();
+      if (typeof fm.data?.title === 'string' && fm.data.title.trim())
+        title = String(fm.data.title).trim();
       else {
         const m = /^#\s+(.+)$/m.exec(fm.content || raw);
         if (m) title = m[1].trim();
@@ -329,7 +335,8 @@ async function buildNavbarLinks() {
   try {
     const raw = await fs.readFile(PKG_PATH, 'utf8');
     const pkg = JSON.parse(raw);
-    if (typeof pkg?.homepage === 'string' && pkg.homepage) homepage = pkg.homepage.replace(/\/?$/, '');
+    if (typeof pkg?.homepage === 'string' && pkg.homepage)
+      homepage = pkg.homepage.replace(/\/?$/, '');
     if (pkg?.repository) {
       if (typeof pkg.repository === 'string') repository = pkg.repository;
       else if (typeof pkg.repository?.url === 'string') repository = pkg.repository.url;
@@ -368,4 +375,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
