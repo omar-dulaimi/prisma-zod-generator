@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm docusaurus start",
-    "build": "node scripts/sync-changelog.js && node scripts/build-metrics.js && pnpm docusaurus build",
+    "build": "node scripts/build-metrics.js && pnpm docusaurus build",
     "serve": "pnpm docusaurus serve"
   },
   "dependencies": {
