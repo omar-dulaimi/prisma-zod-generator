@@ -1691,12 +1691,30 @@ export default class Transformer {
       } else {
         const isEnum = inputType.location === 'enumTypes';
 
-        if (inputType.namespace === 'prisma' || isEnum) {
+        if (inputType.namespace === 'prisma' && !isEnum) {
+          // Prisma object/nested input types: use the standard generator path
           if (inputType.type !== this.name && typeof inputType.type === 'string') {
             this.addSchemaImport(inputType.type);
           }
-
           result.push(this.generatePrismaStringLine(field, inputType, lines.length));
+        } else if (isEnum) {
+          // Enum types: build the correct enum schema reference then apply @zod validations
+          if (typeof inputType.type === 'string') {
+            // Ensure enum schema import is tracked
+            this.addSchemaImport(inputType.type);
+          }
+
+          // Resolve enum export name via naming resolver (mirrors generatePrismaStringLine)
+          const enumNamingConfig = resolveEnumNaming(Transformer.getGeneratorConfig());
+          const enumSchemaLine = generateExportName(
+            enumNamingConfig.exportNamePattern,
+            inputType.type as string,
+            undefined,
+            undefined,
+            inputType.type as string,
+          );
+          const baseSchema = enumSchemaLine;
+          result.push(this.wrapWithZodValidators(baseSchema, field, inputType));
         }
       }
 

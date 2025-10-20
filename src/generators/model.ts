@@ -1382,11 +1382,13 @@ export class PrismaTypeMapper {
           if (functionName === 'now' && field.type === 'DateTime') {
             result.zodModifier += '.default(() => new Date())';
           } else if (functionName === 'uuid' && field.type === 'String') {
-            result.zodModifier += '.default(() => crypto.randomUUID())';
-            result.additionalNotes.push('Requires crypto import for UUID generation');
+            // Avoid emitting inline UUID generator that requires extra imports/types.
+            // Let the database generate UUIDs by default and keep schema validation simple.
+            result.additionalNotes.push('UUID default detected; no inline generator emitted');
           } else if (functionName === 'cuid' && field.type === 'String') {
-            result.zodModifier += '.default(() => generateCuid())';
-            result.additionalNotes.push('Requires custom CUID generator');
+            // Avoid emitting an undefined generateCuid() helper.
+            // Let the database generate CUIDs by default and keep schema validation simple.
+            result.additionalNotes.push('CUID default detected; no inline generator emitted');
           }
         }
       } else {

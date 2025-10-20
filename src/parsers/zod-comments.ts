@@ -1608,8 +1608,11 @@ function mapAnnotationToZodMethod(
 ): MethodMappingResult {
   const { method, parameters } = annotation;
 
-  // Get method configuration
-  const methodConfig = getValidationMethodConfig(method, context.fieldType);
+  // Get method configuration. For list fields, validations like .min/.max/.length should
+  // target the array wrapper rather than the element type, so treat the effective
+  // field type as 'Array' for compatibility checks.
+  const effectiveFieldType = context.isList ? 'Array' : context.fieldType;
+  const methodConfig = getValidationMethodConfig(method, effectiveFieldType);
 
   if (!methodConfig) {
     // Unknown method - pass through as-is with warning
@@ -1622,10 +1625,10 @@ function mapAnnotationToZodMethod(
   // Validate field type compatibility
   if (
     methodConfig.fieldTypeCompatibility &&
-    !methodConfig.fieldTypeCompatibility.includes(context.fieldType)
+    !methodConfig.fieldTypeCompatibility.includes(effectiveFieldType)
   ) {
     throw new Error(
-      `Method ${method} is not compatible with field type ${context.fieldType}. Compatible types: ${methodConfig.fieldTypeCompatibility.join(', ')}`,
+      `Method ${method} is not compatible with field type ${effectiveFieldType}. Compatible types: ${methodConfig.fieldTypeCompatibility.join(', ')}`,
     );
   }
 
@@ -2031,18 +2034,29 @@ function getValidationMethodConfig(
     },
 
     // Array validation methods
-    { methodName: 'min', zodMethod: 'min', parameterCount: 1, fieldTypeCompatibility: ['Array'] },
-    { methodName: 'max', zodMethod: 'max', parameterCount: 1, fieldTypeCompatibility: ['Array'] },
+    // Array validation methods accept an optional error message parameter in Zod
+    {
+      methodName: 'min',
+      zodMethod: 'min',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Array'],
+    },
+    {
+      methodName: 'max',
+      zodMethod: 'max',
+      parameterCount: 'variable',
+      fieldTypeCompatibility: ['Array'],
+    },
     {
       methodName: 'length',
       zodMethod: 'length',
-      parameterCount: 1,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['Array'],
     },
     {
       methodName: 'nonempty',
       zodMethod: 'nonempty',
-      parameterCount: 0,
+      parameterCount: 'variable',
       fieldTypeCompatibility: ['Array'],
     },
 
