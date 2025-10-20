@@ -61,7 +61,7 @@
 
 > Prisma → Zod in one generate. Ship validated, typed data everywhere.
 
-Last updated: 2025-10-19 • Version: 1.29.0
+Last updated: 2025-10-20 • Version: 1.29.0
 
 ## Quick start
 
