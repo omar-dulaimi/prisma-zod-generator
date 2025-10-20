@@ -1835,10 +1835,12 @@ export default class Transformer {
           const chain = zodValidations.trim();
           const isChainOnly = chain.startsWith('.');
 
-          // If the base is a reference (not a z.* constructor) and the annotation
-          // is a dot-prefixed chain, compose the chain with the base instead of
-          // replacing it. This preserves enum/reference identifiers.
-          if (base && !base.startsWith('z.') && isChainOnly) {
+          // When the annotation is a dot-prefixed chain (e.g., .min(1)),
+          // always compose it with the base (whether the base is a reference
+          // or a z.* constructor). This avoids producing chain-only sequences
+          // like ".min(1)" and preserves proper ordering for lists where
+          // we later need to place array() before the chain.
+          if (base && isChainOnly) {
             line = `${base}${chain}`;
             composedFromChainOnly = true;
             composedBaseForChain = base;
