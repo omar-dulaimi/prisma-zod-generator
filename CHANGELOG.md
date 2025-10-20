@@ -1,3 +1,16 @@
+## [1.29.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.29.0...v1.29.1) (2025-10-20)
+
+### 🐛 Bug Fixes
+
+* **transformer:** compose dot-chain annotations with base ([7391204](https://github.com/omar-dulaimi/prisma-zod-generator/commit/73912046f9b909d82ed0d27b81a9631eafb2d40e))
+* **transformer:** compose enum/reference bases with [@zod](https://github.com/zod) chains ([a71db24](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a71db2490264f46ed447d30df9c696fe9bccdb79))
+* **zod-comments:** apply array validations on list fields; remove cuid/uuid inline defaults ([c4118c6](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c4118c6988c8912589f4b3f3ad19a33b6a2b64f4))
+
+### 📚 Documentation
+
+* **pipeline:** escape comparison operators in tables for MDX ([cfa4967](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cfa4967623c733646b0a533fa408df48a13c6e5c)), closes [#303](https://github.com/omar-dulaimi/prisma-zod-generator/issues/303)
+* **website:** remove changelog auto-sync and link to GitHub ([9b821a5](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9b821a5b6306cb25435d566d48466ac9fe56c22e))
+
 ## [1.29.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.28.3...v1.29.0) (2025-10-19)
 
 ### 🚀 Features
