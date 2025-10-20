@@ -82,6 +82,68 @@ describe('Pure Model Schema Generation Tests', () => {
     );
 
     it(
+      'should not emit inline defaults for cuid()/uuid() in pure models',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('pure-models-cuid-uuid-defaults');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            pureModels: true,
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model IdGenerators {
+  cuidId String @id @default(cuid())
+  uuidId String @default(uuid())
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
+          const modelPath = join(modelsDir, 'IdGenerators.schema.ts');
+
+          if (existsSync(modelPath)) {
+            const content = readFileSync(modelPath, 'utf-8');
+
+            // Should not emit inline generator defaults or undefined helpers
+            expect(content).not.toMatch(/generateCuid/);
+            expect(content).not.toMatch(/randomUUID/);
+            expect(content).not.toMatch(/crypto\s*\.\s*randomUUID/);
+            expect(content).not.toMatch(/default\s*\(\s*\(\)\s*=>/);
+
+            // Fields should remain plain strings without default() appended
+            expect(content).toMatch(/cuidId:\s*z\.string\(\)/);
+            expect(content).toMatch(/uuidId:\s*z\.string\(\)/);
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
       'should handle field optionality correctly',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('pure-models-optionality');

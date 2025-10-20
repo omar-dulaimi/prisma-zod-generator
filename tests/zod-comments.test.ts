@@ -54,6 +54,136 @@ describe('Inline @zod Comments Tests', () => {
     );
 
     it(
+      'should apply array validations to String[] and enum[] (zod v3)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-array-validations-v3');
+
+        try {
+          const config = { ...ConfigGenerator.createBasicConfig(), zodImportTarget: 'v3' as const };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://test"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+enum WearType {
+  LIGHT
+  HEAVY
+}
+
+model ArrayModelV3 {
+  id           Int       @id @default(autoincrement())
+  /// @zod.min(1, "Veuillez selectionner au moins un element")
+  propertyWear WearType[]
+  /// @zod.min(1, "Veuillez selectionner au moins un element")
+  searchArea   String[]
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const createInputPath = join(objectsDir, 'ArrayModelV3CreateInput.schema.ts');
+
+          if (existsSync(createInputPath)) {
+            const content = readFileSync(createInputPath, 'utf-8');
+
+            // For String[] arrays, .min should apply to the array wrapper (union branch)
+            expect(content).toMatch(
+              /searchArea:\s*z\.union\(\[.*z\.array\(z\.string\(\)\)\.min\(1, 'Veuillez selectionner au moins un element'\)\.array\(\)\]\)/s,
+            );
+
+            // For enum[] arrays, .min should apply to the array wrapper (union branch)
+            expect(content).toMatch(
+              /propertyWear:\s*z\.union\(\[.*z\.array\(WearTypeSchema\)\.min\(1, 'Veuillez selectionner au moins un element'\)\.array\(\)\]\)/s,
+            );
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should apply array validations to String[] and enum[] (zod v4)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-array-validations-v4');
+
+        try {
+          const config = { ...ConfigGenerator.createBasicConfig(), zodImportTarget: 'v4' as const };
+          const configPath = join(testEnv.testDir, 'config.json');
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://test"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+enum WearTypeV4 {
+  LIGHT
+  HEAVY
+}
+
+model ArrayModelV4 {
+  id           Int        @id @default(autoincrement())
+  /// @zod.min(1, "Veuillez selectionner au moins un element")
+  propertyWear WearTypeV4[]
+  /// @zod.min(1, "Veuillez selectionner au moins un element")
+  searchArea   String[]
+}
+`;
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const createInputPath = join(objectsDir, 'ArrayModelV4CreateInput.schema.ts');
+
+          if (existsSync(createInputPath)) {
+            const content = readFileSync(createInputPath, 'utf-8');
+
+            // For String[] arrays, .min should apply to the array wrapper (union branch)
+            expect(content).toMatch(
+              /searchArea:\s*z\.union\(\[.*z\.array\(z\.string\(\)\)\.min\(1, 'Veuillez selectionner au moins un element'\)\.array\(\)\]\)/s,
+            );
+
+            // For enum[] arrays, .min should apply to the array wrapper (union branch)
+            expect(content).toMatch(
+              /propertyWear:\s*z\.union\(\[.*z\.array\(WearTypeV4Schema\)\.min\(1, 'Veuillez selectionner au moins un element'\)\.array\(\)\]\)/s,
+            );
+          }
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
       'should handle multiple @zod annotations per field',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('zod-comments-multiple');

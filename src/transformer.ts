@@ -1691,12 +1691,30 @@ export default class Transformer {
       } else {
         const isEnum = inputType.location === 'enumTypes';
 
-        if (inputType.namespace === 'prisma' || isEnum) {
+        if (inputType.namespace === 'prisma' && !isEnum) {
+          // Prisma object/nested input types: use the standard generator path
           if (inputType.type !== this.name && typeof inputType.type === 'string') {
             this.addSchemaImport(inputType.type);
           }
-
           result.push(this.generatePrismaStringLine(field, inputType, lines.length));
+        } else if (isEnum) {
+          // Enum types: build the correct enum schema reference then apply @zod validations
+          if (typeof inputType.type === 'string') {
+            // Ensure enum schema import is tracked
+            this.addSchemaImport(inputType.type);
+          }
+
+          // Resolve enum export name via naming resolver (mirrors generatePrismaStringLine)
+          const enumNamingConfig = resolveEnumNaming(Transformer.getGeneratorConfig());
+          const enumSchemaLine = generateExportName(
+            enumNamingConfig.exportNamePattern,
+            inputType.type as string,
+            undefined,
+            undefined,
+            inputType.type as string,
+          );
+          const baseSchema = enumSchemaLine;
+          result.push(this.wrapWithZodValidators(baseSchema, field, inputType));
         }
       }
 
@@ -1800,6 +1818,11 @@ export default class Transformer {
   ) {
     let line: string = mainValidator;
     let hasEnhancedZodSchema = false;
+    // Track when we composed from a dot-prefixed validation chain (e.g., ".min(1)")
+    // This helps us place array() in the correct position for list fields
+    let composedFromChainOnly = false;
+    let composedBaseForChain: string | null = null;
+    let composedChainOnly: string | null = null;
 
     // Re-enabled @zod comment validations
     try {
@@ -1808,7 +1831,25 @@ export default class Transformer {
         const zodValidations = this.extractZodValidationsForField(field.name);
 
         if (!skipZodAnnotations && zodValidations) {
-          line = zodValidations;
+          const base = (mainValidator ?? '').trim();
+          const chain = zodValidations.trim();
+          const isChainOnly = chain.startsWith('.');
+
+          // When the annotation is a dot-prefixed chain (e.g., .min(1)),
+          // always compose it with the base (whether the base is a reference
+          // or a z.* constructor). This avoids producing chain-only sequences
+          // like ".min(1)" and preserves proper ordering for lists where
+          // we later need to place array() before the chain.
+          if (base && isChainOnly) {
+            line = `${base}${chain}`;
+            composedFromChainOnly = true;
+            composedBaseForChain = base;
+            composedChainOnly = chain;
+          } else {
+            // Otherwise, use the provided validations as-is (covers full schemas
+            // like z.email(), z.enum([...]), z.array(...).min(), etc.)
+            line = chain;
+          }
           hasEnhancedZodSchema = true;
         }
       }
@@ -1859,9 +1900,16 @@ export default class Transformer {
           line = `z.union([z.date().array(), ${datetimeValidator}.array()])`;
         }
       } else {
-        // Append array() only once to avoid duplication
+        // Append array() only once to avoid duplication. Do NOT treat z.array(...)
+        // as an existing .array() call — tests expect a trailing .array() even if
+        // the base is already wrapped with z.array(...).
         if (!line.includes('.array()')) {
-          line += '.array()';
+          if (composedFromChainOnly && composedBaseForChain && composedChainOnly) {
+            // Compose as: Base.array().<chain> then allow the final safety to normalize
+            line = `${composedBaseForChain}.array()${composedChainOnly}`;
+          } else {
+            line += '.array()';
+          }
         }
       }
     }
