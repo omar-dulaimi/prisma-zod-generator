@@ -1818,6 +1818,11 @@ export default class Transformer {
   ) {
     let line: string = mainValidator;
     let hasEnhancedZodSchema = false;
+    // Track when we composed from a dot-prefixed validation chain (e.g., ".min(1)")
+    // This helps us place array() in the correct position for list fields
+    let composedFromChainOnly = false;
+    let composedBaseForChain: string | null = null;
+    let composedChainOnly: string | null = null;
 
     // Re-enabled @zod comment validations
     try {
@@ -1826,7 +1831,23 @@ export default class Transformer {
         const zodValidations = this.extractZodValidationsForField(field.name);
 
         if (!skipZodAnnotations && zodValidations) {
-          line = zodValidations;
+          const base = (mainValidator ?? '').trim();
+          const chain = zodValidations.trim();
+          const isChainOnly = chain.startsWith('.');
+
+          // If the base is a reference (not a z.* constructor) and the annotation
+          // is a dot-prefixed chain, compose the chain with the base instead of
+          // replacing it. This preserves enum/reference identifiers.
+          if (base && !base.startsWith('z.') && isChainOnly) {
+            line = `${base}${chain}`;
+            composedFromChainOnly = true;
+            composedBaseForChain = base;
+            composedChainOnly = chain;
+          } else {
+            // Otherwise, use the provided validations as-is (covers full schemas
+            // like z.email(), z.enum([...]), z.array(...).min(), etc.)
+            line = chain;
+          }
           hasEnhancedZodSchema = true;
         }
       }
@@ -1877,9 +1898,18 @@ export default class Transformer {
           line = `z.union([z.date().array(), ${datetimeValidator}.array()])`;
         }
       } else {
-        // Append array() only once to avoid duplication
-        if (!line.includes('.array()')) {
-          line += '.array()';
+        // Append array() only once to avoid duplication. Respect existing wrappers
+        // like z.array(...) from enhanced schemas.
+        const hasArrayWrapper = /\.array\(\)/.test(line) || /\bz\.array\s*\(/.test(line);
+        if (!hasArrayWrapper) {
+          // If we composed from a dot-prefixed chain (e.g., EnumSchema.min(1)),
+          // place .array() before the chain so validations target the array length
+          // rather than the element type: EnumSchema.array().min(1)
+          if (composedFromChainOnly && composedBaseForChain && composedChainOnly) {
+            line = `${composedBaseForChain}.array()${composedChainOnly}`;
+          } else {
+            line += '.array()';
+          }
         }
       }
     }
