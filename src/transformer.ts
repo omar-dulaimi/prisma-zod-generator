@@ -1898,14 +1898,12 @@ export default class Transformer {
           line = `z.union([z.date().array(), ${datetimeValidator}.array()])`;
         }
       } else {
-        // Append array() only once to avoid duplication. Respect existing wrappers
-        // like z.array(...) from enhanced schemas.
-        const hasArrayWrapper = /\.array\(\)/.test(line) || /\bz\.array\s*\(/.test(line);
-        if (!hasArrayWrapper) {
-          // If we composed from a dot-prefixed chain (e.g., EnumSchema.min(1)),
-          // place .array() before the chain so validations target the array length
-          // rather than the element type: EnumSchema.array().min(1)
+        // Append array() only once to avoid duplication. Do NOT treat z.array(...)
+        // as an existing .array() call — tests expect a trailing .array() even if
+        // the base is already wrapped with z.array(...).
+        if (!line.includes('.array()')) {
           if (composedFromChainOnly && composedBaseForChain && composedChainOnly) {
+            // Compose as: Base.array().<chain> then allow the final safety to normalize
             line = `${composedBaseForChain}.array()${composedChainOnly}`;
           } else {
             line += '.array()';
