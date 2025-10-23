@@ -1,3 +1,13 @@
+## [1.29.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.29.1...v1.29.2) (2025-10-23)
+
+### 🐛 Bug Fixes
+
+* **prismaTypeMapper:** ensure to resolve custom enum naming patterns properly ([8230b40](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8230b40cf77b7614383aa72c4baad00ff013859c))
+
+### 📚 Documentation
+
+* add docker setup for easy testing ([a6c4f4e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a6c4f4e372eced3f48286ea9d2697097f273ade4))
+
 ## [1.29.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.29.0...v1.29.1) (2025-10-20)
 
 ### 🐛 Bug Fixes
