@@ -68,13 +68,17 @@ model Product {
 
           // Should have union with Decimal instanceof checks
           expect(content).toMatch(/z\.union\(\[/);
-          expect(content).toMatch(/z\.instanceof\(Decimal\)/);
+          // Decimal instanceof check is conditional based on decimal.js availability
+          const hasDecimalJsImport = content.includes("import Decimal from 'decimal.js'");
+          if (hasDecimalJsImport) {
+            expect(content).toMatch(/z\.instanceof\(Decimal\)/);
+          }
           expect(content).toMatch(/z\.instanceof\(Prisma\.Decimal\)/);
           expect(content).toMatch(/DecimalJSLikeSchema/);
 
           // Should have refine with validation function
           expect(content).toMatch(/\.refine\(\(v\)\s*=>\s*isValidDecimalInput\(v\)/);
-          expect(content).toMatch(/message:\s*["']Must be a Decimal["']/);
+          expect(content).toMatch(/message:.*must be a Decimal/i);
         } finally {
           await testEnv.cleanup();
         }

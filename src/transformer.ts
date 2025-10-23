@@ -3,6 +3,7 @@ import path from 'path';
 import type { GeneratorConfig as ZodGeneratorConfig } from './config/parser';
 import { ResultSchemaGenerator } from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
+import { generateDecimalInputSchema, isDecimalJsAvailable } from './helpers/decimal-helpers';
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
 import type { CustomImport } from './parsers/zod-comments';
@@ -1608,8 +1609,7 @@ export default class Transformer {
         if (mode === 'decimal') {
           // Use helper schema with union + refine for input validation
           this.hasDecimal = true; // Track that we need decimal helpers
-          decimalExpr =
-            'z.union([z.number(), z.string(), z.instanceof(Decimal), z.instanceof(Prisma.Decimal), DecimalJSLikeSchema]).refine((v) => isValidDecimalInput(v), { message: "Must be a Decimal" })';
+          decimalExpr = generateDecimalInputSchema('z', isDecimalJsAvailable(), field.name);
         } else if (mode === 'string') {
           decimalExpr = 'z.string()';
         } else {
