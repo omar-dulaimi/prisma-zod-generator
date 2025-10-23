@@ -730,7 +730,7 @@ export class PrismaTypeMapper {
     const mode = this.config.decimalMode || 'decimal';
 
     switch (mode) {
-      case 'string':
+      case 'string': {
         result.zodSchema = 'z.string()';
 
         // Build precision-aware regex pattern
@@ -765,6 +765,7 @@ export class PrismaTypeMapper {
           result.additionalValidations.push('// Positive values only');
         }
         break;
+      }
 
       case 'number':
         result.zodSchema = 'z.number()';
@@ -789,7 +790,7 @@ export class PrismaTypeMapper {
         }
         break;
 
-      case 'decimal':
+      case 'decimal': {
         // Full Decimal.js support matching zod-prisma-types
         // For pure models, use instanceof(Prisma.Decimal)
         const modelContext = modelName
@@ -804,6 +805,7 @@ export class PrismaTypeMapper {
         // Note: The import system expects just the identifier, not the full import statement
         result.imports.add('Prisma');
         break;
+      }
 
       default:
         result.zodSchema = 'z.string()';
