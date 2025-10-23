@@ -1743,6 +1743,9 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
                 })
                 .join('\n') + '\n'
             : '';
+          // Check if Prisma import is needed (for Decimal or other Prisma types)
+          const needsPrismaImport = fieldLines.includes('Prisma.');
+          const prismaImport = needsPrismaImport ? `import { Prisma } from '@prisma/client';\n` : '';
           // Apply strict mode based on configuration for this variant
           const isStandardVariant = ['pure', 'input', 'result'].includes(variantDef.name);
           const strictModeSuffix = isStandardVariant
@@ -1762,7 +1765,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
             // fallback to default naming
             typeName = `${model.name}Type`;
           }
-          const content = `${zImport}\n${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n})${strictModeSuffix};\n\nexport type ${typeName} = z.infer<typeof ${schemaName}>;\n`;
+          const content = `${zImport}${prismaImport}${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n})${strictModeSuffix};\n\nexport type ${typeName} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
           exportLines.push(`export { ${schemaName} } from './${fileBase}${importExtension}';`);
         }
@@ -2102,6 +2105,10 @@ async function generateVariantSchemaContent(
 
   const zImport = new Transformer({}).generateImportZodStatement();
 
+  // Check if Prisma import is needed (for Decimal or other Prisma types)
+  const needsPrismaImport = fieldDefinitions.includes('Prisma.');
+  const prismaImport = needsPrismaImport ? `import { Prisma } from '@prisma/client';\n` : '';
+
   // Apply strict mode based on configuration
   const strictModeSuffix = strictModeResolver.getVariantStrictModeSuffix(
     model.name,
@@ -2132,7 +2139,7 @@ async function generateVariantSchemaContent(
     typeName = `${model.name}${variantSuffix}Type`;
   }
 
-  return `${zImport}\n${customImportLines}${enumImportLines}// prettier-ignore
+  return `${zImport}${prismaImport}${customImportLines}${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
 })${strictModeSuffix}${partialSuffix}${modelLevelValidation};

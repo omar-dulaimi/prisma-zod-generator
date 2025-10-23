@@ -430,4 +430,73 @@ model PriceHistory {
       GENERATION_TIMEOUT,
     );
   });
+
+  describe('Variant Schemas', () => {
+    it(
+      'should emit Prisma import when Decimal is used in variant schemas',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('decimal-variants-import');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            decimalMode: 'decimal',
+            variants: {
+              pure: { enabled: true },
+            },
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model Product {
+  id    Int     @id @default(autoincrement())
+  price Decimal
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const variantPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'variants',
+            'pure',
+            'Product.pure.ts',
+          );
+
+          expect(existsSync(variantPath)).toBe(true);
+
+          const content = readFileSync(variantPath, 'utf-8');
+
+          // Should have Prisma value import (not type-only)
+          expect(content).toMatch(/import\s+{\s*Prisma\s+}\s+from\s+['"]@prisma\/client['"]/);
+          expect(content).not.toMatch(/import\s+type\s+{\s*Prisma\s+}\s+from/);
+
+          // Should have instanceof(Prisma.Decimal)
+          expect(content).toMatch(/z\.instanceof\(Prisma\.Decimal/);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });
