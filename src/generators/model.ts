@@ -16,6 +16,16 @@ import {
   type FieldCommentContext,
 } from '../parsers/zod-comments';
 import { logger } from '../utils/logger';
+import { resolveEnumNaming, generateExportName } from '../utils/naming-resolver';
+import type { GeneratorConfig as ZodGeneratorConfig } from '../config/parser';
+
+/**
+ * Interface for transformer module methods used in import generation
+ */
+interface TransformerModule {
+  getGeneratorConfig?: () => ZodGeneratorConfig | null;
+  getImportFileExtension?: () => string;
+}
 
 /**
  * Configuration for Prisma type mapping
@@ -2580,10 +2590,16 @@ export class PrismaTypeMapper {
     // Enum schema imports – relative to models under <output>/schemas/models
     // Use enum naming configuration to generate correct import paths
     const enumSchemaImports = imports.filter(
-      (imp) => /Schema$/.test(imp) && enumNames.has(imp.replace(/Schema$/, '')),
+      (importName) => this.findEnumForImport(importName, enumNames, transformerModule) !== null,
     );
-    enumSchemaImports.forEach((imp) => {
-      const enumBase = imp.replace(/Schema$/, '');
+
+    enumSchemaImports.forEach((importName) => {
+      const enumBase = this.findEnumForImport(importName, enumNames, transformerModule);
+      if (!enumBase) {
+        console.error(`Failed to extract enum base name from import: ${importName}`);
+        return;
+      }
+
       try {
         const {
           resolveEnumNaming,
@@ -2610,18 +2626,18 @@ export class PrismaTypeMapper {
         const importPath = enumFileName.replace(/\.ts$/, '');
         // Use the actual export name from config instead of assuming 'Schema' suffix
         // Only use alias if the export name differs from the expected import name
-        if (actualExportName === imp) {
+        if (actualExportName === importName) {
           lines.push(`import { ${actualExportName} } from '../enums/${importPath}${ext}';`);
         } else {
           lines.push(
-            `import { ${actualExportName} as ${imp} } from '../enums/${importPath}${ext}';`,
+            `import { ${actualExportName} as ${importName} } from '../enums/${importPath}${ext}';`,
           );
         }
       } catch (_error) {
         // Log the error for debugging
         console.error(`Failed to resolve enum naming for ${enumBase}:`, _error);
         // Fallback to default naming if there's an error
-        lines.push(`import { ${imp} } from '../enums/${enumBase}.schema${ext}';`);
+        lines.push(`import { ${importName} } from '../enums/${enumBase}.schema${ext}';`);
       }
     });
 
@@ -2657,6 +2673,37 @@ export class PrismaTypeMapper {
     });
 
     return lines;
+  }
+
+  /**
+   * Find which enum an import corresponds to by matching against the enum naming configuration
+   */
+  private findEnumForImport(
+    importName: string,
+    enumNames: Set<string>,
+    transformerModule: TransformerModule,
+  ): string | null {
+    try {
+      const enumNaming = resolveEnumNaming(transformerModule.getGeneratorConfig?.());
+
+      for (const enumName of Array.from(enumNames)) {
+        const expectedExportName = generateExportName(
+          enumNaming.exportNamePattern,
+          enumName,
+          undefined,
+          undefined,
+          enumName,
+        );
+        if (importName === expectedExportName) {
+          return enumName;
+        }
+      }
+    } catch {
+      // Fallback to legacy pattern matching if naming resolution fails
+      const legacyBase = importName.replace(/Schema$/, '');
+      return enumNames.has(legacyBase) ? legacyBase : null;
+    }
+    return null;
   }
 
   /**
