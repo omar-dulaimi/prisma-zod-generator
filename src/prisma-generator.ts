@@ -2215,7 +2215,16 @@ function getZodTypeForField(field: DMMF.Field): string {
       }
       break;
     case 'Decimal':
-      baseType = 'number()'; // Simplified
+      // Check decimalMode configuration
+      if (cfg?.decimalMode === 'decimal') {
+        // For decimal mode, use Prisma.Decimal in input types as well
+        // Note: Full union with helpers is handled in object schema generation
+        baseType = 'instanceof(Prisma.Decimal)';
+      } else if (cfg?.decimalMode === 'string') {
+        baseType = 'string()';
+      } else {
+        baseType = 'number()'; // Default to number for backward compatibility
+      }
       break;
     default:
       // Treat non-scalar types (relations/objects) as unknown here; enums are handled by callers
@@ -2310,6 +2319,7 @@ async function generatePureModelSchemas(
       zodImportTarget: config.zodImportTarget,
       jsonSchemaCompatible: config.jsonSchemaCompatible,
       jsonSchemaOptions: config.jsonSchemaOptions,
+      decimalMode: config.decimalMode,
     });
 
     // Detect circular dependencies if the option is enabled

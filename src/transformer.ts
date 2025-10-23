@@ -45,6 +45,7 @@ export default class Transformer {
   static previewFeatures: string[] | undefined;
   private static outputPath: string = './generated';
   private hasJson = false;
+  private hasDecimal = false;
   private static prismaClientOutputPath: string = '@prisma/client';
   private static isCustomPrismaClientOutputPath: boolean = false;
   private static prismaClientProvider: string = 'prisma-client-js';
@@ -88,6 +89,7 @@ export default class Transformer {
   // Track excluded field names for current object generation to inform typed Omit
   private lastExcludedFieldNames: string[] | null = null;
   private static jsonHelpersWritten = false;
+  private static decimalHelpersWritten = false;
   // Track generated files for safe cleanup
   private static currentManifest: GeneratedManifest | null = null;
 
@@ -1593,9 +1595,29 @@ export default class Transformer {
         const customSchema = this.getCustomSchemaForField(field.name);
         const baseSchema = customSchema || 'z.number().int()';
         result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
-      } else if (inputType.type === 'Float' || inputType.type === 'Decimal') {
+      } else if (inputType.type === 'Float') {
         const customSchema = this.getCustomSchemaForField(field.name);
         const baseSchema = customSchema || 'z.number()';
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
+      } else if (inputType.type === 'Decimal') {
+        const cfg = Transformer.getGeneratorConfig();
+        const mode = cfg?.decimalMode || 'decimal';
+
+        let decimalExpr = 'z.number()'; // fallback
+
+        if (mode === 'decimal') {
+          // Use helper schema with union + refine for input validation
+          this.hasDecimal = true; // Track that we need decimal helpers
+          decimalExpr =
+            'z.union([z.number(), z.string(), z.instanceof(Decimal), z.instanceof(Prisma.Decimal), DecimalJSLikeSchema]).refine((v) => isValidDecimalInput(v), { message: "Must be a Decimal" })';
+        } else if (mode === 'string') {
+          decimalExpr = 'z.string()';
+        } else {
+          decimalExpr = 'z.number()';
+        }
+
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const baseSchema = customSchema || decimalExpr;
         result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'BigInt') {
         let bigintExpr = 'z.bigint()';
@@ -2418,7 +2440,60 @@ export default class Transformer {
         }
       }
     }
-    return `${baseImports}${jsonImport}${objectSchema}`;
+
+    let decimalImport = '';
+    if (this.hasDecimal) {
+      const cfg = Transformer.getGeneratorConfig();
+      const mode = cfg?.decimalMode || 'decimal';
+      const isMinimal = cfg?.mode === 'minimal';
+
+      if (mode === 'decimal') {
+        if (isMinimal) {
+          // Inline decimal helpers per file in minimal mode
+          decimalImport = `\nconst DecimalJSLikeSchema: z.ZodType<Prisma.DecimalJsLike> = z.object({
+  d: z.array(z.number()),
+  e: z.number(),
+  s: z.number(),
+  toFixed: z.function(z.tuple([]), z.string()),
+});
+
+const DECIMAL_STRING_REGEX = /^[0-9.,e+-bxffo_cp]+$|Infinity|NaN/;
+
+const isValidDecimalInput = (
+  v?: null | string | number | Prisma.DecimalJsLike,
+): v is string | number | Prisma.DecimalJsLike => {
+  if (v === undefined || v === null) return false;
+  return (
+    (typeof v === 'object' &&
+      'd' in v &&
+      'e' in v &&
+      's' in v &&
+      'toFixed' in v) ||
+    (typeof v === 'string' && DECIMAL_STRING_REGEX.test(v)) ||
+    typeof v === 'number'
+  );
+};
+
+`;
+        } else {
+          // Import from helpers directory
+          Transformer.ensureDecimalHelpersFile();
+          try {
+            const objectsDir = path.join(Transformer.getSchemasPath(), 'objects');
+            const helpersDir = path.join(Transformer.getOutputPath(), 'helpers');
+            let rel = path.relative(objectsDir, helpersDir).replace(/\\/g, '/');
+            if (!rel.startsWith('.') && !rel.startsWith('/')) rel = `./${rel}`;
+            const extension = this.getImportFileExtension();
+            decimalImport = `import { DecimalJSLikeSchema, isValidDecimalInput } from '${rel}/decimal-helpers${extension}';\n`;
+          } catch {
+            const extension = this.getImportFileExtension();
+            decimalImport = `import { DecimalJSLikeSchema, isValidDecimalInput } from './helpers/decimal-helpers${extension}';\n`;
+          }
+        }
+      }
+    }
+
+    return `${baseImports}${jsonImport}${decimalImport}${objectSchema}`;
   }
 
   generateExportObjectSchemaStatement(schema: string) {
@@ -2603,6 +2678,48 @@ export default class Transformer {
     }
   }
 
+  private static ensureDecimalHelpersFile() {
+    if (this.decimalHelpersWritten) return;
+    this.decimalHelpersWritten = true;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require('fs');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pathMod = require('path');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { generateDecimalHelpers, isDecimalJsAvailable } = require('./helpers/decimal-helpers');
+
+      const helpersDir = pathMod.join(this.outputPath, 'helpers');
+      fs.mkdirSync(helpersDir, { recursive: true });
+      const filePath = pathMod.join(helpersDir, 'decimal-helpers.ts');
+
+      // Check if decimal.js is available
+      const hasDecimalJs = isDecimalJsAvailable();
+
+      // Generate Zod import
+      const zImport = new Transformer({
+        name: '',
+        fields: [],
+        models: [],
+        modelOperations: [],
+        enumTypes: [],
+      }).generateImportZodStatement();
+
+      // Generate decimal helpers
+      const { helperCode, imports } = generateDecimalHelpers(hasDecimalJs, 'z');
+
+      const content = `${zImport}
+${imports.join('\n')}
+
+${helperCode}
+`;
+
+      fs.writeFileSync(filePath, content, 'utf8');
+    } catch (e) {
+      logger.warn(`Failed to write decimal helpers: ${e}`);
+    }
+  }
+
   generateObjectSchemaImportStatements(customImports: CustomImport[] = []) {
     let generatedImports = this.generateImportZodStatement();
 
@@ -2615,14 +2732,33 @@ export default class Transformer {
       generatedImports += customImportStatements;
     }
 
-    // Only import Prisma types when emitting typed schemas
-    if (Transformer.exportTypedSchemas) {
-      // Ensure Prisma types import exists for type safety checks in tests
-      // Object schemas live under .../schemas/objects so compute path from that directory.
+    // Import Prisma - use value import if Decimal mode is active, otherwise type-only
+    const cfg = Transformer.getGeneratorConfig();
+    const mode = cfg?.decimalMode || 'decimal';
+    const needsPrismaValueImport = this.hasDecimal && mode === 'decimal';
+    const needsPrismaTypeImport = Transformer.exportTypedSchemas && !needsPrismaValueImport;
+
+    if (needsPrismaValueImport || needsPrismaTypeImport) {
       const objectsDir = path.join(Transformer.getSchemasPath(), 'objects');
       const prismaImportPath = Transformer.resolvePrismaImportPath(objectsDir);
-      generatedImports += `import type { Prisma } from '${prismaImportPath}';\n`;
+
+      if (needsPrismaValueImport) {
+        // Value import for instanceof checks in Decimal mode
+        generatedImports += `import { Prisma } from '${prismaImportPath}';\n`;
+
+        // Also try to import Decimal from decimal.js if available
+        try {
+          require.resolve('decimal.js');
+          generatedImports += `import Decimal from 'decimal.js';\n`;
+        } catch {
+          // decimal.js not installed, skip the import
+        }
+      } else {
+        // Type-only import for typed schemas
+        generatedImports += `import type { Prisma } from '${prismaImportPath}';\n`;
+      }
     }
+
     generatedImports += this.generateSchemaImports();
     generatedImports += '\n\n';
     return generatedImports;
