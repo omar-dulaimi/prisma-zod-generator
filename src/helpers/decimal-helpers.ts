@@ -35,13 +35,20 @@ export const DecimalJSLikeSchema: ${zodNamespace}.ZodType<Prisma.DecimalJsLike> 
   toFixed: ${zodNamespace}.function(${zodNamespace}.tuple([]), ${zodNamespace}.string()),
 });
 
-export const DECIMAL_STRING_REGEX = /^[0-9.,e+-bxffo_cp]+$|Infinity|NaN/;
+// Accept canonical decimal strings (+/-, optional fraction, optional exponent), or Infinity/NaN.
+export const DECIMAL_STRING_REGEX = /^(?:[+-]?(?:[0-9]+(?:\.[0-9]+)?(?:[eE][+\-]?[0-9]+)?|Infinity)|NaN)$/;
 
 export const isValidDecimalInput = (
   v?: null | string | number | Prisma.DecimalJsLike,
 ): v is string | number | Prisma.DecimalJsLike => {
   if (v === undefined || v === null) return false;
   return (
+    // Explicit instance checks first
+    v instanceof Prisma.Decimal ||
+    // If Decimal.js is present and imported by the generator, this symbol exists at runtime
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - Decimal may be undefined when not installed; codegen controls the import
+    (typeof Decimal !== 'undefined' && v instanceof Decimal) ||
     (typeof v === 'object' &&
       'd' in v &&
       'e' in v &&
