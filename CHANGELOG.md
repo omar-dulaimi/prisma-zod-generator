@@ -1,3 +1,9 @@
+## [1.30.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.30.1...v1.30.2) (2025-10-24)
+
+### 🐛 Bug Fixes
+
+* **dependencies:** update remaining deps ([291c4ed](https://github.com/omar-dulaimi/prisma-zod-generator/commit/291c4edd7ec58ed5dacd9995e17fe4c5c4759b46))
+
 ## [1.30.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.30.0...v1.30.1) (2025-10-24)
 
 ### 🐛 Bug Fixes
