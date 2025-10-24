@@ -1,3 +1,18 @@
+## [1.30.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.29.2...v1.30.0) (2025-10-24)
+
+### 🚀 Features
+
+* **decimal:** add full Decimal.js support with zod-prisma-types compatibility ([2506cd1](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2506cd12178727363a62f09cd256dad89d9be72f)), closes [#307](https://github.com/omar-dulaimi/prisma-zod-generator/issues/307)
+
+### 🐛 Bug Fixes
+
+* correct case handling for string and decimal modes in PrismaTypeMapper ([2ef3a7d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2ef3a7d709665c0c8906421ee48410cdf6843a94))
+* **decimal:** add conditional Prisma import for variant schemas with Decimal support ([3e6806a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3e6806a36441f4bc6d1023ab778228232ad099fa))
+* **decimal:** enhance toFixed method for Zod v3/v4 compatibility and improve DECIMAL_STRING_REGEX for better validation ([cf0240d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cf0240d6700958a5dcf4067a5275b929faeefe2a))
+* **decimal:** improve DECIMAL_STRING_REGEX and validation checks for decimal inputs ([d3bc22a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d3bc22ad76788f0ab26fdc83d35f15dc7f4d134a))
+* **decimal:** update decimal input schema generation to conditionally check for Decimal.js availability ([5d81c5c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5d81c5c31ccd41ac9a0e007d1474222910f99861))
+* **decimal:** update toFixed method for Zod v3/v4 compatibility ([1e8b2d6](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1e8b2d6901e2673ce857fbfcf831c3bc8976562f))
+
 ## [1.29.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.29.1...v1.29.2) (2025-10-23)
 
 ### 🐛 Bug Fixes
