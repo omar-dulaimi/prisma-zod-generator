@@ -32,7 +32,8 @@ export const DecimalJSLikeSchema: ${zodNamespace}.ZodType<Prisma.DecimalJsLike> 
   d: ${zodNamespace}.array(${zodNamespace}.number()),
   e: ${zodNamespace}.number(),
   s: ${zodNamespace}.number(),
-  toFixed: ${zodNamespace}.function(${zodNamespace}.tuple([]), ${zodNamespace}.string()),
+  // Zod v3/v4 compatible callable check
+  toFixed: ${zodNamespace}.custom<Prisma.DecimalJsLike['toFixed']>((v) => typeof v === 'function'),
 });
 
 // Accept canonical decimal strings (+/-, optional fraction, optional exponent), or Infinity/NaN.
