@@ -83,6 +83,15 @@ export interface GeneratorConfig {
   /** How to handle optional fields in Zod schemas. Default: 'nullish' */
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
 
+  /**
+   * Strategy for Decimal scalar mapping.
+   * - 'number': Map to z.number() (legacy behavior, may lose precision)
+   * - 'string': Map to z.string() with decimal regex validation
+   * - 'decimal': Full Decimal.js support with Prisma.Decimal and optional Decimal.js instances (matches zod-prisma-types)
+   * Default: 'decimal'
+   */
+  decimalMode?: 'number' | 'string' | 'decimal';
+
   /** Global field exclusions */
   globalExclusions?: {
     input?: string[];

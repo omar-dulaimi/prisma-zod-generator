@@ -31,8 +31,8 @@ interface TransformerModule {
  * Configuration for Prisma type mapping
  */
 export interface TypeMappingConfig {
-  /** How to handle Decimal fields: 'string' | 'number' */
-  decimalMode: 'string' | 'number';
+  /** How to handle Decimal fields: 'string' | 'number' | 'decimal' */
+  decimalMode: 'string' | 'number' | 'decimal';
 
   /** How to handle JSON fields: 'unknown' | 'record' | 'any' */
   jsonMode: 'unknown' | 'record' | 'any';
@@ -121,7 +121,7 @@ export interface TypeMappingConfig {
  * Default type mapping configuration
  */
 export const DEFAULT_TYPE_MAPPING_CONFIG: TypeMappingConfig = {
-  decimalMode: 'string',
+  decimalMode: 'decimal',
   jsonMode: 'unknown',
   strictDateValidation: true,
   validateBigInt: true,
@@ -577,7 +577,7 @@ export class PrismaTypeMapper {
 
       // Handle scalar types
       if (field.kind === 'scalar') {
-        this.mapScalarType(field, result);
+        this.mapScalarType(field, result, model);
       }
       // Handle enum types
       else if (field.kind === 'enum') {
@@ -630,7 +630,11 @@ export class PrismaTypeMapper {
   /**
    * Map scalar types to Zod schemas
    */
-  private mapScalarType(field: DMMF.Field, result: FieldTypeMappingResult): void {
+  private mapScalarType(
+    field: DMMF.Field,
+    result: FieldTypeMappingResult,
+    model: DMMF.Model,
+  ): void {
     const scalarType = field.type;
 
     switch (scalarType) {
@@ -678,7 +682,7 @@ export class PrismaTypeMapper {
         break;
 
       case 'Decimal':
-        this.mapDecimalType(field, result);
+        this.mapDecimalType(field, result, model.name);
         break;
 
       case 'Boolean':
@@ -716,11 +720,17 @@ export class PrismaTypeMapper {
   /**
    * Map Decimal type with enhanced validation based on configuration
    */
-  private mapDecimalType(field: DMMF.Field, result: FieldTypeMappingResult): void {
+  private mapDecimalType(
+    field: DMMF.Field,
+    result: FieldTypeMappingResult,
+    modelName?: string,
+  ): void {
     const decimalConfig = this.config.complexTypes.decimal;
+    // Default to 'decimal' mode if not specified
+    const mode = this.config.decimalMode || 'decimal';
 
-    switch (this.config.decimalMode) {
-      case 'string':
+    switch (mode) {
+      case 'string': {
         result.zodSchema = 'z.string()';
 
         // Build precision-aware regex pattern
@@ -755,6 +765,7 @@ export class PrismaTypeMapper {
           result.additionalValidations.push('// Positive values only');
         }
         break;
+      }
 
       case 'number':
         result.zodSchema = 'z.number()';
@@ -779,6 +790,23 @@ export class PrismaTypeMapper {
         }
         break;
 
+      case 'decimal': {
+        // Full Decimal.js support matching zod-prisma-types
+        // For pure models, use instanceof(Prisma.Decimal)
+        const modelContext = modelName
+          ? `, {
+  message: "Field '${field.name}' must be a Decimal. Location: ['Models', '${modelName}']",
+}`
+          : '';
+        result.zodSchema = `z.instanceof(Prisma.Decimal${modelContext})`;
+        result.additionalValidations.push('// Decimal field using Prisma.Decimal type');
+        result.requiresSpecialHandling = true;
+        // Mark that we need Prisma import (non-type import)
+        // Note: The import system expects just the identifier, not the full import statement
+        result.imports.add('Prisma');
+        break;
+      }
+
       default:
         result.zodSchema = 'z.string()';
         result.additionalValidations.push(
@@ -787,10 +815,12 @@ export class PrismaTypeMapper {
         break;
     }
 
-    result.requiresSpecialHandling = true;
-    result.additionalValidations.push(
-      `// Decimal field mapped as ${this.config.decimalMode} with enhanced validation`,
-    );
+    if (mode !== 'decimal') {
+      result.requiresSpecialHandling = true;
+      result.additionalValidations.push(
+        `// Decimal field mapped as ${mode} with enhanced validation`,
+      );
+    }
   }
 
   /**
@@ -2157,8 +2187,8 @@ export class PrismaTypeMapper {
   static validateTypeMapping(config: Partial<TypeMappingConfig>): string[] {
     const errors: string[] = [];
 
-    if (config.decimalMode && !['string', 'number'].includes(config.decimalMode)) {
-      errors.push('decimalMode must be "string" or "number"');
+    if (config.decimalMode && !['string', 'number', 'decimal'].includes(config.decimalMode)) {
+      errors.push('decimalMode must be "string", "number", or "decimal"');
     }
 
     if (config.jsonMode && !['unknown', 'record', 'any'].includes(config.jsonMode)) {
@@ -2641,11 +2671,20 @@ export class PrismaTypeMapper {
       }
     });
 
-    // Related model schema imports (exclude current schema + enums).
+    // Prisma client import (for Decimal type support)
+    if (imports.includes('Prisma')) {
+      lines.push("import { Prisma } from '@prisma/client';");
+    }
+
+    // Related model schema imports (exclude current schema + enums + special imports).
     // After naming resolution in mapObjectType, related symbols may not end with 'Schema'.
     const enumImportNameSet = new Set(enumSchemaImports);
     const relatedModelImports = imports.filter(
-      (imp) => imp !== 'z' && imp !== composition.schemaName && !enumImportNameSet.has(imp),
+      (imp) =>
+        imp !== 'z' &&
+        imp !== 'Prisma' &&
+        imp !== composition.schemaName &&
+        !enumImportNameSet.has(imp),
     );
     // Helper: derive PascalCase model name from an import symbol using the exportNamePattern
     // Centralized in naming-resolver.parseExportSymbol for maintainability
