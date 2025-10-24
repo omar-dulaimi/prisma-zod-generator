@@ -1,3 +1,9 @@
+## [1.30.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.30.0...v1.30.1) (2025-10-24)
+
+### 🐛 Bug Fixes
+
+* **dependencies:** update Prisma packages to version 6.18.0 and semantic-release/github to version 12.0.0 ([22a7994](https://github.com/omar-dulaimi/prisma-zod-generator/commit/22a79949967a772681d8dd175068842908cb3eaa))
+
 ## [1.30.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.29.2...v1.30.0) (2025-10-24)
 
 ### 🚀 Features
