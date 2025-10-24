@@ -412,4 +412,82 @@ model Product {
       GENERATION_TIMEOUT,
     );
   });
+
+  describe('Decimal validation error messages', () => {
+    it(
+      'should generate properly escaped error messages with quotes in field names',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('decimal-validation-error-message');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            decimalMode: 'decimal',
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model Product {
+  id     Int     @id @default(autoincrement())
+  price  Decimal
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const createInputPath = join(
+            testEnv.outputDir,
+            'schemas',
+            'objects',
+            'ProductCreateInput.schema.ts',
+          );
+
+          expect(existsSync(createInputPath)).toBe(true);
+
+          const content = readFileSync(createInputPath, 'utf-8');
+
+          // Should have double-quoted message to avoid escaping issues with single quotes
+          // The error message contains: Field 'price' must be a Decimal
+          expect(content).toMatch(/message:\s*"Field 'price' must be a Decimal"/);
+
+          // Should NOT have single-quoted message (which would cause syntax errors)
+          expect(content).not.toMatch(/message:\s*'Field 'price' must be a Decimal'/);
+
+          // Verify the generated code is syntactically valid by attempting to import
+          // This will fail if quotes are not properly escaped
+          let importError = null;
+          try {
+            // Dynamic import to test if the generated TypeScript is valid
+            await import(createInputPath);
+          } catch (err) {
+            importError = err;
+          }
+
+          // Should not have syntax errors
+          expect(importError).toBeNull();
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });
