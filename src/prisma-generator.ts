@@ -1745,7 +1745,9 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
             : '';
           // Check if Prisma import is needed (for Decimal or other Prisma types)
           const needsPrismaImport = fieldLines.includes('Prisma.');
-          const prismaImport = needsPrismaImport ? `import { Prisma } from '@prisma/client';\n` : '';
+          const prismaImport = needsPrismaImport
+            ? `import { Prisma } from '@prisma/client';\n`
+            : '';
           // Apply strict mode based on configuration for this variant
           const isStandardVariant = ['pure', 'input', 'result'].includes(variantDef.name);
           const strictModeSuffix = isStandardVariant
