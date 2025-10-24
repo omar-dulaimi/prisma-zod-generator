@@ -9,6 +9,7 @@
 		<img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript-blue.svg">
 		<img alt="Module formats" src="https://img.shields.io/badge/modules-ESM%20%2B%20CJS-444.svg">
 		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/"><img alt="Docs" src="https://img.shields.io/badge/docs-website-0ea5e9.svg"></a>
+		<img alt="Node.js" src="https://img.shields.io/badge/node-%3E%3D18.18.0-339933?logo=node.js&logoColor=white">
 	</p>
 	<sub>
 		Prisma → Zod generator: zero‑boilerplate validation for your models.<br/>
