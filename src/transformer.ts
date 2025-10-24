@@ -2454,16 +2454,19 @@ export default class Transformer {
   d: z.array(z.number()),
   e: z.number(),
   s: z.number(),
-  toFixed: z.function(z.tuple([]), z.string()),
+  // Zod v3/v4 compatible callable check
+  toFixed: z.custom<Prisma.DecimalJsLike['toFixed']>((v) => typeof v === 'function'),
 });
 
-const DECIMAL_STRING_REGEX = /^[0-9.,e+-bxffo_cp]+$|Infinity|NaN/;
+// Accept canonical decimal strings (+/-, optional fraction, optional exponent), or Infinity/NaN.
+const DECIMAL_STRING_REGEX = /^(?:[+-]?(?:[0-9]+(?:\\.[0-9]+)?(?:[eE][+\\-]?[0-9]+)?|Infinity)|NaN)$/;
 
 const isValidDecimalInput = (
   v?: null | string | number | Prisma.DecimalJsLike,
 ): v is string | number | Prisma.DecimalJsLike => {
   if (v === undefined || v === null) return false;
   return (
+    v instanceof Prisma.Decimal ||
     (typeof v === 'object' &&
       'd' in v &&
       'e' in v &&
