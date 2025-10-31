@@ -142,7 +142,7 @@ const sentryTransport = createRedactedSentryTransport()
 
 ```ts
 import express from 'express'
-import { redactionMiddleware } from '@/generated/pzg/policies/redaction'
+import { redactionMiddleware } from '@/generated/pro/policies/redaction'
 
 const app = express()
 
