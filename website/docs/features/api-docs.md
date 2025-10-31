@@ -29,6 +29,7 @@ Auto-generate OpenAPI v3 specifications and a fully-functional mock server from 
 # Install Express for mock server
 pnpm add express @prisma/client
 pnpm add -D @types/express
+pnpm add -D tsx  # Required to run TypeScript mock server/tests
 
 # PZG Pro license required
 ```
