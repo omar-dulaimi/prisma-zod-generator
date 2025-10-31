@@ -148,9 +148,9 @@ export default async function EditUserPage({ params }: { params: { id: string } 
 
 ## Integration Notes
 
-### Error Messages
+### Validation & Controllers
 
-Each `<FormField>` uses React Hook Form's `Controller`. To render per-field errors, ensure your `FormMessage` component reads `formState.errors` (the generated UI kit supports this by default).
+Generated forms rely on `react-hook-form` with Zod validation. By default the generator emits `<FormField>` components that wrap `Controller` for you. If you prefer manual `register()` calls (e.g., for simple text inputs), you can skip the generated wrappers and wire up `useForm` directly—just make sure to use the same Zod resolver.
 
 ### Schema Imports
 
@@ -171,26 +171,28 @@ The generated form components are designed to work with your UI library of choic
 ## Example: shadcn/ui Integration
 
 ```tsx
-// You can customize the generated FormField component
+// Example using RHF register + shadcn/ui inputs
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { UserCreateInputSchema } from '@/generated/pro/forms/schemas'
+
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 
+type UserFormValues = z.infer<typeof UserCreateInputSchema>
+
 export function UserForm({ defaultValues, onSubmit }: UserFormProps) {
-  const form = useForm({
+  const form = useForm<UserFormValues>({
     resolver: zodResolver(UserCreateInputSchema),
-    defaultValues
+    defaultValues,
   })
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          {...form.register('email')}
-        />
+        <Input id="email" type="email" {...form.register('email')} />
         {form.formState.errors.email && (
           <p className="text-sm text-red-500">
             {form.formState.errors.email.message}
