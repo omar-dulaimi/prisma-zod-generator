@@ -244,7 +244,7 @@ Releases are automated using **semantic-release**:
 
 - **Discussions:** Use GitHub Discussions for questions
 - **Issues:** Report bugs via GitHub Issues
-- **Discord:** Join our Discord for real-time chat (pro members get priority support)
+- **Support:** Pro members receive priority assistance via the onboarding support channel; all other questions should go through GitHub Issues
 
 ## License
 
