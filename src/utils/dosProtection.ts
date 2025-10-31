@@ -324,15 +324,31 @@ export class DoSProtection {
     }
 
     if (Array.isArray(obj)) {
-      return Math.max(depth, ...obj.map((item) => this.getObjectDepth(item, depth + 1)));
+      let maxDepth = depth;
+      for (const item of obj) {
+        const childDepth = this.getObjectDepth(item, depth + 1);
+        if (childDepth > maxDepth) {
+          maxDepth = childDepth;
+          if (maxDepth > this.limits.maxJSONDepth) {
+            return maxDepth;
+          }
+        }
+      }
+      return maxDepth;
     }
 
-    const values = Object.values(obj);
-    if (values.length === 0) {
-      return depth;
+    let maxDepth = depth;
+    for (const value of Object.values(obj)) {
+      const childDepth = this.getObjectDepth(value, depth + 1);
+      if (childDepth > maxDepth) {
+        maxDepth = childDepth;
+        if (maxDepth > this.limits.maxJSONDepth) {
+          return maxDepth;
+        }
+      }
     }
 
-    return Math.max(depth, ...values.map((value) => this.getObjectDepth(value, depth + 1)));
+    return maxDepth;
   }
 
   private executeWithTimeout<T>(operation: () => T, timeoutMs: number): T {
