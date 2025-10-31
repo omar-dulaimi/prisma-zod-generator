@@ -1,33 +1,42 @@
 /**
  * PZG Pro Generator Implementation
  *
- * This is the main generator logic for PZG Pro features.
- * It follows the same pattern as the main prisma-zod-generator:
- * 1. Gets DMMF once from Prisma
- * 2. Parses configuration
- * 3. Passes DMMF to all pro features efficiently
+ * This matches the main prisma-zod-generator pattern but loads Pro feature
+ * modules lazily so the OSS build compiles without the private submodule.
  */
 
-import { GeneratorOptions } from '@prisma/generator-helper';
+import type { GeneratorOptions } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { getLicenseStatus, describePlan } from '../license';
+import { describePlan, getLicenseStatus } from '../license';
 
-// Import pro features (mixed: some DMMF-based, some schemaPath-based)
-import { generatePoliciesFromDMMF } from '../pro/features/policies/policies';
-import { generateServerActionsFromDMMF } from '../pro/features/server-actions/server-actions';
-import { generateAPIDocsFromDMMF } from '../pro/features/api-docs/api-docs';
-import { generateContractTestsFromDMMF } from '../pro/features/contract-testing/contract-testing';
-import { generateDataFactories } from '../pro/features/data-factories/data-factories';
-import { generateMultiTenantKitFromDMMF } from '../pro/features/multi-tenant-kit/multi-tenant-kit';
-import { generatePerformancePack } from '../pro/features/performance-pack/performance-pack';
-import { generatePostgresRLSFromDMMF } from '../pro/features/postgres-rls/postgres-rls';
-import { generateSDKFromDMMF } from '../pro/features/sdk-publisher/sdk-publisher';
-import { generateFormUXFromDMMF } from '../pro/features/form-ux/form-ux';
+export const PRO_HELP_MESSAGE = [
+  'PZG Pro modules are not available in this repository.',
+  'To enable Pro features:',
+  '  1. Purchase a PZG Pro license',
+  '  2. Initialize the private submodule:',
+  '       git submodule update --init --recursive',
+  '  3. Re-run your command',
+  'Docs & pricing: https://omar-dulaimi.github.io/prisma-zod-generator/pricing',
+].join('\n');
+
+type FeatureGenerator = (...args: any[]) => Promise<void>;
+
+interface FeatureModules {
+  generatePoliciesFromDMMF: FeatureGenerator;
+  generateServerActionsFromDMMF: FeatureGenerator;
+  generateSDKFromDMMF: FeatureGenerator;
+  generateContractTestsFromDMMF: FeatureGenerator;
+  generatePostgresRLSFromDMMF: FeatureGenerator;
+  generateFormUXFromDMMF: FeatureGenerator;
+  generateAPIDocsFromDMMF: FeatureGenerator;
+  generateMultiTenantKitFromDMMF: FeatureGenerator;
+  generatePerformancePack: FeatureGenerator;
+  generateDataFactories: FeatureGenerator;
+}
 
 interface ProFeaturesConfig {
-  // Feature enablement flags
   enablePolicies?: boolean;
   enableServerActions?: boolean;
   enableSDK?: boolean;
@@ -39,34 +48,30 @@ interface ProFeaturesConfig {
   enablePerformance?: boolean;
   enableFactories?: boolean;
 
-  // Feature-specific configurations
-  policies?: any;
-  serverActions?: any;
-  sdk?: any;
+  policies?: unknown;
+  serverActions?: unknown;
+  sdk?: unknown;
   contracts?: any;
-  postgresRls?: any;
-  forms?: any;
-  apiDocs?: any;
-  multiTenant?: any;
-  performance?: any;
-  factories?: any;
+  postgresRls?: unknown;
+  forms?: unknown;
+  apiDocs?: unknown;
+  multiTenant?: unknown;
+  performance?: unknown;
+  factories?: unknown;
 
-  // Global settings
   outputPath?: string;
   configPath?: string;
 }
 
-export async function generateProFeatures(options: GeneratorOptions) {
+export async function generateProFeatures(options: GeneratorOptions): Promise<void> {
   try {
     console.log('🚀 Starting PZG Pro Generator...');
 
-    // Check license first
     const licenseStatus = await getLicenseStatus();
     if (!licenseStatus.valid) {
-      throw new Error(
-        'PZG Pro license required. Visit https://omar-dulaimi.github.io/prisma-zod-generator/pricing to get a license.',
-      );
+      throwProMissing();
     }
+
     if (licenseStatus.plan) {
       console.log(
         `✅ Valid PZG Pro license (${describePlan(licenseStatus.plan)} (${licenseStatus.plan}))`,
@@ -75,7 +80,6 @@ export async function generateProFeatures(options: GeneratorOptions) {
       console.log('✅ Valid PZG Pro license');
     }
 
-    // Get Prisma Client generator config to access preview features
     const prismaClientGeneratorConfig = options.otherGenerators.find(
       (gen) =>
         parseEnvValue(gen.provider) === 'prisma-client-js' ||
@@ -86,214 +90,216 @@ export async function generateProFeatures(options: GeneratorOptions) {
       throw new Error('prisma-client-js or prisma-client generator is required');
     }
 
-    // Get DMMF once - this is the key optimization
     const dmmf = await getDMMF({
       datamodel: options.datamodel,
       previewFeatures: prismaClientGeneratorConfig.previewFeatures,
     });
 
     console.log(
-      `📋 Analyzed schema: ${dmmf.datamodel.models.length} models, ${dmmf.schema.enumTypes.prisma.length + (dmmf.schema.enumTypes.model?.length || 0)} enums`,
+      `📋 Analyzed schema: ${dmmf.datamodel.models.length} models, ${
+        dmmf.schema.enumTypes.prisma.length + (dmmf.schema.enumTypes.model?.length || 0)
+      } enums`,
     );
 
-    // Parse configuration
     const config = await parseProConfig(options);
-
-    // Create output directory
     const outputPath =
       config.outputPath || path.join(path.dirname(options.schemaPath), 'generated', 'pro');
     await fs.mkdir(outputPath, { recursive: true });
 
-    // Get provider and preview features
     const dataSource = options.datasources?.[0];
     const provider = dataSource?.provider || 'postgresql';
     const previewFeatures = prismaClientGeneratorConfig.previewFeatures;
-
-    // Get Prisma client path
     const prismaClientPath = getPrismaClientPath(prismaClientGeneratorConfig);
 
     console.log(`📁 Output directory: ${outputPath}`);
     console.log(`🔧 Database provider: ${provider}`);
 
-    // Track which features are enabled
+    const features = loadFeatureModules();
     const enabledFeatures: string[] = [];
-
-    // Generate features in parallel where possible
     const featurePromises: Promise<void>[] = [];
 
     if (config.enablePolicies) {
       enabledFeatures.push('Policies & Redaction');
       featurePromises.push(
-        generatePoliciesFromDMMF(
-          dmmf,
-          {} as any, // generatorConfig - we'll use a basic config for now
-          options.schemaPath,
-          path.join(outputPath, 'policies'),
-          prismaClientPath,
-          provider,
-          config.policies || {},
-          previewFeatures,
-        ).catch((error) => {
-          console.error('❌ Policies generation failed:', error);
-          // Don't throw - continue with other features
-        }),
+        features
+          .generatePoliciesFromDMMF(
+            dmmf,
+            {},
+            options.schemaPath,
+            path.join(outputPath, 'policies'),
+            prismaClientPath,
+            provider,
+            config.policies ?? {},
+            previewFeatures,
+          )
+          .catch((error: unknown) => handleFeatureError('Policies generation failed', error)),
       );
     }
 
     if (config.enableServerActions) {
       enabledFeatures.push('Server Actions');
       featurePromises.push(
-        generateServerActionsFromDMMF(
-          dmmf,
-          {} as any,
-          options.schemaPath,
-          path.join(outputPath, 'server-actions'),
-          prismaClientPath,
-          provider,
-          config.serverActions || {},
-          previewFeatures,
-        ).catch((error) => {
-          console.error('❌ Server Actions generation failed:', error);
-        }),
+        features
+          .generateServerActionsFromDMMF(
+            dmmf,
+            {},
+            options.schemaPath,
+            path.join(outputPath, 'server-actions'),
+            prismaClientPath,
+            provider,
+            config.serverActions ?? {},
+            previewFeatures,
+          )
+          .catch((error: unknown) => handleFeatureError('Server Actions generation failed', error)),
       );
     }
 
     if (config.enableSDK) {
       enabledFeatures.push('Client SDK');
       featurePromises.push(
-        generateSDKFromDMMF(
-          dmmf,
-          {} as any,
-          options.schemaPath,
-          path.join(outputPath, 'sdk'),
-          prismaClientPath,
-          provider,
-          config.sdk || {},
-          previewFeatures,
-        ).catch((error) => {
-          console.error('❌ SDK generation failed:', error);
-        }),
+        features
+          .generateSDKFromDMMF(
+            dmmf,
+            {},
+            options.schemaPath,
+            path.join(outputPath, 'sdk'),
+            prismaClientPath,
+            provider,
+            config.sdk ?? {},
+            previewFeatures,
+          )
+          .catch((error: unknown) => handleFeatureError('SDK generation failed', error)),
       );
     }
 
     if (config.enableContracts) {
       enabledFeatures.push('Contract Testing');
       featurePromises.push(
-        generateContractTestsFromDMMF(
-          dmmf,
-          {} as any,
-          options.schemaPath,
-          path.join(outputPath, 'contracts'),
-          prismaClientPath,
-          provider,
-          config.contracts || {},
-          previewFeatures,
-        ).catch((error) => {
-          console.error('❌ Contract Testing generation failed:', error);
-        }),
+        features
+          .generateContractTestsFromDMMF(
+            dmmf,
+            {},
+            options.schemaPath,
+            path.join(outputPath, 'contracts'),
+            prismaClientPath,
+            provider,
+            config.contracts ?? {},
+            previewFeatures,
+          )
+          .catch((error: unknown) =>
+            handleFeatureError('Contract Testing generation failed', error),
+          ),
       );
     }
 
     if (config.enablePostgresRLS) {
       enabledFeatures.push('PostgreSQL RLS');
       featurePromises.push(
-        generatePostgresRLSFromDMMF(
-          dmmf,
-          {} as any,
-          options.schemaPath,
-          path.join(outputPath, 'postgres-rls'),
-          prismaClientPath,
-          provider,
-          config.postgresRls || {},
-          previewFeatures,
-        ).catch((error) => {
-          console.error('❌ PostgreSQL RLS generation failed:', error);
-        }),
+        features
+          .generatePostgresRLSFromDMMF(
+            dmmf,
+            {},
+            options.schemaPath,
+            path.join(outputPath, 'postgres-rls'),
+            prismaClientPath,
+            provider,
+            config.postgresRls ?? {},
+            previewFeatures,
+          )
+          .catch((error: unknown) =>
+            handleFeatureError('PostgreSQL RLS generation failed', error),
+          ),
       );
     }
 
     if (config.enableForms) {
       enabledFeatures.push('Form UX');
       featurePromises.push(
-        generateFormUXFromDMMF(
-          dmmf,
-          {} as any,
-          options.schemaPath,
-          path.join(outputPath, 'forms'),
-          prismaClientPath,
-          provider,
-          config.forms || {},
-          previewFeatures,
-        ).catch((error) => {
-          console.error('❌ Form UX generation failed:', error);
-        }),
+        features
+          .generateFormUXFromDMMF(
+            dmmf,
+            {},
+            options.schemaPath,
+            path.join(outputPath, 'forms'),
+            prismaClientPath,
+            provider,
+            config.forms ?? {},
+            previewFeatures,
+          )
+          .catch((error: unknown) => handleFeatureError('Form UX generation failed', error)),
       );
     }
 
     if (config.enableApiDocs) {
       enabledFeatures.push('API Documentation');
       featurePromises.push(
-        generateAPIDocsFromDMMF(
-          dmmf,
-          {} as any,
-          options.schemaPath,
-          path.join(outputPath, 'api-docs'),
-          prismaClientPath,
-          provider,
-          config.apiDocs || {},
-          previewFeatures,
-        ).catch((error) => {
-          console.error('❌ API Documentation generation failed:', error);
-        }),
+        features
+          .generateAPIDocsFromDMMF(
+            dmmf,
+            {},
+            options.schemaPath,
+            path.join(outputPath, 'api-docs'),
+            prismaClientPath,
+            provider,
+            config.apiDocs ?? {},
+            previewFeatures,
+          )
+          .catch((error: unknown) =>
+            handleFeatureError('API Documentation generation failed', error),
+          ),
       );
     }
 
     if (config.enableMultiTenant) {
       enabledFeatures.push('Multi-Tenant Kit');
       featurePromises.push(
-        generateMultiTenantKitFromDMMF(
-          dmmf,
-          {} as any,
-          options.schemaPath,
-          path.join(outputPath, 'multi-tenant'),
-          prismaClientPath,
-          provider,
-          config.multiTenant || {},
-          previewFeatures,
-        ).catch((error) => {
-          console.error('❌ Multi-Tenant Kit generation failed:', error);
-        }),
+        features
+          .generateMultiTenantKitFromDMMF(
+            dmmf,
+            {},
+            options.schemaPath,
+            path.join(outputPath, 'multi-tenant'),
+            prismaClientPath,
+            provider,
+            config.multiTenant ?? {},
+            previewFeatures,
+          )
+          .catch((error: unknown) =>
+            handleFeatureError('Multi-Tenant Kit generation failed', error),
+          ),
       );
     }
 
     if (config.enablePerformance) {
       enabledFeatures.push('Performance Pack');
       featurePromises.push(
-        generatePerformancePack(options.schemaPath, {
-          outputPath: path.join(outputPath, 'performance'),
-          ...config.performance,
-        }).catch((error) => {
-          console.error('❌ Performance Pack generation failed:', error);
-        }),
+        features
+          .generatePerformancePack(options.schemaPath, {
+            outputPath: path.join(outputPath, 'performance'),
+            ...(config.performance ?? {}),
+          })
+          .catch((error: unknown) =>
+            handleFeatureError('Performance Pack generation failed', error),
+          ),
       );
     }
 
     if (config.enableFactories) {
       enabledFeatures.push('Data Factories');
       featurePromises.push(
-        generateDataFactories(options.schemaPath, {
-          outputPath: path.join(outputPath, 'factories'),
-          ...config.factories,
-        }).catch((error) => {
-          console.error('❌ Data Factories generation failed:', error);
-        }),
+        features
+          .generateDataFactories(options.schemaPath, {
+            outputPath: path.join(outputPath, 'factories'),
+            ...(config.factories ?? {}),
+          })
+          .catch((error: unknown) =>
+            handleFeatureError('Data Factories generation failed', error),
+          ),
       );
     }
 
-    // Wait for all features to complete
     await Promise.allSettled(featurePromises);
 
-    // Summary
     console.log('\n✅ PZG Pro Generation Complete!');
     if (enabledFeatures.length > 0) {
       console.log(`📦 Generated features: ${enabledFeatures.join(', ')}`);
@@ -302,7 +308,7 @@ export async function generateProFeatures(options: GeneratorOptions) {
       console.log('\nExample configuration:');
       console.log('generator pzgPro {');
       console.log('  provider = "node ./lib/cli/pzg-pro.js"');
-      console.log('  output = "./generated/pro"');
+      console.log('  output   = "./generated/pro"');
       console.log('  enablePolicies = true');
       console.log('  enableServerActions = true');
       console.log('}');
@@ -321,12 +327,85 @@ export async function generateProFeatures(options: GeneratorOptions) {
   }
 }
 
-/**
- * Parse PZG Pro configuration from generator options
- */
+function loadFeatureModules(): FeatureModules {
+  return {
+    generatePoliciesFromDMMF: loadProExport('features/policies/policies', 'generatePoliciesFromDMMF'),
+    generateServerActionsFromDMMF: loadProExport(
+      'features/server-actions/server-actions',
+      'generateServerActionsFromDMMF',
+    ),
+    generateSDKFromDMMF: loadProExport('features/sdk-publisher/sdk-publisher', 'generateSDKFromDMMF'),
+    generateContractTestsFromDMMF: loadProExport(
+      'features/contract-testing/contract-testing',
+      'generateContractTestsFromDMMF',
+    ),
+    generatePostgresRLSFromDMMF: loadProExport(
+      'features/postgres-rls/postgres-rls',
+      'generatePostgresRLSFromDMMF',
+    ),
+    generateFormUXFromDMMF: loadProExport('features/form-ux/form-ux', 'generateFormUXFromDMMF'),
+    generateAPIDocsFromDMMF: loadProExport('features/api-docs/api-docs', 'generateAPIDocsFromDMMF'),
+    generateMultiTenantKitFromDMMF: loadProExport(
+      'features/multi-tenant-kit/multi-tenant-kit',
+      'generateMultiTenantKitFromDMMF',
+    ),
+    generatePerformancePack: loadProExport(
+      'features/performance-pack/performance-pack',
+      'generatePerformancePack',
+    ),
+    generateDataFactories: loadProExport(
+      'features/data-factories/data-factories',
+      'generateDataFactories',
+    ),
+  };
+}
+
+function loadProExport<T>(moduleSuffix: string, exportName: string): T {
+  const modulePath = ['..', 'pro', ...moduleSuffix.split('/')].join('/');
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require(modulePath);
+    if (!(exportName in mod)) {
+      throw new Error(`Missing export "${exportName}" in ${modulePath}`);
+    }
+    return mod[exportName] as T;
+  } catch (error) {
+    if (isMissingProModuleError(error, modulePath)) {
+      throwProMissing();
+    }
+    throw error;
+  }
+}
+
+function isMissingProModuleError(error: unknown, modulePath: string): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const nodeError = error as NodeJS.ErrnoException;
+  if (nodeError.code !== 'MODULE_NOT_FOUND') {
+    return false;
+  }
+
+  const normalized = modulePath.replace(/\\/g, '/');
+  const message = nodeError.message?.replace(/\\/g, '/');
+  return message?.includes('/pro/') || message?.includes(normalized) || false;
+}
+
+function throwProMissing(): never {
+  throw new Error(PRO_HELP_MESSAGE);
+}
+
+function handleFeatureError(context: string, error: unknown): void {
+  const detail = error instanceof Error ? error.message : String(error);
+  console.error(`❌ ${context}: ${detail}`);
+  if (error instanceof Error && error.stack) {
+    console.error(error.stack);
+  }
+}
+
 async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesConfig> {
   const config: ProFeaturesConfig = {
-    // Default: enable no features (user must explicitly enable)
     enablePolicies: false,
     enableServerActions: false,
     enableSDK: false,
@@ -339,11 +418,9 @@ async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesCon
     enableFactories: false,
   };
 
-  // Parse generator config
-  const generatorConfig = options.generator.config as Record<string, any>;
+  const generatorConfig = options.generator.config as Record<string, unknown>;
 
-  // Parse boolean flags
-  const booleanFlags = [
+  const booleanFlags: Array<keyof ProFeaturesConfig> = [
     'enablePolicies',
     'enableServerActions',
     'enableSDK',
@@ -358,16 +435,14 @@ async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesCon
 
   for (const flag of booleanFlags) {
     if (generatorConfig[flag] !== undefined) {
-      config[flag as keyof ProFeaturesConfig] = String(generatorConfig[flag]) === 'true';
+      config[flag] = String(generatorConfig[flag]) === 'true';
     }
   }
 
-  // Parse string configurations
   if (generatorConfig.outputPath) {
     config.outputPath = String(generatorConfig.outputPath);
   }
 
-  // Parse contract-specific configuration (map contracts* prefixed keys to contracts object)
   const contractConfigKeys: string[] = [];
   for (const key in generatorConfig) {
     if (key.startsWith('contracts') && key !== 'enableContracts') {
@@ -383,7 +458,6 @@ async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesCon
         key.replace('contracts', '').slice(1);
       let value = generatorConfig[key];
 
-      // Parse comma-separated values into arrays for providers and consumers
       if (contractKey === 'providers' || contractKey === 'consumers') {
         value = String(value)
           .split(',')
@@ -398,7 +472,6 @@ async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesCon
   if (generatorConfig.configPath) {
     config.configPath = String(generatorConfig.configPath);
 
-    // Load external config file
     try {
       const schemaBaseDir = path.dirname(options.schemaPath);
       const configFilePath = path.isAbsolute(config.configPath)
@@ -408,12 +481,12 @@ async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesCon
       const externalConfig = JSON.parse(await fs.readFile(configFilePath, 'utf-8'));
       Object.assign(config, externalConfig);
     } catch (error) {
-      console.warn(`⚠️  Failed to load external config: ${error}`);
+      const detail = error instanceof Error ? error.message : String(error);
+      console.warn(`⚠️  Failed to load external config: ${detail}`);
     }
   }
 
-  // Parse feature-specific configs (pass through any other configs)
-  const featureKeys = [
+  const featureKeys: Array<keyof ProFeaturesConfig> = [
     'policies',
     'serverActions',
     'sdk',
@@ -427,15 +500,14 @@ async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesCon
   ];
 
   for (const key of featureKeys) {
-    if (generatorConfig[key]) {
+    if (generatorConfig[key] !== undefined) {
       try {
-        config[key as keyof ProFeaturesConfig] =
+        config[key] =
           typeof generatorConfig[key] === 'string'
-            ? JSON.parse(generatorConfig[key])
+            ? JSON.parse(String(generatorConfig[key]))
             : generatorConfig[key];
       } catch {
-        // If it's not valid JSON, pass it through as-is
-        config[key as keyof ProFeaturesConfig] = generatorConfig[key];
+        config[key] = generatorConfig[key];
       }
     }
   }
@@ -443,13 +515,9 @@ async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesCon
   return config;
 }
 
-/**
- * Get the Prisma client import path
- */
 function getPrismaClientPath(prismaClientGeneratorConfig: any): string {
   if (prismaClientGeneratorConfig?.output?.value) {
-    const outputPath = parseEnvValue(prismaClientGeneratorConfig.output);
-    return outputPath;
+    return parseEnvValue(prismaClientGeneratorConfig.output);
   }
   return '@prisma/client';
 }

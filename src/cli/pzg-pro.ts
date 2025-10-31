@@ -18,8 +18,7 @@
  */
 
 import { generatorHandler } from '@prisma/generator-helper';
-import { generateProFeatures } from './pzg-pro-generator';
-import { runDriftGuardCLI } from '../pro';
+import { generateProFeatures, PRO_HELP_MESSAGE } from './pzg-pro-generator';
 
 const args = process.argv.slice(2);
 const isCliInvocation = require.main === module && args.length > 0 && !args[0].startsWith('--');
@@ -27,26 +26,66 @@ const isCliInvocation = require.main === module && args.length > 0 && !args[0].s
 if (isCliInvocation) {
   const [command, ...rest] = args;
 
-  if (command === 'guard') {
+  if (command !== 'guard') {
+    console.error(`Unknown command "${command}". Run "pzg-pro guard --help" for usage.`);
+    process.exit(1);
+  }
+
+  try {
+    const { runDriftGuardCLI } = loadProCliExports();
     runDriftGuardCLI(rest)
-      .then(() => {
-        process.exit(0);
-      })
-      .catch((error) => {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(`❌ Drift Guard failed: ${message}`);
+      .then(() => process.exit(0))
+      .catch((error: unknown) => {
+        const detail = error instanceof Error ? error.message : String(error);
+        console.error(`❌ Drift Guard failed: ${detail}`);
+        if (error instanceof Error && error.stack) {
+          console.error(error.stack);
+        }
         process.exit(1);
       });
-  } else {
-    console.error(`Unknown command "${command}". Run "pzg-pro guard --help" for usage.`);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error(detail);
     process.exit(1);
   }
 } else {
   generatorHandler({
     onManifest: () => ({
       defaultOutput: './generated/pro',
-      prettyName: 'PZG Pro Generator',
+      prettyName: 'PZG Pro Generator (requires Pro license)',
     }),
     onGenerate: generateProFeatures,
   });
+}
+
+function loadProCliExports(): { runDriftGuardCLI: (argv: string[]) => Promise<void> } {
+  const modulePath = ['..', 'pro'].join('/');
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require(modulePath);
+    if (typeof mod.runDriftGuardCLI !== 'function') {
+      throw new Error(`Missing runDriftGuardCLI export in ${modulePath}`);
+    }
+    return mod;
+  } catch (error) {
+    if (isMissingProModuleError(error, modulePath)) {
+      throw new Error(PRO_HELP_MESSAGE);
+    }
+    throw error;
+  }
+}
+
+function isMissingProModuleError(error: unknown, modulePath: string): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const nodeError = error as NodeJS.ErrnoException;
+  if (nodeError.code !== 'MODULE_NOT_FOUND') {
+    return false;
+  }
+
+  const normalized = modulePath.replace(/\\/g, '/');
+  const message = nodeError.message?.replace(/\\/g, '/');
+  return message?.includes('/pro/') || message?.includes(normalized) || false;
 }
