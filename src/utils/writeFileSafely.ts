@@ -13,7 +13,10 @@ export const writeFileSafely = async (
 ) => {
   try {
     // In single-file mode, we don't write per-file; we append to aggregator
-    if (isSingleFileEnabled()) {
+    // BUT skip single file mode for Pro generator files (api-docs, etc.)
+    const isProGeneratorFile =
+      writeLocation.includes('/generated/pro/') && !writeLocation.includes('/generated/zod/');
+    if (isSingleFileEnabled() && !isProGeneratorFile) {
       appendSingleFile(writeLocation, content);
       return;
     }
@@ -21,10 +24,11 @@ export const writeFileSafely = async (
     const dir = path.dirname(writeLocation);
     fs.mkdirSync(dir, { recursive: true });
 
-    // Track directory creation in manifest
+    // Track directory creation in manifest (but skip for Pro generator files)
     const manifest = Transformer.getCurrentManifest();
     const outputPath = Transformer.getOutputPath();
-    if (manifest && outputPath) {
+
+    if (manifest && outputPath && !isProGeneratorFile) {
       addDirectoryToManifest(manifest, dir, outputPath);
     }
 
@@ -32,14 +36,20 @@ export const writeFileSafely = async (
     const cfg = Transformer.getGeneratorConfig();
     const isSchemasFile = /[\\\/]schemas[\\\/]/.test(writeLocation);
     const shouldFormatSchemas = cfg?.formatGeneratedSchemas === true;
-    if (isSchemasFile && !shouldFormatSchemas) {
+
+    // For Pro generator files, write directly without formatting or manifest tracking
+    if (isProGeneratorFile) {
       fs.writeFileSync(writeLocation, content);
     } else {
-      fs.writeFileSync(writeLocation, await formatFile(content));
+      if (isSchemasFile && !shouldFormatSchemas) {
+        fs.writeFileSync(writeLocation, content);
+      } else {
+        fs.writeFileSync(writeLocation, await formatFile(content));
+      }
     }
 
-    // Track file creation in manifest
-    if (manifest && outputPath) {
+    // Track file creation in manifest (but skip for Pro generator files)
+    if (manifest && outputPath && !isProGeneratorFile) {
       addFileToManifest(manifest, writeLocation, outputPath);
     }
 

@@ -5,6 +5,8 @@ title: Usage Patterns
 
 Common integration scenarios.
 
+Tip: Need SDK clients, ready‑made forms, or a mock API server? See [Pro Features](./features/overview.md).
+
 ## tRPC Procedures
 
 ```ts

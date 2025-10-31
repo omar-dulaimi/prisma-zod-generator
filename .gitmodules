@@ -1,0 +1,4 @@
+[submodule "src/pro"]
+	path = src/pro
+	url = git@github.com:omar-dulaimi/prisma-zod-generator-pro.git
+	branch = master

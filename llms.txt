@@ -53,6 +53,9 @@
 - Usage Patterns: https://omar-dulaimi.github.io/prisma-zod-generator/docs/usage-patterns
 - Performance & Build Tips: https://omar-dulaimi.github.io/prisma-zod-generator/docs/performance
 - Upgrade Guide: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade-guide
+- Free → Pro Migration: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade/pro-migration
+- Integrations Overview: https://omar-dulaimi.github.io/prisma-zod-generator/docs/integrations/overview
+- Pro CLI & API Reference: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/pro-cli
 - Contributing: https://omar-dulaimi.github.io/prisma-zod-generator/docs/contributing
 - Changelog: https://omar-dulaimi.github.io/prisma-zod-generator/docs/changelog
 - JSON-friendly DateTime (Split Strategy Default): https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/json-friendly-datetime

@@ -1,0 +1,336 @@
+/* Hero Section */
+.pricingHero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 4rem 0 3rem;
+  text-align: center;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.heroTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.heroSubtitle {
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 0.5rem;
+}
+
+.heroMeta {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.heroMeta strong {
+  color: white;
+  font-weight: 700;
+}
+
+/* Pricing Section */
+.pricingSection {
+  padding: 4rem 0;
+}
+
+.paidTiersHeading {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 3rem 0 0.5rem 0;
+  color: var(--ifm-font-color-base);
+}
+
+.paidTiersSubheading {
+  font-size: 1rem;
+  text-align: center;
+  color: var(--ifm-color-emphasis-600);
+  margin-bottom: 2rem;
+}
+
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 1200px) {
+  .pricingGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Comparison Table Section */
+.comparisonSection {
+  background: var(--ifm-background-surface-color);
+  padding: 4rem 2rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.sectionTitle {
+  font-size: 2.25rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 3rem;
+  color: var(--ifm-font-color-base);
+}
+
+.tableWrapper {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.comparisonTable {
+  display: table;
+  width: 100%;
+  min-width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--ifm-background-color);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.comparisonTable thead {
+  background: linear-gradient(135deg, #4c51bf 0%, #667eea 100%);
+  color: white;
+}
+
+.comparisonTable th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.comparisonTable th:first-child {
+  text-align: left;
+}
+
+.comparisonTable th:not(:first-child) {
+  text-align: center;
+}
+
+.comparisonTable td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  font-size: 0.9rem;
+}
+
+.comparisonTable td:not(:first-child) {
+  text-align: center;
+}
+
+.comparisonTable tbody tr:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  transition: background 0.2s ease;
+}
+
+.comparisonTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.categoryRow {
+  background: linear-gradient(
+    90deg,
+    rgba(102, 126, 234, 0.1) 0%,
+    rgba(118, 75, 162, 0.1) 100%
+  ) !important;
+}
+
+.categoryRow td {
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #4c51bf;
+  border-top: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+/* Table Icons */
+.yesIcon {
+  color: #16a34a;
+  font-weight: 700;
+  font-size: 1.25rem;
+  display: inline-block;
+}
+
+.noIcon {
+  color: #dc2626;
+  font-weight: 700;
+  font-size: 1.25rem;
+  display: inline-block;
+}
+
+/* FAQ Section */
+.faqSection {
+  padding: 4rem 0;
+}
+
+.faqGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.faqItem {
+  background: var(--ifm-background-surface-color);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  transition: all 0.2s ease;
+}
+
+.faqItem:hover {
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.faqQuestion {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+  margin-bottom: 0.75rem;
+}
+
+.faqAnswer {
+  font-size: 0.95rem;
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* CTA Section */
+.ctaSection {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 4rem 0;
+  text-align: center;
+  color: white;
+}
+
+.ctaTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.ctaSubtitle {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  opacity: 0.95;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.ctaMeta {
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.ctaMeta a {
+  color: white;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.ctaMeta a:hover {
+  opacity: 0.8;
+}
+
+.ctaOutlineButton {
+  color: white !important;
+  border-color: white !important;
+  border-width: 2px !important;
+}
+
+.ctaOutlineButton:hover {
+  background: white !important;
+  color: #667eea !important;
+}
+
+/* Mobile Responsive */
+@media (max-width: 996px) {
+  .pricingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroTitle {
+    font-size: 2.25rem;
+  }
+
+  .heroSubtitle {
+    font-size: 1.25rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.75rem;
+  }
+
+  .ctaTitle {
+    font-size: 1.875rem;
+  }
+
+  .ctaButtons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .faqGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .pricingHero {
+    padding: 2rem 0 1.5rem;
+  }
+
+  .pricingSection,
+  .faqSection,
+  .ctaSection {
+    padding: 2rem 0;
+  }
+
+  .comparisonSection {
+    padding: 2rem 1rem;
+  }
+
+  .comparisonTable {
+    font-size: 0.85rem;
+  }
+
+  .comparisonTable th,
+  .comparisonTable td {
+    padding: 0.5rem;
+  }
+
+  .comparisonTable thead th:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--ifm-color-primary);
+    z-index: 1;
+  }
+
+  .comparisonTable tbody td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--ifm-background-color);
+    z-index: 1;
+  }
+}
