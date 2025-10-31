@@ -206,9 +206,7 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
             config.postgresRls ?? {},
             previewFeatures,
           )
-          .catch((error: unknown) =>
-            handleFeatureError('PostgreSQL RLS generation failed', error),
-          ),
+          .catch((error: unknown) => handleFeatureError('PostgreSQL RLS generation failed', error)),
       );
     }
 
@@ -292,9 +290,7 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
             outputPath: path.join(outputPath, 'factories'),
             ...(config.factories ?? {}),
           })
-          .catch((error: unknown) =>
-            handleFeatureError('Data Factories generation failed', error),
-          ),
+          .catch((error: unknown) => handleFeatureError('Data Factories generation failed', error)),
       );
     }
 
@@ -329,12 +325,18 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
 
 function loadFeatureModules(): FeatureModules {
   return {
-    generatePoliciesFromDMMF: loadProExport('features/policies/policies', 'generatePoliciesFromDMMF'),
+    generatePoliciesFromDMMF: loadProExport(
+      'features/policies/policies',
+      'generatePoliciesFromDMMF',
+    ),
     generateServerActionsFromDMMF: loadProExport(
       'features/server-actions/server-actions',
       'generateServerActionsFromDMMF',
     ),
-    generateSDKFromDMMF: loadProExport('features/sdk-publisher/sdk-publisher', 'generateSDKFromDMMF'),
+    generateSDKFromDMMF: loadProExport(
+      'features/sdk-publisher/sdk-publisher',
+      'generateSDKFromDMMF',
+    ),
     generateContractTestsFromDMMF: loadProExport(
       'features/contract-testing/contract-testing',
       'generateContractTestsFromDMMF',

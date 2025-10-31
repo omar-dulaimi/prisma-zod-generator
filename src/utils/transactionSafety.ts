@@ -147,7 +147,7 @@ export class TransactionManager {
 
     try {
       // Execute with appropriate isolation level
-    const result = await this.executeWithIsolation(operation, transaction);
+      const result = await this.executeWithIsolation(operation, transaction);
 
       transactionOp.completed = true;
 
@@ -270,7 +270,6 @@ export class TransactionManager {
         status: 'success',
         timestamp: new Date(),
       });
-
     } catch (error) {
       transaction.status = 'failed';
 
