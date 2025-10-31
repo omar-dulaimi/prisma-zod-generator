@@ -9,17 +9,22 @@ echo "║   PZG Package Build (with Pro)         ║"
 echo "╚════════════════════════════════════════╝"
 echo ""
 
-PRO_ENABLED=true
-
-# Step 1: Verify submodule (optional in OSS builds)
+# Step 1: Verify submodule
 echo "🔍 Step 1/6: Verifying pro submodule..."
-if [ ! -f "src/pro/index.ts" ]; then
-  PRO_ENABLED=false
-  echo "⚠️ Pro submodule not found. Proceeding with core-only package build."
-  echo "   Run: git submodule update --init --recursive to include Pro assets."
-else
-  echo "✅ Pro submodule verified"
+if [ ! -e "src/pro/.git" ]; then
+  echo "❌ Error: Pro submodule not initialized"
+  echo "   Run: git submodule update --init --recursive"
+  exit 1
 fi
+
+# Check if submodule has content
+if [ ! -f "src/pro/index.ts" ]; then
+  echo "❌ Error: Pro submodule is empty"
+  echo "   Run: git submodule update --init --recursive"
+  exit 1
+fi
+
+echo "✅ Pro submodule verified"
 echo ""
 
 # Step 2: Clean previous build
@@ -40,17 +45,13 @@ echo "✅ TypeScript compiled"
 echo ""
 
 # Step 4: Obfuscate pro features
-if [ "$PRO_ENABLED" = true ]; then
-  echo "🔒 Step 4/6: Obfuscating pro features..."
-  node scripts/obfuscate-pro.js
-  if [ $? -ne 0 ]; then
-    echo "❌ Obfuscation failed"
-    exit 1
-  fi
-  echo ""
-else
-  echo "🔒 Step 4/6: Skipping pro obfuscation (pro submodule not present)"
+echo "🔒 Step 4/6: Obfuscating pro features..."
+node scripts/obfuscate-pro.js
+if [ $? -ne 0 ]; then
+  echo "❌ Obfuscation failed"
+  exit 1
 fi
+echo ""
 
 # Step 5: Prepare package directory
 echo "📂 Step 5/6: Preparing package..."
@@ -70,20 +71,12 @@ echo ""
 
 # Step 6: Report package size
 echo "📊 Step 6/6: Package analysis..."
-CORE_SIZE=$(du -sh package/lib 2>/dev/null | cut -f1 || echo "N/A")
-PRO_SIZE="N/A (skipped)"
-if [ "$PRO_ENABLED" = true ] && [ -d package/lib/pro ]; then
-  CORE_SIZE=$(du -sh --exclude=pro package/lib 2>/dev/null | cut -f1 || echo "N/A")
-  PRO_SIZE=$(du -sh package/lib/pro 2>/dev/null | cut -f1 || echo "N/A")
-fi
+CORE_SIZE=$(du -sh package/lib --exclude=package/lib/pro 2>/dev/null | cut -f1 || echo "N/A")
+PRO_SIZE=$(du -sh package/lib/pro 2>/dev/null | cut -f1 || echo "N/A")
 TOTAL_SIZE=$(du -sh package/lib 2>/dev/null | cut -f1 || echo "N/A")
 
 echo "   Core features: $CORE_SIZE"
-if [ "$PRO_ENABLED" = true ] && [ "$PRO_SIZE" != "N/A (skipped)" ]; then
-  echo "   Pro features:  $PRO_SIZE (obfuscated)"
-else
-  echo "   Pro features:  $PRO_SIZE"
-fi
+echo "   Pro features:  $PRO_SIZE (obfuscated)"
 echo "   Total:         $TOTAL_SIZE"
 echo ""
 
