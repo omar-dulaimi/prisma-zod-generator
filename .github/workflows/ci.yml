@@ -17,8 +17,6 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-        with:
-          fetch-depth: 0
       - name: Decide if CI should run
         id: compute
         shell: bash
