@@ -62,7 +62,7 @@ generated/
 ## Basic Usage
 
 ```ts
-import { userFactory, postFactory } from '@/generated/factories/factories'
+import { userFactory, postFactory } from '@/generated/pro/factories/factories'
 
 // Build in-memory (no database)
 const user = userFactory.build({
@@ -107,7 +107,7 @@ const userWithPosts = await userFactory.create({
 
 ```ts
 import { describe, it, expect } from 'vitest'
-import { userFactory } from '@/generated/factories/factories'
+import { userFactory } from '@/generated/pro/factories/factories'
 
 describe('User API', () => {
   it('creates a user', async () => {
