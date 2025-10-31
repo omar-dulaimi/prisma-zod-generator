@@ -99,7 +99,7 @@ Provide a `TenantProvider` with the current tenant and refine schemas based on i
 
 ```tsx
 // Example tenant provider pattern
-import { TenantProvider } from '@/generated/multi-tenant/tenant-schemas'
+import { TenantProvider } from '@/generated/pro/multi-tenant/schemas/tenant-schemas'
 
 export default function App() {
   const tenant = getCurrentTenant() // From auth/session
