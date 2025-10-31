@@ -201,7 +201,7 @@ Licensee agrees to comply with all applicable export control laws and regulation
 
 ## 16. Governing Law
 
-This Agreement is governed by the laws of **[Jurisdiction - to be specified by Omar]**, without regard to conflict of law principles.
+This Agreement is governed by the laws of **the State of California, United States**, without regard to conflict of law principles.
 
 ## 17. Dispute Resolution
 
