@@ -50,12 +50,24 @@
 - Logging & Debug Output: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/logging-debug
 - FAQ: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/faq
 - Troubleshooting: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/troubleshooting
+- PZG Pro CLI & API Reference: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/pro-cli
+- Integration Guides Overview: https://omar-dulaimi.github.io/prisma-zod-generator/docs/integrations/overview
+- Pro Features Overview: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/overview
+- Policies & Redaction: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/policies
+- Form UX Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/forms
+- SDK Publisher: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/sdk
+- API Docs Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/api-docs
+- PostgreSQL RLS: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/postgres-rls
+- Multi-Tenant Kit: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/multi-tenant
+- Performance Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/performance
+- Data Factories: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/factories
+- Drift Guard: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/guard
+- Contract Testing Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/contracts
+- Server Actions Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/server-actions
 - Usage Patterns: https://omar-dulaimi.github.io/prisma-zod-generator/docs/usage-patterns
 - Performance & Build Tips: https://omar-dulaimi.github.io/prisma-zod-generator/docs/performance
 - Upgrade Guide: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade-guide
-- Free → Pro Migration: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade/pro-migration
-- Integrations Overview: https://omar-dulaimi.github.io/prisma-zod-generator/docs/integrations/overview
-- Pro CLI & API Reference: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/pro-cli
+- Upgrade from Free to Pro: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade/pro-migration
 - Contributing: https://omar-dulaimi.github.io/prisma-zod-generator/docs/contributing
 - Changelog: https://omar-dulaimi.github.io/prisma-zod-generator/docs/changelog
 - JSON-friendly DateTime (Split Strategy Default): https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/json-friendly-datetime
@@ -64,11 +76,20 @@
 
 > Prisma → Zod in one generate. Ship validated, typed data everywhere.
 
-Last updated: 2025-10-24 • Version: 1.30.2
+Last updated: 2025-10-31 • Version: 1.30.2
 
 ## Quick start
 
-1) Star this repo 🌟
+- Install: `npm i -D prisma-zod-generator`
+- In `schema.prisma`:
+  ```prisma
+  generator zod { provider = "prisma-zod-generator" }
+  ```
+- Generate: `npx prisma generate`
+- Import:
+  ```ts
+  import { UserSchema } from "./prisma/generated/schemas";
+  ```
 
 ## Highlights
 
@@ -1934,6 +1955,1830 @@ export const UserResultSchema = z.object({
 - **Form handling**: Partial schemas for progressive form completion
 - **API flexibility**: Allow clients to send minimal payloads
 
+# API Docs Pack
+
+> **Available in:** Professional, Business, Enterprise tiers
+
+Auto-generate OpenAPI v3 specifications and a fully-functional mock server from your Prisma schema. Perfect for frontend development, testing, and API documentation.
+
+## Why Use API Docs Pack
+
+**Problem**: API documentation gets out of sync with reality:
+
+- Manually written OpenAPI specs drift from actual implementation
+- Frontend teams blocked waiting for backend APIs
+- No easy way to test UI against realistic API responses
+- Documentation maintenance is time-consuming
+
+**Solution**: Generate accurate OpenAPI specs and a working mock server directly from your Prisma schema.
+
+### Benefits
+
+- **Always Accurate**: Docs generated from source of truth (Prisma schema)
+- **Instant Mock Server**: Test UIs without waiting for backend
+- **Swagger UI Included**: Interactive API explorer out of the box
+- **Zero Maintenance**: Regenerate when schema changes
+
+## Prerequisites
+
+```bash
+# Install Express for mock server
+pnpm add express @prisma/client
+pnpm add -D @types/express
+
+# PZG Pro license required
+```
+
+## Generate
+
+Add to your `schema.prisma`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enableApiDocs = true
+}
+```
+
+Then run:
+
+```bash
+prisma generate
+```
+
+### Generated Files
+
+```
+generated/
+  pro/
+    api-docs/
+      openapi.json          # OpenAPI v3 specification
+      openapi.yaml          # OpenAPI v3 (YAML format)
+      mock-server.js        # Express mock server
+      index.html            # Swagger UI
+      sdk.ts                # TypeScript SDK client
+      examples/             # Example requests
+      docs/                 # Static documentation
+      USAGE.md              # Usage guide
+```
+
+## Basic Usage
+
+### Running the Mock Server
+
+```bash
+# From project root
+cd generated/pro/api-docs
+node mock-server.js
+
+# Server starts at http://localhost:3001
+```
+
+### Accessing Swagger UI
+
+Open [http://localhost:3001/docs](http://localhost:3001/docs) in your browser to:
+
+- Interactively explore your API
+- Try out endpoints
+- View request/response schemas
+
+### Generated Endpoints
+
+The mock server generates standard REST endpoints aligned with your Prisma models:
+
+```bash
+# Users API (example)
+GET /api/users         # List users
+GET /api/users/:id     # Get single user
+POST /api/users        # Create user
+PUT /api/users/:id     # Update user
+DELETE /api/users/:id  # Delete user
+
+# Posts API (example)
+GET /api/posts
+GET /api/posts/:id
+POST /api/posts
+PUT /api/posts/:id
+DELETE /api/posts/:id
+```
+
+## Integration
+
+### Frontend Development
+
+```tsx
+// Point to mock server during development
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+
+const users = await fetch(`${API_URL}/api/users`).then(r => r.json())
+```
+
+### Testing
+
+```ts
+// Use mock server in integration tests
+beforeAll(async () => {
+  // Start mock server
+  mockServer = spawn('npx', ['tsx', 'generated/api-docs/mock-server.ts'])
+  await new Promise(resolve => setTimeout(resolve, 2000))
+})
+
+test('fetches users', async () => {
+  const response = await fetch('http://localhost:3001/api/users')
+  const users = await response.json()
+  expect(Array.isArray(users)).toBe(true)
+})
+```
+
+## See Also
+
+- [SDK Publisher](./sdk.md) - Generate typed clients from OpenAPI
+- [Contract Testing](./contracts.md) - Verify API contracts
+
+# Contract Testing Pack
+
+> **Available in:** Business, Enterprise tiers
+
+Consumer/provider contract tests and JSON definitions to verify API compatibility using Pact.js.
+
+## Why Use Contract Testing
+
+**Problem**: API changes break integrations:
+
+- Backend changes break frontend without warning
+- No way to verify API contracts are maintained
+- Integration tests require full backend setup
+
+**Solution**: Generate Pact.js consumer/provider tests from your schema to catch breaking changes early.
+
+### Benefits
+
+- **Catch Breaking Changes**: Before deployment
+- **Independent Development**: Frontend/backend teams work in parallel
+- **Contract as Documentation**: Living API contracts
+
+## Prerequisites
+
+```bash
+# Install Pact.js
+pnpm add -D @pact-foundation/pact jest @prisma/client
+
+# PZG Pro license required
+```
+
+## Generate
+
+Add to your `schema.prisma`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enableContracts = true
+}
+```
+
+Then run:
+
+```bash
+prisma generate
+```
+
+### Generated Files
+
+```
+generated/
+  pro/
+    contracts/
+      consumer/           # Consumer tests
+      provider/           # Provider tests
+      definitions/        # JSON contract definitions
+```
+
+## Run Tests
+
+Add these scripts to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "test:contract:consumer": "jest generated/pro/contracts/consumer",
+    "test:contract:provider": "jest generated/pro/contracts/provider"
+  }
+}
+```
+
+Then run:
+
+```bash
+# Run consumer tests
+pnpm run test:contract:consumer
+
+# Run provider tests
+pnpm run test:contract:provider
+```
+
+> **Note**: The generator creates test files but you need to manually add the npm scripts above to your package.json.
+
+## Consumer Example
+
+```ts
+// Consumer test expects specific API response format
+import { pactWith } from 'jest-pact'
+
+pactWith({ consumer: 'WebApp', provider: 'UserAPI' }, (interaction) => {
+  describe('GET /users/:id', () => {
+    beforeEach(() => {
+      interaction
+        .given('user 123 exists')
+        .uponReceiving('a request for user 123')
+        .withRequest({ method: 'GET', path: '/users/123' })
+        .willRespondWith({
+          status: 200,
+          body: {
+            id: '123',
+            email: 'user@example.com',
+            name: 'John Doe'
+          }
+        })
+    })
+
+    it('returns user data', async () => {
+      const response = await fetch('http://localhost:8989/users/123')
+      const user = await response.json()
+      expect(user.id).toBe('123')
+    })
+  })
+})
+```
+
+## See Also
+
+- [SDK Publisher](./sdk.md) - Generate typed SDK
+- [API Docs Pack](./api-docs.md) - OpenAPI specifications
+
+# Data Factories
+
+> **Available in:** Business, Enterprise tiers
+
+Type-safe builders for realistic mock data with optional Prisma persistence.
+
+## Why Use Data Factories
+
+**Problem**: Creating test data is tedious:
+
+- Manually writing test data for every test
+- Data doesn't match real schema structure
+- Hard to create valid related data
+- No easy way to persist to database
+
+**Solution**: Generate factories that build type-safe test data with realistic values.
+
+### Benefits
+
+- **Type-Safe**: Follows your Prisma schema exactly
+- **Realistic Data**: Sensible defaults for all fields
+- **Relationships**: Handle nested data easily
+- **Optional Persistence**: Build in-memory or save to database
+
+## Prerequisites
+
+```bash
+# Core dependencies
+pnpm add @prisma/client
+
+# PZG Pro license required
+```
+
+## Generate
+
+Add to your `schema.prisma`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enableFactories = true
+}
+```
+
+Then run:
+
+```bash
+prisma generate
+```
+
+### Generated Files
+
+```
+generated/
+  pro/
+    factories/
+      factories.ts         # Factory functions for each model
+```
+
+## Basic Usage
+
+```ts
+import { userFactory, postFactory } from '@/generated/factories/factories'
+
+// Build in-memory (no database)
+const user = userFactory.build({
+  email: 'test@example.com'
+})
+
+// Build many
+const users = userFactory.buildMany(10)
+
+// With custom values
+const admin = userFactory.build({
+  email: 'admin@example.com',
+  role: 'ADMIN'
+})
+```
+
+### Persistence (Optional)
+
+When Prisma client is available:
+
+```ts
+// Create in database
+const user = await userFactory.create({
+  email: 'db@example.com'
+})
+
+// Create many
+const users = await userFactory.createMany(5)
+
+// With relationships
+const userWithPosts = await userFactory.create({
+  posts: {
+    create: [
+      postFactory.build({ title: 'First Post' }),
+      postFactory.build({ title: 'Second Post' })
+    ]
+  }
+})
+```
+
+## Testing Example
+
+```ts
+import { describe, it, expect } from 'vitest'
+import { userFactory } from '@/generated/factories/factories'
+
+describe('User API', () => {
+  it('creates a user', async () => {
+    const userData = userFactory.build()
+    
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    })
+    
+    expect(response.ok).toBe(true)
+  })
+})
+```
+
+## See Also
+
+- [Performance Pack](./performance.md) - Validate large datasets
+- [Contract Testing](./contracts.md) - Test with factory data
+
+# Form UX Pack
+
+> **Available in:** Starter, Professional, Business, Enterprise tiers
+
+Schema-driven React forms with automatic validation. Generate fully-typed form components from your Prisma schema using React Hook Form and Zod.
+
+## Why Use Form UX Pack
+
+**Problem**: Building forms is repetitive and error-prone:
+
+- Manually creating form components for each model
+- Writing validation logic that duplicates schema rules
+- Keeping forms in sync with database schema changes
+- Handling complex nested relationships
+- Managing form state, errors, and submissions
+
+**Solution**: Auto-generate type-safe form components from your Prisma schema with built-in validation, error handling, and customizable UI.
+
+### Benefits
+
+- **Zero Boilerplate**: Forms generated from schema
+- **Type Safety**: Full TypeScript from database to UI
+- **Auto Validation**: Zod schemas automatically applied
+- **Customizable UI**: Bring your own components (shadcn/ui, MUI, etc.)
+- **Nested Relations**: Handle complex data structures
+- **Form State**: Built-in loading, error, and success states
+
+## Prerequisites
+
+```bash
+# Core dependencies
+pnpm add react react-dom react-hook-form @hookform/resolvers zod @prisma/client
+
+# UI library (optional - example with shadcn/ui)
+pnpm add class-variance-authority clsx tailwind-merge
+npx shadcn-ui@latest init
+
+# PZG Pro license required
+```
+
+## Generate
+
+Add to your `schema.prisma`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enableForms = true
+
+  # Optional: Choose UI library (barebones, shadcn, mantine, chakra, mui)
+  # uiLibrary = "shadcn"
+
+  # Optional: Enable i18n support
+  # enableI18n = true
+  # i18nNamespace = "forms"
+
+  # Optional: Generate tests
+  # generateTests = true
+}
+```
+
+Then run:
+
+```bash
+prisma generate
+```
+
+> **Note**: The generator supports multiple UI libraries. Use `barebones` for framework-agnostic forms, or specify `shadcn`, `mantine`, `chakra`, or `mui` for framework-specific components.
+
+### Generated Files
+
+```
+generated/
+  pro/
+    forms/
+      components/
+        UserForm.tsx         # User form component
+        PostForm.tsx         # Post form component
+      validation/
+        UserValidation.ts    # User validation helpers
+        PostValidation.ts    # Post validation helpers
+      i18n/                  # i18n translation keys (if enabled)
+        user.json
+        post.json
+      __tests__/             # Form tests (if enabled)
+        UserForm.test.tsx
+        PostForm.test.tsx
+      zod.ts                 # Zod schemas for all models
+      index.ts               # Exports all forms and validation
+      README.md              # Usage documentation
+```
+
+## Basic Usage
+
+```tsx
+// app/users/create/page.tsx
+import { UserForm } from '@/generated/pro/forms'
+
+export default function CreateUserPage() {
+  return (
+    <UserForm
+      defaultValues={{
+        email: '',
+        name: ''
+      }}
+      onSubmit={async (data) => {
+        // Send to API
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+
+        if (response.ok) {
+          console.log('User created')
+        }
+      }}
+    />
+  )
+}
+```
+
+### Edit Form Example
+
+```tsx
+// app/users/[id]/edit/page.tsx
+import { UserForm } from '@/generated/pro/forms'
+
+export default async function EditUserPage({ params }: { params: { id: string } }) {
+  const user = await fetch(`/api/users/${params.id}`).then(r => r.json())
+
+  return (
+    <UserForm
+      defaultValues={user}
+      onSubmit={async (data) => {
+        await fetch(`/api/users/${user.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+      }}
+    />
+  )
+}
+```
+
+## Integration Notes
+
+### Error Messages
+
+Each `<FormField>` uses React Hook Form's `Controller`. To render per-field errors, ensure your `FormMessage` component reads `formState.errors` (the generated UI kit supports this by default).
+
+### Schema Imports
+
+The generated forms import validation schemas from your Prisma Zod output. Prefer importing from a generated aggregator (e.g., `prisma/zod/index.ts`) that maps long object names to short forms like `UserCreateInputSchema`.
+
+### Nested Relations
+
+If a Prisma create schema includes nested relations, provide a compatible default (e.g., `{}`) or render nested form fields to handle the relationship data.
+
+### Customizing UI
+
+The generated form components are designed to work with your UI library of choice. You can:
+
+- Swap out the default input components
+- Add custom styling and classes
+- Integrate with component libraries like shadcn/ui, MUI, Chakra, etc.
+- Customize error display and form layout
+
+## Example: shadcn/ui Integration
+
+```tsx
+// You can customize the generated FormField component
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+
+export function UserForm({ defaultValues, onSubmit }: UserFormProps) {
+  const form = useForm({
+    resolver: zodResolver(UserCreateInputSchema),
+    defaultValues
+  })
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          {...form.register('email')}
+        />
+        {form.formState.errors.email && (
+          <p className="text-sm text-red-500">
+            {form.formState.errors.email.message}
+          </p>
+        )}
+      </div>
+
+      <Button type="submit" disabled={form.formState.isSubmitting}>
+        Submit
+      </Button>
+    </form>
+  )
+}
+```
+
+## See Also
+
+- [Server Actions Pack](./server-actions.md) - Integrate with Next.js server actions
+- [API Docs Pack](./api-docs.md) - Test forms against mock API
+- [SDK Publisher](./sdk.md) - Use generated SDK for form submissions
+
+# Drift Guard
+
+> **Available in:** Professional, Business, Enterprise tiers
+
+CI helper to catch breaking changes in generated outputs (schema/API drift).
+
+## What It Does
+
+- Compares generated output between `--base` and `--head` branches
+- Detects breaking changes in schemas, types, and APIs
+- Produces GitHub-formatted reports for PR comments
+
+## Prerequisites
+
+```bash
+# PZG Pro license required
+```
+
+## Generate & Run
+
+```bash
+pzg-pro guard --schema=./prisma/schema.prisma --base=origin/main --head=HEAD --format=github
+```
+
+### Command Options
+
+- `--schema <path>` – Path to your Prisma schema (defaults to `./prisma/schema.prisma`).
+- `--base <ref>` – Git reference to compare from (defaults to `origin/main`).
+- `--head <ref>` – Git reference to compare to (defaults to `HEAD`).
+- `--format <github|json|text>` – Output format (defaults to `github`).
+- `--json`, `--text`, `--github` – Shortcut flags for `--format`.
+- `--strict` – Treat warnings as breaking changes.
+- `--allowed-break <identifier>` – Whitelist specific breaking change identifiers (repeatable).
+- `--help` – Show usage and exit.
+
+The command runs entirely on the command line—no custom scripts required. Make sure you execute it inside a git repo (so the base ref can be resolved) and with a valid PZG Pro license available (`PZG_LICENSE_KEY`).
+
+Under the hood the CLI loads the DMMF for the base and head schemas, runs `validateDriftFromDMMF`, and prints a GitHub-friendly report. A non-zero exit code indicates breaking changes.
+
+:::tip Git history
+Fetch the full history (`fetch-depth: 0`) before running the command in CI so the base ref’s schema can be read.
+:::
+
+### Programmatic API
+
+Prefer to orchestrate things yourself? Import `validateDriftFromDMMF` from `prisma-zod-generator/pro` and feed it the base/head DMMF documents alongside your generator configuration. The CLI is thin sugar over that helper.
+
+## GitHub Actions
+
+```yaml
+name: PZG Drift Guard
+on: [pull_request]
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - run: pnpm i --frozen-lockfile
+      - run: pnpm tsx scripts/run-drift-guard.ts
+
+In scripts you can check `result.changes` for the change identifiers used by `--allowed-break` (e.g. `model.User.field_removed`).
+```
+
+## See Also
+
+- [Contract Testing](./contracts.md) - Test API contracts
+- [SDK Publisher](./sdk.md) - Detect SDK breaking changes
+
+# Multi-Tenant Kit
+
+> **Available in:** Enterprise tier
+
+Zod helpers to validate tenant context at API/UI boundaries for SaaS applications.
+
+## Why Use Multi-Tenant Kit
+
+**Problem**: Multi-tenant applications need strict data isolation:
+
+- Tenant data must never leak across tenants
+- Every request needs tenant validation
+- UI needs tenant-aware components
+- Manual tenant checks are error-prone
+
+**Solution**: Generate Zod helpers that enforce tenant context validation at every API and UI boundary.
+
+### Benefits
+
+- **Strict Isolation**: Validate tenant access before data operations
+- **Type-Safe**: Full TypeScript validation
+- **Configurable Modes**: Strict, warn, or log violations
+- **UI Integration**: React context provider for tenant state
+
+## Prerequisites
+
+```bash
+# Core dependencies
+pnpm add zod react @prisma/client
+
+# PZG Pro license required
+```
+
+## Generate
+
+Add to your `schema.prisma`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enableMultiTenant = true
+}
+```
+
+Then run:
+
+```bash
+prisma generate
+```
+
+### Generated Files
+
+```
+generated/
+  pro/
+    multi-tenant/
+      schemas/
+        tenant-schemas.ts     # Tenant-aware Zod schemas
+      middleware/
+        prisma-middleware.ts  # Prisma middleware for tenant filtering
+      extensions/
+        prisma-extension.ts   # Prisma client extensions
+      utils/
+        validation.ts         # Validation utilities
+        context.ts            # Tenant context helpers
+      types/
+        tenant-types.ts       # TypeScript types
+      README.md               # Usage documentation
+```
+
+## Basic Usage
+
+```ts
+import { validateTenantAccess } from '@/generated/pro/multi-tenant/utils/validation'
+
+// Modes: 'strict' | 'warn' | 'log'
+const isValid = validateTenantAccess(
+  { tenantId: 't1' },  // Request context
+  't1',                 // Expected tenant
+  'strict'              // Mode
+)
+
+if (!isValid) {
+  throw new Error('Tenant mismatch')
+}
+```
+
+### Validation Modes
+
+- **strict**: Throws error on mismatch
+- **warn**: Logs warning but continues
+- **log**: Logs info for debugging
+
+## UI Pattern
+
+Provide a `TenantProvider` with the current tenant and refine schemas based on it:
+
+```tsx
+// Example tenant provider pattern
+import { TenantProvider } from '@/generated/multi-tenant/tenant-schemas'
+
+export default function App() {
+  const tenant = getCurrentTenant() // From auth/session
+
+  return (
+    <TenantProvider value={{ tenantId: tenant.id }}>
+      <YourApp />
+    </TenantProvider>
+  )
+}
+```
+
+See generated comments in the file for more integration patterns.
+
+## See Also
+
+- [PostgreSQL RLS](./postgres-rls.md) - Database-level tenant isolation
+- [Policies & Redaction](./policies.md) - Field-level access control
+
+# Pro Features Overview
+
+Upgrade the core generator with production‑ready feature packs. Generate UI, SDKs, docs, security helpers, CI tooling — all in minutes.
+
+import Link from '@docusaurus/Link';
+
+## How to Get Pro Features
+
+Purchase any tier through GitHub Sponsors and get started in minutes:
+
+<div style={{ display: 'flex', gap: '1rem', margin: '2rem 0', flexWrap: 'wrap' }}>
+  <Link className="button button--primary button--lg" to="https://github.com/sponsors/omar-dulaimi" style={{ textDecoration: 'none' }}>
+    💎 Purchase on GitHub Sponsors
+  </Link>
+
+  <Link className="button button--secondary button--lg" to="/pricing" style={{ textDecoration: 'none' }}>
+    📊 View Full Pricing
+  </Link>
+</div>
+
+**After purchasing:**
+
+1. DM [@omardulaimidev on X](https://x.com/omardulaimidev) with your GitHub username
+2. You'll receive your license key and setup instructions within 24 hours
+3. Run `pzg-pro license-check` to verify activation
+
+### Available Tiers
+
+| Tier             | Annual Price  | Features                                                      |
+| ---------------- | ------------- | ------------------------------------------------------------- |
+| **Starter**      | **$69/year**  | Server Actions, Forms                                         |
+| **Professional** | **$199/year** | + SDK, API Docs, Policies, Guard, RLS, Performance            |
+| **Business**     | **$599/year** | + Contracts, Factories, Priority response targets             |
+| **Enterprise**   | **Custom**    | + Multi-Tenant, roadmap reviews, custom feature collaboration |
+
+***
+
+## Plan Comparison
+
+| Feature Pack                        | Core (MIT) | Starter (`starter`) | Professional (`professional`) | Business (`business`) | Enterprise (`enterprise`) |
+| ----------------------------------- | ---------- | ------------------- | ----------------------------- | --------------------- | ------------------------- |
+| Server Actions                      | ✅          | ✅                   | ✅                             | ✅                     | ✅                         |
+| Forms UX                            | ❌          | ✅                   | ✅                             | ✅                     | ✅                         |
+| Policies & Redaction                | ❌          | ❌                   | ✅                             | ✅                     | ✅                         |
+| Drift Guard                         | ❌          | ❌                   | ✅                             | ✅                     | ✅                         |
+| PostgreSQL RLS                      | ❌          | ❌                   | ✅                             | ✅                     | ✅                         |
+| Performance Pack                    | ❌          | ❌                   | ✅                             | ✅                     | ✅                         |
+| SDK Publisher                       | ❌          | ❌                   | ✅                             | ✅                     | ✅                         |
+| Contract Testing                    | ❌          | ❌                   | ❌                             | ✅                     | ✅                         |
+| API Docs Pack                       | ❌          | ❌                   | ❌                             | ✅                     | ✅                         |
+| Data Factories                      | ❌          | ❌                   | ❌                             | ✅                     | ✅                         |
+| Multi-Tenant Kit                    | ❌          | ❌                   | ❌                             | ❌                     | ✅                         |
+| Private Discord Channel             | ❌          | ✅                   | ✅                             | ✅                     | ✅                         |
+| Priority Response Targets           | ❌          | ❌                   | ❌                             | ✅                     | ✅                         |
+| Roadmap Reviews & Co-built Features | ❌          | ❌                   | ❌                             | ❌                     | ✅                         |
+
+:::tip Choosing a plan
+Starter is perfect for solo builders shipping typed Server Actions and forms. Professional unlocks security packs for production teams. Business adds integration and documentation tooling with faster support, and Enterprise layers on multi-tenant tooling plus roadmap collaboration.
+:::
+
+***
+
+## Generate in minutes
+
+```bash
+# Check license
+pzg-pro license-check
+
+# Generate any pack
+pzg-pro generate forms
+pzg-pro generate sdk
+pzg-pro generate api-docs
+```
+
+## Packs at a glance
+
+<div className="feature-card-grid">
+  <Link className="feature-card" to="./forms">
+    <div className="feature-card__icon">🧩</div>
+    <div className="feature-card__title">Forms UX</div>
+    <div className="feature-card__desc">Schema‑driven React forms with Zod + RHF.</div>
+  </Link>
+
+  <Link className="feature-card" to="./sdk">
+    <div className="feature-card__icon">🔌</div>
+    <div className="feature-card__title">SDK Publisher</div>
+    <div className="feature-card__desc">Typed HTTP client (ESM/CJS) with retry/timeouts.</div>
+  </Link>
+
+  <Link className="feature-card" to="./api-docs">
+    <div className="feature-card__icon">📚</div>
+    <div className="feature-card__title">API Docs</div>
+    <div className="feature-card__desc">OpenAPI + runnable mock server for local dev.</div>
+  </Link>
+
+  <Link className="feature-card" to="./policies">
+    <div className="feature-card__icon">🕵️</div>
+    <div className="feature-card__title">Policies</div>
+    <div className="feature-card__desc">PII redaction + policy helpers from annotations.</div>
+  </Link>
+
+  <Link className="feature-card" to="./postgres-rls">
+    <div className="feature-card__icon">🧷</div>
+    <div className="feature-card__title">Postgres RLS</div>
+    <div className="feature-card__desc">RLS session context helpers + example SQL.</div>
+  </Link>
+
+  <Link className="feature-card" to="./multi-tenant">
+    <div className="feature-card__icon">🏷️</div>
+    <div className="feature-card__title">Multi‑Tenant</div>
+    <div className="feature-card__desc">Tenant validation helpers for UI/API.</div>
+  </Link>
+
+  <Link className="feature-card" to="./performance">
+    <div className="feature-card__icon">🚄</div>
+    <div className="feature-card__title">Performance</div>
+    <div className="feature-card__desc">Streaming validators for large arrays.</div>
+  </Link>
+
+  <Link className="feature-card" to="./factories">
+    <div className="feature-card__icon">🏭</div>
+    <div className="feature-card__title">Factories</div>
+    <div className="feature-card__desc">Realistic test data builders.</div>
+  </Link>
+
+  <Link className="feature-card" to="./guard">
+    <div className="feature-card__icon">🛡️</div>
+    <div className="feature-card__title">Drift Guard</div>
+    <div className="feature-card__desc">CI diffs to catch breaking changes.</div>
+  </Link>
+
+  <Link className="feature-card" to="./contracts">
+    <div className="feature-card__icon">🤝</div>
+    <div className="feature-card__title">Contracts</div>
+    <div className="feature-card__desc">Consumer/provider tests + definitions.</div>
+  </Link>
+
+  <Link className="feature-card" to="./server-actions">
+    <div className="feature-card__icon">🧠</div>
+    <div className="feature-card__title">Server Actions</div>
+    <div className="feature-card__desc">Typed actions validated with Zod.</div>
+  </Link>
+</div>
+
+:::tip Pro Tip
+You can generate multiple packs side‑by‑side — e.g., SDK + API Docs + Forms — to iterate UI against a mock server while the backend evolves.
+:::
+
+## Examples
+
+Validate then submit (Forms + SDK)
+
+```tsx
+import { UserForm } from '../generated/forms'
+import APIClient from '@your-org/api-sdk'
+
+const client = new APIClient({ baseUrl: 'http://127.0.0.1:3001' })
+
+export default function Page() {
+  return (
+    <UserForm
+      defaultValues={{ email: 'test@example.com' }}
+      onSubmit={async (data) => {
+        const res = await client.createUser(data)
+        if (!res.success) throw new Error(res.error)
+      }}
+    />
+  )
+}
+```
+
+# Performance Pack
+
+> **Available in:** Professional, Business, Enterprise tiers
+
+High-performance validation for large datasets with streaming validators, precompiled schemas, and progress tracking.
+
+## Why Use Performance Pack
+
+**Problem**: Standard validation is too slow for large datasets:
+
+- Blocking validation of 100k+ records freezes applications
+- Memory exhaustion when validating large arrays
+- No progress feedback for long-running validation
+- Single-threaded validation wastes CPU cores
+
+**Solution**: Generate optimized streaming validators with chunking, concurrent processing, and progress hooks.
+
+### Benefits
+
+- **Streaming Validation**: Process data in chunks to avoid memory issues
+- **Concurrent Processing**: Utilize multiple cores for parallel validation
+- **Progress Tracking**: Real-time progress hooks for UX feedback
+- **Memory Efficient**: Constant memory usage regardless of dataset size
+
+## Prerequisites
+
+```bash
+# Core dependencies
+pnpm add zod @prisma/client
+
+# For streaming large files (optional)
+pnpm add csv-parser stream-json
+
+# PZG Pro license required
+```
+
+## Generate
+
+Add to your `schema.prisma`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enablePerformance = true
+}
+```
+
+Then run:
+
+```bash
+prisma generate
+```
+
+### Generated Files
+
+```
+generated/
+  pro/
+    performance/
+      streaming.ts           # Streaming validators
+      precompiled.ts         # Precompiled schemas for speed
+```
+
+## Basic Usage
+
+```ts
+import { validateStream } from '@/generated/performance/streaming'
+
+const users = Array.from({ length: 100_000 }, (_, i) => ({
+  email: `user${i}@example.com`,
+  name: `User ${i}`,
+}))
+
+const result = await validateStream(users, {
+  chunkSize: 1000,         // Process 1000 records at a time
+  maxConcurrency: 4,       // Use 4 parallel workers
+  onProgress: (processed, total) => {
+    console.log(`Progress: ${processed}/${total}`)
+  },
+  onError: (error, index) => {
+    console.warn(`Invalid record at index ${index}:`, error)
+  }
+})
+
+console.log(`Valid: ${result.valid.length}`)
+console.log(`Invalid: ${result.invalid.length}`)
+```
+
+## Example: CSV Validation
+
+```ts
+import fs from 'fs'
+import csv from 'csv-parser'
+import { validateStream } from '@/generated/performance/streaming'
+
+async function validateCSV(filePath: string) {
+  const records: any[] = []
+
+  // Read CSV
+  await new Promise((resolve, reject) => {
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on('data', (row) => records.push(row))
+      .on('end', resolve)
+      .on('error', reject)
+  })
+
+  // Validate with streaming
+  const result = await validateStream(records, {
+    chunkSize: 1000,
+    onProgress: (processed, total) => {
+      console.log(`Validated ${processed}/${total} records`)
+    }
+  })
+
+  return result
+}
+```
+
+## See Also
+
+- [Data Factories](./factories.md) - Generate large test datasets
+- [API Docs Pack](./api-docs.md) - Test performance with mock server
+
+# Policies & Redaction
+
+> **Available in:** Professional, Business, Enterprise tiers
+
+PII-safe logging and response redaction driven by annotations in your Prisma schema. Automatically mask sensitive data in logs, API responses, and error tracking.
+
+## Why Use Policies & Redaction
+
+**Problem**: Sensitive data leaks everywhere:
+
+- PII (emails, phone numbers, SSNs) exposed in application logs
+- Passwords and tokens accidentally logged to monitoring services
+- Sensitive fields returned in API responses to unauthorized users
+- Manual redaction is error-prone and inconsistent
+
+**Solution**: Annotate sensitive fields in your Prisma schema once, then automatically redact them everywhere.
+
+### Benefits
+
+- **Schema-Driven**: Define policies once in Prisma schema
+- **Auto Redaction**: Works with all logging libraries
+- **Compliance Ready**: GDPR, HIPAA, PCI-DSS compliant logging
+- **Zero Leaks**: Redact before data leaves your application
+
+## Prerequisites
+
+```bash
+# Core dependencies
+pnpm add @prisma/client zod
+
+# For error tracking integration (optional)
+pnpm add @sentry/node
+
+# PZG Pro license required
+```
+
+## Generate
+
+Add to your `schema.prisma`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enablePolicies = true
+}
+```
+
+Then run:
+
+```bash
+prisma generate
+```
+
+### Generated Files
+
+```
+generated/
+  pro/
+    policies/
+      safe-crud/
+        user.ts            # User safe CRUD operations
+        post.ts            # Post safe CRUD operations
+      redaction/
+        user.ts            # User PII redaction middleware
+        post.ts            # Post PII redaction middleware
+      dto/
+        user.ts            # User DTO schemas
+        post.ts            # Post DTO schemas
+      index.ts             # Exports and factory functions
+```
+
+## Schema Annotations
+
+Annotate fields in your Prisma schema:
+
+```prisma
+model User {
+  id       Int     @id @default(autoincrement())
+  
+  /// @pii email redact:logs
+  /// @policy read:role in ["admin"]
+  email    String  @unique
+  
+  /// @pii phone redact:logs
+  phone    String?
+  
+  /// @sensitive redact:logs
+  password String
+  
+  name     String?
+}
+```
+
+## Basic Usage
+
+### Safe CRUD Operations
+
+```ts
+import { createSafeUserOperations } from '@/generated/pro/policies'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+// Create safe CRUD with policy context
+const userOps = createSafeUserOperations(prisma, {
+  userId: 'current-user-id',
+  role: 'user'
+})
+
+// Automatically applies read policies
+const users = await userOps.findMany()
+
+// Automatically injects userId/tenantId on create
+const newUser = await userOps.create({}, {
+  data: { name: 'John', email: 'john@example.com' }
+})
+```
+
+### PII Redaction
+
+```ts
+import { UserRedactor } from '@/generated/pro/policies/redaction/user'
+
+const redactor = new UserRedactor({ redactLogs: true })
+
+// Redact sensitive fields
+const safeUser = redactor.redact(user, 'api')
+// Result: { email: 's***@example.com', phone: '***-***-1234' }
+
+// Express middleware
+import { createUserRedactionMiddleware } from '@/generated/pro/policies/redaction/user'
+
+app.use(createUserRedactionMiddleware())
+const sentryTransport = createRedactedSentryTransport()
+```
+
+## Integration Examples
+
+### Express API
+
+```ts
+import express from 'express'
+import { redactionMiddleware } from '@/generated/pzg/policies/redaction'
+
+const app = express()
+
+// Apply redaction middleware
+app.use(redactionMiddleware())
+
+app.get('/users/:id', async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: parseInt(req.params.id) }
+  })
+  
+  // Response automatically redacts PII fields
+  res.json(user)
+})
+```
+
+### Next.js API Routes
+
+```ts
+// Wrap ctx.body before send using redactPII(ctx.body) for Koa
+// Custom interceptor calling redactPII(data) in map() for NestJS
+```
+
+## Browser Note
+
+The generated helper uses Node `crypto`. In the browser, either polyfill (`crypto.subtle`) or use a minimal email-masking helper.
+
+## See Also
+
+- [Multi-Tenant Kit](./multi-tenant.md) - Tenant isolation with policy enforcement
+- [PostgreSQL RLS](./postgres-rls.md) - Database-level row security
+
+# PostgreSQL RLS
+
+> **Available in:** Professional, Business, Enterprise tiers
+
+Database-level row security with PostgreSQL Row-Level Security (RLS). Automatically enforce data isolation at the database layer with generated helpers, policies, and migrations.
+
+## Why Use PostgreSQL RLS
+
+**Problem**: Application-level security is fragile:
+
+- Easy to forget WHERE clauses that filter by tenant/user
+- Security bugs from missing filters in queries
+- Complex authorization logic scattered across codebase
+- No defense-in-depth at database level
+
+**Solution**: Leverage PostgreSQL's built-in Row-Level Security to enforce data isolation at the database layer.
+
+### Benefits
+
+- **Database-Level Security**: Enforced at PostgreSQL layer, not application
+- **Defense in Depth**: Additional security layer below Prisma
+- **Auto Filtering**: Queries automatically scoped to user/tenant context
+- **Developer Proof**: Impossible to bypass via code mistakes
+
+## Prerequisites
+
+```bash
+# PostgreSQL database required
+# Ensure your DATABASE_URL uses PostgreSQL
+
+# Core dependencies
+pnpm add @prisma/client
+
+# PZG Pro license required
+```
+
+## Generate
+
+Add to your `schema.prisma`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enablePostgresRLS = true
+}
+```
+
+Then run:
+
+```bash
+prisma generate
+```
+
+### Generated Files
+
+```
+generated/
+  pro/
+    postgres-rls/
+      rls-helper.ts       # RLS context management
+      migration.sql       # Database setup migration
+      policies.sql        # Example RLS policies
+```
+
+## Basic Usage
+
+```ts
+import { PrismaClient } from '@prisma/client'
+import { createRLSHelper } from '@/generated/postgres/rls/rls-helper'
+
+const prisma = new PrismaClient()
+const rls = createRLSHelper(prisma)
+
+// Set context before queries
+await rls.withContext(
+  {
+    userId: 'user-123',
+    tenantId: 'tenant-456',
+    roles: ['admin']
+  },
+  async () => {
+    // All queries in this block automatically filtered by RLS
+    const posts = await prisma.post.findMany()
+    // Only returns posts where policies allow access
+  }
+)
+```
+
+### Prisma Middleware
+
+```ts
+prisma.$use(rls.createMiddleware())
+
+// Now you can pass context via query params
+await prisma.post.findMany({
+  context: {
+    userId: 'u1',
+    tenantId: 't1'
+  }
+})
+```
+
+## Database Setup
+
+Apply the generated migration to set up RLS helper functions:
+
+```sql
+-- From generated/postgres/rls/migration.sql
+-- Helper functions:
+-- - set_current_user_context(user_id, tenant_id, roles)
+-- - clear_user_context()
+-- - get_current_user_context()
+```
+
+See generated SQL files for:
+
+- Example RLS policies
+- Helper function definitions
+- Migration scripts to adapt to your schema
+
+## Integration
+
+### Express Middleware
+
+```ts
+app.use(async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  await rls.setContext({
+    userId: req.user.id,
+    tenantId: req.user.tenantId,
+    roles: req.user.roles
+  })
+
+  res.on('finish', async () => {
+    await rls.clearContext()
+  })
+
+  next()
+})
+```
+
+### Next.js API Routes
+
+```ts
+import { rls } from '@/lib/rls'
+
+export default async function handler(req, res) {
+  const session = await getSession(req, res)
+
+  return rls.withContext(
+    {
+      userId: session.user.id,
+      tenantId: session.user.tenantId,
+      roles: session.user.roles
+    },
+    async () => {
+      const posts = await prisma.post.findMany()
+      res.json(posts)
+    }
+  )
+}
+```
+
+## See Also
+
+- [Multi-Tenant Kit](./multi-tenant.md) - Application-layer tenant isolation
+- [Policies & Redaction](./policies.md) - Field-level access control
+
+# SDK Publisher
+
+> **Available in:** Professional, Business, Enterprise tiers
+
+Auto-generate a fully-typed, production-ready TypeScript SDK from your Prisma schema. Publish as npm package with ESM + CJS support, automatic retries, timeouts, and request/response validation.
+
+## Why Use SDK Publisher
+
+**Problem**: Building API clients is tedious and error-prone:
+
+- Manually writing fetch calls for every endpoint
+- Duplicating types between backend and frontend
+- No automatic retry logic or timeout handling
+- Type safety lost across the network boundary
+- SDK maintenance when API changes
+- Supporting both ESM and CommonJS consumers
+
+**Solution**: Auto-generate a production-grade SDK package with full TypeScript support, automatic validation, error handling, and dual module formats ready to publish to npm.
+
+### Benefits
+
+- **Type Safety**: Full TypeScript from database to API client
+- **Auto Validation**: Zod schemas validate all requests/responses
+- **Dual Format**: ESM + CJS bundles with .d.ts files
+- **Production Ready**: Built-in retries, timeouts, error handling
+- **Auto Methods**: Generated methods for all CRUD operations
+- **Publishable**: npm-ready package with package.json and exports
+
+## Prerequisites
+
+```bash
+# Core dependencies for SDK generation
+pnpm add @prisma/client zod
+
+# PZG Pro license required
+```
+
+## Generate
+
+Add to your `schema.prisma`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enableSDK = true
+}
+```
+
+Then run:
+
+```bash
+prisma generate
+```
+
+### Generated Files
+
+```
+generated/
+  pro/
+    sdk/
+      typescript/
+        index.ts           # TypeScript SDK with APIClient class
+      python/
+        api_client.py      # Python SDK (optional)
+```
+
+The generator creates SDK clients with methods per resource:
+
+- Methods for all models (`listUsers`, `createUser`, `getUser`, etc.)
+- TypeScript types and interfaces
+- Built-in authentication support
+- Ready for npm publishing
+
+## Basic Usage
+
+```ts
+import APIClient from '@your-org/api-sdk'
+
+const client = new APIClient({
+  baseUrl: 'http://127.0.0.1:3001',
+  authToken: process.env.TOKEN,
+  timeout: 10_000,
+  retryAttempts: 3,
+})
+
+// All methods return { success, data?, error?, issues? }
+const res = await client.listUsers({ page: '1', limit: '10' })
+if (!res.success) {
+  console.error(res.error)
+  if (res.issues) {
+    // Zod validation errors
+    console.error(res.issues)
+  }
+} else {
+  console.log(res.data)
+}
+```
+
+### CRUD Operations
+
+```ts
+// Create
+const createRes = await client.createUser({
+  email: 'user@example.com',
+  name: 'John Doe'
+})
+
+// Read single
+const userRes = await client.getUser({ id: '123' })
+
+// Update
+const updateRes = await client.updateUser({
+  id: '123',
+  name: 'Jane Doe'
+})
+
+// Delete
+const deleteRes = await client.deleteUser({ id: '123' })
+```
+
+## Error Handling
+
+All methods return a consistent response format:
+
+```ts
+type APIResponse<T> =
+  | { success: true; data: T }
+  | { success: false; error: string; issues?: ZodIssue[] }
+```
+
+Example error handling:
+
+```ts
+const res = await client.createUser(userData)
+
+if (!res.success) {
+  if (res.issues) {
+    // Zod validation failed
+    res.issues.forEach(issue => {
+      console.error(`${issue.path.join('.')}: ${issue.message}`)
+    })
+  } else {
+    // Network or server error
+    console.error(res.error)
+  }
+  return
+}
+
+// Success
+console.log('Created user:', res.data)
+```
+
+## Retry & Timeout Behavior
+
+- **Timeouts**: Use `AbortSignal.timeout(timeout)` to abort long requests
+- **Retries**: Exponential backoff on network errors (configurable via `retryAttempts`)
+- **Non-retriable**: Client errors (4xx) and validation errors are not retried
+
+## Routes
+
+The generated SDK defaults align with the API Docs mock server routes:
+
+- `/api/users` - User endpoints
+- `/api/posts` - Post endpoints
+- Custom routes can be configured
+
+## Publishing Your SDK
+
+The generated package includes:
+
+- `package.json` with proper ESM/CJS exports
+- TypeScript declaration files
+- Build configuration for dual module output
+
+To publish:
+
+```bash
+cd generated/sdk
+pnpm install
+pnpm run build
+npm publish
+```
+
+## See Also
+
+- [API Docs Pack](./api-docs.md) - Generate OpenAPI specs and mock server
+- [Server Actions Pack](./server-actions.md) - Next.js server-side validation
+- [Contract Testing](./contracts.md) - Verify SDK matches backend contracts
+
+# Server Actions Pack
+
+> **Available in:** Starter, Professional, Business, Enterprise tiers
+
+Utilities and templates for type-safe Next.js Server Actions validated by Zod schemas.
+
+## Why Use Server Actions Pack
+
+**Problem**: Server Actions need validation:
+
+- Manual validation is repetitive
+- Type safety lost between client/server
+- Error handling inconsistent
+- No standard response format
+
+**Solution**: Generate validated Server Action stubs with automatic Zod validation and type-safe responses.
+
+### Benefits
+
+- **Type-Safe**: End-to-end TypeScript
+- **Auto Validation**: Zod schemas applied automatically
+- **Consistent Errors**: Standard error response format
+- **Next.js Integration**: Works with `revalidatePath`, `redirect`, etc.
+
+## Prerequisites
+
+```bash
+# Core dependencies
+pnpm add react zod @prisma/client
+
+# Optional: Next.js 13+ for full integration
+pnpm add next
+
+# PZG Pro license required
+```
+
+> **Note**: The generator avoids direct Next.js imports to prevent dependency issues. Next.js features like `revalidatePath()` and `redirect()` are commented out in generated code - uncomment them if using Next.js.
+
+## Generate
+
+Add to your `schema.prisma`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enableServerActions = true
+}
+```
+
+Then run:
+
+```bash
+prisma generate
+```
+
+### Generated Files
+
+```
+generated/
+  pro/
+    server-actions/
+      actions/
+        user.ts          # User CRUD server actions
+        post.ts          # Post CRUD server actions
+      hooks/
+        useUser.ts       # React hooks for User actions
+        usePost.ts       # React hooks for Post actions
+      types/
+        common.ts        # Shared types
+        user.ts          # User-specific types
+        post.ts          # Post-specific types
+      utils/
+        validation.ts    # Validation helpers
+      prisma-client.ts   # Prisma client instance
+      USAGE.md           # Usage guide
+```
+
+## Basic Usage
+
+### Server Actions
+
+Generated server actions in `actions/user.ts`:
+
+```ts
+// Auto-generated with Zod validation and error handling
+export async function createUser(
+  data: Prisma.UserCreateInput
+): Promise<ServerActionResult<User>> {
+  try {
+    const user = await prisma.user.create({ data });
+    // revalidatePath('/users'); // Uncomment to enable
+    return { success: true, data: user };
+  } catch (error) {
+    return handleServerActionError(error, 'Failed to create user');
+  }
+}
+```
+
+### React Hooks
+
+Use generated hooks in `hooks/useUser.ts`:
+
+```tsx
+'use client'
+
+import { useCreateUser } from '@/generated/pro/server-actions'
+
+export function CreateUserForm() {
+  const { execute, isPending, error } = useCreateUser({
+    onSuccess: (user) => console.log('Created:', user),
+    redirect: '/users'
+  });
+
+  return (
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      execute({ name: 'John', email: 'john@example.com' });
+    }}>
+      <button type="submit" disabled={isPending}>
+        {isPending ? 'Creating...' : 'Create User'}
+      </button>
+      {error && <p className="error">{error}</p>}
+    </form>
+  )
+}
+```
+
+## Next.js Integration
+
+Generated actions include commented hints for Next.js features:
+
+```ts
+// Uncomment these in your Next.js app:
+// import { revalidatePath } from 'next/cache'
+// import { redirect } from 'next/navigation'
+
+export async function createUser(data: Prisma.UserCreateInput) {
+  const user = await prisma.user.create({ data });
+  // revalidatePath('/users'); // Uncomment to enable cache revalidation
+  // redirect('/users');        // Uncomment to enable redirect
+  return { success: true, data: user };
+}
+```
+
+The hooks also support redirect via options:
+
+```ts
+const { execute } = useCreateUser({
+  redirect: '/users' // Logs redirect request (implement navigation as needed)
+});
+```
+
+## See Also
+
+- [Form UX Pack](./forms.md) - Generate form components
+- [SDK Publisher](./sdk.md) - Type-safe API client
+
+# Integration Guides Overview
+
+# Integration Guides
+
+We’re consolidating integration content so the links here reflect what actually exists in the repository. Until dedicated guides ship, start with the patterns below and adapt them to your stack.
+
+## ✅ Available Resources
+
+- **Next.js / React usage**: Combine the [Server Actions Pack](../features/server-actions.md) and [Forms UX Pack](../features/forms.md) to scaffold full-stack flows quickly.
+- **Policy enforcement**: Pair [Policies & Redaction](../features/policies.md) with [PostgreSQL RLS](../features/postgres-rls.md) for multi-tenant backends.
+- **SDK + Docs**: Use [Client SDK Publisher](../features/sdk.md) alongside the [API Docs Pack](../features/api-docs.md) to expose stable partner APIs.
+
+## 🗺️ Roadmap
+
+Detailed framework- and platform-specific guides (Next.js App Router, tRPC, Vercel, Supabase, etc.) are in progress. Track progress or request a specific integration by opening an issue.
+
+***
+
+## 🚀 Getting Started
+
+1. **Choose Your Stack**: Select the frameworks and tools you're using
+2. **Follow Integration Guides**: Step-by-step setup instructions
+3. **Configure Features**: Enable the PZG Pro features you need
+4. **Test Integration**: Verify everything works correctly
+
+## 📚 Need Help?
+
+- **Documentation**: Complete guides for each integration
+- **Community Support**: [Open an issue or discussion](https://github.com/omar-dulaimi/prisma-zod-generator/issues)
+- **Examples Repository**: [See working examples](https://github.com/omar-dulaimi/pzg-examples)
+- **Support**: DM [@omardulaimidev on X](https://x.com/omardulaimidev) for licensing or escalations
+
+***
+
+**Don't see your framework?** [Request an integration guide](https://github.com/omar-dulaimi/prisma-zod-generator/issues/new) or contribute one!
+
 # Core Concepts
 
 **Variants**: Parallel schema sets expressing different contexts.
@@ -2086,25 +3931,101 @@ prisma/generated/
 
 Single-file mode collapses to `schemas.ts` via config (`useMultipleFiles:false`).
 
+## Next Steps
+
+Explore PZG Pro feature packs (SDK, Forms, API Docs, RLS, Multi‑tenant, Performance, Factories, Guard, Contracts, Server Actions): [Pro Features](../features/overview.md).
+
 # Prisma Zod Generator
 
-Generate strongly-typed, configurable Zod schemas directly from your Prisma schema (DMMF). Supports:
+**The most powerful Prisma generator for type-safe validation** - Generate Zod schemas, React forms, TypeScript SDKs, OpenAPI docs, and more directly from your Prisma schema.
 
-- Multiple schema variants (pure / input / result) and custom variant arrays
-- Pure model schemas with customizable naming presets and patterns
-- CRUD schema, input object, and enum naming customization
-- Minimal, full, and custom generation modes
-- Fine-grained model / operation / field filtering with wildcard patterns
-- Emission controls (enums, objects, CRUD, variants, pure models, results)
-- Single-file or multi-file output layouts
-- Enhanced Bytes & JSON handling, relation heuristics, aggregate support
-- `@zod` comment annotations for inline validation rules
+## Core Features (Free & Open Source)
 
-Why this matters:
+Generate production-ready Zod validation schemas from your Prisma models with full customization:
 
-- Eliminates drift between Prisma types and runtime validation
-- Gives you adjustable surface area (lean minimal mode → full CRUD)
-- Enables domain-specific filtered bundles (e.g. public API vs internal tools)
+### Schema Generation
+
+- **Multiple variants**: Pure models, input schemas, result schemas
+- **Generation modes**: Minimal (lean), Full (everything), Custom (fine-tuned)
+- **Field filtering**: Include/exclude specific fields with wildcard patterns
+- **Custom naming**: Configure naming patterns for all schema types
+- **Output layouts**: Single-file or multi-file organization
+
+### Advanced Validation
+
+- **@zod annotations**: Add inline validation rules in Prisma comments
+- **Type coercion**: Handle Bytes, Decimal, DateTime, JSON types
+- **Relation handling**: Smart defaults for nested objects
+- **Aggregate support**: Count, min, max, avg, sum operations
+- **Optional fields**: Configurable `.nullish()`, `.optional()`, or `.nullable()`
+
+### Why Use Prisma Zod Generator?
+
+✅ **Eliminate drift** - Your validation always matches your database schema
+✅ **Type safety** - End-to-end TypeScript from database to API
+✅ **Configurable** - From minimal lean schemas to full CRUD suites
+✅ **Production ready** - Used by thousands of projects worldwide
+✅ **Domain-specific** - Generate different schema bundles for different contexts
+
+## Pro Features
+
+Upgrade to Pro for production-ready feature packs that save weeks of development time:
+
+### 🎨 Developer Experience ($69/year - Starter)
+
+- **[Form UX Pack](../features/forms.md)** - Auto-generated React forms with validation
+- **[Server Actions](../features/server-actions.md)** - Typed Next.js server actions
+
+### 🔐 Security & Governance ($199/year - Professional)
+
+- **[Policies & Redaction](../features/policies.md)** - PII masking, GDPR compliance
+- **[Drift Guard](../features/guard.md)** - CI checks for breaking schema changes
+- **[PostgreSQL RLS](../features/postgres-rls.md)** - Database-level row security
+- **[Performance Pack](../features/performance.md)** - Stream validation for millions of records
+- **[SDK Publisher](../features/sdk.md)** - Generate typed API clients
+
+### 🏗️ Platform & Scale ($599/year - Business)
+
+- **[Contract Testing](../features/contracts.md)** - Consumer-driven Pact.js tests
+- **[API Docs Pack](../features/api-docs.md)** - OpenAPI specs + mock server
+- **[Data Factories](../features/factories.md)** - Realistic test data generation
+
+### 🚀 Enterprise ($$$$ - Custom)
+
+- **[Multi-Tenant Kit](../features/multi-tenant.md)** - Enterprise SaaS isolation
+- **Quarterly Roadmap Reviews** - Strategic planning with the core team
+- **Co-developed Feature Packs** - Build bespoke integrations together
+- **White-Glove Onboarding** - Rollout playbooks and migration guidance
+
+[View all Pro features →](../features/overview.md)
+
+## Getting Started
+
+```bash
+# Install generator
+pnpm add -D prisma-zod-generator
+
+# Configure in schema.prisma
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "./generated/zod"
+}
+
+# Generate schemas
+pnpm prisma generate
+```
+
+[Read the full documentation →](../category/getting-started)
+
+### Using Pro Features
+
+After purchasing a Pro tier:
+
+1. You'll receive license key and setup instructions
+2. Follow the provided installation guide
+3. Use `pzg-pro` commands to generate feature packs
+
+See [Pro Features Overview](../features/overview.md) for details.
 
 # Performance & Build Tips
 
@@ -4969,6 +6890,56 @@ Pass desired max depth; nodes beyond trigger validation error. Prefer modest lim
 
 # FAQ
 
+## Pro Features
+
+**How do I purchase pro features?**
+
+Visit [github.com/sponsors/omar-dulaimi](https://github.com/sponsors/omar-dulaimi) and select your tier. After sponsoring, DM [@omardulaimidev on X](https://x.com/omardulaimidev) with your GitHub username to receive your license key and setup instructions.
+
+**How do I get my license after purchasing?**
+
+After purchasing through GitHub Sponsors, send a DM on X to [@omardulaimidev](https://x.com/omardulaimidev) with your GitHub username. You'll receive your license key and setup instructions within 24 hours.
+
+**What's included in each tier?**
+
+- **Starter ($69/year)**: Server Actions Pack, Form UX Pack
+- **Professional ($199/year)**: All Starter features + SDK Publisher, API Docs Pack, Policies & Redaction, Drift Guard, PostgreSQL RLS, Performance Pack
+- **Business ($599/year)**: All Professional features + Contract Testing, Data Factories
+- **Enterprise (Custom pricing)**: Everything + Multi-Tenant Kit, roadmap reviews, custom feature collaboration
+
+See [full pricing details](/pricing) for complete tier comparison.
+
+**Can I upgrade or downgrade my tier?**
+
+Yes, you can adjust your GitHub Sponsors tier at any time. Contact [@omardulaimidev on X](https://x.com/omardulaimidev) to update your license accordingly.
+
+**How do I activate my pro license?**
+
+After receiving your license key from @omardulaimidev, follow the setup instructions provided. You can verify activation by running:
+
+```bash
+pzg-pro license-check
+```
+
+**Do pro features require additional dependencies?**
+
+Some pro features have optional peer dependencies:
+
+- **Forms**: requires `react`, `react-hook-form`, `@hookform/resolvers`
+- **SDK**: standalone, no additional deps
+- **API Docs**: uses Express for mock server
+- **Contracts**: requires `@pact-foundation/pact`, `jest`
+
+Check each feature's documentation for specific requirements.
+
+**Can I use pro features in open source projects?**
+
+Pro licenses are per-developer, not per-project. If you have an active subscription, you can use pro features in any of your projects (including open source). For team/organization use, consider Business or Enterprise tiers.
+
+***
+
+## Core Features (Free)
+
 **Why are select/include schemas missing?** Minimal mode disables them unconditionally to keep surface lean.
 
 **Why didn’t my JSON config output path apply?** Generator block `output` attribute (if explicitly present) takes precedence.
@@ -5036,6 +7007,649 @@ Add npm script:
 Override tokens:
 
 - `\{Model\}`, `\{model\}`, `\{camel\}`, `\{kebab\}`, `\{SchemaSuffix\}`, `\{TypeSuffix\}`
+
+# PZG Pro CLI & API Reference
+
+# PZG Pro API Reference
+
+Complete API documentation for all PZG Pro features and CLI commands.
+
+## 📋 Table of Contents
+
+- [CLI Commands](#cli-commands)
+- [Configuration API](#configuration-api)
+- [License API](#license-api)
+- [Policies API](#policies-api)
+- [Server Actions API](#server-actions-api)
+- [SDK Publisher API](#sdk-publisher-api)
+- [Drift Guard API](#drift-guard-api)
+
+## 🖥️ CLI Commands
+
+### Core Commands
+
+#### `pzg-pro license-check`
+
+Validate and display license information.
+
+```bash
+npx pzg-pro license-check [options]
+```
+
+**Options:**
+
+- `--verbose, -v`: Show detailed license information
+- `--json`: Output in JSON format
+- `--features`: Show available features for your plan
+
+**Examples:**
+
+```bash
+# Basic license check
+npx pzg-pro license-check
+
+# Detailed output
+npx pzg-pro license-check --verbose
+
+# JSON output for scripts
+npx pzg-pro license-check --json | jq '.plan'
+
+# Show available features
+npx pzg-pro license-check --features
+```
+
+**Output:**
+
+```
+✅ Valid PZG Pro License
+📋 Plan: professional (Professional)
+👥 Max Seats: 5
+📅 Valid Until: 2025-12-31
+```
+
+#### `pzg-pro config`
+
+Manage configuration files.
+
+```bash
+npx pzg-pro config <command> [options]
+```
+
+**Commands:**
+
+- `show`: Display current configuration
+- `validate`: Validate configuration file
+- `init`: Create default configuration file
+
+**Examples:**
+
+```bash
+# Show effective configuration
+npx pzg-pro config show
+
+# Validate config file
+npx pzg-pro config validate
+
+# Create default config
+npx pzg-pro config init
+```
+
+### Generation Commands
+
+#### `pzg-pro generate policies`
+
+Generate policy enforcement code and redaction middleware.
+
+```bash
+npx pzg-pro generate policies [options]
+```
+
+**Options:**
+
+- `--output, -o <path>`: Output directory (default: `./generated/pzg/policies`)
+- `--schema, -s <path>`: Prisma schema file (default: `./prisma/schema.prisma`)
+- `--models, -m <models>`: Comma-separated list of models to include
+- `--force`: Overwrite existing files
+- `--dry-run`: Preview generated files without writing
+
+**Examples:**
+
+```bash
+# Generate all policies
+npx pzg-pro generate policies
+
+# Specific models only
+npx pzg-pro generate policies --models User,Post,Comment
+
+# Custom output directory
+npx pzg-pro generate policies --output ./src/generated/policies
+
+# Preview without writing files
+npx pzg-pro generate policies --dry-run
+```
+
+#### `pzg-pro generate server-actions`
+
+Generate Next.js Server Actions and React hooks.
+
+```bash
+npx pzg-pro generate server-actions [options]
+```
+
+**Options:**
+
+- `--output, -o <path>`: Output directory (default: `./src/server`)
+- `--schema, -s <path>`: Prisma schema file
+- `--models, -m <models>`: Models to generate actions for
+- `--actions, -a <actions>`: Actions to generate (create,update,delete,findMany)
+- `--hooks`: Generate React hooks (default: true)
+- `--force`: Overwrite existing files
+
+**Examples:**
+
+```bash
+# Generate all server actions
+npx pzg-pro generate server-actions
+
+# Specific models and actions
+npx pzg-pro generate server-actions --models User,Post --actions create,update
+
+# Custom output path
+npx pzg-pro generate server-actions --output ./src/lib/server
+```
+
+#### `pzg-pro generate sdk`
+
+Generate and publish TypeScript SDK.
+
+```bash
+npx pzg-pro generate sdk [options]
+```
+
+**Options:**
+
+- `--package, -p <name>`: Package name (e.g., @acme/api-sdk)
+- `--version, -v <version>`: Package version (default: 1.0.0)
+- `--output, -o <path>`: Output directory (default: `./packages/sdk`)
+- `--publish`: Publish to npm registry
+- `--registry <url>`: Custom npm registry URL
+
+**Examples:**
+
+```bash
+# Generate SDK package
+npx pzg-pro generate sdk --package @acme/api-sdk --version 1.0.0
+
+# Generate and publish
+npx pzg-pro generate sdk --package @acme/api-sdk --publish
+
+# Custom registry
+npx pzg-pro generate sdk --package @acme/api-sdk --registry https://npm.example.com
+```
+
+#### `pzg-pro guard`
+
+Run schema drift detection.
+
+```bash
+npx pzg-pro guard [options]
+```
+
+**Options:**
+
+- `--schema <path>`: Path to `schema.prisma` (default: `./prisma/schema.prisma`)
+- `--base <ref>`: Base git reference (default: `origin/main`)
+- `--head <ref>`: Head git reference (default: `HEAD`)
+- `--format <github|json|text>`: Output format (default: `github`)
+- `--json`, `--text`, `--github`: Shortcuts for `--format`
+- `--strict`: Treat warnings as breaking changes
+- `--allowed-break <identifier>`: Whitelist a specific change (repeatable, see identifiers in the CLI output such as `model.User.field_removed`)
+- `--help`: Show usage
+
+**Examples:**
+
+```bash
+# Compare current branch to main (GitHub-style output)
+npx pzg-pro guard --schema ./prisma/schema.prisma --base origin/main --format github
+
+# Produce machine-readable JSON
+npx pzg-pro guard --format json > drift-report.json
+
+# Allow a known breaking change by identifier
+npx pzg-pro guard --allowed-break model.User.field_removed
+```
+
+## ⚙️ Configuration API
+
+### Configuration File Schema
+
+The `pzg.config.json` file supports the following structure:
+
+```typescript
+interface PZGProConfig {
+  pro: {
+    // Global settings
+    licenseKey?: string; // Not recommended, use environment variable
+
+    // Feature-specific configuration
+    policies?: PolicyConfig;
+    serverActions?: ServerActionsConfig;
+    sdk?: SDKConfig;
+    driftGuard?: DriftGuardConfig;
+
+    // Environment-specific overrides
+    development?: Partial<PZGProConfig['pro']>;
+    staging?: Partial<PZGProConfig['pro']>;
+    production?: Partial<PZGProConfig['pro']>;
+  };
+}
+```
+
+### Policy Configuration
+
+```typescript
+interface PolicyConfig {
+  outputPath?: string;           // Default: './generated/pzg/policies'
+  enableRedaction?: boolean;     // Default: true
+  enableRLS?: boolean;          // Default: false
+  roles?: string[];             // Default: ['user', 'admin']
+  piiFields?: string[];         // Default: ['email', 'phone', 'ssn']
+  redactionRules?: {
+    [field: string]: {
+      type: 'mask' | 'hash' | 'remove';
+      pattern?: string;
+    };
+  };
+}
+```
+
+### Server Actions Configuration
+
+```typescript
+interface ServerActionsConfig {
+  outputPath?: string;                    // Default: './src/server'
+  enableOptimisticUpdates?: boolean;      // Default: true
+  enableCacheRevalidation?: boolean;      // Default: true
+  enableErrorBoundaries?: boolean;        // Default: true
+  actions?: ('create' | 'update' | 'delete' | 'findMany')[];
+  hooks?: {
+    enabled?: boolean;                    // Default: true
+    queryClient?: 'react-query' | 'swr'; // Default: 'react-query'
+  };
+}
+```
+
+### SDK Configuration
+
+```typescript
+interface SDKConfig {
+  packageName: string;
+  outputPath?: string;          // Default: './packages/sdk'
+  version?: string;             // Default: '1.0.0'
+  authHeader?: string;          // Default: 'Authorization'
+  retryConfig?: {
+    maxRetries: number;         // Default: 3
+    retryDelay: number;         // Default: 1000
+  };
+  endpoints?: {
+    baseUrl: string;
+    version?: string;           // Default: 'v1'
+  };
+}
+```
+
+### Drift Guard Configuration
+
+```typescript
+interface DriftGuardConfig {
+  enabled?: boolean;                    // Default: true
+  breakingChangeThreshold?: 'patch' | 'minor' | 'major'; // Default: 'major'
+  outputFormat?: 'console' | 'json' | 'github' | 'gitlab'; // Default: 'console'
+  excludeFields?: string[];            // Default: ['createdAt', 'updatedAt']
+  customRules?: {
+    [ruleName: string]: {
+      pattern: string;
+      severity: 'warning' | 'error';
+    };
+  };
+}
+```
+
+## 🔑 License API
+
+### TypeScript API
+
+```typescript
+import {
+  validateLicense,
+  hasFeature,
+  requireFeature,
+  getLicenseStatus
+} from 'prisma-zod-generator/lib/license';
+
+// Validate license (non-throwing)
+const license = await validateLicense(false);
+if (license) {
+  console.log(`Plan: ${license.plan}, Seats: ${license.maxSeats}`);
+}
+
+// Check feature availability
+const hasPolicies = hasFeature(license, 'policies');
+
+// Require feature (throws if not available)
+await requireFeature('sdk-publisher', { userId: 'user-123' });
+
+// Get license status
+const status = await getLicenseStatus();
+console.log('Valid:', status.valid);
+
+> Set both `PZG_LICENSE_KEY` and `PZG_LICENSE_PUBLIC_KEY` in your environment before invoking the CLI so offline verification succeeds.
+```
+
+### License Object Schema
+
+```typescript
+interface License {
+  key: string;                 // Full license key
+  plan: 'starter' | 'professional' | 'business' | 'enterprise';
+  validUntil: string;         // ISO date string
+  maxSeats: number;           // Maximum developer seats
+  cached: boolean;            // Whether loaded from cache
+}
+
+interface LicenseStatus {
+  valid: boolean;
+  plan?: string;
+  cached?: boolean;
+}
+```
+
+### Feature Availability
+
+```typescript
+// Available features by plan
+const FEATURES = {
+  'server-actions': ['starter', 'professional', 'business', 'enterprise'],
+  'policies': ['professional', 'business', 'enterprise'],
+  'sdk-publisher': ['professional', 'business', 'enterprise'],
+  'drift-guard': ['professional', 'business', 'enterprise'],
+  'postgres-rls-pack': ['professional', 'business', 'enterprise'],
+  'performance-pack': ['professional', 'business', 'enterprise'],
+  'contract-testing-pack': ['business', 'enterprise'],
+  'form-ux': ['starter', 'professional', 'business', 'enterprise'],
+  'api-docs-pack': ['business', 'enterprise'],
+  'data-factories': ['business', 'enterprise'],
+  'multi-tenant-kit': ['enterprise']
+};
+```
+
+## 🛡️ Policies API
+
+### Generated Policy Classes
+
+Each model generates a policy class with validation methods:
+
+```typescript
+// Generated: ./generated/pzg/policies/user.ts
+export class UserPolicies {
+  static validateRead(data: any, context: PolicyContext): PolicyResult;
+  static validateWrite(data: any, context: PolicyContext): PolicyResult;
+  static validateDelete(context: PolicyContext): PolicyResult;
+}
+
+interface PolicyContext {
+  userId?: string;
+  role?: string;
+  roles?: string[];
+  tenantId?: string;
+  sessionId?: string;
+  [key: string]: any;
+}
+
+interface PolicyResult {
+  allowed: boolean;
+  data?: any;          // Filtered/modified data
+  reason?: string;     // Reason for denial
+}
+```
+
+### Redaction API
+
+```typescript
+// Generated: ./generated/pzg/redaction/index.ts
+export class PIIRedactor {
+  static redactForLogs(data: any, context?: PolicyContext): any;
+  static maskField(value: string, type: 'email' | 'phone' | 'partial'): string;
+  static hashField(value: string): string;
+}
+```
+
+### Usage Example
+
+```typescript
+import { UserPolicies } from '@/generated/pzg/policies';
+import { PIIRedactor } from '@/generated/pzg/redaction';
+
+// Policy enforcement
+const userData = { email: 'user@example.com', salary: 100000 };
+const context = { userId: 'current-user', roles: ['user'] };
+
+const readResult = UserPolicies.validateRead(userData, context);
+if (readResult.allowed) {
+  // Use readResult.data (salary may be filtered out)
+  const safeData = readResult.data;
+}
+
+// PII redaction for logging
+const logSafeData = PIIRedactor.redactForLogs(userData);
+console.log('User updated:', logSafeData); // { email: 'u***@example.com', salary: 100000 }
+```
+
+## ⚡ Server Actions API
+
+### Generated Server Actions
+
+Each model generates CRUD actions:
+
+```typescript
+// Generated: ./src/server/actions/user/create.ts
+export async function createUser(input: CreateUserInput): Promise<User>;
+export async function updateUser(id: string, input: UpdateUserInput): Promise<User>;
+export async function deleteUser(id: string): Promise<void>;
+export async function findUsers(input?: FindUsersInput): Promise<User[]>;
+```
+
+### Generated React Hooks
+
+```typescript
+// Generated: ./src/server/hooks/useUser.ts
+export function useCreateUser(): {
+  create: (data: CreateUserInput) => Promise<User>;
+  isPending: boolean;
+  error: Error | null;
+};
+
+export function useUpdateUser(): {
+  update: (id: string, data: UpdateUserInput) => Promise<User>;
+  isPending: boolean;
+  error: Error | null;
+};
+
+export function useUsers(input?: FindUsersInput): {
+  data: User[] | undefined;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => void;
+};
+```
+
+### Schema Types
+
+```typescript
+// Input schemas for validation
+type CreateUserInput = z.infer<typeof CreateUserSchema>;
+type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
+type FindUsersInput = z.infer<typeof FindUsersSchema>;
+```
+
+## 📦 SDK Publisher API
+
+### Generated SDK Structure
+
+```typescript
+// Generated: ./packages/sdk/src/client.ts
+export class APIClient {
+  constructor(config: ClientConfig);
+
+  // Model methods
+  users: UserResource;
+  posts: PostResource;
+  // ... other models
+}
+
+interface ClientConfig {
+  baseUrl: string;
+  authToken?: string;
+  timeout?: number;
+  retries?: number;
+}
+
+class UserResource {
+  create(data: CreateUserInput): Promise<User>;
+  update(id: string, data: UpdateUserInput): Promise<User>;
+  delete(id: string): Promise<void>;
+  findMany(query?: FindUsersInput): Promise<User[]>;
+  findUnique(id: string): Promise<User | null>;
+}
+```
+
+### Error Handling
+
+```typescript
+// Generated error classes
+export class APIError extends Error {
+  status: number;
+  code?: string;
+  details?: any;
+}
+
+export class ValidationError extends APIError {
+  field: string;
+  message: string;
+}
+
+export class AuthenticationError extends APIError {}
+export class AuthorizationError extends APIError {}
+export class NotFoundError extends APIError {}
+export class RateLimitError extends APIError {}
+```
+
+## 🚨 Drift Guard API
+
+### Drift Detection Results
+
+```typescript
+interface DriftReport {
+  summary: {
+    safeChanges: number;
+    breakingChanges: number;
+    recommendations: string[];
+  };
+  changes: SchemaChange[];
+  riskLevel: 'low' | 'medium' | 'high';
+}
+
+interface SchemaChange {
+  type: 'field_added' | 'field_removed' | 'field_modified' | 'enum_modified';
+  model: string;
+  field?: string;
+  before?: any;
+  after?: any;
+  breaking: boolean;
+  description: string;
+}
+```
+
+### Programmatic Usage
+
+```typescript
+import { analyzeSchemaDrift } from 'prisma-zod-generator/lib/drift-guard';
+
+const report = await analyzeSchemaDrift({
+  baseSchema: './prisma/schema.prisma',
+  headSchema: './prisma/schema-new.prisma',
+  config: {
+    excludeFields: ['createdAt', 'updatedAt'],
+    breakingThreshold: 'major'
+  }
+});
+
+console.log(`${report.changes.length} changes detected`);
+report.changes.forEach(change => {
+  if (change.breaking) {
+    console.error(`Breaking: ${change.description}`);
+  }
+});
+```
+
+## 📚 Type Definitions
+
+### Common Types
+
+```typescript
+// Plan types
+type PlanType = 'starter' | 'professional' | 'business' | 'enterprise';
+
+// Feature types
+type FeatureType =
+  | 'server-actions'
+  | 'policies'
+  | 'sdk-publisher'
+  | 'drift-guard'
+  | 'postgres-rls-pack'
+  | 'performance-pack'
+  | 'contract-testing-pack'
+  | 'form-ux'
+  | 'api-docs-pack'
+  | 'data-factories'
+  | 'multi-tenant-kit';
+
+// Generation options
+interface GenerationOptions {
+  outputPath?: string;
+  schemaPath?: string;
+  models?: string[];
+  force?: boolean;
+  dryRun?: boolean;
+}
+```
+
+## 🐛 Error Types
+
+```typescript
+// License errors
+class LicenseError extends Error {
+  code: 'INVALID_LICENSE' | 'EXPIRED_LICENSE' | 'FEATURE_NOT_AVAILABLE';
+  details?: any;
+}
+
+// Generation errors
+class GenerationError extends Error {
+  code: 'SCHEMA_PARSE_ERROR' | 'FILE_WRITE_ERROR' | 'VALIDATION_ERROR';
+  file?: string;
+  line?: number;
+}
+
+// Configuration errors
+class ConfigError extends Error {
+  code: 'INVALID_CONFIG' | 'MISSING_CONFIG' | 'CONFIG_PARSE_ERROR';
+  field?: string;
+}
+```
+
+***
+
+**Need more details?** Check the [feature-specific documentation](../features/) or reach out via DM to [@omardulaimidev on X](https://x.com/omardulaimidev).
 
 # Safety System
 
@@ -5600,19 +8214,467 @@ The safety system represents a major improvement in user experience and data pro
 
 # Troubleshooting
 
-| Symptom                                                                 | Likely Cause                                                                    | Fix                                                                           |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Config file not found                                                   | Path resolved relative to schema file, not project root                         | Check path is relative to schema location                                     |
-| Config validation error                                                 | Empty config string (`config = ""`)                                             | Remove config attribute or provide valid path                                 |
-| Output path unexpected                                                  | JSON config `output` ignored due to explicit generator block output             | Remove block `output` or align paths                                          |
-| Missing model schemas                                                   | Model disabled (minimal mode default)                                           | Add model config or switch mode                                               |
-| Missing variant files                                                   | `emit.variants=false` or single-file mode                                       | Enable flag / disable single-file                                             |
-| Enum reference errors                                                   | `emit.enums=false`                                                              | Enable enums or remove enum fields                                            |
-| Nested inputs missing                                                   | Minimal mode pruning                                                            | Switch to full/custom or explicitly enable operations                         |
-| `*CreateInput` missing relation fields                                  | Minimal mode blocks regular CreateInput schemas                                 | Use `*UncheckedCreateInput` schemas or switch to full mode                    |
-| TypeScript errors about missing relation fields                         | Importing blocked CreateInput schemas in minimal mode                           | Import UncheckedCreateInput variants instead                                  |
-| TypeScript errors: `Module has no exported member '*InputObjectSchema'` | Input file pattern doesn't include `{InputType}` token, causing file collisions | Update `naming.input.filePattern` to include `{InputType}` token              |
-| Missing input schema files (only generic files exist)                   | Input file pattern generates identical names for all input types                | Use pattern like `{kebab}-{InputType}-input.ts` instead of `{kebab}-input.ts` |
+# PZG Pro Troubleshooting Guide
+
+Common issues, solutions, and debugging tips for PZG Pro features.
+
+## 🔑 License Issues
+
+### Invalid License Key Error
+
+```
+❌ Invalid PZG Pro license key. Please check your license key.
+```
+
+**Causes & Solutions:**
+
+1. **Expired License**: Check expiration date with `npx pzg-pro license-check`
+2. **Wrong Environment Variable**: Ensure `PZG_LICENSE_KEY` is set correctly
+3. **Corrupted Key**: Re-copy your license key from the purchase email
+4. **Network Issues**: License validation requires internet connection
+
+**Debugging Steps:**
+
+```bash
+# Check if license key is set
+echo $PZG_LICENSE_KEY
+
+# Validate license
+npx pzg-pro license-check
+
+# Test with verbose output
+DEBUG=pzg-pro:license npx pzg-pro license-check
+```
+
+### License Validation Timeout
+
+```
+❌ License validation failed: Network timeout
+```
+
+**Solutions:**
+
+1. Check internet connection
+2. Configure corporate proxy if needed
+3. Use offline cache mode (Enterprise feature)
+
+### Code Tampering Warning
+
+```
+❌ PZG Pro code tampering detected. Pro features have been modified.
+```
+
+**Why it happens:** Integrity checks detected edits to the obfuscated Pro bundle (or the `src/pro` submodule).
+
+**Fix:** Reinstall the published package (`pnpm install prisma-zod-generator@latest`) or reset the `src/pro` submodule to its shipped commit. Extend functionality via documented APIs instead of modifying bundled code.
+
+## 🛡️ Policies & Redaction
+
+### Policy Comments Not Recognized
+
+**Symptom**: Policy annotations in schema comments are ignored
+
+**Common Causes:**
+
+1. **Wrong Comment Format**: Must use `/// @policy` or `/// @pii`
+2. **Inline Comments**: Use separate comment lines, not inline with field
+3. **Syntax Errors**: Check policy expression syntax
+
+**Examples:**
+
+```prisma
+// ❌ Wrong: inline comment
+model User {
+  email String /// @pii email redact:logs  // This won't work
+}
+
+// ✅ Correct: separate line
+model User {
+  /// @pii email redact:logs
+  email String
+}
+
+// ✅ Also correct: above field
+model User {
+  /// @policy read:role in ["admin"]
+  /// @pii email mask:partial
+  email String
+}
+```
+
+### Policy Validation Errors
+
+**Symptom**: Runtime errors when policies are applied
+
+**Debugging:**
+
+```bash
+# Generate with debug output
+DEBUG=pzg-pro:policies npx pzg-pro generate policies
+
+# Check generated policy files
+ls generated/pzg/policies/
+cat generated/pzg/policies/user.ts
+```
+
+### PII Redaction Not Working
+
+**Check Configuration:**
+
+```json
+{
+  "pro": {
+    "policies": {
+      "enableRedaction": true,
+      "piiFields": ["email", "phone", "ssn"]
+    }
+  }
+}
+```
+
+## ⚡ Server Actions
+
+### Server Action Import Errors
+
+**Symptom**: Cannot resolve imports in generated actions
+
+**Common Issues:**
+
+1. **Wrong Output Path**: Check `serverActions.outputPath` in config
+2. **Missing Dependencies**: Install required packages
+3. **TypeScript Errors**: Run type check
+
+**Solutions:**
+
+```bash
+# Install missing dependencies
+npm install @tanstack/react-query next zod
+
+# Check TypeScript errors
+npx tsc --noEmit
+
+# Regenerate with correct paths
+npx pzg-pro generate server-actions --output ./src/server
+```
+
+### React Hook Errors
+
+**Symptom**: Hooks not working in components
+
+**Requirements:**
+
+```tsx
+// ❌ Missing providers
+function App() {
+  return <CreateUserForm />;  // Hook will fail
+}
+
+// ✅ With providers
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <CreateUserForm />
+    </QueryClientProvider>
+  );
+}
+```
+
+### "use server" Directive Missing
+
+**Solution**: Regenerate server actions with latest version
+
+```bash
+npx pzg-pro generate server-actions --force
+```
+
+## 📦 SDK Publisher
+
+### SDK Build Failures
+
+**Common Issues:**
+
+1. **Missing TypeScript**: SDK requires TypeScript in target project
+2. **Zod Version Mismatch**: Ensure compatible Zod versions
+3. **Module Resolution**: Check package.json module settings
+
+**Debug Steps:**
+
+```bash
+# Check generated SDK structure
+ls packages/sdk/
+cat packages/sdk/package.json
+
+# Build manually
+cd packages/sdk
+npm run build
+
+# Check for TypeScript errors
+npm run type-check
+```
+
+### SDK Import Errors
+
+**Symptom**: Cannot import generated SDK in client code
+
+**Solutions:**
+
+```bash
+# Link for local development
+cd packages/sdk
+npm link
+
+# In your client project
+npm link @your-org/api-sdk
+
+# Or publish to registry
+cd packages/sdk
+npm publish
+```
+
+## 🚨 Drift Guard
+
+### CI Integration Issues
+
+**Symptom**: Drift Guard workflow fails in GitHub Actions
+
+**Common Issues:**
+
+1. **Missing License**: Add `PZG_LICENSE_KEY` to GitHub Secrets
+2. **Git Depth**: Need full git history for comparison
+3. **Missing Dependencies**: Install PZG Pro in CI
+
+**Working Workflow:**
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0  # Important: full history
+
+- name: Install dependencies
+  run: npm ci
+
+- name: Run Drift Guard
+  env:
+    PZG_LICENSE_KEY: ${{ secrets.PZG_LICENSE_KEY }}
+  run: npx pzg-pro guard --schema=./prisma/schema.prisma --base origin/main --head HEAD --format github
+```
+
+### False Positive Breaking Changes
+
+**Symptom**: Safe changes reported as breaking
+
+**Solutions:**
+
+1. **Update Config**: Exclude non-breaking fields
+2. **Custom Rules**: Configure breaking change detection
+3. **Manual Override**: Use repeated `--allowed-break <identifier>` flags for known migrations
+
+```json
+{
+  "pro": {
+    "driftGuard": {
+      "excludeFields": ["createdAt", "updatedAt", "version"],
+      "breakingChangeThreshold": "minor"
+    }
+  }
+}
+```
+
+## 🏗️ General Issues
+
+### Drift Guard Fails to Read Base Schema
+
+**Symptom**: `fatal: path 'prisma/schema.prisma' does not exist in 'origin/main'`
+
+- Ensure the workflow fetches full history (`fetch-depth: 0`).
+- Confirm the `--base` ref contains the schema file.
+- If the file moved, point Drift Guard at the new path via `--schema`.
+
+### Out of Memory Errors
+
+**Symptom**: Node.js heap out of memory during generation
+
+**Solutions:**
+
+```bash
+# Increase memory limit
+NODE_OPTIONS="--max-old-space-size=4096" npx pzg-pro generate policies
+
+# Use streaming mode (Performance Pack)
+npx pzg-pro generate policies --streaming
+```
+
+### Slow Generation Performance
+
+**Optimization Tips:**
+
+1. **Exclude Unnecessary Models**: Use filtering
+2. **Enable Caching**: Use `--cache` flag
+3. **Parallel Processing**: Use `--parallel` flag
+
+```bash
+# Filter specific models
+npx pzg-pro generate policies --models User,Post,Comment
+
+# Enable caching
+npx pzg-pro generate policies --cache
+
+# Parallel processing
+npx pzg-pro generate policies --parallel
+```
+
+### TypeScript Compilation Errors
+
+**Common Issues:**
+
+1. **Missing Types**: Install `@types/*` packages
+2. **Version Conflicts**: Check TypeScript version compatibility
+3. **Module Resolution**: Configure `tsconfig.json`
+
+**Required tsconfig.json settings:**
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "generated/**/*",
+    "src/**/*"
+  ]
+}
+```
+
+## 🔧 Configuration Issues
+
+### Config File Not Found
+
+**Symptom**: PZG Pro uses default config instead of custom
+
+**Solutions:**
+
+1. **Check Location**: Must be in project root as `pzg.config.json`
+2. **Valid JSON**: Validate JSON syntax
+3. **Permissions**: Ensure file is readable
+
+```bash
+# Validate config
+npx pzg-pro config validate
+
+# Show effective config
+npx pzg-pro config show
+```
+
+### Environment-Specific Config
+
+**Use Multiple Configs:**
+
+```json
+{
+  "pro": {
+    "development": {
+      "policies": { "enableRedaction": false }
+    },
+    "production": {
+      "policies": { "enableRedaction": true }
+    }
+  }
+}
+```
+
+## 🐛 Debug Mode
+
+### Enable Verbose Logging
+
+```bash
+# Global debug
+DEBUG=pzg-pro:* npx pzg-pro generate policies
+
+# Specific modules
+DEBUG=pzg-pro:license,pzg-pro:policies npx pzg-pro generate policies
+
+# File output
+DEBUG=pzg-pro:* npx pzg-pro generate policies 2> debug.log
+```
+
+### Common Debug Patterns
+
+```bash
+# License validation
+DEBUG=pzg-pro:license npx pzg-pro license-check
+
+# Comment parsing
+DEBUG=pzg-pro:parser npx pzg-pro generate policies
+
+# Code generation
+DEBUG=pzg-pro:codegen npx pzg-pro generate server-actions
+```
+
+## 📞 Getting Help
+
+### Before Reaching Out
+
+1. **Check License Status**: `npx pzg-pro license-check`
+2. **Update to Latest**: `npm install -D prisma-zod-generator@latest`
+3. **Clear Cache**: `rm -rf node_modules/.cache/pzg`
+4. **Review Logs**: Enable debug mode and check output
+
+### Support Channels
+
+- **GitHub Issues**: [Bug reports and feature requests](https://github.com/omar-dulaimi/prisma-zod-generator/issues)
+- **Direct Support**: DM [@omardulaimidev on X](https://x.com/omardulaimidev) (Professional+ customers)
+
+### Issue Template
+
+When reporting issues, include:
+
+```
+**PZG Version**: 1.21.8
+**Node Version**: 20.10.0
+**License Plan**: Pro
+**Feature**: Policies & Redaction
+
+**Issue Description**:
+[Describe the problem]
+
+**Steps to Reproduce**:
+1. Set up schema with...
+2. Run command...
+3. See error...
+
+**Expected Behavior**:
+[What should happen]
+
+**Actual Behavior**:
+[What actually happens]
+
+**Debug Output**:
+```
+
+DEBUG=pzg-pro:\* npx pzg-pro generate policies
+\[paste output]
+
+````
+
+**Configuration**:
+```json
+[paste pzg.config.json]
+````
+
+```
+
+---
+
+**Need immediate help?** Reach out via the direct support channel above for Professional+ customers.
+```
 
 # WhereUniqueInput Semantics
 
@@ -5683,9 +8745,791 @@ No breaking changes in generator output shape; internal docs site added. If you 
 
 When a breaking change occurs, a section will be added here with migration steps and affected config fields.
 
+# Upgrade from Free to Pro
+
+# Migration Guide: Free to Pro
+
+Complete step-by-step guide to upgrade from the free version of Prisma Zod Generator to PZG Pro.
+
+## 📋 Overview
+
+This guide will help you:
+
+- Understand the differences between free and Pro versions
+- Plan your migration strategy
+- Execute the upgrade with minimal disruption
+- Take advantage of new Pro features
+
+**Estimated Time**: 30-60 minutes depending on your codebase size
+
+## 🔍 Pre-Migration Assessment
+
+### 1. Current Setup Analysis
+
+First, understand your current setup:
+
+```bash
+# Check your current version
+npm list prisma-zod-generator
+
+# Review your Prisma schema
+cat prisma/schema.prisma | grep -E "^model|^enum"
+
+# Check generated files
+ls -la prisma/generated/ # or wherever your schemas are generated
+```
+
+### 2. Compatibility Check
+
+Ensure your environment meets Pro requirements:
+
+- **Node.js**: 18+ (same as free version)
+- **Prisma**: 5.0+ (same as free version)
+- **TypeScript**: 4.9+ (recommended)
+- **Zod**: 3.22+ (same as free version)
+
+### 3. Feature Planning
+
+Decide which Pro features you want to use:
+
+- ✅ **Server Actions**: Generate Next.js server actions
+- ✅ **Policies & Redaction**: Field-level security and PII protection
+- ✅ **SDK Publisher**: Generate client SDKs
+- ✅ **Drift Guard**: Schema change detection in CI
+
+## 🛒 Getting Your License
+
+### 1. Choose Your Plan
+
+Visit [the pricing page](https://omar-dulaimi.github.io/prisma-zod-generator/pricing) and select:
+
+- **Starter ($69/year)** – 1 developer, Server Actions + Forms (CLI plan slug `starter`)
+- **Professional ($199/year)** – up to 5 developers, security & governance suite (`professional`)
+- **Business ($599/year)** – unlimited developers, platform toolkits (`business`)
+- **Enterprise (Custom)** – unlimited developers, multi-tenant kit, roadmap partnership (`enterprise`)
+
+### 2. Purchase & Download
+
+After purchase, you'll receive:
+
+- License key via email
+- Access to Pro features
+- Priority response targets (Business/Enterprise) and roadmap reviews (Enterprise)
+
+### 3. Verify License
+
+```bash
+# Set your license key
+export PZG_LICENSE_KEY=pzg_v2_your_license_key_here
+export PZG_LICENSE_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAwRNEnFQJgBdNnwvnTTAPySp223shjXfioII2qMkqBFQ=\n-----END PUBLIC KEY-----'  # replace with the public key provided to you
+
+# Verify it works
+npx pzg-pro license-check
+```
+
+## 🔧 Installation & Setup
+
+### 1. Update Package
+
+The Pro features are included in the same package:
+
+```bash
+# Update to latest version
+npm update prisma-zod-generator
+
+# Or with pnpm
+pnpm update prisma-zod-generator
+
+# Or with yarn
+yarn upgrade prisma-zod-generator
+```
+
+### 2. Environment Configuration
+
+Add your license key to environment variables:
+
+```bash
+# Option 1: Shell profile (.bashrc, .zshrc)
+cat <<'EOF' >> ~/.bashrc
+export PZG_LICENSE_KEY=pzg_v2_your_license_key_here
+export PZG_LICENSE_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAwRNEnFQJgBdNnwvnTTAPySp223shjXfioII2qMkqBFQ=
+-----END PUBLIC KEY-----'
+EOF
+
+# Option 2: Project .env file
+cat <<'EOF' >> .env
+PZG_LICENSE_KEY=pzg_v2_your_license_key_here
+PZG_LICENSE_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAwRNEnFQJgBdNnwvnTTAPySp223shjXfioII2qMkqBFQ=
+-----END PUBLIC KEY-----'
+EOF
+```
+
+### 3. Create Configuration File
+
+Create `pzg.config.json` in your project root:
+
+```json
+{
+  "pro": {
+    "policies": {
+      "outputPath": "./generated/pzg/policies",
+      "enableRedaction": true,
+      "enableRLS": false
+    },
+    "serverActions": {
+      "outputPath": "./src/server",
+      "enableOptimisticUpdates": true,
+      "actions": ["create", "update", "delete"]
+    },
+    "sdk": {
+      "packageName": "@your-org/api-sdk",
+      "outputPath": "./packages/sdk"
+    },
+    "driftGuard": {
+      "enabled": true,
+      "breakingChangeThreshold": "major"
+    }
+  }
+}
+```
+
+## 🏗️ Migration Strategy
+
+### Strategy 1: Gradual Migration (Recommended)
+
+Migrate one feature at a time to minimize risk:
+
+1. **Week 1**: Set up license and basic configuration
+2. **Week 2**: Add Server Actions to one model
+3. **Week 3**: Add Policies to sensitive fields
+4. **Week 4**: Set up Drift Guard in CI
+5. **Week 5**: Generate SDK for external consumers
+
+### Strategy 2: Full Migration
+
+Migrate all features at once (for smaller projects):
+
+1. Set up license and configuration
+2. Generate all Pro features
+3. Update application code
+4. Test thoroughly
+5. Deploy
+
+### Strategy 3: Feature-by-Feature
+
+Migrate based on business priorities:
+
+1. **Security First**: Start with Policies & Redaction
+2. **Developer Experience**: Add Server Actions
+3. **API Stability**: Implement Drift Guard
+4. **External Integrations**: Generate SDK
+
+## 🔒 Adding Policies & Redaction
+
+### 1. Identify Sensitive Fields
+
+Review your Prisma schema for:
+
+- **PII Data**: email, phone, ssn, address
+- **Sensitive Data**: salary, medical info, financial data
+- **Access-Controlled Data**: admin-only fields
+
+### 2. Add Policy Comments
+
+Update your Prisma schema with policy annotations:
+
+```prisma
+model User {
+  id        String   @id @default(cuid())
+
+  /// @pii email redact:logs mask:partial
+  email     String   @unique
+
+  /// @policy read:role in ["admin"]
+  /// @pii sensitive hash:sha256
+  salary    Int?
+
+  /// @policy write:role in ["admin"]
+  role      Role     @default(USER)
+
+  createdAt DateTime @default(now())
+}
+
+model Post {
+  id        String   @id @default(cuid())
+
+  /// @policy write:userId eq context.userId
+  title     String
+
+  /// @policy read:published eq true OR role in ["admin"]
+  content   String
+
+  published Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+```
+
+### 3. Generate Policies
+
+```bash
+# Generate policy enforcement code
+npx pzg-pro generate policies
+
+# Check generated files
+ls generated/pzg/policies/
+```
+
+### 4. Integrate in Application
+
+```typescript
+// Example: API route with policy enforcement
+import { UserPolicies } from '@/generated/pzg/policies';
+import { PIIRedactor } from '@/generated/pzg/redaction';
+
+export async function GET(request: Request) {
+  const users = await prisma.user.findMany();
+
+  // Apply read policies
+  const filteredUsers = users.map(user => {
+    const result = UserPolicies.validateRead(user, {
+      userId: getCurrentUserId(),
+      roles: getUserRoles()
+    });
+    return result.allowed ? result.data : null;
+  }).filter(Boolean);
+
+  // Redact for logs
+  console.log('Users fetched:', PIIRedactor.redactForLogs(filteredUsers));
+
+  return Response.json(filteredUsers);
+}
+```
+
+## ⚡ Adding Server Actions
+
+### 1. Generate Server Actions
+
+```bash
+# Generate for all models
+npx pzg-pro generate server-actions
+
+# Or specific models
+npx pzg-pro generate server-actions --models User,Post
+```
+
+### 2. Review Generated Code
+
+```bash
+# Check generated server actions
+ls src/server/actions/
+ls src/server/hooks/
+```
+
+### 3. Update Your Components
+
+Replace manual API calls with generated hooks:
+
+**Before (Free Version):**
+
+```tsx
+// Manual API call
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState(null);
+
+const createUser = async (data) => {
+  setLoading(true);
+  try {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    const user = await response.json();
+    // Handle success
+  } catch (err) {
+    setError(err);
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+**After (Pro Version):**
+
+```tsx
+// Generated hook with validation
+import { useCreateUser } from '@/server/hooks/useUser';
+
+const { create, isPending, error } = useCreateUser();
+
+const handleSubmit = async (data) => {
+  try {
+    await create(data); // Automatic validation + policies
+    // Success handled by hook
+  } catch (err) {
+    // Error handled by hook
+  }
+};
+```
+
+### 4. Add Required Dependencies
+
+```bash
+# Install React Query (for hooks)
+npm install @tanstack/react-query
+
+# Add to your app root
+```
+
+```tsx
+// app/layout.tsx or pages/_app.tsx
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
+
+export default function RootLayout({ children }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+}
+```
+
+## 📦 Generating SDK
+
+### 1. Configure SDK Settings
+
+Update your `pzg.config.json`:
+
+```json
+{
+  "pro": {
+    "sdk": {
+      "packageName": "@your-org/api-sdk",
+      "version": "1.0.0",
+      "outputPath": "./packages/sdk",
+      "authHeader": "Authorization",
+      "endpoints": {
+        "baseUrl": "https://api.yourapp.com",
+        "version": "v1"
+      }
+    }
+  }
+}
+```
+
+### 2. Generate SDK
+
+```bash
+# Generate SDK package
+npx pzg-pro generate sdk
+
+# Check generated structure
+ls packages/sdk/
+```
+
+### 3. Publish SDK (Optional)
+
+```bash
+# Build and publish
+cd packages/sdk
+npm run build
+npm publish
+
+# Or use the integrated command
+npx pzg-pro generate sdk --publish
+```
+
+### 4. Use SDK in Client Applications
+
+```typescript
+// Install in client projects
+npm install @your-org/api-sdk
+
+// Use in application
+import { APIClient } from '@your-org/api-sdk';
+
+const client = new APIClient({
+  baseUrl: 'https://api.yourapp.com',
+  authToken: 'your-auth-token'
+});
+
+const users = await client.users.findMany();
+const newUser = await client.users.create({
+  email: 'user@example.com',
+  name: 'John Doe'
+});
+```
+
+## 🚨 Setting Up Drift Guard
+
+### 1. Create GitHub Workflow
+
+```yaml
+# .github/workflows/pzg-drift-guard.yml
+name: PZG Drift Guard
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  schema-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Drift Guard
+        env:
+          PZG_LICENSE_KEY: ${{ secrets.PZG_LICENSE_KEY }}
+          PZG_LICENSE_PUBLIC_KEY: ${{ secrets.PZG_LICENSE_PUBLIC_KEY }}
+        run: npx pzg-pro guard --schema=./prisma/schema.prisma --base origin/main --head HEAD --format github
+```
+
+### 2. Add GitHub Secret
+
+1. Go to your repository Settings > Secrets and variables > Actions
+2. Add `PZG_LICENSE_KEY` with your license key value and `PZG_LICENSE_PUBLIC_KEY` with the PEM public key provided to you
+3. Make sure it's marked as a secret (masked in logs)
+
+### 3. Test Drift Guard
+
+```bash
+# Test locally against main
+npx pzg-pro guard --schema=./prisma/schema.prisma --base main --head HEAD --format github
+
+# Produce JSON output for scripts
+npx pzg-pro guard --format json
+```
+
+## 🧪 Testing Your Migration
+
+### 1. Validation Tests
+
+Create tests to ensure your migration works:
+
+```typescript
+// tests/migration.test.ts
+import { validateLicense } from 'prisma-zod-generator/lib/license';
+import { UserPolicies } from '@/generated/pzg/policies';
+
+describe('PZG Pro Migration', () => {
+  test('license is valid', async () => {
+    const license = await validateLicense(false);
+    expect(license).toBeTruthy();
+    expect(license.plan).toBeDefined();
+  });
+
+  test('policies are generated', () => {
+    expect(UserPolicies.validateRead).toBeDefined();
+    expect(UserPolicies.validateWrite).toBeDefined();
+  });
+
+  test('server actions exist', async () => {
+    const { createUser } = await import('@/server/actions/user/create');
+    expect(createUser).toBeDefined();
+  });
+});
+```
+
+### 2. Integration Tests
+
+Test the full flow with real data:
+
+```typescript
+// tests/integration.test.ts
+import { createUser } from '@/server/actions/user/create';
+import { UserPolicies } from '@/generated/pzg/policies';
+
+describe('Pro Features Integration', () => {
+  test('server action with policies', async () => {
+    // Test that server actions respect policies
+    const userData = {
+      email: 'test@example.com',
+      name: 'Test User',
+      role: 'ADMIN' // Should be blocked by policy
+    };
+
+    const context = { userId: 'regular-user', roles: ['user'] };
+    const policyResult = UserPolicies.validateWrite(userData, context);
+
+    expect(policyResult.allowed).toBe(false);
+    expect(policyResult.reason).toContain('role');
+  });
+});
+```
+
+### 3. End-to-End Tests
+
+Test the complete user journey:
+
+```typescript
+// e2e/pro-features.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('user creation with validation', async ({ page }) => {
+  await page.goto('/users/new');
+
+  // Fill invalid data
+  await page.fill('[name="email"]', 'invalid-email');
+  await page.click('button[type="submit"]');
+
+  // Should show validation error from Zod schema
+  await expect(page.locator('.error')).toContainText('Invalid email');
+
+  // Fill valid data
+  await page.fill('[name="email"]', 'user@example.com');
+  await page.fill('[name="name"]', 'John Doe');
+  await page.click('button[type="submit"]');
+
+  // Should redirect to users list
+  await expect(page).toHaveURL('/users');
+});
+```
+
+## 📊 Monitoring Your Migration
+
+### 1. Performance Metrics
+
+Monitor the impact of Pro features:
+
+```typescript
+// utils/monitoring.ts
+export function trackPolicyPerformance() {
+  const start = performance.now();
+
+  return {
+    end: () => {
+      const duration = performance.now() - start;
+      console.log(`Policy validation took ${duration}ms`);
+
+      // Send to analytics
+      if (typeof window !== 'undefined') {
+        // Client-side tracking
+      }
+    }
+  };
+}
+```
+
+### 2. Error Tracking
+
+Set up error monitoring for Pro features:
+
+```typescript
+// utils/error-tracking.ts
+export function trackProError(error: Error, feature: string) {
+  console.error(`PZG Pro ${feature} error:`, error);
+
+  // Send to error tracking service
+  if (process.env.NODE_ENV === 'production') {
+    // Sentry, Bugsnag, etc.
+  }
+}
+```
+
+### 3. Usage Analytics
+
+Track Pro feature adoption:
+
+```typescript
+// utils/analytics.ts
+export function trackProFeatureUsage(feature: string, action: string) {
+  // Track feature usage
+  console.log(`PZG Pro feature used: ${feature}.${action}`);
+
+  // Send to analytics service
+}
+```
+
+## 🚀 Deployment Considerations
+
+### 1. Environment Variables
+
+Ensure license keys are properly set in all environments:
+
+```bash
+# Development
+export PZG_LICENSE_KEY=pzg_v2_dev_key
+export PZG_LICENSE_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAwRNEnFQJgBdNnwvnTTAPySp223shjXfioII2qMkqBFQ=\n-----END PUBLIC KEY-----'
+
+# Staging
+export PZG_LICENSE_KEY=pzg_v2_staging_key
+export PZG_LICENSE_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAwRNEnFQJgBdNnwvnTTAPySp223shjXfioII2qMkqBFQ=\n-----END PUBLIC KEY-----'
+
+# Production
+export PZG_LICENSE_KEY=pzg_v2_prod_key
+export PZG_LICENSE_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAwRNEnFQJgBdNnwvnTTAPySp223shjXfioII2qMkqBFQ=\n-----END PUBLIC KEY-----'
+```
+
+### 2. Build Process
+
+Update your build scripts to generate Pro features:
+
+```json
+{
+  "scripts": {
+    "build": "npm run generate:zod && npm run generate:pro && next build",
+    "generate:pro": "pzg-pro generate policies && pzg-pro generate server-actions",
+    "prebuild": "npm run generate:pro"
+  }
+}
+```
+
+### 3. CI/CD Pipeline
+
+Update your deployment pipeline:
+
+```yaml
+# Deploy workflow
+- name: Generate Pro Features
+  env:
+    PZG_LICENSE_KEY: ${{ secrets.PZG_LICENSE_KEY }}
+    PZG_LICENSE_PUBLIC_KEY: ${{ secrets.PZG_LICENSE_PUBLIC_KEY }}
+  run: |
+    npm run generate:pro
+
+- name: Build Application
+  run: npm run build
+
+- name: Run Tests
+  run: npm test
+```
+
+## ✅ Post-Migration Checklist
+
+### Immediate (Day 1)
+
+- [ ] License validation works in all environments
+- [ ] Generated code compiles without errors
+- [ ] Basic functionality works (create, read, update, delete)
+- [ ] CI/CD pipeline passes
+- [ ] No breaking changes in existing functionality
+
+### Short-term (Week 1)
+
+- [ ] All team members can use Pro features
+- [ ] Policies are enforcing correctly
+- [ ] Server Actions work in production
+- [ ] Drift Guard detects schema changes
+- [ ] Error monitoring is set up
+
+### Medium-term (Month 1)
+
+- [ ] Performance is acceptable
+- [ ] SDK is being used by external clients
+- [ ] Policy violations are logged and monitored
+- [ ] Business customers are comfortable with new features
+- [ ] Documentation is updated
+
+### Long-term (Quarter 1)
+
+- [ ] ROI is positive (time saved, security improved)
+- [ ] Advanced features are being utilized
+- [ ] Integration with other tools is working
+- [ ] Business plan adopters report productivity gains
+
+## 🐛 Common Migration Issues
+
+### Issue: "Invalid license key"
+
+**Solution**:
+
+- Check license key format and validity
+- Ensure environment variable is set correctly
+- Verify network connectivity for validation
+
+### Issue: Generated files have import errors
+
+**Solution**:
+
+- Check output paths in configuration
+- Ensure TypeScript can resolve imports
+- Update tsconfig.json include paths
+
+### Issue: Policies not enforcing
+
+**Solution**:
+
+- Verify policy syntax in schema comments
+- Check that policies are being called in code
+- Ensure policy context is provided correctly
+
+### Issue: Server Actions not working
+
+**Solution**:
+
+- Install required dependencies (@tanstack/react-query)
+- Set up QueryClient provider
+- Check Next.js version compatibility
+
+### Issue: CI/CD failures
+
+**Solution**:
+
+- Add license key to CI environment secrets
+- Ensure full git history is available (fetch-depth: 0)
+- Install all dependencies in CI
+
+## 📞 Getting Help
+
+### Documentation Resources
+
+- [Pro Features Documentation](../features/)
+- [API Reference](../api/)
+- [Troubleshooting Guide](../reference/troubleshooting.md)
+
+### Community Support
+
+- [GitHub Issues](https://github.com/omar-dulaimi/prisma-zod-generator/issues)
+- [Examples Repository](https://github.com/omar-dulaimi/pzg-examples)
+
+### Premium Support
+
+- **Direct Support**: DM [@omardulaimidev on X](https://x.com/omardulaimidev) (Professional, Business, Enterprise)
+- **Direct Support**: Available for Business and Enterprise plans
+- **Migration Assistance**: Custom migration help available
+
+***
+
+## 🎉 Welcome to PZG Pro!
+
+Congratulations on successfully migrating to PZG Pro! You now have access to:
+
+- **Enhanced Security**: Field-level policies and PII redaction
+- **Better DX**: Generated Server Actions and React hooks
+- **API Stability**: Schema drift detection and prevention
+- **External Integration**: Auto-generated client SDKs
+- **Priority Support**: Direct help when you need it
+
+**Next Steps:**
+
+1. Explore advanced Pro features
+2. Join our Discord community
+3. Share your success story
+4. Consider upgrading as your team grows
+
+Happy coding with PZG Pro! 🚀
+
 # Usage Patterns
 
 Common integration scenarios.
+
+Tip: Need SDK clients, ready‑made forms, or a mock API server? See [Pro Features](./features/overview.md).
 
 ## tRPC Procedures
 
