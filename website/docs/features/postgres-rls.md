@@ -68,7 +68,7 @@ generated/
 
 ```ts
 import { PrismaClient } from '@prisma/client'
-import { createRLSHelper } from '@/generated/postgres/rls/rls-helper'
+import { createRLSHelper } from '@/generated/pro/postgres-rls/rls-helper'
 
 const prisma = new PrismaClient()
 const rls = createRLSHelper(prisma)
