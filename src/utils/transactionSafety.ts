@@ -5,6 +5,7 @@
  * and data integrity validation for production financial systems
  */
 
+import type { MutexLock } from './concurrency';
 import { Mutex } from './concurrency';
 
 export interface TransactionContext {
@@ -14,6 +15,7 @@ export interface TransactionContext {
   rollbackHandlers: (() => Promise<void>)[];
   status: 'pending' | 'committed' | 'rolled_back' | 'failed';
   isolation_level: 'read_uncommitted' | 'read_committed' | 'repeatable_read' | 'serializable';
+  serializableLock?: MutexLock;
 }
 
 export interface TransactionOperation {
@@ -77,6 +79,9 @@ export class TransactionManager {
   ): Promise<string> {
     const transactionId = this.generateTransactionId();
 
+    const serializableLock =
+      isolationLevel === 'serializable' ? await this.globalMutex.acquire() : undefined;
+
     const context: TransactionContext = {
       id: transactionId,
       startTime: Date.now(),
@@ -84,6 +89,7 @@ export class TransactionManager {
       rollbackHandlers: [],
       status: 'pending',
       isolation_level: isolationLevel,
+      serializableLock,
     };
 
     this.transactions.set(transactionId, context);
@@ -141,7 +147,7 @@ export class TransactionManager {
 
     try {
       // Execute with appropriate isolation level
-      const result = await this.executeWithIsolation(operation, transaction.isolation_level);
+    const result = await this.executeWithIsolation(operation, transaction);
 
       transactionOp.completed = true;
 
@@ -177,14 +183,12 @@ export class TransactionManager {
    * Commit transaction with full ACID compliance
    */
   async commitTransaction(transactionId: string): Promise<void> {
-    const lock = await this.globalMutex.acquire();
+    const transaction = this.transactions.get(transactionId);
+    if (!transaction) {
+      throw new TransactionError('Transaction not found', transactionId);
+    }
 
     try {
-      const transaction = this.transactions.get(transactionId);
-      if (!transaction) {
-        throw new TransactionError('Transaction not found', transactionId);
-      }
-
       if (transaction.status !== 'pending') {
         throw new TransactionError(
           `Cannot commit ${transaction.status} transaction`,
@@ -227,7 +231,10 @@ export class TransactionManager {
         error instanceof Error ? error : new Error(String(error)),
       );
     } finally {
-      lock.release();
+      if (transaction.serializableLock) {
+        transaction.serializableLock.release();
+        transaction.serializableLock = undefined;
+      }
     }
   }
 
@@ -263,6 +270,7 @@ export class TransactionManager {
         status: 'success',
         timestamp: new Date(),
       });
+
     } catch (error) {
       transaction.status = 'failed';
 
@@ -281,6 +289,10 @@ export class TransactionManager {
         error instanceof Error ? error : new Error(String(error)),
       );
     } finally {
+      if (transaction.serializableLock) {
+        transaction.serializableLock.release();
+        transaction.serializableLock = undefined;
+      }
       this.transactions.delete(transactionId);
     }
   }
@@ -439,24 +451,16 @@ export class TransactionManager {
 
   private async executeWithIsolation<T>(
     operation: () => Promise<T>,
-    isolationLevel: TransactionContext['isolation_level'],
+    transaction: TransactionContext,
   ): Promise<T> {
-    switch (isolationLevel) {
+    switch (transaction.isolation_level) {
       case 'serializable':
-        // Full table locking for maximum consistency
-        const lock = await this.globalMutex.acquire();
-        try {
-          return await operation();
-        } finally {
-          lock.release();
-        }
-
+        // Lock acquired during startTransaction, just execute.
+        return await operation();
       case 'repeatable_read':
       case 'read_committed':
       case 'read_uncommitted':
       default:
-        // For now, execute normally
-        // In production, would implement proper isolation levels
         return await operation();
     }
   }
