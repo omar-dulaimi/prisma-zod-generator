@@ -24,8 +24,8 @@ Consumer/provider contract tests and JSON definitions to verify API compatibilit
 ## Prerequisites
 
 ```bash
-# Install Pact.js
-pnpm add -D @pact-foundation/pact jest @prisma/client
+# Install Pact.js & Jest helpers
+pnpm add -D @pact-foundation/pact jest jest-pact @prisma/client
 
 # PZG Pro license required
 ```
