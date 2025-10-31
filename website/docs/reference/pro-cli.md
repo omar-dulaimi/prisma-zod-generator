@@ -316,9 +316,9 @@ await requireFeature('sdk-publisher', { userId: 'user-123' });
 // Get license status
 const status = await getLicenseStatus();
 console.log('Valid:', status.valid);
+```
 
 > Set both `PZG_LICENSE_KEY` and `PZG_LICENSE_PUBLIC_KEY` in your environment before invoking the CLI so offline verification succeeds.
-```
 
 ### License Object Schema
 
