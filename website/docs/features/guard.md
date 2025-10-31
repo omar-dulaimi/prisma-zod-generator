@@ -14,15 +14,15 @@ CI helper to catch breaking changes in generated outputs (schema/API drift).
 
 ## Prerequisites
 
-```bash
+````bash
 # PZG Pro license required
-```
+`````
 
 ## Generate & Run
 
 ```bash
 pzg-pro guard --schema=./prisma/schema.prisma --base=origin/main --head=HEAD --format=github
-```
+````
 
 ### Command Options
 
@@ -61,9 +61,10 @@ jobs:
         with: { version: 9 }
       - run: pnpm i --frozen-lockfile
       - run: pnpm tsx scripts/run-drift-guard.ts
-
-In scripts you can check `result.changes` for the change identifiers used by `--allowed-break` (e.g. `model.User.field_removed`).
 ```
+
+In scripts you can check `result.changes` for the change identifiers used by `--allowed-break` (e.g., `model.User.field_removed`).
+
 
 ## See Also
 
