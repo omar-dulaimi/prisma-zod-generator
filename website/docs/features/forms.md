@@ -34,7 +34,7 @@ pnpm add react react-dom react-hook-form @hookform/resolvers zod @prisma/client
 
 # UI library (optional - example with shadcn/ui)
 pnpm add class-variance-authority clsx tailwind-merge
-npx shadcn-ui@latest init
+npx shadcn@latest init
 
 # PZG Pro license required
 ```
