@@ -1,3 +1,10 @@
+## [1.31.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.1...v1.31.2) (2025-11-01)
+
+### 🐛 Bug Fixes
+
+* **select:** allow count output where filters ([955f1c8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/955f1c863a2f87c1429c88342c97576bed31b763)), closes [#326](https://github.com/omar-dulaimi/prisma-zod-generator/issues/326)
+* **utils:** prevent single file type collisions ([5b2d020](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5b2d0205b5c907b3565cf9adaa00bf35d7bf48a2)), closes [#322](https://github.com/omar-dulaimi/prisma-zod-generator/issues/322)
+
 ## [1.31.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.0...v1.31.1) (2025-11-01)
 
 ### 🐛 Bug Fixes
