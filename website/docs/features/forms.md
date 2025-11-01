@@ -174,6 +174,7 @@ The generated form components are designed to work with your UI library of choic
 // Example using RHF register + shadcn/ui inputs
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { UserCreateInputSchema } from '@/generated/pro/forms/schemas'
 
 import { Input } from '@/components/ui/input'
