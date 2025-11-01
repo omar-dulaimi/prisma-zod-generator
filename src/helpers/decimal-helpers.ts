@@ -91,7 +91,7 @@ export function generateDecimalInputSchema(
   return `${zodNamespace}.union([
   ${unionTypes.join(',\n  ')},
 ]).refine((v) => isValidDecimalInput(v), {
-  message: '${errorMessage}',
+  message: "${errorMessage}",
 })`;
 }
 
