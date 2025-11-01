@@ -1,3 +1,9 @@
+## [1.31.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.0...v1.31.1) (2025-11-01)
+
+### 🐛 Bug Fixes
+
+* **decimal:** Fixing un-escaped-quotes issue in validation message ([5aacce6](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5aacce6d9035e175462c87a7ca6850571305b0da))
+
 ## [1.31.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.30.2...v1.31.0) (2025-11-01)
 
 ### 🚀 Features
