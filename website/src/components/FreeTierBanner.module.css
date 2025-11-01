@@ -1,0 +1,130 @@
+.banner {
+  background: linear-gradient(135deg, #f6f8fa 0%, #ffffff 100%);
+  border: 2px solid #27ae60;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.1);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.header {
+  text-align: center;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 0 0 0.75rem 0;
+  flex-wrap: wrap;
+}
+
+.coreBadge {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--ifm-color-primary);
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.freeLabel {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e8449;
+  padding: 0.25rem 0.75rem;
+  background: #d4edda;
+  border-radius: 6px;
+  border: 1px solid #27ae60;
+}
+
+.description {
+  font-size: 0.95rem;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.features {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding: 1rem 0;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.feature {
+  font-size: 0.9rem;
+  color: #2d3748;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.outlineButton {
+  color: #1e40af !important;
+  border-color: #1e40af !important;
+  background: white !important;
+}
+
+.outlineButton:hover {
+  color: white !important;
+  background: #1e40af !important;
+  border-color: #1e40af !important;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .banner {
+    padding: 1.5rem;
+  }
+
+  .title {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .coreBadge {
+    font-size: 1.5rem;
+  }
+
+  .freeLabel {
+    font-size: 1.1rem;
+  }
+
+  .features {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .feature {
+    font-size: 0.85rem;
+  }
+
+  .cta {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .cta .button {
+    width: 100%;
+  }
+}

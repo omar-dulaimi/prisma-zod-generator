@@ -12,10 +12,9 @@ import {
 } from './config/generator-options';
 import {
   GeneratorConfig as CustomGeneratorConfig,
-  VariantConfig,
   parseConfiguration,
+  VariantConfig,
 } from './config/parser';
-import { createStrictModeResolver, StrictModeResolver } from './utils/strict-mode-resolver';
 import {
   addMissingInputObjectTypes,
   hideInputObjectTypesAndRelatedFields,
@@ -32,6 +31,7 @@ import {
   parseSafetyConfigFromGeneratorOptions,
   resolveSafetyConfig,
 } from './utils/safetyConfigResolver';
+import { createStrictModeResolver, StrictModeResolver } from './utils/strict-mode-resolver';
 
 import {
   flushSingleFile,
@@ -2604,15 +2604,23 @@ function maybeShowSponsorMessage() {
     count++;
     fsFull.writeFileSync(counterFile, JSON.stringify({ count }, null, 2));
 
-    if (count % 5 === 0) {
+    if (true) {
       console.log(`
-${cyan(`🌟 You've successfully run prisma-zod-generator ${count} times! 🌟`)}
+${cyan(`🚀 prisma-zod-generator has powered ${count} runs on this project!`)}
 
-If you find this project useful, please consider sponsoring me.
-It helps me cover bills and lets me replace my old Dell Latitude E6440
-with a laptop that isn’t a nightmare to run TypeScript projects on 😅  
+✨ Level up with PZG Pro (14-day trial, no card needed):
+   - Server actions & policy automation
+   - SDK publisher, API docs, drift guard
+   - Performance tooling for large teams and more!
+   ${green('https://omar-dulaimi.github.io/prisma-zod-generator/pricing')}
 
-👉 ${green('https://github.com/sponsors/omar-dulaimi')}
+💬 Need help or want to suggest an idea?
+   ${green('https://github.com/omar-dulaimi/prisma-zod-generator/issues')}
+
+🙌 Sponsorships literally keep the lights (and tests) running:
+   My current Dell Latitude laptop needs 40+ minutes to finish the full test suite.
+   Helping me upgrade means faster fixes and better tooling for everyone.
+   ${green('https://github.com/sponsors/omar-dulaimi')}
 `);
     }
   } catch {

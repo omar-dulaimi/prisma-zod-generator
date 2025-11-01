@@ -2,64 +2,153 @@
 import Link from '@docusaurus/Link';
 // @ts-ignore docusaurus generated types may not be in tsconfig include
 import Layout from '@theme/Layout';
-// @ts-ignore docusaurus theme component types may not be in local ts config
-import CodeBlock from '@theme/CodeBlock';
 import clsx from 'clsx';
-import React, { useState } from 'react';
+import React from 'react';
 import metrics from '../data/metrics.json';
 
-const heroCode = `// schema.prisma
-generator zod {
-  provider = "prisma-zod-generator"
-  pureModels = true
-  // output optionally supplied by JSON config
-}
-
-// usage
-import { UserSchema, findManyUserSchema } from './prisma/generated/schemas';
-UserSchema.parse(data);`;
-
-const features: Array<{ title: string; desc: string; icon: string }> = [
+const features: Array<{ title: string; desc: string; icon: string; details: string[] }> = [
   {
-    title: 'Zero Config',
-    desc: 'Drop in & generate – sensible defaults for all stacks.',
+    title: 'Schema Generation',
+    desc: 'Auto-generate Zod schemas from your Prisma schema with multiple output modes.',
     icon: '⚡',
+    details: [
+      'Minimal, Full, and Custom generation modes',
+      'Schema variants (input, result, pure models)',
+      'Decimal & DateTime type handling',
+      'CRUD operation schemas',
+    ],
   },
   {
-    title: 'Typed & Safe',
-    desc: 'Dual exports: perfect Prisma typing + full Zod method freedom.',
+    title: 'Customization',
+    desc: 'Flexible configuration to match your project structure and naming conventions.',
+    icon: '🎨',
+    details: [
+      'Custom naming patterns and presets',
+      'File organization control',
+      'Selective schema generation',
+      'Extensive configuration options',
+    ],
+  },
+  {
+    title: 'Type Safety',
+    desc: 'Full TypeScript integration with runtime validation powered by Zod.',
     icon: '🛡️',
+    details: [
+      'Zod v4 ISO format methods',
+      'Strict mode enforcement',
+      'Complete type checking',
+      'Runtime validation',
+    ],
   },
   {
-    title: 'Pure Models',
-    desc: 'Lean model schemas with naming presets & relation control.',
-    icon: '🧱',
-  },
-  {
-    title: 'Smart Modes',
-    desc: 'Full, minimal, custom – optimize output & performance.',
-    icon: '🎚️',
-  },
-  {
-    title: 'Configurable',
-    desc: 'Heuristics + explicit emit flags, variants, exclusions.',
-    icon: '🧩',
-  },
-  {
-    title: 'Bytes & JSON',
-    desc: 'Specialized mapping (Uint8Array / base64, depth guards).',
-    icon: '🧬',
+    title: 'Performance',
+    desc: 'Optimized output for production with minimal bundle size.',
+    icon: '🚀',
+    details: [
+      'Fast schema generation',
+      'Tree shaking support',
+      'Selective imports',
+      'Optimized bundles',
+    ],
   },
 ];
 
-const installCmds = {
-  npm: 'npm install prisma-zod-generator zod @prisma/client',
-  pnpm: 'pnpm add prisma-zod-generator zod @prisma/client',
-  yarn: 'yarn add prisma-zod-generator zod @prisma/client',
-};
+const proFeatureCategories: Array<{
+  category: string;
+  icon: string;
+  description: string;
+  features: Array<{ title: string; desc: string; icon: string; to: string }>;
+}> = [
+  {
+    category: 'Security & Governance',
+    icon: '🔒',
+    description: 'Enterprise-grade security, compliance, and schema governance',
+    features: [
+      {
+        title: 'Policies & Redaction',
+        icon: '🛡️',
+        desc: 'RBAC, ABAC, and PII protection helpers',
+        to: '/docs/features/policies',
+      },
+      {
+        title: 'Drift Guard',
+        icon: '🚨',
+        desc: 'Breaking change detection and CI integration',
+        to: '/docs/features/guard',
+      },
+      {
+        title: 'PostgreSQL RLS',
+        icon: '🐘',
+        desc: 'Row-level security and tenant isolation',
+        to: '/docs/features/postgres-rls',
+      },
+      {
+        title: 'Contract Testing',
+        icon: '🧪',
+        desc: 'Pact.js integration for consumer-driven contracts',
+        to: '/docs/features/contracts',
+      },
+    ],
+  },
+  {
+    category: 'Developer Experience',
+    icon: '✨',
+    description: 'Accelerate development with powerful integrations and tooling',
+    features: [
+      {
+        title: 'Server Actions Pack',
+        icon: '⚡',
+        desc: 'Next.js typed server actions with validation',
+        to: '/docs/features/server-actions',
+      },
+      {
+        title: 'Form UX Pack',
+        icon: '📝',
+        desc: 'React Hook Form and UI library integration',
+        to: '/docs/features/forms',
+      },
+      {
+        title: 'API Docs Pack',
+        icon: '📄',
+        desc: 'OpenAPI v3 and Swagger UI generation',
+        to: '/docs/features/api-docs',
+      },
+      {
+        title: 'Data Factories',
+        icon: '🏭',
+        desc: 'Test data generation with realistic values',
+        to: '/docs/features/factories',
+      },
+    ],
+  },
+  {
+    category: 'Platform & Scale',
+    icon: '🏢',
+    description: 'Build and scale production applications with confidence',
+    features: [
+      {
+        title: 'SDK Publisher',
+        icon: '📦',
+        desc: 'Generate typed client SDKs with retry logic',
+        to: '/docs/features/sdk',
+      },
+      {
+        title: 'Multi-Tenant Kit',
+        icon: '🏷️',
+        desc: 'Tenant isolation and context management',
+        to: '/docs/features/multi-tenant',
+      },
+      {
+        title: 'Performance Pack',
+        icon: '🚄',
+        desc: '3x faster validation with streaming and caching',
+        to: '/docs/features/performance',
+      },
+    ],
+  },
+];
 
 const Home: React.FC = () => {
-  const [pkgMgr, setPkgMgr] = useState<'npm' | 'pnpm' | 'yarn'>('npm');
   return (
     <Layout
       title="Prisma Zod Generator"
@@ -137,19 +226,21 @@ const Home: React.FC = () => {
         <div
           className="pz-hero-grid"
           style={{
-            maxWidth: 1200,
+            maxWidth: 900,
             margin: '0 auto',
             position: 'relative',
             zIndex: 2,
-            display: 'grid',
-            gap: '4rem',
-            alignItems: 'center',
             padding: '2rem 1.5rem',
+            textAlign: 'center',
           }}
         >
           <div>
-            <div
+            <Link
               className="pz-hero-badge"
+              to="https://omar-dulaimi.github.io/prisma-zod-generator/pricing"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Start 14-day Pro trial (opens in new tab)"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -163,6 +254,8 @@ const Home: React.FC = () => {
                 color: '#a5b4fc',
                 marginBottom: '1.5rem',
                 backdropFilter: 'blur(8px)',
+                textDecoration: 'none',
+                transition: 'transform .15s ease, box-shadow .15s ease',
               }}
             >
               <span
@@ -174,8 +267,10 @@ const Home: React.FC = () => {
                   animation: 'pulse 2s infinite',
                 }}
               ></span>
-              TypeScript • Zod • Prisma
-            </div>
+              <span style={{ display: 'inline-flex', gap: '.5rem', alignItems: 'center' }}>
+                TypeScript • Zod • Prisma <span style={{ opacity: 0.8 }}>— Try Pro →</span>
+              </span>
+            </Link>
             <h1
               className="pz-hero-title"
               style={{
@@ -193,9 +288,7 @@ const Home: React.FC = () => {
                 textAlign: 'center',
               }}
             >
-              Prisma → Zod,
-              <br />
-              Instantly ⚡
+              All-in-one Prisma → Zod workflow for real teams.
             </h1>
             <p
               style={{
@@ -208,9 +301,8 @@ const Home: React.FC = () => {
                 margin: '0 auto 2rem',
               }}
             >
-              Generate <strong>type-safe validation schemas</strong> directly from your Prisma
-              schema. Built for developer experience with dual exports, pure models, smart emission
-              & filtering.
+              Starter to Enterprise: automate validation, docs, redaction, and drift guard while
+              staying in your Prisma flow.
             </p>
             <div
               className="pz-hero-buttons"
@@ -220,6 +312,7 @@ const Home: React.FC = () => {
                 gap: '1rem',
                 flexWrap: 'wrap',
                 alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <Link
@@ -237,6 +330,17 @@ const Home: React.FC = () => {
                   🚀
                 </span>
                 <span>Get Started</span>
+              </Link>
+              <Link
+                className="pz-btn pz-btn-secondary"
+                to="https://omar-dulaimi.github.io/prisma-zod-generator/pricing"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  borderColor: 'rgba(124,58,237,.4)',
+                }}
+              >
+                ✨ Start 14‑day Trial
               </Link>
               <Link className="pz-btn pz-btn-secondary" to="/docs/config/precedence">
                 <span className="pz-btn-icon" aria-hidden="true">
@@ -275,6 +379,7 @@ const Home: React.FC = () => {
                 gap: '1rem',
                 flexWrap: 'wrap',
                 alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <div
@@ -341,165 +446,6 @@ const Home: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div style={{ marginTop: '2.5rem' }}>
-              <div
-                style={{
-                  marginBottom: '1rem',
-                  fontSize: '0.875rem',
-                  fontWeight: '600',
-                  color: '#a5b4fc',
-                }}
-              >
-                Choose your package manager:
-              </div>
-              <div
-                className="pz-pkg-selector"
-                style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}
-              >
-                {(['npm', 'pnpm', 'yarn'] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setPkgMgr(m)}
-                    style={{
-                      cursor: 'pointer',
-                      background:
-                        m === pkgMgr
-                          ? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)'
-                          : 'rgba(255,255,255,.05)',
-                      border:
-                        '1px solid ' +
-                        (m === pkgMgr ? 'rgba(79, 70, 229, 0.5)' : 'rgba(255,255,255,.1)'),
-                      color: '#fff',
-                      padding: '0.5rem 1rem',
-                      borderRadius: '10px',
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      transition: 'all 0.2s ease',
-                      backdropFilter: 'blur(8px)',
-                    }}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-              <div
-                style={{
-                  background: 'rgba(0,0,0,0.3)',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                }}
-              >
-                <CodeBlock language="bash" title={`Install with ${pkgMgr}`}>
-                  {installCmds[pkgMgr]}
-                </CodeBlock>
-              </div>
-            </div>
-          </div>
-          <div
-            className="pz-hero-side"
-            style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}
-          >
-            <div
-              className="pz-code-showcase"
-              style={{
-                backdropFilter: 'blur(12px)',
-                background: 'linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02))',
-                border: '1px solid rgba(255,255,255,.2)',
-                borderRadius: 20,
-                padding: '1.5rem',
-                boxShadow: '0 20px 40px -10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.1)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '1px',
-                  background:
-                    'linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent)',
-                }}
-              ></div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  marginBottom: '1rem',
-                  fontSize: '0.875rem',
-                  fontWeight: '600',
-                  color: '#a5b4fc',
-                }}
-              >
-                <span
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    background: '#22c55e',
-                    borderRadius: '50%',
-                  }}
-                ></span>
-                Example Implementation
-              </div>
-              <CodeBlock language="ts" title="schema.prisma & usage">
-                {heroCode}
-              </CodeBlock>
-            </div>
-            <div
-              className="pz-features-mini"
-              style={{
-                display: 'flex',
-                gap: '0.75rem',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                fontSize: '0.75rem',
-                opacity: 0.8,
-              }}
-            >
-              <span
-                className="pz-feature-tag"
-                style={{
-                  padding: '0.25rem 0.75rem',
-                  background: 'rgba(99,102,241,0.1)',
-                  border: '1px solid rgba(99,102,241,0.2)',
-                  borderRadius: '20px',
-                  color: '#a5b4fc',
-                  fontWeight: '600',
-                }}
-              >
-                TypeScript Native
-              </span>
-              <span
-                className="pz-feature-tag"
-                style={{
-                  padding: '0.25rem 0.75rem',
-                  background: 'rgba(34,197,94,0.1)',
-                  border: '1px solid rgba(34,197,94,0.2)',
-                  borderRadius: '20px',
-                  color: '#86efac',
-                  fontWeight: '600',
-                }}
-              >
-                Zero Config
-              </span>
-              <span
-                className="pz-feature-tag"
-                style={{
-                  padding: '0.25rem 0.75rem',
-                  background: 'rgba(236,72,153,0.1)',
-                  border: '1px solid rgba(236,72,153,0.2)',
-                  borderRadius: '20px',
-                  color: '#f9a8d4',
-                  fontWeight: '600',
-                }}
-              >
-                Multi-provider
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -529,7 +475,7 @@ const Home: React.FC = () => {
             style={{
               display: 'grid',
               gap: '2rem',
-              gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))',
+              gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))',
             }}
           >
             {features.map((f, i) => (
@@ -577,282 +523,119 @@ const Home: React.FC = () => {
                 >
                   {f.icon}
                 </div>
-                <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem', fontWeight: '700' }}>
+                <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.25rem', fontWeight: '700' }}>
                   {f.title}
                 </h3>
-                <p style={{ margin: 0, fontSize: '0.95rem', opacity: 0.85, lineHeight: 1.6 }}>
+                <p
+                  style={{
+                    margin: '0 0 1rem',
+                    fontSize: '0.95rem',
+                    opacity: 0.85,
+                    lineHeight: 1.6,
+                  }}
+                >
                   {f.desc}
                 </p>
+                <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.9rem', opacity: 0.8 }}>
+                  {f.details.map((detail, idx) => (
+                    <li key={idx} style={{ marginBottom: '0.5rem', lineHeight: 1.5 }}>
+                      {detail}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
-          <div
-            className="pz-cta-grid"
-            style={{
-              marginTop: '4rem',
-              display: 'grid',
-              gap: '2rem',
-              gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))',
-            }}
-          >
-            <div
-              className="pz-cta-card"
-              style={{
-                border: '1px solid rgba(99,102,241,0.2)',
-                borderRadius: '20px',
-                padding: '2rem',
-                background: 'linear-gradient(135deg,rgba(99,102,241,.08),rgba(236,72,153,.05))',
-                backdropFilter: 'blur(8px)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
+          {/* Pro Features section */}
+          <section className="pz-pro-section" style={{ marginTop: '4rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
               <div
+                className="pz-pro-badge"
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                  background: 'linear-gradient(90deg, #6366f1, #ec4899)',
-                }}
-              ></div>
-              <div
-                style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.75rem',
-                  marginBottom: '1rem',
+                  gap: '.5rem',
+                  padding: '.5rem 1rem',
+                  borderRadius: 9999,
+                  fontWeight: 600,
                 }}
               >
-                <span style={{ fontSize: '1.5rem' }}>💜</span>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>
-                  Support Development
-                </h3>
+                <span>✨</span> Power Up with Pro Features
               </div>
-              <ul
-                style={{
-                  paddingLeft: '1.5rem',
-                  margin: '0 0 1.5rem',
-                  fontSize: '0.95rem',
-                  lineHeight: 1.6,
-                  listStyleType: 'none',
-                  paddingLeft: 0,
-                }}
+              <h2
+                className="pz-pro-heading"
+                style={{ fontSize: '2rem', fontWeight: 800, margin: '1rem 0 .5rem' }}
               >
-                <li
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  <span style={{ color: '#22c55e' }}>✓</span> Faster fixes & regression triage
-                </li>
-                <li
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  <span style={{ color: '#22c55e' }}>✓</span> Continuous Prisma version tracking
-                </li>
-                <li
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  <span style={{ color: '#22c55e' }}>✓</span> Advanced features & performance
-                </li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ color: '#22c55e' }}>✓</span> Expanded docs & examples
-                </li>
-              </ul>
-              <Link
-                className="pz-btn pz-btn-primary"
-                to="https://github.com/sponsors/omar-dulaimi"
-                style={{
-                  background: 'linear-gradient(135deg, #f472b6 0%, #fb7185 100%)',
-                  border: 'none',
-                  width: '100%',
-                  justifyContent: 'center',
-                }}
-              >
-                ❤️ Become a Sponsor
-              </Link>
-            </div>
-            <div
-              className="pz-cta-card"
-              style={{
-                border: '1px solid rgba(34,197,94,0.2)',
-                borderRadius: '20px',
-                padding: '2rem',
-                background: 'linear-gradient(135deg,rgba(34,197,94,.08),rgba(56,189,248,.05))',
-                backdropFilter: 'blur(8px)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                  background: 'linear-gradient(90deg, #22c55e, #3b82f6)',
-                }}
-              ></div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  marginBottom: '1rem',
-                }}
-              >
-                <span style={{ fontSize: '1.5rem' }}>🚀</span>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>
-                  Developer Experience
-                </h3>
-              </div>
-              <p
-                style={{ fontSize: '0.95rem', margin: '0 0 1.5rem', lineHeight: 1.6, opacity: 0.9 }}
-              >
-                Dual exports for perfect TypeScript integration, lean pure models with smart naming,
-                heuristic emission controls, and single-file bundling for optimal performance.
+                Ship faster with batteries included
+              </h2>
+              <p style={{ opacity: 0.8, margin: 0 }}>
+                SDKs, Forms, API Docs, Policies, RLS, Multi‑tenant, Performance, Factories, Guard,
+                Contracts, Server Actions.
               </p>
-              <Link
-                className="pz-btn pz-btn-secondary"
-                to="/docs/usage-patterns"
-                style={{
-                  width: '100%',
-                  justifyContent: 'center',
-                }}
-              >
-                📖 Explore Patterns
-              </Link>
             </div>
-          </div>
-        </section>
-        <section
-          className="pz-adoption-section"
-          style={{
-            marginTop: '5rem',
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
-            gap: '4rem',
-            alignItems: 'center',
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.5rem 1rem',
-                background: 'rgba(34,197,94,0.1)',
-                border: '1px solid rgba(34,197,94,0.3)',
-                borderRadius: '50px',
-                fontSize: '0.875rem',
-                fontWeight: '600',
-                color: '#22c55e',
-                marginBottom: '1.5rem',
-              }}
-            >
-              <span>⚡</span> Zero to Production
-            </div>
-            <h2
-              style={{
-                fontSize: '2.25rem',
-                fontWeight: '800',
-                margin: '0 0 1.5rem',
-                background: 'linear-gradient(135deg, var(--ifm-font-color-base) 0%, #22c55e 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              Fast Adoption Path
-            </h2>
-            <p
-              style={{ fontSize: '1.125rem', lineHeight: 1.6, marginBottom: '2rem', opacity: 0.9 }}
-            >
-              Install, add a generator block, and run{' '}
-              <code
-                style={{
-                  padding: '0.25rem 0.5rem',
-                  background: 'var(--ifm-code-background)',
-                  borderRadius: '6px',
-                  fontSize: '0.9em',
-                }}
-              >
-                prisma generate
-              </code>
-              . Minimal mode gives instant lean output; switch to full/custom when you need depth.
-            </p>
-            <div
-              className="pz-feature-list"
-              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-            >
-              {[
-                'Dual schema export strategy (typed + method-friendly)',
-                'Pure model naming presets & overrides',
-                'Emission heuristics with explicit overrides',
-                'Single-file bundling for serverless / edge',
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '1rem',
-                    background: 'var(--ifm-card-background-color)',
-                    borderRadius: '12px',
-                    border: '1px solid var(--ifm-color-emphasis-200)',
-                  }}
-                >
-                  <span
+            {proFeatureCategories.map((category, catIdx) => (
+              <div key={category.category} style={{ marginBottom: '3rem' }}>
+                <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                  <div
                     style={{
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '24px',
-                      height: '24px',
-                      background: '#22c55e',
-                      borderRadius: '50%',
-                      color: '#000',
-                      fontSize: '0.75rem',
-                      fontWeight: '700',
+                      gap: '0.5rem',
+                      marginBottom: '0.75rem',
                     }}
                   >
-                    ✓
-                  </span>
-                  <span style={{ fontSize: '0.95rem' }}>{item}</span>
+                    <span style={{ fontSize: '1.5rem' }}>{category.icon}</span>
+                    <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700' }}>
+                      {category.category}
+                    </h3>
+                  </div>
+                  <p style={{ opacity: 0.8, margin: 0, fontSize: '1rem' }}>
+                    {category.description}
+                  </p>
                 </div>
-              ))}
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: '1rem',
+                    gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))',
+                  }}
+                >
+                  {category.features.map((f) => (
+                    <Link
+                      key={f.title}
+                      to={f.to}
+                      className="pz-pro-card"
+                      style={{
+                        display: 'block',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        border: '1px solid var(--ifm-color-emphasis-200)',
+                        borderRadius: 16,
+                        padding: '1.25rem',
+                        background:
+                          'linear-gradient(135deg, var(--ifm-card-background-color) 0%, rgba(255,255,255,0.02) 100%)',
+                        transition: 'transform .15s ease, box-shadow .15s ease',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      }}
+                    >
+                      <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>{f.icon}</div>
+                      <div style={{ fontWeight: 700, marginBottom: '0.5rem', fontSize: '1.1rem' }}>
+                        {f.title}
+                      </div>
+                      <div style={{ opacity: 0.8, fontSize: '.95rem', lineHeight: 1.5 }}>
+                        {f.desc}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+              <Link className="pz-btn pz-btn-secondary" to="/docs/features/overview">
+                Explore all Pro Features →
+              </Link>
             </div>
-          </div>
-          <div
-            className="pz-code-example"
-            style={{
-              background: 'var(--ifm-card-background-color)',
-              borderRadius: '20px',
-              border: '1px solid var(--ifm-color-emphasis-200)',
-              overflow: 'hidden',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            }}
-          >
-            <CodeBlock language="ts">{heroCode}</CodeBlock>
-          </div>
+          </section>
         </section>
         <section
           className="pz-maintainable-section"

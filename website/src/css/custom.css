@@ -3,11 +3,39 @@
   --ifm-color-primary: #276ef1;
   --ifm-hero-bg: #f8fafc;
   --ifm-card-background-alpha: rgba(255, 255, 255, 0.8);
+  /* Typography scale (docs pages) */
+  --ifm-font-size-base: 15px;
+  --ifm-line-height-base: 1.65;
+  --ifm-h1-font-size: 1.75rem; /* ~28px */
+  --ifm-h2-font-size: 1.375rem; /* ~22px */
+  --ifm-h3-font-size: 1.125rem; /* ~18px */
+  --ifm-h4-font-size: 1rem; /* 16px */
+  --ifm-code-font-size: 0.9rem; /* inline code */
+  /* Code block theme */
+  /* Dark-ish code blocks in both themes for stronger contrast */
+  --pz-code-bg: #0b1220;
+  --pz-code-border: #111827;
+  --pz-code-lang-bg: rgba(255, 255, 255, 0.08);
+  --pz-code-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+  /* Pro section theme vars (improve light contrast) */
+  --pz-pro-badge-bg: rgba(124, 58, 237, 0.08);
+  --pz-pro-badge-border: rgba(124, 58, 237, 0.35);
+  --pz-pro-badge-fg: #5b21b6; /* darker purple for light theme */
+  --pz-pro-head-fg: #0f172a; /* dark heading text in light theme */
 }
 [data-theme='dark'] {
   --ifm-color-primary: #5b8dff;
   --ifm-hero-bg: #0f172a;
   --ifm-card-background-alpha: rgba(15, 23, 42, 0.8);
+  --pz-code-bg: #0b1220;
+  --pz-code-border: #1f2937;
+  --pz-code-lang-bg: rgba(255, 255, 255, 0.08);
+  --pz-code-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+  /* Dark theme badge/heading */
+  --pz-pro-badge-bg: rgba(124, 58, 237, 0.12);
+  --pz-pro-badge-border: rgba(124, 58, 237, 0.35);
+  --pz-pro-badge-fg: #c4b5fd;
+  --pz-pro-head-fg: #e5e7eb;
 }
 
 /* Critical responsive fixes */
@@ -86,16 +114,141 @@ html {
 
 /* Code block improvements */
 .theme-code-block {
+  position: relative;
   font-size: 0.85rem;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   overflow: hidden;
   max-width: 100% !important;
+  margin: 1rem 0 1.25rem !important;
+  border: 1px solid var(--pz-code-border);
+  background: var(--pz-code-bg);
+  box-shadow: var(--pz-code-shadow);
+  /* Override theme token base color variable locally to avoid low-contrast var(--prism-color) */
+  --prism-color: #ffffff;
+}
+/* Ensure nested containers also get the dark background */
+.theme-code-block,
+.theme-code-block *[class*='codeBlock'],
+.theme-code-block *[class*='codeBlockContent'],
+.theme-code-block *[class*='codeBlockLines'] {
+  background-color: var(--pz-code-bg) !important;
+}
+/* Language pill from data-language attr */
+.theme-code-block::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--pz-code-lang-bg);
+  color: #cbd5e1;
+}
+.theme-code-block:not([data-language])::before {
+  display: none;
 }
 .prism-code {
   background: transparent !important;
   overflow-x: auto !important;
   max-width: 100% !important;
   white-space: pre !important;
+  font-size: 0.85rem !important; /* block code size */
+  padding-top: 0.9rem !important; /* room for lang/copy */
+  padding-bottom: 0.65rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  color: #ffffff !important; /* pure white for maximum contrast */
+}
+/* Copy button styling */
+.theme-code-block .theme-code-block-copy-button {
+  top: 6px;
+  right: 8px;
+  background: var(--pz-code-lang-bg);
+  border: 1px solid var(--pz-code-border);
+  color: #e5e7eb;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+  z-index: 2;
+}
+.theme-code-block .theme-code-block-copy-button:hover {
+  transform: translateY(-1px);
+}
+/* Monospace stack */
+pre,
+code,
+.prism-code {
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Fira Code', monospace;
+}
+
+.theme-code-block [class^='language-'],
+.theme-code-block [class*=' language-'],
+.theme-code-block div[class*='codeBlock'],
+.theme-code-block div[class*='codeBlockLines'],
+.theme-code-block span[class*='token-line'] {
+  color: #ffffff !important; /* override any color: var(--prism-color) in theme */
+}
+
+.theme-code-block pre,
+.theme-code-block code {
+  color: #ffffff !important;
+}
+/* High-contrast token palette for dark code bg (both site themes) */
+.theme-code-block .token.comment {
+  color: #cbd5e1 !important;
+}
+.theme-code-block .token.string {
+  color: #34d399 !important;
+}
+.theme-code-block .token.number,
+.theme-code-block .token.boolean {
+  color: #fbbf24 !important;
+}
+.theme-code-block .token.keyword {
+  color: #60a5fa !important;
+}
+.theme-code-block .token.function {
+  color: #f472b6 !important;
+}
+.theme-code-block .token.property,
+.theme-code-block .token.attr-name {
+  color: #f59e0b !important;
+}
+.theme-code-block .token.class-name,
+.theme-code-block .token.selector {
+  color: #a78bfa !important;
+}
+.theme-code-block .token.operator,
+.theme-code-block .token.punctuation {
+  color: #ffffff !important;
+}
+.theme-code-block .token.variable {
+  color: #93c5fd !important;
+}
+.theme-code-block .token.constant,
+.theme-code-block .token.symbol {
+  color: #f8fafc !important;
+}
+
+/* Distinguish shell blocks */
+.theme-code-block[data-language='bash'],
+.theme-code-block[data-language='sh'],
+.theme-code-block[data-language='shell'] {
+  border-left: 3px solid #10b981;
+}
+.theme-code-block[data-language='bash']::before,
+.theme-code-block[data-language='sh']::before,
+.theme-code-block[data-language='shell']::before {
+  content: 'Shell';
+  background: rgba(16, 185, 129, 0.18);
 }
 .token.title {
   color: #22c55e !important;
@@ -164,12 +317,43 @@ html {
   overflow: hidden;
 }
 
+/* Pro section badge + heading contrast */
+.pz-pro-badge {
+  background: var(--pz-pro-badge-bg);
+  border: 1px solid var(--pz-pro-badge-border);
+  color: var(--pz-pro-badge-fg);
+}
+.pz-pro-heading {
+  color: var(--pz-pro-head-fg);
+}
+
 /* Interactive elements */
 .pz-feature-card:hover {
   transform: translateY(-4px);
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Pro feature cards */
+.pz-pro-card {
+  will-change: transform, box-shadow;
+}
+.pz-pro-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+  border-color: transparent !important;
+  background-image:
+    linear-gradient(var(--ifm-card-background-color), var(--ifm-card-background-color)),
+    radial-gradient(100% 100% at 0% 0%, rgba(124, 58, 237, 0.5), transparent 70%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+/* Hero badge hover */
+.pz-hero-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
 }
 
 .pz-btn:hover {
@@ -237,6 +421,143 @@ html {
 }
 .pz-btn-secondary:hover {
   background: rgba(255, 255, 255, 0.08);
+}
+
+/* Docs content sizing & spacing */
+.theme-doc-markdown {
+  line-height: 1.75;
+  font-size: 0.94rem;
+}
+/* Tighter heading scale specifically for docs content */
+.theme-doc-markdown h1 {
+  margin-top: 0.25rem;
+  margin-bottom: 0.85rem;
+  font-size: 1.5rem; /* ~24px */
+}
+.theme-doc-markdown h2 {
+  margin-top: 1.1rem;
+  margin-bottom: 0.6rem;
+  font-size: 1.2rem; /* ~19px */
+}
+.theme-doc-markdown h3 {
+  margin-top: 0.8rem;
+  margin-bottom: 0.45rem;
+  font-size: 1.05rem; /* ~17px */
+}
+.theme-doc-markdown h4 {
+  margin-top: 0.6rem;
+  margin-bottom: 0.35rem;
+  font-size: 1rem; /* 16px */
+}
+.theme-doc-markdown p {
+  margin: 0.45rem 0 0.9rem;
+}
+.theme-doc-markdown code {
+  font-size: 0.88rem;
+}
+.theme-doc-markdown ul,
+.theme-doc-markdown ol {
+  margin: 0.5rem 0 1.25rem 1.25rem;
+}
+
+/* Sidebar + TOC font sizing */
+.theme-doc-sidebar-container .menu__link {
+  font-size: 0.9rem;
+}
+.table-of-contents__link {
+  font-size: 0.88rem;
+}
+.breadcrumbs__link,
+.breadcrumbs__item {
+  font-size: 0.8rem;
+}
+
+/* Docs pagination spacing (Prev/Next buttons) */
+.pagination-nav {
+  margin-top: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+/* Breadcrumb spacing below sticky navbar */
+.theme-doc-breadcrumbs,
+.breadcrumbs {
+  padding-top: 0.375rem;
+  margin-top: 0.125rem;
+}
+
+/* Align sidebar top with header (reduce gap) */
+.theme-doc-sidebar-container {
+  padding-top: 0rem !important;
+  margin-top: 0 !important;
+}
+.theme-doc-sidebar-container .menu {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+.theme-doc-sidebar-container .menu__list {
+  padding-top: 0.125rem !important;
+}
+
+/* Remove extra sidebar logo spacer under navbar on desktop */
+@media (min-width: 997px) {
+  .theme-doc-sidebar-container .sidebarLogo,
+  .theme-doc-sidebar-container [class*='sidebarLogo'] {
+    display: none !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+  }
+  /* Override theme padding that reserves navbar height */
+  .theme-doc-sidebar-container [class*='sidebar'] {
+    padding-top: 0.375rem !important;
+  }
+  [class^='sidebar_'],
+  [class*=' sidebar_'] {
+    padding-top: 0.375rem !important;
+  }
+  /* Ensure the container itself does not shift down */
+  [class^='docSidebarContainer'],
+  [class*=' docSidebarContainer'] {
+    margin-top: calc(-1 * var(--ifm-navbar-height)) !important;
+  }
+}
+
+/* Feature cards in docs */
+.feature-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+.feature-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 14px;
+  padding: 1rem;
+  background: linear-gradient(
+    135deg,
+    var(--ifm-card-background-color) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.15);
+}
+.feature-card__icon {
+  font-size: 1.35rem;
+}
+.feature-card__title {
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+.feature-card__desc {
+  opacity: 0.85;
+  font-size: 0.95rem;
 }
 [data-theme='light'] .pz-btn-secondary:hover {
   background: #eef1f5;

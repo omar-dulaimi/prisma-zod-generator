@@ -101,3 +101,7 @@ prisma/generated/
 ```
 
 Single-file mode collapses to `schemas.ts` via config (`useMultipleFiles:false`).
+
+## Next Steps
+
+Explore PZG Pro feature packs (SDK, Forms, API Docs, RLS, Multi‑tenant, Performance, Factories, Guard, Contracts, Server Actions): [Pro Features](../features/overview.md).

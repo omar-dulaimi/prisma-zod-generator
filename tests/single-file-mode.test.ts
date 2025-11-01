@@ -39,7 +39,7 @@ describe('Single-file output mode', () => {
         expect(content).toMatch(/export const PostSchema/);
         // Directory should contain only the bundle
         const entries = readdirSync(schemasDir);
-        expect(entries).toEqual(['schemas.ts']);
+        expect(entries.sort()).toEqual(['.prisma-zod-generator-manifest.json', 'schemas.ts']);
       } finally {
         await env.cleanup();
       }
@@ -82,7 +82,7 @@ describe('Single-file output mode', () => {
         expect(content).not.toMatch(/FindMany/);
         // Directory should contain only the bundle
         const entries = readdirSync(schemasDir);
-        expect(entries).toEqual(['schemas.ts']);
+        expect(entries.sort()).toEqual(['.prisma-zod-generator-manifest.json', 'schemas.ts']);
       } finally {
         await env.cleanup();
       }
@@ -124,7 +124,7 @@ describe('Single-file output mode', () => {
         expect(content).toMatch(/UserCreateInput/i);
         // Directory should contain only the bundle
         const entries = readdirSync(schemasDir);
-        expect(entries).toEqual(['schemas.ts']);
+        expect(entries.sort()).toEqual(['.prisma-zod-generator-manifest.json', 'schemas.ts']);
       } finally {
         await env.cleanup();
       }
@@ -167,7 +167,7 @@ describe('Single-file output mode', () => {
         expect(existsSync(join(schemasDir, 'variants'))).toBe(false);
         // Directory should contain only the bundle
         const entries = readdirSync(schemasDir);
-        expect(entries).toEqual(['schemas.ts']);
+        expect(entries.sort()).toEqual(['.prisma-zod-generator-manifest.json', 'schemas.ts']);
       } finally {
         await env.cleanup();
       }
@@ -209,7 +209,7 @@ describe('Single-file output mode', () => {
         expect(existsSync(join(schemasDir, 'variants'))).toBe(false);
         // Directory should contain only custom bundle
         const entries = readdirSync(schemasDir);
-        expect(entries).toEqual(['bundle.ts']);
+        expect(entries.sort()).toEqual(['.prisma-zod-generator-manifest.json', 'bundle.ts']);
       } finally {
         await env.cleanup();
       }

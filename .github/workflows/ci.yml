@@ -83,6 +83,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v6
@@ -115,10 +117,41 @@ jobs:
   package-test:
     runs-on: ubuntu-latest
     needs: test
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Init Pro submodule
+        env:
+          PRO_KEY: ${{ secrets.SUBMODULE_DEPLOY_KEY }}
+        run: |
+          if [ -z "$PRO_KEY" ]; then
+            echo "SUBMODULE_DEPLOY_KEY secret is not set"
+            exit 1
+          fi
+          if ! command -v ssh-agent >/dev/null; then
+            echo "ssh-agent not available"
+            exit 1
+          fi
+          eval "$(ssh-agent -s)"
+          mkdir -p ~/.ssh
+          ssh_key_path=~/.ssh/id_pro
+          if printf '%s' "$PRO_KEY" | tr -d '\r' | base64 -d > "$ssh_key_path" 2>/dev/null; then
+            echo "Submodule key decoded from base64"
+          else
+            echo "Submodule key not base64-encoded; trying to normalise raw key"
+            printf '%s' "$PRO_KEY" | sed 's/\r//g; s/\\n/\n/g' > "$ssh_key_path"
+          fi
+          chmod 600 "$ssh_key_path"
+          ssh-add "$ssh_key_path"
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git config --global url."git@github.com:".insteadOf "https://github.com/"
+          git submodule sync --recursive
+          git submodule update --init --recursive
 
       - name: Setup Node.js
         uses: actions/setup-node@v6

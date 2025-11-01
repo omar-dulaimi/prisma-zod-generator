@@ -4,6 +4,14 @@ package
 npm-debug.log*
 prisma/generated
 coverage
+build/
+.venv/
+
+# Test outputs and generated files
+test-output/
+test-env-*/
+generated/
+lib/__generated__/
 
 # Multi-provider test generated files
 tests/multi-provider/schemas/*/generated/
@@ -13,6 +21,15 @@ tests/multi-provider/schemas/*/generated/
 test-*-*
 manual-*-*
 legacy-output
+
+# PZG Pro generated examples and outputs
+examples/generated/
+tests/contracts/
+postgres/
+wiremock/
+*.pact
+pacts/
+logs/
 .docusaurus
 website/.docusaurus
 website/build
@@ -20,6 +37,7 @@ website/build
 # Test reports and logs
 test-report.json
 test-results.json
+test-*.json
 *.log
 
 # Environment files
@@ -36,6 +54,11 @@ test-results.json
 *.swo
 *~
 
+# Cache directories
+.cache/
+.pnpm-store/
+.turbo/
+
 # OS files
 .DS_Store
 .DS_Store?
@@ -46,7 +69,6 @@ ehthumbs.db
 Thumbs.db
 
 # Logs
-logs
 yarn-debug.log*
 yarn-error.log*
 dev-debug.log
@@ -74,3 +96,17 @@ src/schemas
 dsrc/
 .github/PR_BODY.md
 .tmp/
+scripts/branding/.venv/lib64
+scripts/branding/.venv/pyvenv.cfg
+scripts/branding/.venv/bin/activate
+scripts/branding/.venv/bin/activate.csh
+scripts/branding/.venv/bin/activate.fish
+scripts/branding/.venv/bin/Activate.ps1
+scripts/branding/.venv/bin/f2py
+scripts/branding/.venv/bin/numpy-config
+scripts/branding/.venv/bin/pip
+scripts/branding/.venv/bin/pip3
+scripts/branding/.venv/bin/pip3.12
+scripts/branding/.venv/bin/python
+scripts/branding/.venv/bin/python3
+scripts/branding/.venv/bin/python3.12

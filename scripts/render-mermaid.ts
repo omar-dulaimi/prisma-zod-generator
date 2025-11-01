@@ -8,7 +8,6 @@ import { spawn } from 'child_process';
 const ROOT = process.cwd();
 const README_PATH = path.join(ROOT, 'README.md');
 const DIAGRAM_DIR = path.join(ROOT, 'docs', 'assets', 'diagrams');
-const DIAGRAM_COMMENT_REGEX = /^\s*<!-- diagram:[^>]+ -->[\s\S]*?<!-- \/diagram:[^>]+ -->/;
 const MERMAID_BLOCK_REGEX = /```mermaid\s*([\s\S]*?)```/g;
 
 async function ensureDir(dir: string) {
@@ -47,6 +46,14 @@ function toPosix(relativePath: string): string {
   return relativePath.split(path.sep).join(path.posix.sep);
 }
 
+function getAltText(index: number): string {
+  const defaults = [
+    'Prisma Zod Generator feature map (Core vs Pro tiers)',
+    'Prisma Zod Generator architecture overview',
+  ];
+  return defaults[index] ?? `Prisma Zod Generator diagram ${index + 1}`;
+}
+
 async function cleanupUnusedDiagrams(expectedFiles: Set<string>) {
   const existing = await fs.readdir(DIAGRAM_DIR).catch(() => [] as string[]);
   const deletions = existing.filter((file) => file.endsWith('.svg') && !expectedFiles.has(file));
@@ -66,7 +73,7 @@ async function main() {
 
   await ensureDir(DIAGRAM_DIR);
 
-  let updatedReadme = '';
+  const parts: string[] = [];
   let cursor = 0;
   const generatedFiles = new Set<string>();
 
@@ -90,42 +97,72 @@ async function main() {
 
     generatedFiles.add(outputFileName);
 
-    // Append text before current block and the block itself
-    updatedReadme += readme.slice(cursor, blockEnd);
-    cursor = blockEnd;
+    const snippetStartToken = `<!-- diagram:${diagramId} -->`;
+    const snippetEndToken = `<!-- /diagram:${diagramId} -->`;
 
-    // Trim any existing generated snippet immediately following the mermaid block
-    let remaining = readme.slice(cursor);
-    while (true) {
-      const commentMatch = DIAGRAM_COMMENT_REGEX.exec(remaining);
-      if (!commentMatch) break;
-      cursor += commentMatch[0].length;
-      remaining = readme.slice(cursor);
-    }
+    let replaceStart = blockStart;
+    let replaceEnd = blockEnd;
 
-    // If the mermaid block is wrapped in <details>, move the closing tag before the snippet
-    const closingDetailsMatch = remaining.match(/^\s*<\/details>/);
-    if (closingDetailsMatch) {
-      const closing = closingDetailsMatch[0];
-      updatedReadme += closing;
-      cursor += closing.length;
-      remaining = readme.slice(cursor);
-      while (true) {
-        const commentMatch = DIAGRAM_COMMENT_REGEX.exec(remaining);
-        if (!commentMatch) break;
-        cursor += commentMatch[0].length;
-        remaining = readme.slice(cursor);
+    const existingSnippetStart = readme.lastIndexOf(snippetStartToken, blockStart);
+    const existingSnippetEnd = readme.indexOf(snippetEndToken, blockEnd);
+
+    if (existingSnippetStart !== -1 && existingSnippetEnd !== -1) {
+      replaceStart = existingSnippetStart;
+      replaceEnd = existingSnippetEnd + snippetEndToken.length;
+    } else {
+      const genericSnippetStart = readme.lastIndexOf('<!-- diagram:', blockStart);
+      const genericSnippetEnd = readme.indexOf('<!-- /diagram:', blockEnd);
+      if (genericSnippetStart !== -1 && genericSnippetEnd !== -1) {
+        const closingMarkerEnd = readme.indexOf('-->', genericSnippetEnd);
+        if (closingMarkerEnd !== -1) {
+          replaceStart = genericSnippetStart;
+          replaceEnd = closingMarkerEnd + 3;
+        }
       }
     }
 
+    while (replaceStart > cursor && /\s/.test(readme[replaceStart - 1])) {
+      replaceStart -= 1;
+    }
+
+    while (replaceEnd < readme.length && /\s/.test(readme[replaceEnd])) {
+      replaceEnd += 1;
+    }
+
+    parts.push(readme.slice(cursor, replaceStart));
+
     const relativePath = toPosix(path.relative(ROOT, path.join(DIAGRAM_DIR, outputFileName)));
-    const snippet = `\n\n<!-- diagram:${diagramId} -->\n<p align="center">\n  <img src="${relativePath}" alt="Diagram ${index + 1}" width="720" />\n</p>\n<!-- /diagram:${diagramId} -->\n`;
-    updatedReadme += snippet;
+    const altText = getAltText(index);
+    const mermaidBlock = `\`\`\`mermaid\n${diagramCode}\`\`\``;
+
+    let snippet = `${snippetStartToken}
+<p align="center">
+  <img src="${relativePath}" alt="${altText}" width="960" />
+</p>
+<details data-mermaid-source>
+  <summary>View Mermaid source</summary>
+
+${mermaidBlock}
+</details>
+${snippetEndToken}
+`;
+
+    const prior = parts[parts.length - 1] ?? '';
+    if (prior && !prior.endsWith('\n')) {
+      snippet = `\n${snippet}`;
+    }
+
+    if (!snippet.endsWith('\n\n')) {
+      snippet = `${snippet}\n`;
+    }
+
+    parts.push(snippet);
+    cursor = replaceEnd;
   }
 
-  updatedReadme += readme.slice(cursor);
+  parts.push(readme.slice(cursor));
 
-  await fs.writeFile(README_PATH, updatedReadme, 'utf8');
+  await fs.writeFile(README_PATH, parts.join(''), 'utf8');
   await cleanupUnusedDiagrams(generatedFiles);
 
   console.log(`Generated ${generatedFiles.size} diagram(s).`);
