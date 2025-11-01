@@ -1,17 +1,4 @@
-<!-- SPDX-License-Identifier: MIT -->
-
-# Dual License
-
-This project uses a **dual license** model:
-
-- **Core Features:** MIT License (see below)
-- **Pro Features:** Commercial License (see LICENSE-PRO.md)
-
----
-
-## MIT License (Core Features)
-
-**Applies to:** All source code EXCEPT the `src/pro/` directory
+MIT License
 
 Copyright (c) 2022-2025 Omar Dulaimi
 
@@ -32,36 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-## Commercial License (Pro Features)
-
-**Applies to:** Code in `src/pro/` directory (private submodule) and obfuscated code in npm package at `lib/pro/`
-
-Pro features are proprietary and require a valid commercial license.
-
-**See LICENSE-PRO.md for full commercial license terms.**
-
-### Summary of Restrictions:
-
-1. **License Required:** Pro features require a valid PZG Pro license key
-2. **No Reverse Engineering:** Decompiling, deobfuscating, or reverse engineering pro features is prohibited
-3. **Non-Transferable:** License keys are non-transferable between organizations
-4. **Audit Rights:** We reserve the right to audit license compliance
-5. **Violations:** Unauthorized use will result in immediate license termination and potential legal action
-
-### Getting a License:
-
-- **14-day trial:** https://omar-dulaimi.github.io/prisma-zod-generator/pricing
-- **Starter:** $69/year (1 developer)
-- **Professional:** $199/year (up to 5 developers)
-- **Business:** $599/year (unlimited developers)
-- **Enterprise:** Custom pricing (unlimited seats, roadmap partnership, co-developed integrations)
-
-- Questions? DM [@omardulaimidev on X](https://x.com/omardulaimidev) or open an issue on GitHub: https://github.com/omar-dulaimi/prisma-zod-generator/issues
-- Docs: https://omar-dulaimi.github.io/prisma-zod-generator/
-
----
-
-**By using this software, you agree to abide by both licenses as applicable to the features you use.**
