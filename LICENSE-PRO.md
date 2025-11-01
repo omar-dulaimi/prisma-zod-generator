@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: LicenseRef-PZG-Pro -->
+
 # PZG Pro Commercial License Agreement
 
 **Version 1.0 - Effective Date: 2025**
