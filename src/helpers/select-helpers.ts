@@ -24,9 +24,9 @@ export function addMissingInputObjectTypesForSelect(
   // generate input object types necessary to support ModelSelect._count
   const modelCountOutputTypes = getFilteredModelCountOutputTypes(outputObjectTypes);
   const modelCountOutputTypeSelectInputObjectTypes =
-    generateModelCountOutputTypeSelectInputObjectTypes(modelCountOutputTypes);
+    generateModelCountOutputTypeSelectInputObjectTypes(modelCountOutputTypes, models);
   const modelCountOutputTypeArgsInputObjectTypes =
-    generateModelCountOutputTypeArgsInputObjectTypes(modelCountOutputTypes);
+    generateModelCountOutputTypeArgsInputObjectTypes(modelCountOutputTypes, models);
 
   const modelSelectInputObjectTypes = generateModelSelectInputObjectTypes(enabledModels);
 
@@ -56,29 +56,52 @@ function getFilteredModelCountOutputTypes(outputObjectTypes: DMMF.OutputType[]) 
 
 function generateModelCountOutputTypeSelectInputObjectTypes(
   modelCountOutputTypes: DMMF.OutputType[],
+  models: DMMF.Model[],
 ) {
+  const modelMap = new Map(models.map((model) => [model.name, model]));
   const modelCountOutputTypeSelectInputObjectTypes: DMMF.InputType[] = [];
   for (const modelCountOutputType of modelCountOutputTypes) {
     const { name: modelCountOutputTypeName, fields: modelCountOutputTypeFields } =
       modelCountOutputType;
+    const modelName = modelCountOutputTypeName.replace('CountOutputType', '');
+    const model = modelMap.get(modelName);
     const modelCountOutputTypeSelectInputObjectType: DMMF.InputType = {
       name: `${modelCountOutputTypeName}Select`,
       constraints: {
         maxNumFields: null,
         minNumFields: null,
       },
-      fields: modelCountOutputTypeFields.map(({ name }) => ({
-        name,
-        isRequired: false,
-        isNullable: false,
-        inputTypes: [
+      fields: modelCountOutputTypeFields.map(({ name }) => {
+        const inputTypes: DMMF.SchemaArg['inputTypes'][0][] = [
           {
             isList: false,
             type: `Boolean`,
             location: 'scalar',
           },
-        ],
-      })),
+        ];
+
+        if (model) {
+          const relationField = model.fields.find(
+            (field) => field.name === name && field.kind === 'object',
+          );
+
+          if (relationField) {
+            inputTypes.push({
+              isList: false,
+              type: `${modelCountOutputTypeName}Count${toPascalCase(name)}Args`,
+              location: 'inputObjectTypes',
+              namespace: 'prisma',
+            });
+          }
+        }
+
+        return {
+          name,
+          isRequired: false,
+          isNullable: false,
+          inputTypes,
+        };
+      }),
     };
     modelCountOutputTypeSelectInputObjectTypes.push(modelCountOutputTypeSelectInputObjectType);
   }
@@ -87,10 +110,15 @@ function generateModelCountOutputTypeSelectInputObjectTypes(
 
 function generateModelCountOutputTypeArgsInputObjectTypes(
   modelCountOutputTypes: DMMF.OutputType[],
+  models: DMMF.Model[],
 ) {
+  const modelMap = new Map(models.map((model) => [model.name, model]));
   const modelCountOutputTypeArgsInputObjectTypes: DMMF.InputType[] = [];
   for (const modelCountOutputType of modelCountOutputTypes) {
-    const { name: modelCountOutputTypeName } = modelCountOutputType;
+    const { name: modelCountOutputTypeName, fields: modelCountOutputTypeFields } =
+      modelCountOutputType;
+    const modelName = modelCountOutputTypeName.replace('CountOutputType', '');
+    const model = modelMap.get(modelName);
     const modelCountOutputTypeArgsInputObjectType: DMMF.InputType = {
       name: `${modelCountOutputTypeName}Args`,
       constraints: {
@@ -114,6 +142,45 @@ function generateModelCountOutputTypeArgsInputObjectTypes(
       ],
     };
     modelCountOutputTypeArgsInputObjectTypes.push(modelCountOutputTypeArgsInputObjectType);
+
+    if (!model) continue;
+
+    for (const field of modelCountOutputTypeFields) {
+      const relationField = model.fields.find(
+        (modelField) => modelField.name === field.name && modelField.kind === 'object',
+      );
+
+      if (!relationField) {
+        continue;
+      }
+
+      const relationModelName = relationField.type;
+      const whereInputType = `${relationModelName}WhereInput`;
+      const relationArgsInputObjectType: DMMF.InputType = {
+        name: `${modelCountOutputTypeName}Count${toPascalCase(field.name)}Args`,
+        constraints: {
+          maxNumFields: null,
+          minNumFields: null,
+        },
+        fields: [
+          {
+            name: 'where',
+            isRequired: false,
+            isNullable: false,
+            inputTypes: [
+              {
+                isList: false,
+                type: whereInputType,
+                location: 'inputObjectTypes',
+                namespace: 'prisma',
+              },
+            ],
+          },
+        ],
+      };
+
+      modelCountOutputTypeArgsInputObjectTypes.push(relationArgsInputObjectType);
+    }
   }
   return modelCountOutputTypeArgsInputObjectTypes;
 }
@@ -200,4 +267,13 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
     modelSelectInputObjectTypes.push(modelSelectInputObjectType);
   }
   return modelSelectInputObjectTypes;
+}
+
+function toPascalCase(name: string): string {
+  return name
+    .replace(/[_\s-]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
 }
