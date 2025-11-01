@@ -25,8 +25,10 @@ export function addMissingInputObjectTypesForSelect(
   const modelCountOutputTypes = getFilteredModelCountOutputTypes(outputObjectTypes);
   const modelCountOutputTypeSelectInputObjectTypes =
     generateModelCountOutputTypeSelectInputObjectTypes(modelCountOutputTypes, models);
-  const modelCountOutputTypeArgsInputObjectTypes =
-    generateModelCountOutputTypeArgsInputObjectTypes(modelCountOutputTypes, models);
+  const modelCountOutputTypeArgsInputObjectTypes = generateModelCountOutputTypeArgsInputObjectTypes(
+    modelCountOutputTypes,
+    models,
+  );
 
   const modelSelectInputObjectTypes = generateModelSelectInputObjectTypes(enabledModels);
 

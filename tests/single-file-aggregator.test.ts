@@ -45,13 +45,9 @@ export type PurchaseType = z.infer<typeof PurchaseSchema>;
 
       const content = readFileSync(bundlePath, 'utf-8');
 
-      expect(content).toMatch(
-        /export type PurchaseType = z\.infer<typeof PurchaseTypeSchema>;/,
-      );
+      expect(content).toMatch(/export type PurchaseType = z\.infer<typeof PurchaseTypeSchema>;/);
       expect(content).toMatch(/export type PurchaseModel = z\.infer<typeof PurchaseSchema>;/);
-      expect(content).not.toMatch(
-        /export type PurchaseType = z\.infer<typeof PurchaseSchema>;/,
-      );
+      expect(content).not.toMatch(/export type PurchaseType = z\.infer<typeof PurchaseSchema>;/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
