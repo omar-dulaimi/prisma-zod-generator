@@ -170,6 +170,7 @@
     "eslint-config-prettier": "^10.1.8",
     "expect-type": "^1.2.2",
     "fast-glob": "^3.3.3",
+    "glob": "^10.4.5",
     "gray-matter": "^4.0.3",
     "husky": "^9.1.7",
     "javascript-obfuscator": "^4.1.1",

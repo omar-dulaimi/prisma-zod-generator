@@ -117,6 +117,9 @@ importers:
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
+      glob:
+        specifier: ^10.4.5
+        version: 10.4.5
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
