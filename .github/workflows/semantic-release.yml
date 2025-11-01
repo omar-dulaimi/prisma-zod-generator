@@ -15,17 +15,40 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Setup SSH for private submodule
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.SUBMODULE_DEPLOY_KEY }}
-
-      - name: Checkout code with submodules
+      - name: Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-          submodules: recursive
+
+      - name: Initialize private submodule
+        env:
+          PRO_KEY: ${{ secrets.SUBMODULE_DEPLOY_KEY }}
+        run: |
+          if [ -z "$PRO_KEY" ]; then
+            echo "SUBMODULE_DEPLOY_KEY secret is not set"
+            exit 1
+          fi
+          if ! command -v ssh-agent >/dev/null; then
+            echo "ssh-agent not available"
+            exit 1
+          fi
+          eval "$(ssh-agent -s)"
+          mkdir -p ~/.ssh
+          ssh_key_path=~/.ssh/id_pro
+          printf '%s' "$PRO_KEY" | tr -d '\r' > temp_key.txt
+          if base64 -d temp_key.txt > "$ssh_key_path" 2>/dev/null; then
+            echo "Submodule key decoded from base64"
+          else
+            echo "Submodule key not base64-encoded; normalising raw key"
+            sed 's/\\n/\n/g' temp_key.txt > "$ssh_key_path"
+          fi
+          rm -f temp_key.txt
+          chmod 600 "$ssh_key_path"
+          ssh-add "$ssh_key_path"
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git config --global url."git@github.com:".insteadOf "https://github.com/"
+          git submodule sync --recursive
+          git submodule update --init --recursive
 
       - name: Verify pro submodule loaded
         run: |
