@@ -13,6 +13,7 @@ const prismaValueImports = new Set<string>(); // enums etc.
 let sawPrismaAlias = false; // whether __PrismaAlias was referenced
 let prismaImportBase = '@prisma/client';
 let needsJsonHelpers = false; // whether to inject json helpers block
+const exportedTypeNames = new Set<string>(); // track exported type identifiers to prevent collisions
 
 export function setSingleFilePrismaImportPath(importPath: string, extension?: string) {
   let finalPath = (importPath || '@prisma/client').replace(/\\/g, '/');
@@ -31,6 +32,8 @@ export function initSingleFile(bundleFullPath: string) {
   needsPrismaValueImport = false;
   prismaValueImports.clear();
   sawPrismaAlias = false;
+  needsJsonHelpers = false;
+  exportedTypeNames.clear();
 }
 
 export function isSingleFileEnabled() {
@@ -197,7 +200,68 @@ function transformContentForSingleFile(filePath: string, source: string): string
     needsPrismaTypeImport = true;
   }
 
+  text = dedupeExportTypeNames(text, filePath);
+
   return `// File: ${path.basename(filePath)}\n${text}\n`;
+}
+
+function dedupeExportTypeNames(text: string, filePath: string): string {
+  const typeExportRe =
+    /export\s+type\s+([A-Za-z0-9_]+)\s*=\s*z\.infer<typeof\s+([A-Za-z0-9_]+)\s*>;\s*/g;
+  return text.replace(typeExportRe, (match, typeName: string, schemaRef: string) => {
+    const finalName = reserveExportTypeName(typeName, schemaRef, filePath);
+    if (finalName === typeName) {
+      return match;
+    }
+    return `export type ${finalName} = z.infer<typeof ${schemaRef}>;`;
+  });
+}
+
+function reserveExportTypeName(typeName: string, schemaRef: string, filePath: string): string {
+  if (!exportedTypeNames.has(typeName)) {
+    exportedTypeNames.add(typeName);
+    return typeName;
+  }
+
+  const candidates: string[] = [];
+
+  if (typeName.endsWith('Type')) {
+    candidates.push(`${typeName.slice(0, -4)}Model`);
+  }
+
+  if (schemaRef.endsWith('Schema')) {
+    const base = schemaRef.slice(0, -'Schema'.length);
+    candidates.push(`${base}Model`);
+    candidates.push(`${base}SchemaType`);
+  }
+
+  const baseName = path
+    .basename(filePath)
+    .replace(/\.[jt]s$/, '')
+    .replace(/[^A-Za-z0-9_]/g, '');
+  if (baseName) {
+    candidates.push(`${baseName}Model`);
+  }
+
+  candidates.push(`${typeName}Model`);
+
+  for (const candidate of candidates) {
+    const sanitized = candidate.replace(/[^A-Za-z0-9_]/g, '_');
+    if (sanitized && !exportedTypeNames.has(sanitized)) {
+      exportedTypeNames.add(sanitized);
+      return sanitized;
+    }
+  }
+
+  let counter = 2;
+  while (true) {
+    const fallback = `${typeName}${counter}`;
+    if (!exportedTypeNames.has(fallback)) {
+      exportedTypeNames.add(fallback);
+      return fallback;
+    }
+    counter += 1;
+  }
 }
 
 export async function flushSingleFile(): Promise<void> {
@@ -280,4 +344,6 @@ export async function flushSingleFile(): Promise<void> {
   needsPrismaValueImport = false;
   prismaValueImports.clear();
   sawPrismaAlias = false;
+  needsJsonHelpers = false;
+  exportedTypeNames.clear();
 }
