@@ -623,4 +623,4 @@ class ConfigError extends Error {
 
 ---
 
-**Need more details?** Check the [feature-specific documentation](../features/) or reach out via DM to [@omardulaimidev on X](https://x.com/omardulaimidev).
+**Need more details?** Check the [feature-specific documentation](../features/overview.md) or reach out via DM to [@omardulaimidev on X](https://x.com/omardulaimidev).

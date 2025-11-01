@@ -4019,7 +4019,7 @@ generator zod {
 pnpm prisma generate
 ```
 
-[Read the full documentation →](../category/getting-started)
+[Read the full documentation →](../intro/quick-start.md)
 
 ### Using Pro Features
 
@@ -7653,7 +7653,7 @@ class ConfigError extends Error {
 
 ***
 
-**Need more details?** Check the [feature-specific documentation](../features/) or reach out via DM to [@omardulaimidev on X](https://x.com/omardulaimidev).
+**Need more details?** Check the [feature-specific documentation](../features/overview.md) or reach out via DM to [@omardulaimidev on X](https://x.com/omardulaimidev).
 
 # Safety System
 
@@ -9493,8 +9493,8 @@ Update your deployment pipeline:
 
 ### Documentation Resources
 
-- [Pro Features Documentation](../features/)
-- [API Reference](../api/)
+- [Pro Features Documentation](../features/overview.md)
+- [API Reference](../reference/pro-cli.md)
 - [Troubleshooting Guide](../reference/troubleshooting.md)
 
 ### Community Support

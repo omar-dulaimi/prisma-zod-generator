@@ -76,7 +76,7 @@ generator zod {
 pnpm prisma generate
 ```
 
-[Read the full documentation →](../category/getting-started)
+[Read the full documentation →](../intro/quick-start.md)
 
 ### Using Pro Features
 

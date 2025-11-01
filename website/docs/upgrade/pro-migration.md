@@ -689,8 +689,8 @@ Update your deployment pipeline:
 ## 📞 Getting Help
 
 ### Documentation Resources
-- [Pro Features Documentation](../features/)
-- [API Reference](../api/)
+- [Pro Features Documentation](../features/overview.md)
+- [API Reference](../reference/pro-cli.md)
 - [Troubleshooting Guide](../reference/troubleshooting.md)
 
 ### Community Support
