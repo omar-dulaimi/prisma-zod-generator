@@ -1,3 +1,34 @@
+## [1.31.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.30.2...v1.31.0) (2025-11-01)
+
+### 🚀 Features
+
+* **pro:** integrate monetization suite and docs ([8f61d5b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8f61d5b8847d812c2de35e419c4594c1295fdb15))
+
+### 🐛 Bug Fixes
+
+* ci ([15089ff](https://github.com/omar-dulaimi/prisma-zod-generator/commit/15089fff25789fb14e336e1a36d83eee2c8ab536))
+* **cli:** lazily load pro modules in public build ([9265d4f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9265d4f198868e4c45baee485ad1efd6ddbbae09))
+* **dos:** avoid array spread when computing json depth ([32e9558](https://github.com/omar-dulaimi/prisma-zod-generator/commit/32e95583850e2c94670c528182774ce617f540d6))
+* **transactions:** hold serializable mutex for entire transaction ([0f96005](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0f9600550f13ef59b9e8f5a10af10c7109eea7f1))
+
+### 📚 Documentation
+
+* **api-docs:** note tsx prerequisite for mock server tests ([69ce714](https://github.com/omar-dulaimi/prisma-zod-generator/commit/69ce7144a078f053912b76010117f2624b954951))
+* **contracts:** include jest-pact in prerequisites ([1c752fa](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1c752fa334c7033097e80554ce2ecc0b870feb5e))
+* **contributing:** remove discord reference from support section ([16e8b8c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/16e8b8c7bb4bd3e6746e6a461de6002d3fe399fd))
+* **factories:** fix generated import path to include pro segment ([c31d334](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c31d334698efd00d0a60aa37d5d0b86f5ffbd037))
+* fix broken internal links ([f49c556](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f49c5568f8cbfa6ebc6fc432f84352c86304a627))
+* **forms:** add z import for example ([941a8ea](https://github.com/omar-dulaimi/prisma-zod-generator/commit/941a8ea662818e1d271f706b22e81d54716c7ecb))
+* **forms:** align example with register-based rhf usage ([d92fec3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d92fec381773c506716ebfd51b2899d7801f4f89))
+* **forms:** update shadcn init command to current package name ([1234fcd](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1234fcdcef51f18a573d4221042be7c6231e4cdf))
+* **guard:** fix yaml fence and clarify allowed-break example ([7d7518d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7d7518de26433cc28d0e2b448c240ac74bd07ee7))
+* **license:** set california governing law for pro agreement ([5c01ada](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5c01ada5cabab2955ece4ef42a87aca6025b91c3))
+* **multi-tenant:** fix tenant provider import path ([55805b8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/55805b881d8b06be44a76da4cfcf6a699d54d54f))
+* **policies:** fix redaction middleware import path ([c9e3e19](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c9e3e1912f701320c237b5576d95bc202982f703))
+* **postgres-rls:** fix generated helper import path ([c082971](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c082971679a3509534e5db670da9813396299650))
+* **pro-cli:** close code fence before environment note ([3fdca0b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3fdca0b9b16636dec688009ecd0e91a13a206434))
+* refresh llms.txt index ([4e17097](https://github.com/omar-dulaimi/prisma-zod-generator/commit/4e170970c1a0164b2f2b117259a032395630c69f))
+
 ## [1.30.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.30.1...v1.30.2) (2025-10-24)
 
 ### 🐛 Bug Fixes
