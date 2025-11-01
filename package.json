@@ -164,7 +164,7 @@
     "@types/validator": "^13.15.3",
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",
-    "@vitest/coverage-v8": "^4.0.2",
+    "@vitest/coverage-v8": "^4.0.6",
     "conventional-changelog-conventionalcommits": "^9.1.0",
     "eslint": "^9.38.0",
     "eslint-config-prettier": "^10.1.8",
@@ -185,7 +185,7 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "validator": "^13.15.15",
-    "vitest": "^4.0.2",
+    "vitest": "^4.0.6",
     "zod": "^4.1.12"
   },
   "pnpm": {
