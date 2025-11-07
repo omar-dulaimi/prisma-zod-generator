@@ -1,3 +1,9 @@
+## [1.31.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.2...v1.31.3) (2025-11-07)
+
+### 🐛 Bug Fixes
+
+* **decimal:** align prisma import resolution ([b5bb5be](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b5bb5bedd1569ada5090f783dff13dd37cabdeda))
+
 ## [1.31.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.1...v1.31.2) (2025-11-01)
 
 ### 🐛 Bug Fixes
