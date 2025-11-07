@@ -3,6 +3,8 @@ import path from 'path';
 
 type Chunk = { filePath: string; content: string };
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 let enabled = false;
 let bundlePath = '';
 let chunks: Chunk[] = [];
@@ -56,10 +58,13 @@ function transformContentForSingleFile(filePath: string, source: string): string
   // Detect Zod import variant (zod or zod/v4) importing z
   const zodImportRe =
     /^\s*import\s+(?:\{\s*z\s*\}|\*\s+as\s+z)\s+from\s+['"](?:zod(?:\/v4)?)['"];?\s*$/;
-  const prismaTypeImportRe =
-    /^\s*import\s+type\s+\{\s*Prisma\s*\}\s+from\s+['"]@prisma\/client['"];?\s*$/;
-  const prismaValueImportRe =
-    /^\s*import\s+\{\s*([^}]+)\s*\}\s+from\s+['"]@prisma\/client['"];?\s*$/;
+  const escapedPrismaImport = escapeRegExp(prismaImportBase);
+  const prismaTypeImportRe = new RegExp(
+    `^\\s*import\\s+type\\s+\\{\\s*Prisma\\s*\\}\\s+from\\s+['\"]${escapedPrismaImport}['\"];?\\s*$`,
+  );
+  const prismaValueImportRe = new RegExp(
+    `^\\s*import\\s+\\{\\s*([^}]+)\\s*\\}\\s+from\\s+['\"]${escapedPrismaImport}['\"];?\\s*$`,
+  );
   const prismaAliasTypeRe = /^\s*type\s+__PrismaAlias\s*=\s*Prisma\./;
   // Relative re-exports don't make sense in a single bundled file
   const relExportStarRe = /^\s*export\s+\*\s+from\s+['"](\.\.?\/)[^'"]+['"];?\s*$/;

@@ -326,7 +326,10 @@ export async function generate(options: GeneratorOptions) {
         throw configError;
       }
     }
-    checkForCustomPrismaClientOutputPath(prismaClientGeneratorConfig);
+    checkForCustomPrismaClientOutputPath(
+      prismaClientGeneratorConfig,
+      path.dirname(options.schemaPath),
+    );
     setPrismaClientProvider(prismaClientGeneratorConfig);
     setPrismaClientConfig(prismaClientGeneratorConfig);
 
@@ -726,10 +729,29 @@ function getGeneratorConfigByProvider(generators: GeneratorConfig[], provider: s
 
 function checkForCustomPrismaClientOutputPath(
   prismaClientGeneratorConfig: GeneratorConfig | undefined,
+  schemaBaseDir: string,
 ) {
-  if (prismaClientGeneratorConfig?.isCustomOutput) {
-    Transformer.setPrismaClientOutputPath(prismaClientGeneratorConfig.output?.value as string);
+  const outputValue = prismaClientGeneratorConfig?.output?.value as string | undefined;
+  const isCustomOutput = Boolean(prismaClientGeneratorConfig?.isCustomOutput);
+  const provider = prismaClientGeneratorConfig?.provider
+    ? parseEnvValue(prismaClientGeneratorConfig.provider)
+    : undefined;
+
+  const looksLikeNodeModulesPath = Boolean(outputValue && outputValue.includes('node_modules'));
+  const shouldUseCustomPath = Boolean(isCustomOutput && outputValue && !looksLikeNodeModulesPath);
+
+  if (shouldUseCustomPath) {
+    const rawOutput = outputValue as string;
+    const normalizedOutput = path.isAbsolute(rawOutput)
+      ? path.normalize(rawOutput)
+      : path.resolve(schemaBaseDir, rawOutput);
+    Transformer.setPrismaClientOutputPath(normalizedOutput);
+    return;
   }
+
+  // New generator may require an explicit output path when users customize it; otherwise fall back
+  // to the default package entrypoint just like prisma-client-js.
+  Transformer.setPrismaClientOutputPath('@prisma/client');
 }
 
 function setPrismaClientProvider(prismaClientGeneratorConfig: GeneratorConfig | undefined) {
@@ -1746,7 +1768,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
           // Check if Prisma import is needed (for Decimal or other Prisma types)
           const needsPrismaImport = fieldLines.includes('Prisma.');
           const prismaImport = needsPrismaImport
-            ? `import { Prisma } from '@prisma/client';\n`
+            ? `import { Prisma } from '${Transformer.resolvePrismaImportPath(path.dirname(filePath))}';\n`
             : '';
           // Apply strict mode based on configuration for this variant
           const isStandardVariant = ['pure', 'input', 'result'].includes(variantDef.name);
@@ -1890,6 +1912,7 @@ async function generateVariantType(
       config,
       strictModeResolver,
       currentDir,
+      variantPath,
     );
 
     logger.debug(`   📝 Creating ${variantName} variant: ${fileName} (${schemaName})`);
@@ -1928,6 +1951,7 @@ async function generateVariantSchemaContent(
   config: CustomGeneratorConfig | undefined,
   strictModeResolver: StrictModeResolver,
   currentDir: string,
+  targetDir: string,
 ): Promise<string> {
   // Extract custom imports for this model
   const { extractModelCustomImports } = await import('./parsers/zod-comments');
@@ -2109,7 +2133,9 @@ async function generateVariantSchemaContent(
 
   // Check if Prisma import is needed (for Decimal or other Prisma types)
   const needsPrismaImport = fieldDefinitions.includes('Prisma.');
-  const prismaImport = needsPrismaImport ? `import { Prisma } from '@prisma/client';\n` : '';
+  const prismaImport = needsPrismaImport
+    ? `import { Prisma } from '${Transformer.resolvePrismaImportPath(targetDir)}';\n`
+    : '';
 
   // Apply strict mode based on configuration
   const strictModeSuffix = strictModeResolver.getVariantStrictModeSuffix(

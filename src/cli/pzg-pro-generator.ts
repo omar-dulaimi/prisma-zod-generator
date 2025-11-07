@@ -519,7 +519,25 @@ async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesCon
 
 function getPrismaClientPath(prismaClientGeneratorConfig: any): string {
   if (prismaClientGeneratorConfig?.output?.value) {
-    return parseEnvValue(prismaClientGeneratorConfig.output);
+    const rawValue = parseEnvValue(prismaClientGeneratorConfig.output);
+    const looksLikeNodeModules = rawValue?.includes('node_modules');
+    if (!prismaClientGeneratorConfig.isCustomOutput || looksLikeNodeModules) {
+      return '@prisma/client';
+    }
+
+    const provider = prismaClientGeneratorConfig?.provider
+      ? parseEnvValue(prismaClientGeneratorConfig.provider)
+      : undefined;
+    let outputValue = rawValue;
+
+    if (provider === 'prisma-client') {
+      const hasExtension = path.extname(outputValue) !== '';
+      if (!hasExtension && outputValue && !/\/?client(?:\.[a-z]+)?$/i.test(outputValue)) {
+        outputValue = path.join(outputValue, 'client');
+      }
+    }
+
+    return outputValue || '@prisma/client';
   }
   return '@prisma/client';
 }

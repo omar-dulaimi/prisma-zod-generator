@@ -79,4 +79,43 @@ describe('Custom Prisma Client output path integration', () => {
     },
     GENERATION_TIMEOUT,
   );
+
+  it(
+    'hoists decimal helper import from the generated client path',
+    async () => {
+      const testEnv = await TestEnvironment.createTestEnv('custom-client-output-decimal');
+      try {
+        const clientRel = './prismaClient';
+        const base = PrismaSchemaGenerator.createBasicSchema({
+          outputPath: './generated',
+        });
+        const schemaWithDecimal = `${base}
+model Invoice {
+  id    Int     @id @default(autoincrement())
+  total Decimal
+}`;
+        const schema = schemaWithDecimal.replace(
+          'generator client {',
+          `generator client {\n  output = "${clientRel}"`,
+        );
+        await fs.writeFile(testEnv.schemaPath, schema, 'utf8');
+
+        await testEnv.runGeneration();
+
+        const decimalHelpersPath = join(
+          testEnv.testDir,
+          'generated',
+          'helpers',
+          'decimal-helpers.ts',
+        );
+        const helperContent = await fs.readFile(decimalHelpersPath, 'utf8');
+
+        expect(helperContent).not.toContain("from '@prisma/client'");
+        expect(helperContent).toMatch(/from '\.\.\/\.\.\/prismaClient'/);
+      } finally {
+        await testEnv.cleanup();
+      }
+    },
+    GENERATION_TIMEOUT,
+  );
 });

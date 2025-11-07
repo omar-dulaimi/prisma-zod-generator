@@ -110,4 +110,23 @@ describe('prisma-client generator option', () => {
     // index.ts lives at ./zod relative to root; client at ./client/nested so relative is ../client/nested
     expect(content).toMatch(/from '\.\.\/client\/nested'/);
   });
+
+  it('uses the generated client path inside decimal helpers for the new generator', () => {
+    const genBlock = `generator client {\n  provider               = "prisma-client"\n  output                 = "./client"\n  runtime                = "nodejs"\n  moduleFormat           = "esm"\n  generatedFileExtension = "ts"\n  importFileExtension    = "js"\n}`;
+    const schema = `${buildSchema({ generatorBlock: genBlock })}
+model Invoice {
+  id    Int     @id @default(autoincrement())
+  total Decimal
+}`;
+    writeFileSync(schemaPath, schema);
+    try {
+      execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
+    } catch {
+      return;
+    }
+    const helperPath = join(zodOut, 'helpers', 'decimal-helpers.ts');
+    if (!existsSync(helperPath)) return;
+    const helperContent = readFileSync(helperPath, 'utf8');
+    expect(helperContent).toMatch(/from '\.\.\/\.\.\/client\/client\.js'/);
+  });
 });
