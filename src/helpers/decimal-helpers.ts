@@ -14,11 +14,12 @@
 export function generateDecimalHelpers(
   hasDecimalJs: boolean,
   zodNamespace: string = 'z',
+  prismaImportPath: string = '@prisma/client',
 ): {
   helperCode: string;
   imports: string[];
 } {
-  const imports: string[] = ["import { Prisma } from '@prisma/client';"];
+  const imports: string[] = [`import { Prisma } from '${prismaImportPath}';`];
 
   if (hasDecimalJs) {
     imports.push("import Decimal from 'decimal.js';");

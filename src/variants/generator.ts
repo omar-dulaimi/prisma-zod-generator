@@ -5,6 +5,7 @@
 
 import { DMMF } from '@prisma/generator-helper';
 import { promises as fs } from 'fs';
+import path from 'path';
 import { PrismaTypeMapper } from '../generators/model';
 import {
   ModelVariantCollection,
@@ -18,6 +19,8 @@ import Transformer from '../transformer';
 import { NamingResult, VariantNamingSystem } from '../utils/naming';
 import { writeFileSafely } from '../utils/writeFileSafely';
 import { VariantConfigurationManager } from './config';
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * File generation context
@@ -352,8 +355,18 @@ export class VariantFileGenerationCoordinator {
   private applyVariantCustomizations(content: string, context: GenerationContext): string {
     let customizedContent = content;
 
+    const prismaImportSpecifier = this.resolveVariantPrismaImportPath(context);
+    const escapedPrismaImport = escapeRegExp(prismaImportSpecifier);
+    const prismaImportRemovalRe = new RegExp(
+      `^\\s*import\\s*\\{[^}]*\\}\\s*from\\s*['\"]${escapedPrismaImport}['\"];?\\s*$`,
+      'gm',
+    );
+
     // Preserve custom imports and model-level validation before applying other customizations
-    const preservedCustomImports = this.extractCustomImports(customizedContent);
+    const preservedCustomImports = this.extractCustomImports(
+      customizedContent,
+      prismaImportSpecifier,
+    );
     const preservedModelValidation = this.extractModelLevelValidation(customizedContent);
 
     // Debug logging
@@ -430,15 +443,12 @@ export class VariantFileGenerationCoordinator {
         if (!usedEnumNames.includes(enumName)) usedEnumNames.push(enumName);
       }
       if (usedEnumNames.length > 0) {
-        // Remove existing @prisma/client enum imports to avoid duplication
-        customizedContent = customizedContent.replace(
-          /import\s*\{[^}]*\}\s*from\s*['"]@prisma\/client['"];?\n?/g,
-          '',
-        );
+        // Remove existing Prisma Client enum imports to avoid duplication
+        customizedContent = customizedContent.replace(prismaImportRemovalRe, '');
         // Insert consolidated import after zod import
         customizedContent = customizedContent.replace(
           /(import\s*\{\s*z\s*\}\s*from\s*['"]zod['"]\s*;?)/,
-          (m) => `${m}\nimport { ${usedEnumNames.join(', ')} } from '@prisma/client';`,
+          (m) => `${m}\nimport { ${usedEnumNames.join(', ')} } from '${prismaImportSpecifier}';`,
         );
       }
     } else {
@@ -461,11 +471,8 @@ export class VariantFileGenerationCoordinator {
       }
 
       if (usedEnumNames.length > 0) {
-        // Remove existing @prisma/client enum imports to avoid duplication
-        customizedContent = customizedContent.replace(
-          /import\s*\{[^}]*\}\s*from\s*['"]@prisma\/client['"];?\n?/g,
-          '',
-        );
+        // Remove existing Prisma Client enum imports to avoid duplication
+        customizedContent = customizedContent.replace(prismaImportRemovalRe, '');
         // Ensure enum schema imports are present (handle missing imports for variants)
         const missingEnumImports: string[] = [];
         usedEnumNames.forEach((enumName) => {
@@ -542,7 +549,7 @@ export class VariantFileGenerationCoordinator {
   /**
    * Extract custom imports from content (non-enum related)
    */
-  private extractCustomImports(content: string): string[] {
+  private extractCustomImports(content: string, prismaImportSpecifier: string): string[] {
     const customImports: string[] = [];
 
     // Match import statements that aren't zod, @prisma/client, or enum schema imports
@@ -556,6 +563,8 @@ export class VariantFileGenerationCoordinator {
       if (
         importLine.includes("from 'zod") ||
         importLine.includes('from "zod') ||
+        importLine.includes(`from '${prismaImportSpecifier}`) ||
+        importLine.includes(`from "${prismaImportSpecifier}`) ||
         importLine.includes("from '@prisma/client") ||
         importLine.includes('from "@prisma/client') ||
         importLine.includes('/enums/') ||
@@ -623,6 +632,15 @@ export class VariantFileGenerationCoordinator {
     }
 
     return content;
+  }
+
+  private resolveVariantPrismaImportPath(context: GenerationContext): string {
+    const baseDir = path.isAbsolute(context.outputDirectory)
+      ? context.outputDirectory
+      : path.resolve(Transformer.getOutputPath?.() ?? process.cwd(), context.outputDirectory);
+    const variantDir = context.naming?.filePath ? path.dirname(context.naming.filePath) : '';
+    const targetDir = variantDir ? path.resolve(baseDir, variantDir) : baseDir;
+    return Transformer.resolvePrismaImportPath(targetDir);
   }
 
   /**

@@ -968,7 +968,7 @@ export default class Transformer {
    * Resolve the import specifier for Prisma Client relative to a target directory.
    * Falls back to '@prisma/client' when user did not configure a custom output.
    */
-  private static resolvePrismaImportPath(targetDir: string): string {
+  static resolvePrismaImportPath(targetDir: string): string {
     if (!this.isCustomPrismaClientOutputPath) return '@prisma/client';
     try {
       let prismaClientImportTarget = this.prismaClientOutputPath;
@@ -990,7 +990,9 @@ export default class Transformer {
 
       // Add file extension if needed (for ESM with importFileExtension)
       const extension = this.getImportFileExtension();
-      rel = `${rel}${extension}`;
+      if (!extension || !/\.[a-z]+$/i.test(rel)) {
+        rel = `${rel}${extension}`;
+      }
 
       // Ensure it is a valid relative module specifier (prefix with ./ when needed)
       if (rel.startsWith('.') || rel.startsWith('/')) return rel;
@@ -2709,7 +2711,8 @@ const isValidDecimalInput = (
       }).generateImportZodStatement();
 
       // Generate decimal helpers
-      const { helperCode, imports } = generateDecimalHelpers(hasDecimalJs, 'z');
+      const prismaImportPath = Transformer.resolvePrismaImportPath(helpersDir);
+      const { helperCode, imports } = generateDecimalHelpers(hasDecimalJs, 'z', prismaImportPath);
 
       const content = `${zImport}
 ${imports.join('\n')}

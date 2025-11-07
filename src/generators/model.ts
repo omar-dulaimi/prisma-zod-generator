@@ -6,6 +6,7 @@
  */
 
 import { DMMF } from '@prisma/generator-helper';
+import path from 'path';
 import {
   extractFieldComment,
   extractFieldCustomImports,
@@ -2673,7 +2674,16 @@ export class PrismaTypeMapper {
 
     // Prisma client import (for Decimal type support)
     if (imports.includes('Prisma')) {
-      lines.push("import { Prisma } from '@prisma/client';");
+      const schemasPath =
+        typeof transformerModule.getSchemasPath === 'function'
+          ? transformerModule.getSchemasPath()
+          : transformerModule.getOutputPath?.();
+      const targetDir = schemasPath ? path.join(schemasPath, 'models') : process.cwd();
+      const prismaImportPath =
+        typeof transformerModule.resolvePrismaImportPath === 'function'
+          ? transformerModule.resolvePrismaImportPath(targetDir)
+          : '@prisma/client';
+      lines.push(`import { Prisma } from '${prismaImportPath}';`);
     }
 
     // Related model schema imports (exclude current schema + enums + special imports).
