@@ -24,8 +24,7 @@ const args = process.argv.slice(2);
 const firstArg = args[0];
 const wantsGlobalHelp = firstArg === '--help' || firstArg === '-h';
 const isCliInvocation =
-  require.main === module &&
-  ((args.length > 0 && !firstArg?.startsWith('--')) || wantsGlobalHelp);
+  require.main === module && ((args.length > 0 && !firstArg?.startsWith('--')) || wantsGlobalHelp);
 
 if (isCliInvocation) {
   const [command, ...rest] = args;
