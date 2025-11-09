@@ -50,6 +50,7 @@ const CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 const LICENSE_KEY_VERSION = 'v2';
 const LICENSE_KEY_PREFIX = `pzg_${LICENSE_KEY_VERSION}_`;
+const MIN_SIGNATURE_LENGTH = 43;
 const MAX_LICENSE_AGE_MS = 365 * 24 * 60 * 60 * 1000; // 1 year max license age for replay protection
 
 // Public key used to verify license signatures (Ed25519)
@@ -223,29 +224,52 @@ function cacheLicense(info: LicenseInfo): void {
  * Validate license key with cryptographic verification
  * Implements secure license validation with signature checking
  */
+function extractSignedLicensePayload(
+  key: string,
+): { encodedData: string; signature: string } | null {
+  if (!key.startsWith(LICENSE_KEY_PREFIX)) {
+    return null;
+  }
+
+  const body = key.slice(LICENSE_KEY_PREFIX.length);
+  let attemptedSignatureVerification = false;
+
+  for (
+    let separatorIndex = body.lastIndexOf('_');
+    separatorIndex > 0;
+    separatorIndex = body.lastIndexOf('_', separatorIndex - 1)
+  ) {
+    const encodedData = body.slice(0, separatorIndex);
+    const signature = body.slice(separatorIndex + 1);
+
+    if (!encodedData || signature.length < MIN_SIGNATURE_LENGTH) {
+      continue;
+    }
+
+    attemptedSignatureVerification = true;
+
+    if (verifyLicenseSignature(encodedData, signature)) {
+      return { encodedData, signature };
+    }
+  }
+
+  if (attemptedSignatureVerification) {
+    throw new LicenseError(
+      'Invalid PZG Pro license key. Please check your license key.\n' +
+        'Get support at: https://github.com/omar-dulaimi/prisma-zod-generator/issues',
+      { reason: 'signature_verification_failed' },
+    );
+  }
+
+  return null;
+}
+
 async function validateLicenseRemote(key: string): Promise<LicenseInfo | null> {
   try {
     // License format: pzg_v2_<base64url-encoded-license-data>_<base64url-signature>
-    if (!key.startsWith(LICENSE_KEY_PREFIX)) {
+    const payload = extractSignedLicensePayload(key);
+    if (!payload) {
       return null;
-    }
-
-    // Parse more carefully since base64url signatures can contain underscores
-    const prefixMatch = key.match(new RegExp(`^${LICENSE_KEY_PREFIX}(.+)_([A-Za-z0-9_-]{43,})$`));
-    if (!prefixMatch) {
-      return null;
-    }
-
-    const [, encodedData, signature] = prefixMatch;
-    // Verify cryptographic signature first (fail fast on invalid signatures)
-    if (!verifyLicenseSignature(encodedData, signature)) {
-      // Signature verification failed - this indicates potential tampering
-      // Throw an error for security violations rather than returning null
-      throw new LicenseError(
-        'Invalid PZG Pro license key. Please check your license key.\n' +
-          'Get support at: https://github.com/omar-dulaimi/prisma-zod-generator/issues',
-        { reason: 'signature_verification_failed' },
-      );
     }
 
     // Decode license data after signature verification
@@ -262,9 +286,9 @@ async function validateLicenseRemote(key: string): Promise<LicenseInfo | null> {
       // Support both base64 and base64url decoding for backward compatibility
       let decodedData: string;
       try {
-        decodedData = Buffer.from(encodedData, 'base64url').toString('utf8');
+        decodedData = Buffer.from(payload.encodedData, 'base64url').toString('utf8');
       } catch {
-        decodedData = Buffer.from(encodedData, 'base64').toString('utf8');
+        decodedData = Buffer.from(payload.encodedData, 'base64').toString('utf8');
       }
 
       const parsed = JSON.parse(decodedData);
