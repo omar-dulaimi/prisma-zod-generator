@@ -1,3 +1,9 @@
+## [1.31.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.4...v1.31.5) (2025-11-09)
+
+### 🐛 Bug Fixes
+
+* **cli:** surface seat/expiry in license-check and sync pro docs ([2d470c0](https://github.com/omar-dulaimi/prisma-zod-generator/commit/2d470c08872d1f0d1cba713c425de12d849f79fc))
+
 ## [1.31.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.3...v1.31.4) (2025-11-09)
 
 ### 🐛 Bug Fixes

@@ -76,7 +76,7 @@
 
 > Prisma → Zod in one generate. Ship validated, typed data everywhere.
 
-Last updated: 2025-11-09 • Version: 1.31.4
+Last updated: 2025-11-09 • Version: 1.31.5
 
 ## Quick start
 
@@ -1996,7 +1996,7 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enableApiDocs = true
 }
@@ -2134,7 +2134,7 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enableContracts = true
 }
@@ -2258,7 +2258,7 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enableFactories = true
 }
@@ -2394,21 +2394,16 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enableForms = true
 
-  # Optional: Choose UI library (barebones, shadcn, mantine, chakra, mui)
-  # uiLibrary = "shadcn"
-
-  # Optional: Enable i18n support
-  # enableI18n = true
-  # i18nNamespace = "forms"
-
-  # Optional: Generate tests
-  # generateTests = true
+  // Optional advanced config (stringified JSON)
+  // forms = "{ \"uiLibrary\": \"shadcn\", \"enableI18n\": true, \"i18nNamespace\": \"forms\", \"generateTests\": true }"
 }
 ```
+
+> Pass additional options (UI library, i18n, tests, etc.) through the `forms` JSON string. All keys must be valid JSON and wrapped in quotes inside the Prisma schema.
 
 Then run:
 
@@ -2674,7 +2669,7 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enableMultiTenant = true
 }
@@ -2779,7 +2774,7 @@ Purchase any tier through GitHub Sponsors and get started in minutes:
 
 1. DM [@omardulaimidev on X](https://x.com/omardulaimidev) with your GitHub username
 2. You'll receive your license key and setup instructions within 24 hours
-3. Run `pzg-pro license-check` to verify activation
+3. Run `prisma-zod-generator license-check` to verify activation
 
 ### Available Tiers
 
@@ -2821,12 +2816,13 @@ Starter is perfect for solo builders shipping typed Server Actions and forms. Pr
 
 ```bash
 # Check license
-pzg-pro license-check
+prisma-zod-generator license-check
 
-# Generate any pack
-pzg-pro generate forms
-pzg-pro generate sdk
-pzg-pro generate api-docs
+# Enable the packs you need in schema.prisma
+# (e.g., enableForms/enableSDK/enableApiDocs)
+
+# Run Prisma generators
+pnpm exec prisma generate
 ```
 
 ## Packs at a glance
@@ -2968,7 +2964,7 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enablePerformance = true
 }
@@ -3093,7 +3089,7 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enablePolicies = true
 }
@@ -3269,7 +3265,7 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enablePostgresRLS = true
 }
@@ -3442,7 +3438,7 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enableSDK = true
 }
@@ -3633,7 +3629,7 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enableServerActions = true
 }
@@ -6922,7 +6918,7 @@ Yes, you can adjust your GitHub Sponsors tier at any time. Contact [@omardulaimi
 After receiving your license key from @omardulaimidev, follow the setup instructions provided. You can verify activation by running:
 
 ```bash
-pzg-pro license-check
+prisma-zod-generator license-check
 ```
 
 **Do pro features require additional dependencies?**
@@ -7032,163 +7028,28 @@ Complete API documentation for all PZG Pro features and CLI commands.
 
 ### Core Commands
 
-#### `pzg-pro license-check`
+#### `prisma-zod-generator license-check`
 
 Validate and display license information.
 
 ```bash
-npx pzg-pro license-check [options]
+prisma-zod-generator license-check
 ```
 
-**Options:**
-
-- `--verbose, -v`: Show detailed license information
-- `--json`: Output in JSON format
-- `--features`: Show available features for your plan
-
-**Examples:**
-
-```bash
-# Basic license check
-npx pzg-pro license-check
-
-# Detailed output
-npx pzg-pro license-check --verbose
-
-# JSON output for scripts
-npx pzg-pro license-check --json | jq '.plan'
-
-# Show available features
-npx pzg-pro license-check --features
-```
-
-**Output:**
+**Sample Output:**
 
 ```
-✅ Valid PZG Pro License
-📋 Plan: professional (Professional)
-👥 Max Seats: 5
-📅 Valid Until: 2025-12-31
-```
+🔍 Checking PZG Pro license...
 
-#### `pzg-pro config`
+✅ Valid PZG Pro license found
+📋 Plan: Business (business)
+👥 Max Seats: 1
+📅 Valid Until: 2026-11-09T01:03:50.464Z
+🌐 License verified with server
 
-Manage configuration files.
-
-```bash
-npx pzg-pro config <command> [options]
-```
-
-**Commands:**
-
-- `show`: Display current configuration
-- `validate`: Validate configuration file
-- `init`: Create default configuration file
-
-**Examples:**
-
-```bash
-# Show effective configuration
-npx pzg-pro config show
-
-# Validate config file
-npx pzg-pro config validate
-
-# Create default config
-npx pzg-pro config init
-```
-
-### Generation Commands
-
-#### `pzg-pro generate policies`
-
-Generate policy enforcement code and redaction middleware.
-
-```bash
-npx pzg-pro generate policies [options]
-```
-
-**Options:**
-
-- `--output, -o <path>`: Output directory (default: `./generated/pzg/policies`)
-- `--schema, -s <path>`: Prisma schema file (default: `./prisma/schema.prisma`)
-- `--models, -m <models>`: Comma-separated list of models to include
-- `--force`: Overwrite existing files
-- `--dry-run`: Preview generated files without writing
-
-**Examples:**
-
-```bash
-# Generate all policies
-npx pzg-pro generate policies
-
-# Specific models only
-npx pzg-pro generate policies --models User,Post,Comment
-
-# Custom output directory
-npx pzg-pro generate policies --output ./src/generated/policies
-
-# Preview without writing files
-npx pzg-pro generate policies --dry-run
-```
-
-#### `pzg-pro generate server-actions`
-
-Generate Next.js Server Actions and React hooks.
-
-```bash
-npx pzg-pro generate server-actions [options]
-```
-
-**Options:**
-
-- `--output, -o <path>`: Output directory (default: `./src/server`)
-- `--schema, -s <path>`: Prisma schema file
-- `--models, -m <models>`: Models to generate actions for
-- `--actions, -a <actions>`: Actions to generate (create,update,delete,findMany)
-- `--hooks`: Generate React hooks (default: true)
-- `--force`: Overwrite existing files
-
-**Examples:**
-
-```bash
-# Generate all server actions
-npx pzg-pro generate server-actions
-
-# Specific models and actions
-npx pzg-pro generate server-actions --models User,Post --actions create,update
-
-# Custom output path
-npx pzg-pro generate server-actions --output ./src/lib/server
-```
-
-#### `pzg-pro generate sdk`
-
-Generate and publish TypeScript SDK.
-
-```bash
-npx pzg-pro generate sdk [options]
-```
-
-**Options:**
-
-- `--package, -p <name>`: Package name (e.g., @acme/api-sdk)
-- `--version, -v <version>`: Package version (default: 1.0.0)
-- `--output, -o <path>`: Output directory (default: `./packages/sdk`)
-- `--publish`: Publish to npm registry
-- `--registry <url>`: Custom npm registry URL
-
-**Examples:**
-
-```bash
-# Generate SDK package
-npx pzg-pro generate sdk --package @acme/api-sdk --version 1.0.0
-
-# Generate and publish
-npx pzg-pro generate sdk --package @acme/api-sdk --publish
-
-# Custom registry
-npx pzg-pro generate sdk --package @acme/api-sdk --registry https://npm.example.com
+🚀 Ready to use PZG Pro features!
+📚 Docs: https://omar-dulaimi.github.io/prisma-zod-generator/docs
+💬 Support: https://github.com/omar-dulaimi/prisma-zod-generator/issues
 ```
 
 #### `pzg-pro guard`
@@ -7221,102 +7082,6 @@ npx pzg-pro guard --format json > drift-report.json
 
 # Allow a known breaking change by identifier
 npx pzg-pro guard --allowed-break model.User.field_removed
-```
-
-## ⚙️ Configuration API
-
-### Configuration File Schema
-
-The `pzg.config.json` file supports the following structure:
-
-```typescript
-interface PZGProConfig {
-  pro: {
-    // Global settings
-    licenseKey?: string; // Not recommended, use environment variable
-
-    // Feature-specific configuration
-    policies?: PolicyConfig;
-    serverActions?: ServerActionsConfig;
-    sdk?: SDKConfig;
-    driftGuard?: DriftGuardConfig;
-
-    // Environment-specific overrides
-    development?: Partial<PZGProConfig['pro']>;
-    staging?: Partial<PZGProConfig['pro']>;
-    production?: Partial<PZGProConfig['pro']>;
-  };
-}
-```
-
-### Policy Configuration
-
-```typescript
-interface PolicyConfig {
-  outputPath?: string;           // Default: './generated/pzg/policies'
-  enableRedaction?: boolean;     // Default: true
-  enableRLS?: boolean;          // Default: false
-  roles?: string[];             // Default: ['user', 'admin']
-  piiFields?: string[];         // Default: ['email', 'phone', 'ssn']
-  redactionRules?: {
-    [field: string]: {
-      type: 'mask' | 'hash' | 'remove';
-      pattern?: string;
-    };
-  };
-}
-```
-
-### Server Actions Configuration
-
-```typescript
-interface ServerActionsConfig {
-  outputPath?: string;                    // Default: './src/server'
-  enableOptimisticUpdates?: boolean;      // Default: true
-  enableCacheRevalidation?: boolean;      // Default: true
-  enableErrorBoundaries?: boolean;        // Default: true
-  actions?: ('create' | 'update' | 'delete' | 'findMany')[];
-  hooks?: {
-    enabled?: boolean;                    // Default: true
-    queryClient?: 'react-query' | 'swr'; // Default: 'react-query'
-  };
-}
-```
-
-### SDK Configuration
-
-```typescript
-interface SDKConfig {
-  packageName: string;
-  outputPath?: string;          // Default: './packages/sdk'
-  version?: string;             // Default: '1.0.0'
-  authHeader?: string;          // Default: 'Authorization'
-  retryConfig?: {
-    maxRetries: number;         // Default: 3
-    retryDelay: number;         // Default: 1000
-  };
-  endpoints?: {
-    baseUrl: string;
-    version?: string;           // Default: 'v1'
-  };
-}
-```
-
-### Drift Guard Configuration
-
-```typescript
-interface DriftGuardConfig {
-  enabled?: boolean;                    // Default: true
-  breakingChangeThreshold?: 'patch' | 'minor' | 'major'; // Default: 'major'
-  outputFormat?: 'console' | 'json' | 'github' | 'gitlab'; // Default: 'console'
-  excludeFields?: string[];            // Default: ['createdAt', 'updatedAt']
-  customRules?: {
-    [ruleName: string]: {
-      pattern: string;
-      severity: 'warning' | 'error';
-    };
-  };
-}
 ```
 
 ## 🔑 License API
@@ -8232,7 +7997,7 @@ Common issues, solutions, and debugging tips for PZG Pro features.
 
 **Causes & Solutions:**
 
-1. **Expired License**: Check expiration date with `npx pzg-pro license-check`
+1. **Expired License**: Check expiration date with `npx prisma-zod-generator license-check`
 2. **Wrong Environment Variable**: Ensure `PZG_LICENSE_KEY` is set correctly
 3. **Corrupted Key**: Re-copy your license key from the purchase email
 4. **Network Issues**: License validation requires internet connection
@@ -8244,10 +8009,10 @@ Common issues, solutions, and debugging tips for PZG Pro features.
 echo $PZG_LICENSE_KEY
 
 # Validate license
-npx pzg-pro license-check
+npx prisma-zod-generator license-check
 
 # Test with verbose output
-DEBUG=pzg-pro:license npx pzg-pro license-check
+DEBUG=pzg-pro:license npx prisma-zod-generator license-check
 ```
 
 ### License Validation Timeout
@@ -8314,25 +8079,21 @@ model User {
 
 ```bash
 # Generate with debug output
-DEBUG=pzg-pro:policies npx pzg-pro generate policies
+DEBUG=pzg-pro:policies pnpm exec prisma generate
 
 # Check generated policy files
-ls generated/pzg/policies/
-cat generated/pzg/policies/user.ts
+ls prisma/generated/pro/policies/
+cat prisma/generated/pro/policies/user.ts
 ```
 
 ### PII Redaction Not Working
 
-**Check Configuration:**
+**Check Configuration:** Add these keys to the `policies` JSON config (either inline in `schema.prisma` or the file referenced via `configPath`):
 
 ```json
 {
-  "pro": {
-    "policies": {
-      "enableRedaction": true,
-      "piiFields": ["email", "phone", "ssn"]
-    }
-  }
+  "enableRedaction": true,
+  "piiFields": ["email", "phone", "ssn"]
 }
 ```
 
@@ -8357,8 +8118,9 @@ npm install @tanstack/react-query next zod
 # Check TypeScript errors
 npx tsc --noEmit
 
-# Regenerate with correct paths
-npx pzg-pro generate server-actions --output ./src/server
+# Regenerate after updating generator config
+# serverActions = "{ \"outputPath\": \"./src/server\" }"
+pnpm exec prisma generate
 ```
 
 ### React Hook Errors
@@ -8392,7 +8154,8 @@ function App() {
 **Solution**: Regenerate server actions with latest version
 
 ```bash
-npx pzg-pro generate server-actions --force
+rm -rf prisma/generated/pro/server-actions
+pnpm exec prisma generate
 ```
 
 ## 📦 SDK Publisher
@@ -8506,30 +8269,16 @@ npm publish
 
 ```bash
 # Increase memory limit
-NODE_OPTIONS="--max-old-space-size=4096" npx pzg-pro generate policies
-
-# Use streaming mode (Performance Pack)
-npx pzg-pro generate policies --streaming
+NODE_OPTIONS="--max-old-space-size=4096" pnpm exec prisma generate
 ```
 
 ### Slow Generation Performance
 
 **Optimization Tips:**
 
-1. **Exclude Unnecessary Models**: Use filtering
-2. **Enable Caching**: Use `--cache` flag
-3. **Parallel Processing**: Use `--parallel` flag
-
-```bash
-# Filter specific models
-npx pzg-pro generate policies --models User,Post,Comment
-
-# Enable caching
-npx pzg-pro generate policies --cache
-
-# Parallel processing
-npx pzg-pro generate policies --parallel
-```
+1. **Limit Enabled Packs**: Disable `enable*` flags you don't need for the current run.
+2. **Filter Models**: Use your existing generator filtering (e.g., `models = ["User","Post"]`) to skip unused models.
+3. **Warm Node Modules**: Run `pnpm exec prisma generate` after dependencies are installed to avoid repeated cold starts.
 
 ### TypeScript Compilation Errors
 
@@ -8557,76 +8306,39 @@ npx pzg-pro generate policies --parallel
 }
 ```
 
-## 🔧 Configuration Issues
-
-### Config File Not Found
-
-**Symptom**: PZG Pro uses default config instead of custom
-
-**Solutions:**
-
-1. **Check Location**: Must be in project root as `pzg.config.json`
-2. **Valid JSON**: Validate JSON syntax
-3. **Permissions**: Ensure file is readable
-
-```bash
-# Validate config
-npx pzg-pro config validate
-
-# Show effective config
-npx pzg-pro config show
-```
-
-### Environment-Specific Config
-
-**Use Multiple Configs:**
-
-```json
-{
-  "pro": {
-    "development": {
-      "policies": { "enableRedaction": false }
-    },
-    "production": {
-      "policies": { "enableRedaction": true }
-    }
-  }
-}
-```
-
 ## 🐛 Debug Mode
 
 ### Enable Verbose Logging
 
 ```bash
 # Global debug
-DEBUG=pzg-pro:* npx pzg-pro generate policies
+DEBUG=pzg-pro:* pnpm exec prisma generate
 
 # Specific modules
-DEBUG=pzg-pro:license,pzg-pro:policies npx pzg-pro generate policies
+DEBUG=pzg-pro:license,pzg-pro:policies pnpm exec prisma generate
 
 # File output
-DEBUG=pzg-pro:* npx pzg-pro generate policies 2> debug.log
+DEBUG=pzg-pro:* pnpm exec prisma generate 2> debug.log
 ```
 
 ### Common Debug Patterns
 
 ```bash
 # License validation
-DEBUG=pzg-pro:license npx pzg-pro license-check
+DEBUG=pzg-pro:license npx prisma-zod-generator license-check
 
 # Comment parsing
-DEBUG=pzg-pro:parser npx pzg-pro generate policies
+DEBUG=pzg-pro:parser pnpm exec prisma generate
 
 # Code generation
-DEBUG=pzg-pro:codegen npx pzg-pro generate server-actions
+DEBUG=pzg-pro:codegen pnpm exec prisma generate
 ```
 
 ## 📞 Getting Help
 
 ### Before Reaching Out
 
-1. **Check License Status**: `npx pzg-pro license-check`
+1. **Check License Status**: `npx prisma-zod-generator license-check`
 2. **Update to Latest**: `npm install -D prisma-zod-generator@latest`
 3. **Clear Cache**: `rm -rf node_modules/.cache/pzg`
 4. **Review Logs**: Enable debug mode and check output
@@ -8663,14 +8375,14 @@ When reporting issues, include:
 **Debug Output**:
 ```
 
-DEBUG=pzg-pro:\* npx pzg-pro generate policies
+DEBUG=pzg-pro:\* pnpm exec prisma generate
 \[paste output]
 
 ````
 
 **Configuration**:
 ```json
-[paste pzg.config.json]
+[paste generator pzgPro block or the JSON referenced by configPath]
 ````
 
 ```
@@ -8828,7 +8540,7 @@ export PZG_LICENSE_KEY=pzg_v2_your_license_key_here
 export PZG_LICENSE_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAwRNEnFQJgBdNnwvnTTAPySp223shjXfioII2qMkqBFQ=\n-----END PUBLIC KEY-----'  # replace with the public key provided to you
 
 # Verify it works
-npx pzg-pro license-check
+npx prisma-zod-generator license-check
 ```
 
 ## 🔧 Installation & Setup
@@ -8868,35 +8580,6 @@ PZG_LICENSE_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAwRNEnFQJgBdNnwvnTTAPySp223shjXfioII2qMkqBFQ=
 -----END PUBLIC KEY-----'
 EOF
-```
-
-### 3. Create Configuration File
-
-Create `pzg.config.json` in your project root:
-
-```json
-{
-  "pro": {
-    "policies": {
-      "outputPath": "./generated/pzg/policies",
-      "enableRedaction": true,
-      "enableRLS": false
-    },
-    "serverActions": {
-      "outputPath": "./src/server",
-      "enableOptimisticUpdates": true,
-      "actions": ["create", "update", "delete"]
-    },
-    "sdk": {
-      "packageName": "@your-org/api-sdk",
-      "outputPath": "./packages/sdk"
-    },
-    "driftGuard": {
-      "enabled": true,
-      "breakingChangeThreshold": "major"
-    }
-  }
-}
 ```
 
 ## 🏗️ Migration Strategy
@@ -8978,12 +8661,11 @@ model Post {
 
 ### 3. Generate Policies
 
-```bash
-# Generate policy enforcement code
-npx pzg-pro generate policies
+Ensure `enablePolicies = true` in your `generator pzgPro` block, then run:
 
-# Check generated files
-ls generated/pzg/policies/
+```bash
+pnpm exec prisma generate
+ls prisma/generated/pro/policies/
 ```
 
 ### 4. Integrate in Application
@@ -9016,13 +8698,14 @@ export async function GET(request: Request) {
 
 ### 1. Generate Server Actions
 
-```bash
-# Generate for all models
-npx pzg-pro generate server-actions
+Set `enableServerActions = true` in `schema.prisma`, then:
 
-# Or specific models
-npx pzg-pro generate server-actions --models User,Post
+```bash
+pnpm exec prisma generate
+ls prisma/generated/pro/server-actions/
 ```
+
+> Need only a subset of models? Use Prisma's generator filtering (`model` / `exclude`) so the Pro generator only processes the models you care about.
 
 ### 2. Review Generated Code
 
@@ -9106,45 +8789,30 @@ export default function RootLayout({ children }) {
 
 ### 1. Configure SDK Settings
 
-Update your `pzg.config.json`:
+Add the flag and JSON config to `generator pzgPro`:
 
-```json
-{
-  "pro": {
-    "sdk": {
-      "packageName": "@your-org/api-sdk",
-      "version": "1.0.0",
-      "outputPath": "./packages/sdk",
-      "authHeader": "Authorization",
-      "endpoints": {
-        "baseUrl": "https://api.yourapp.com",
-        "version": "v1"
-      }
-    }
-  }
+```prisma
+generator pzgPro {
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
+  output   = "./generated/pro"
+  enableSDK = true
+  sdk = "{ \"packageName\": \"@your-org/api-sdk\", \"version\": \"1.0.0\", \"outputPath\": \"./packages/sdk\", \"authHeader\": \"Authorization\", \"endpoints\": { \"baseUrl\": \"https://api.yourapp.com\", \"version\": \"v1\" } }"
 }
 ```
 
 ### 2. Generate SDK
 
 ```bash
-# Generate SDK package
-npx pzg-pro generate sdk
-
-# Check generated structure
+pnpm exec prisma generate
 ls packages/sdk/
 ```
 
 ### 3. Publish SDK (Optional)
 
 ```bash
-# Build and publish
 cd packages/sdk
 npm run build
 npm publish
-
-# Or use the integrated command
-npx pzg-pro generate sdk --publish
 ```
 
 ### 4. Use SDK in Client Applications
@@ -9387,9 +9055,9 @@ Update your build scripts to generate Pro features:
 ```json
 {
   "scripts": {
-    "build": "npm run generate:zod && npm run generate:pro && next build",
-    "generate:pro": "pzg-pro generate policies && pzg-pro generate server-actions",
-    "prebuild": "npm run generate:pro"
+    "build": "pnpm exec prisma generate && next build",
+    "generate:pro": "pnpm exec prisma generate",
+    "prebuild": "pnpm exec prisma generate"
   }
 }
 ```
