@@ -76,7 +76,7 @@
 
 > Prisma → Zod in one generate. Ship validated, typed data everywhere.
 
-Last updated: 2025-11-09 • Version: 1.31.5
+Last updated: 2025-11-09 • Version: 1.31.6
 
 ## Quick start
 
@@ -7044,6 +7044,7 @@ prisma-zod-generator license-check
 ✅ Valid PZG Pro license found
 📋 Plan: Business (business)
 👥 Max Seats: 1
+🆔 Customer ID: Name
 📅 Valid Until: 2026-11-09T01:03:50.464Z
 🌐 License verified with server
 

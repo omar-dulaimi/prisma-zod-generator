@@ -1,3 +1,9 @@
+## [1.31.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.5...v1.31.6) (2025-11-09)
+
+### 🐛 Bug Fixes
+
+* **license:** add customer ID to license info and CLI output ([57b15f4](https://github.com/omar-dulaimi/prisma-zod-generator/commit/57b15f43a6a06c2b38818a04c3f3837f1edbfbd1))
+
 ## [1.31.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.4...v1.31.5) (2025-11-09)
 
 ### 🐛 Bug Fixes
