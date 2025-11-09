@@ -36,6 +36,7 @@ export interface LicenseInfo {
   // Optional fields for compatibility with businessSecurity utilities
   status?: 'active' | 'suspended' | 'expired';
   valid_until?: Date;
+  customerId?: string;
 }
 
 interface CachedLicense {
@@ -348,6 +349,7 @@ async function validateLicenseRemote(key: string): Promise<LicenseInfo | null> {
       validUntil: licenseData.validUntil,
       maxSeats: licenseData.maxSeats,
       cached: false,
+      customerId: licenseData.customerId,
     };
 
     return validatedLicense;

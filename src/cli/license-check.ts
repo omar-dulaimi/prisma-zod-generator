@@ -38,6 +38,10 @@ export async function runLicenseCheck(_args: string[] = []): Promise<void> {
     console.log(`👥 Max Seats: ${licenseDetails.maxSeats}`);
   }
 
+  if (licenseDetails?.customerId) {
+    console.log(`🆔 Customer ID: ${licenseDetails.customerId}`);
+  }
+
   if (licenseDetails?.validUntil) {
     console.log(`📅 Valid Until: ${licenseDetails.validUntil}`);
   }

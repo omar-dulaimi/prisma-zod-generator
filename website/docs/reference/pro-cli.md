@@ -35,6 +35,7 @@ prisma-zod-generator license-check
 ✅ Valid PZG Pro license found
 📋 Plan: Business (business)
 👥 Max Seats: 1
+🆔 Customer ID: Name
 📅 Valid Until: 2026-11-09T01:03:50.464Z
 🌐 License verified with server
 
