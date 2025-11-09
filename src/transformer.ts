@@ -3502,8 +3502,13 @@ ${helperCode}
               ? `get select(){ return ${selectFieldReference}; },`
               : `select: ${selectFieldReference},`;
 
-          const includeFieldRef3 =
-            includeValueExpr || includeZodSchemaLineLazy.replace('include: ', '').replace(',', '');
+          const includeFieldRef3 = includeValueExpr
+            ? target3 === 'v4'
+              ? includeValueExpr
+              : includeZodSchemaLineLazy
+                ? includeZodSchemaLineLazy.replace('include: ', '').replace(',', '').trim()
+                : includeValueExpr
+            : '';
           const includeField = includeFieldRef3
             ? target3 === 'v4'
               ? `get include(){ return ${includeFieldRef3}; },`
