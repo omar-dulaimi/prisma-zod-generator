@@ -3352,8 +3352,11 @@ ${helperCode}
             target1 === 'v4'
               ? `get select(){ return ${selectFieldReference}; },`
               : `select: ${selectFieldReference},`;
-          const includeFieldRef1 =
-            includeValueExpr || includeZodSchemaLineLazy.replace('include: ', '').replace(',', '');
+          const includeFieldRef1 = this.resolveIncludeFieldReference(
+            includeValueExpr,
+            includeZodSchemaLineLazy,
+            target1 === 'v4',
+          );
           const includeField = includeFieldRef1
             ? target1 === 'v4'
               ? `get include(){ return ${includeFieldRef1}; },`
@@ -3425,8 +3428,11 @@ ${helperCode}
             target2 === 'v4'
               ? `get select(){ return ${selectFieldReference}; },`
               : `select: ${selectFieldReference},`;
-          const includeFieldRef2 =
-            includeValueExpr || includeZodSchemaLineLazy.replace('include: ', '').replace(',', '');
+          const includeFieldRef2 = this.resolveIncludeFieldReference(
+            includeValueExpr,
+            includeZodSchemaLineLazy,
+            target2 === 'v4',
+          );
           const includeField = includeFieldRef2
             ? target2 === 'v4'
               ? `get include(){ return ${includeFieldRef2}; },`
@@ -3502,8 +3508,11 @@ ${helperCode}
               ? `get select(){ return ${selectFieldReference}; },`
               : `select: ${selectFieldReference},`;
 
-          const includeFieldRef3 =
-            includeValueExpr || includeZodSchemaLineLazy.replace('include: ', '').replace(',', '');
+          const includeFieldRef3 = this.resolveIncludeFieldReference(
+            includeValueExpr,
+            includeZodSchemaLineLazy,
+            target3 === 'v4',
+          );
           const includeField = includeFieldRef3
             ? target3 === 'v4'
               ? `get include(){ return ${includeFieldRef3}; },`
@@ -4683,6 +4692,26 @@ ${helperCode}
       selectValueExpr,
       includeValueExpr,
     };
+  }
+
+  private resolveIncludeFieldReference(
+    includeValueExpr?: string,
+    includeZodSchemaLineLazy?: string,
+    isV4Target = false,
+  ): string {
+    if (!includeValueExpr && !includeZodSchemaLineLazy) {
+      return '';
+    }
+
+    if (isV4Target) {
+      return includeValueExpr ?? '';
+    }
+
+    if (includeZodSchemaLineLazy) {
+      return includeZodSchemaLineLazy.replace('include: ', '').replace(',', '').trim();
+    }
+
+    return includeValueExpr ?? '';
   }
 
   resolveOrderByWithRelationImportAndZodSchemaLine(model: PrismaDMMF.Model) {
