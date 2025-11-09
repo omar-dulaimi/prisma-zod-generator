@@ -42,7 +42,7 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enableSDK = true
 }

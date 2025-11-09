@@ -45,21 +45,16 @@ Add to your `schema.prisma`:
 
 ```prisma
 generator pzgPro {
-  provider = "node ./lib/cli/pzg-pro.js"
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enableForms = true
 
-  # Optional: Choose UI library (barebones, shadcn, mantine, chakra, mui)
-  # uiLibrary = "shadcn"
-
-  # Optional: Enable i18n support
-  # enableI18n = true
-  # i18nNamespace = "forms"
-
-  # Optional: Generate tests
-  # generateTests = true
+  // Optional advanced config (stringified JSON)
+  // forms = "{ \"uiLibrary\": \"shadcn\", \"enableI18n\": true, \"i18nNamespace\": \"forms\", \"generateTests\": true }"
 }
 ```
+
+> Pass additional options (UI library, i18n, tests, etc.) through the `forms` JSON string. All keys must be valid JSON and wrapped in quotes inside the Prisma schema.
 
 Then run:
 

@@ -303,7 +303,7 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
       console.log('⚠️  No features enabled. Configure features in your generator config.');
       console.log('\nExample configuration:');
       console.log('generator pzgPro {');
-      console.log('  provider = "node ./lib/cli/pzg-pro.js"');
+      console.log('  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"');
       console.log('  output   = "./generated/pro"');
       console.log('  enablePolicies = true');
       console.log('  enableServerActions = true');

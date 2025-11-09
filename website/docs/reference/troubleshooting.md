@@ -15,7 +15,7 @@ Common issues, solutions, and debugging tips for PZG Pro features.
 ```
 
 **Causes & Solutions:**
-1. **Expired License**: Check expiration date with `npx pzg-pro license-check`
+1. **Expired License**: Check expiration date with `npx prisma-zod-generator license-check`
 2. **Wrong Environment Variable**: Ensure `PZG_LICENSE_KEY` is set correctly
 3. **Corrupted Key**: Re-copy your license key from the purchase email
 4. **Network Issues**: License validation requires internet connection
@@ -26,10 +26,10 @@ Common issues, solutions, and debugging tips for PZG Pro features.
 echo $PZG_LICENSE_KEY
 
 # Validate license
-npx pzg-pro license-check
+npx prisma-zod-generator license-check
 
 # Test with verbose output
-DEBUG=pzg-pro:license npx pzg-pro license-check
+DEBUG=pzg-pro:license npx prisma-zod-generator license-check
 ```
 
 ### License Validation Timeout
@@ -88,23 +88,19 @@ model User {
 **Debugging:**
 ```bash
 # Generate with debug output
-DEBUG=pzg-pro:policies npx pzg-pro generate policies
+DEBUG=pzg-pro:policies pnpm exec prisma generate
 
 # Check generated policy files
-ls generated/pzg/policies/
-cat generated/pzg/policies/user.ts
+ls prisma/generated/pro/policies/
+cat prisma/generated/pro/policies/user.ts
 ```
 
 ### PII Redaction Not Working
-**Check Configuration:**
+**Check Configuration:** Add these keys to the `policies` JSON config (either inline in `schema.prisma` or the file referenced via `configPath`):
 ```json
 {
-  "pro": {
-    "policies": {
-      "enableRedaction": true,
-      "piiFields": ["email", "phone", "ssn"]
-    }
-  }
+  "enableRedaction": true,
+  "piiFields": ["email", "phone", "ssn"]
 }
 ```
 
@@ -126,8 +122,9 @@ npm install @tanstack/react-query next zod
 # Check TypeScript errors
 npx tsc --noEmit
 
-# Regenerate with correct paths
-npx pzg-pro generate server-actions --output ./src/server
+# Regenerate after updating generator config
+# serverActions = "{ \"outputPath\": \"./src/server\" }"
+pnpm exec prisma generate
 ```
 
 ### React Hook Errors
@@ -157,7 +154,8 @@ function App() {
 ### "use server" Directive Missing
 **Solution**: Regenerate server actions with latest version
 ```bash
-npx pzg-pro generate server-actions --force
+rm -rf prisma/generated/pro/server-actions
+pnpm exec prisma generate
 ```
 
 ## 📦 SDK Publisher
@@ -258,28 +256,14 @@ npm publish
 **Solutions:**
 ```bash
 # Increase memory limit
-NODE_OPTIONS="--max-old-space-size=4096" npx pzg-pro generate policies
-
-# Use streaming mode (Performance Pack)
-npx pzg-pro generate policies --streaming
+NODE_OPTIONS="--max-old-space-size=4096" pnpm exec prisma generate
 ```
 
 ### Slow Generation Performance
 **Optimization Tips:**
-1. **Exclude Unnecessary Models**: Use filtering
-2. **Enable Caching**: Use `--cache` flag
-3. **Parallel Processing**: Use `--parallel` flag
-
-```bash
-# Filter specific models
-npx pzg-pro generate policies --models User,Post,Comment
-
-# Enable caching
-npx pzg-pro generate policies --cache
-
-# Parallel processing
-npx pzg-pro generate policies --parallel
-```
+1. **Limit Enabled Packs**: Disable `enable*` flags you don't need for the current run.
+2. **Filter Models**: Use your existing generator filtering (e.g., `models = ["User","Post"]`) to skip unused models.
+3. **Warm Node Modules**: Run `pnpm exec prisma generate` after dependencies are installed to avoid repeated cold starts.
 
 ### TypeScript Compilation Errors
 **Common Issues:**
@@ -304,69 +288,36 @@ npx pzg-pro generate policies --parallel
 }
 ```
 
-## 🔧 Configuration Issues
-
-### Config File Not Found
-**Symptom**: PZG Pro uses default config instead of custom
-
-**Solutions:**
-1. **Check Location**: Must be in project root as `pzg.config.json`
-2. **Valid JSON**: Validate JSON syntax
-3. **Permissions**: Ensure file is readable
-
-```bash
-# Validate config
-npx pzg-pro config validate
-
-# Show effective config
-npx pzg-pro config show
-```
-
-### Environment-Specific Config
-**Use Multiple Configs:**
-```json
-{
-  "pro": {
-    "development": {
-      "policies": { "enableRedaction": false }
-    },
-    "production": {
-      "policies": { "enableRedaction": true }
-    }
-  }
-}
-```
-
 ## 🐛 Debug Mode
 
 ### Enable Verbose Logging
 ```bash
 # Global debug
-DEBUG=pzg-pro:* npx pzg-pro generate policies
+DEBUG=pzg-pro:* pnpm exec prisma generate
 
 # Specific modules
-DEBUG=pzg-pro:license,pzg-pro:policies npx pzg-pro generate policies
+DEBUG=pzg-pro:license,pzg-pro:policies pnpm exec prisma generate
 
 # File output
-DEBUG=pzg-pro:* npx pzg-pro generate policies 2> debug.log
+DEBUG=pzg-pro:* pnpm exec prisma generate 2> debug.log
 ```
 
 ### Common Debug Patterns
 ```bash
 # License validation
-DEBUG=pzg-pro:license npx pzg-pro license-check
+DEBUG=pzg-pro:license npx prisma-zod-generator license-check
 
 # Comment parsing
-DEBUG=pzg-pro:parser npx pzg-pro generate policies
+DEBUG=pzg-pro:parser pnpm exec prisma generate
 
 # Code generation
-DEBUG=pzg-pro:codegen npx pzg-pro generate server-actions
+DEBUG=pzg-pro:codegen pnpm exec prisma generate
 ```
 
 ## 📞 Getting Help
 
 ### Before Reaching Out
-1. **Check License Status**: `npx pzg-pro license-check`
+1. **Check License Status**: `npx prisma-zod-generator license-check`
 2. **Update to Latest**: `npm install -D prisma-zod-generator@latest`
 3. **Clear Cache**: `rm -rf node_modules/.cache/pzg`
 4. **Review Logs**: Enable debug mode and check output
@@ -400,13 +351,13 @@ When reporting issues, include:
 
 **Debug Output**:
 ```
-DEBUG=pzg-pro:* npx pzg-pro generate policies
+DEBUG=pzg-pro:* pnpm exec prisma generate
 [paste output]
 ```
 
 **Configuration**:
 ```json
-[paste pzg.config.json]
+[paste generator pzgPro block or the JSON referenced by configPath]
 ```
 ```
 

@@ -31,7 +31,7 @@ Purchase any tier through GitHub Sponsors and get started in minutes:
 
 1. DM [@omardulaimidev on X](https://x.com/omardulaimidev) with your GitHub username
 2. You'll receive your license key and setup instructions within 24 hours
-3. Run `pzg-pro license-check` to verify activation
+3. Run `prisma-zod-generator license-check` to verify activation
 
 ### Available Tiers
 
@@ -73,12 +73,13 @@ Starter is perfect for solo builders shipping typed Server Actions and forms. Pr
 
 ```bash
 # Check license
-pzg-pro license-check
+prisma-zod-generator license-check
 
-# Generate any pack
-pzg-pro generate forms
-pzg-pro generate sdk
-pzg-pro generate api-docs
+# Enable the packs you need in schema.prisma
+# (e.g., enableForms/enableSDK/enableApiDocs)
+
+# Run Prisma generators
+pnpm exec prisma generate
 ```
 
 ## Packs at a glance

@@ -5,9 +5,9 @@
  * Usage: npx prisma-zod-generator license-check
  */
 
-import { describePlan, getLicenseStatus } from '../license';
+import { describePlan, getLicenseStatus, validateLicense } from '../license';
 
-async function main() {
+export async function runLicenseCheck(_args: string[] = []): Promise<void> {
   console.log('🔍 Checking PZG Pro license...\n');
 
   const status = await getLicenseStatus();
@@ -22,10 +22,28 @@ async function main() {
   }
 
   console.log('✅ Valid PZG Pro license found');
-  if (status.plan) {
-    console.log(`📋 Plan: ${describePlan(status.plan)} (${status.plan})`);
+  let licenseDetails: Awaited<ReturnType<typeof validateLicense>> | null = null;
+  try {
+    licenseDetails = await validateLicense(false);
+  } catch {
+    // ignore, fallback to status info
   }
-  if (status.cached) {
+
+  const plan = licenseDetails?.plan ?? status.plan;
+  if (plan) {
+    console.log(`📋 Plan: ${describePlan(plan)} (${plan})`);
+  }
+
+  if (licenseDetails?.maxSeats !== undefined) {
+    console.log(`👥 Max Seats: ${licenseDetails.maxSeats}`);
+  }
+
+  if (licenseDetails?.validUntil) {
+    console.log(`📅 Valid Until: ${licenseDetails.validUntil}`);
+  }
+
+  const cachedFlag = licenseDetails?.cached ?? status.cached;
+  if (cachedFlag) {
     console.log('💾 Using cached license (verified within 30 days)');
   } else {
     console.log('🌐 License verified with server');
@@ -37,8 +55,8 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch((error) => {
-    console.error('❌ Error:', error.message);
+  runLicenseCheck().catch((error) => {
+    console.error('❌ Error:', error instanceof Error ? error.message : error);
     process.exit(1);
   });
 }

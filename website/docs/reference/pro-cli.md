@@ -21,147 +21,26 @@ Complete API documentation for all PZG Pro features and CLI commands.
 
 ### Core Commands
 
-#### `pzg-pro license-check`
+#### `prisma-zod-generator license-check`
 Validate and display license information.
 
 ```bash
-npx pzg-pro license-check [options]
+prisma-zod-generator license-check
 ```
 
-**Options:**
-- `--verbose, -v`: Show detailed license information
-- `--json`: Output in JSON format
-- `--features`: Show available features for your plan
-
-**Examples:**
-```bash
-# Basic license check
-npx pzg-pro license-check
-
-# Detailed output
-npx pzg-pro license-check --verbose
-
-# JSON output for scripts
-npx pzg-pro license-check --json | jq '.plan'
-
-# Show available features
-npx pzg-pro license-check --features
+**Sample Output:**
 ```
+🔍 Checking PZG Pro license...
 
-**Output:**
-```
-✅ Valid PZG Pro License
-📋 Plan: professional (Professional)
-👥 Max Seats: 5
-📅 Valid Until: 2025-12-31
-```
+✅ Valid PZG Pro license found
+📋 Plan: Business (business)
+👥 Max Seats: 1
+📅 Valid Until: 2026-11-09T01:03:50.464Z
+🌐 License verified with server
 
-#### `pzg-pro config`
-Manage configuration files.
-
-```bash
-npx pzg-pro config <command> [options]
-```
-
-**Commands:**
-- `show`: Display current configuration
-- `validate`: Validate configuration file
-- `init`: Create default configuration file
-
-**Examples:**
-```bash
-# Show effective configuration
-npx pzg-pro config show
-
-# Validate config file
-npx pzg-pro config validate
-
-# Create default config
-npx pzg-pro config init
-```
-
-### Generation Commands
-
-#### `pzg-pro generate policies`
-Generate policy enforcement code and redaction middleware.
-
-```bash
-npx pzg-pro generate policies [options]
-```
-
-**Options:**
-- `--output, -o <path>`: Output directory (default: `./generated/pzg/policies`)
-- `--schema, -s <path>`: Prisma schema file (default: `./prisma/schema.prisma`)
-- `--models, -m <models>`: Comma-separated list of models to include
-- `--force`: Overwrite existing files
-- `--dry-run`: Preview generated files without writing
-
-**Examples:**
-```bash
-# Generate all policies
-npx pzg-pro generate policies
-
-# Specific models only
-npx pzg-pro generate policies --models User,Post,Comment
-
-# Custom output directory
-npx pzg-pro generate policies --output ./src/generated/policies
-
-# Preview without writing files
-npx pzg-pro generate policies --dry-run
-```
-
-#### `pzg-pro generate server-actions`
-Generate Next.js Server Actions and React hooks.
-
-```bash
-npx pzg-pro generate server-actions [options]
-```
-
-**Options:**
-- `--output, -o <path>`: Output directory (default: `./src/server`)
-- `--schema, -s <path>`: Prisma schema file
-- `--models, -m <models>`: Models to generate actions for
-- `--actions, -a <actions>`: Actions to generate (create,update,delete,findMany)
-- `--hooks`: Generate React hooks (default: true)
-- `--force`: Overwrite existing files
-
-**Examples:**
-```bash
-# Generate all server actions
-npx pzg-pro generate server-actions
-
-# Specific models and actions
-npx pzg-pro generate server-actions --models User,Post --actions create,update
-
-# Custom output path
-npx pzg-pro generate server-actions --output ./src/lib/server
-```
-
-#### `pzg-pro generate sdk`
-Generate and publish TypeScript SDK.
-
-```bash
-npx pzg-pro generate sdk [options]
-```
-
-**Options:**
-- `--package, -p <name>`: Package name (e.g., @acme/api-sdk)
-- `--version, -v <version>`: Package version (default: 1.0.0)
-- `--output, -o <path>`: Output directory (default: `./packages/sdk`)
-- `--publish`: Publish to npm registry
-- `--registry <url>`: Custom npm registry URL
-
-**Examples:**
-```bash
-# Generate SDK package
-npx pzg-pro generate sdk --package @acme/api-sdk --version 1.0.0
-
-# Generate and publish
-npx pzg-pro generate sdk --package @acme/api-sdk --publish
-
-# Custom registry
-npx pzg-pro generate sdk --package @acme/api-sdk --registry https://npm.example.com
+🚀 Ready to use PZG Pro features!
+📚 Docs: https://omar-dulaimi.github.io/prisma-zod-generator/docs
+💬 Support: https://github.com/omar-dulaimi/prisma-zod-generator/issues
 ```
 
 #### `pzg-pro guard`
@@ -191,102 +70,6 @@ npx pzg-pro guard --format json > drift-report.json
 
 # Allow a known breaking change by identifier
 npx pzg-pro guard --allowed-break model.User.field_removed
-```
-
-## ⚙️ Configuration API
-
-### Configuration File Schema
-
-The `pzg.config.json` file supports the following structure:
-
-```typescript
-interface PZGProConfig {
-  pro: {
-    // Global settings
-    licenseKey?: string; // Not recommended, use environment variable
-
-    // Feature-specific configuration
-    policies?: PolicyConfig;
-    serverActions?: ServerActionsConfig;
-    sdk?: SDKConfig;
-    driftGuard?: DriftGuardConfig;
-
-    // Environment-specific overrides
-    development?: Partial<PZGProConfig['pro']>;
-    staging?: Partial<PZGProConfig['pro']>;
-    production?: Partial<PZGProConfig['pro']>;
-  };
-}
-```
-
-### Policy Configuration
-
-```typescript
-interface PolicyConfig {
-  outputPath?: string;           // Default: './generated/pzg/policies'
-  enableRedaction?: boolean;     // Default: true
-  enableRLS?: boolean;          // Default: false
-  roles?: string[];             // Default: ['user', 'admin']
-  piiFields?: string[];         // Default: ['email', 'phone', 'ssn']
-  redactionRules?: {
-    [field: string]: {
-      type: 'mask' | 'hash' | 'remove';
-      pattern?: string;
-    };
-  };
-}
-```
-
-### Server Actions Configuration
-
-```typescript
-interface ServerActionsConfig {
-  outputPath?: string;                    // Default: './src/server'
-  enableOptimisticUpdates?: boolean;      // Default: true
-  enableCacheRevalidation?: boolean;      // Default: true
-  enableErrorBoundaries?: boolean;        // Default: true
-  actions?: ('create' | 'update' | 'delete' | 'findMany')[];
-  hooks?: {
-    enabled?: boolean;                    // Default: true
-    queryClient?: 'react-query' | 'swr'; // Default: 'react-query'
-  };
-}
-```
-
-### SDK Configuration
-
-```typescript
-interface SDKConfig {
-  packageName: string;
-  outputPath?: string;          // Default: './packages/sdk'
-  version?: string;             // Default: '1.0.0'
-  authHeader?: string;          // Default: 'Authorization'
-  retryConfig?: {
-    maxRetries: number;         // Default: 3
-    retryDelay: number;         // Default: 1000
-  };
-  endpoints?: {
-    baseUrl: string;
-    version?: string;           // Default: 'v1'
-  };
-}
-```
-
-### Drift Guard Configuration
-
-```typescript
-interface DriftGuardConfig {
-  enabled?: boolean;                    // Default: true
-  breakingChangeThreshold?: 'patch' | 'minor' | 'major'; // Default: 'major'
-  outputFormat?: 'console' | 'json' | 'github' | 'gitlab'; // Default: 'console'
-  excludeFields?: string[];            // Default: ['createdAt', 'updatedAt']
-  customRules?: {
-    [ruleName: string]: {
-      pattern: string;
-      severity: 'warning' | 'error';
-    };
-  };
-}
 ```
 
 ## 🔑 License API

@@ -11,7 +11,7 @@
  *
  * Usage in schema.prisma:
  * generator pzgPro {
- *   provider = "node ./lib/cli/pzg-pro.js"
+ *   provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
  *   output   = "./generated/pro"
  *   config   = "./zod-generator.config.json"
  * }
@@ -21,10 +21,19 @@ import { generatorHandler } from '@prisma/generator-helper';
 import { generateProFeatures, PRO_HELP_MESSAGE } from './pzg-pro-generator';
 
 const args = process.argv.slice(2);
-const isCliInvocation = require.main === module && args.length > 0 && !args[0].startsWith('--');
+const firstArg = args[0];
+const wantsGlobalHelp = firstArg === '--help' || firstArg === '-h';
+const isCliInvocation =
+  require.main === module &&
+  ((args.length > 0 && !firstArg?.startsWith('--')) || wantsGlobalHelp);
 
 if (isCliInvocation) {
   const [command, ...rest] = args;
+
+  if (!command || command === '--help' || command === '-h') {
+    printCliUsage();
+    process.exit(0);
+  }
 
   if (command !== 'guard') {
     console.error(`Unknown command "${command}". Run "pzg-pro guard --help" for usage.`);
@@ -56,6 +65,26 @@ if (isCliInvocation) {
     }),
     onGenerate: generateProFeatures,
   });
+}
+
+function printCliUsage(): void {
+  console.log(
+    [
+      'PZG Pro CLI',
+      '',
+      'Usage:',
+      '  npx pzg-pro guard [options]   Run Drift Guard without Prisma invoking the generator',
+      '',
+      'Examples:',
+      '  npx pzg-pro guard --help',
+      '  npx pzg-pro guard --schema ./prisma/schema.prisma --format json',
+      '',
+      'To use PZG Pro as a Prisma generator, add it to your schema:',
+      '  generator pzgPro {',
+      '    provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"',
+      '  }',
+    ].join('\n'),
+  );
 }
 
 function loadProCliExports(): { runDriftGuardCLI: (argv: string[]) => Promise<void> } {

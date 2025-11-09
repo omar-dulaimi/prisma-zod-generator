@@ -31,7 +31,7 @@ Yes, you can adjust your GitHub Sponsors tier at any time. Contact [@omardulaimi
 After receiving your license key from @omardulaimidev, follow the setup instructions provided. You can verify activation by running:
 
 ```bash
-pzg-pro license-check
+prisma-zod-generator license-check
 ```
 
 **Do pro features require additional dependencies?**

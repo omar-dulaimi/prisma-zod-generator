@@ -72,7 +72,7 @@ export PZG_LICENSE_KEY=pzg_v2_your_license_key_here
 export PZG_LICENSE_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAwRNEnFQJgBdNnwvnTTAPySp223shjXfioII2qMkqBFQ=\n-----END PUBLIC KEY-----'  # replace with the public key provided to you
 
 # Verify it works
-npx pzg-pro license-check
+npx prisma-zod-generator license-check
 ```
 
 ## 🔧 Installation & Setup
@@ -110,34 +110,6 @@ PZG_LICENSE_PUBLIC_KEY='-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAwRNEnFQJgBdNnwvnTTAPySp223shjXfioII2qMkqBFQ=
 -----END PUBLIC KEY-----'
 EOF
-```
-
-### 3. Create Configuration File
-Create `pzg.config.json` in your project root:
-
-```json
-{
-  "pro": {
-    "policies": {
-      "outputPath": "./generated/pzg/policies",
-      "enableRedaction": true,
-      "enableRLS": false
-    },
-    "serverActions": {
-      "outputPath": "./src/server",
-      "enableOptimisticUpdates": true,
-      "actions": ["create", "update", "delete"]
-    },
-    "sdk": {
-      "packageName": "@your-org/api-sdk",
-      "outputPath": "./packages/sdk"
-    },
-    "driftGuard": {
-      "enabled": true,
-      "breakingChangeThreshold": "major"
-    }
-  }
-}
 ```
 
 ## 🏗️ Migration Strategy
@@ -212,12 +184,10 @@ model Post {
 ```
 
 ### 3. Generate Policies
+Ensure `enablePolicies = true` in your `generator pzgPro` block, then run:
 ```bash
-# Generate policy enforcement code
-npx pzg-pro generate policies
-
-# Check generated files
-ls generated/pzg/policies/
+pnpm exec prisma generate
+ls prisma/generated/pro/policies/
 ```
 
 ### 4. Integrate in Application
@@ -248,13 +218,13 @@ export async function GET(request: Request) {
 ## ⚡ Adding Server Actions
 
 ### 1. Generate Server Actions
+Set `enableServerActions = true` in `schema.prisma`, then:
 ```bash
-# Generate for all models
-npx pzg-pro generate server-actions
-
-# Or specific models
-npx pzg-pro generate server-actions --models User,Post
+pnpm exec prisma generate
+ls prisma/generated/pro/server-actions/
 ```
+
+> Need only a subset of models? Use Prisma's generator filtering (`model` / `exclude`) so the Pro generator only processes the models you care about.
 
 ### 2. Review Generated Code
 ```bash
@@ -332,43 +302,28 @@ export default function RootLayout({ children }) {
 ## 📦 Generating SDK
 
 ### 1. Configure SDK Settings
-Update your `pzg.config.json`:
+Add the flag and JSON config to `generator pzgPro`:
 
-```json
-{
-  "pro": {
-    "sdk": {
-      "packageName": "@your-org/api-sdk",
-      "version": "1.0.0",
-      "outputPath": "./packages/sdk",
-      "authHeader": "Authorization",
-      "endpoints": {
-        "baseUrl": "https://api.yourapp.com",
-        "version": "v1"
-      }
-    }
-  }
+```prisma
+generator pzgPro {
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
+  output   = "./generated/pro"
+  enableSDK = true
+  sdk = "{ \"packageName\": \"@your-org/api-sdk\", \"version\": \"1.0.0\", \"outputPath\": \"./packages/sdk\", \"authHeader\": \"Authorization\", \"endpoints\": { \"baseUrl\": \"https://api.yourapp.com\", \"version\": \"v1\" } }"
 }
 ```
 
 ### 2. Generate SDK
 ```bash
-# Generate SDK package
-npx pzg-pro generate sdk
-
-# Check generated structure
+pnpm exec prisma generate
 ls packages/sdk/
 ```
 
 ### 3. Publish SDK (Optional)
 ```bash
-# Build and publish
 cd packages/sdk
 npm run build
 npm publish
-
-# Or use the integrated command
-npx pzg-pro generate sdk --publish
 ```
 
 ### 4. Use SDK in Client Applications
@@ -599,9 +554,9 @@ Update your build scripts to generate Pro features:
 ```json
 {
   "scripts": {
-    "build": "npm run generate:zod && npm run generate:pro && next build",
-    "generate:pro": "pzg-pro generate policies && pzg-pro generate server-actions",
-    "prebuild": "npm run generate:pro"
+    "build": "pnpm exec prisma generate && next build",
+    "generate:pro": "pnpm exec prisma generate",
+    "prebuild": "pnpm exec prisma generate"
   }
 }
 ```
