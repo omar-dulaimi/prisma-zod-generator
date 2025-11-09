@@ -1,3 +1,9 @@
+## [1.31.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.3...v1.31.4) (2025-11-09)
+
+### 🐛 Bug Fixes
+
+* **license:** enhance license validation with signature extraction and testing ([a42ad08](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a42ad08c3afe92b0070e58b74f8e3fbf5671c41b))
+
 ## [1.31.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.2...v1.31.3) (2025-11-07)
 
 ### 🐛 Bug Fixes
