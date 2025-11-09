@@ -1,3 +1,10 @@
+## [1.31.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.6...v1.31.7) (2025-11-09)
+
+### 🐛 Bug Fixes
+
+* **transformer:** lazy include references for findMany ([9aaece8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9aaece85e12c244c95cd35e5848f99e457b8294d)), closes [#332](https://github.com/omar-dulaimi/prisma-zod-generator/issues/332)
+* **transformer:** refactor include field reference resolution logic ([7b23cfe](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7b23cfe33120e3053592f0feb926067f1245c8b6))
+
 ## [1.31.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.5...v1.31.6) (2025-11-09)
 
 ### 🐛 Bug Fixes
