@@ -180,7 +180,7 @@
     "remark-gfm": "^4.0.1",
     "remark-mdx": "^3.1.1",
     "remark-stringify": "^11.0.0",
-    "rollup": "^4.52.5",
+    "rollup": "^4.53.2",
     "semantic-release": "^25.0.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
