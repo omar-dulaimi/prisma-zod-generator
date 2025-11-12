@@ -245,6 +245,16 @@ Use a relative path that matches your repo layout (for example `./node_modules/.
 
 If Prisma Zod Generator saves you time or catches bugs before production, consider sponsoring to fund maintenance and new feature work.
 
+- On GitHub Sponsors, switch to the **One-time** tab (second tab) to see the PZG plan tiers. Pick the
+  yearly tiers labeled **PZG Starter**, **PZG Professional**, **PZG Business**, or **PZG Enterprise** to
+  unlock the corresponding Pro licenses—monthly “support” tiers (e.g., *Pro (Individual)*) in the
+  Monthly tab do not include PZG Pro.
+
+<p align="center">
+  <img src="website/static/img/tiers.png" alt="GitHub Sponsors One-time tab showing PZG yearly tiers" width="320" />
+  <br />
+  <sub>Open the One-time tab to see the Prisma Zod Generator Starter, Professional, and Business tiers.</sub>
+</p>
 - Become a sponsor: https://github.com/sponsors/omar-dulaimi
 
 ## 🤝 Contributing

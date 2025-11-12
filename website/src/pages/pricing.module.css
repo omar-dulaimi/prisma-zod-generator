@@ -195,6 +195,47 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+.sponsorNotice {
+  max-width: 840px;
+  margin: 0 auto 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(234, 179, 8, 0.45);
+  background: rgba(250, 204, 21, 0.12);
+  color: var(--ifm-color-emphasis-800);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.sponsorNotice strong {
+  color: var(--ifm-color-emphasis-900);
+}
+
+.sponsorNoticeContent {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.sponsorImage {
+  width: 240px;
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 6px 30px rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+@media (max-width: 720px) {
+  .sponsorNotice {
+    grid-template-columns: 1fr;
+  }
+
+  .sponsorImage {
+    justify-self: center;
+  }
+}
+
 .faqQuestion {
   font-size: 1.1rem;
   font-weight: 600;

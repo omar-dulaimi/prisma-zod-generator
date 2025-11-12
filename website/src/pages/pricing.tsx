@@ -1,4 +1,5 @@
 import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import Layout from '@theme/Layout';
 import PricingCard from '../components/PricingCard';
 import FreeTierBanner from '../components/FreeTierBanner';
@@ -121,6 +122,8 @@ const faqs = [
 ];
 
 export default function Pricing(): JSX.Element {
+  const tiersImage = useBaseUrl('/img/tiers.png');
+
   return (
     <Layout
       title="Pricing"
@@ -148,6 +151,20 @@ export default function Pricing(): JSX.Element {
           <p className={styles.paidTiersSubheading}>
             Purchase on GitHub Sponsors • Contact @omardulaimidev on X for license
           </p>
+          <div className={styles.sponsorNotice}>
+            <div className={styles.sponsorNoticeContent}>
+              <strong>Heads up:</strong> GitHub Sponsors also lists general supporter tiers (for example
+              “Pro (Individual)” monthly). Those tiers do <em>not</em> include Prisma Zod Generator licenses.
+              Switch to the <strong>One-time</strong> tab (second tab) on the Sponsors page and choose the
+              yearly tier labeled “PZG Starter”, “PZG Professional”, “PZG Business”, or “PZG Enterprise” to
+              unlock the corresponding plan.
+            </div>
+            <img
+              src={tiersImage}
+              alt="GitHub Sponsors One-time tab showing Prisma Zod Generator tiers"
+              className={styles.sponsorImage}
+            />
+          </div>
 
           {/* Paid Tiers Grid */}
           <div className={styles.pricingGrid}>

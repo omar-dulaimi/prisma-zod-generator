@@ -40,7 +40,7 @@ prisma-zod-generator license-check
 🌐 License verified with server
 
 🚀 Ready to use PZG Pro features!
-📚 Docs: https://omar-dulaimi.github.io/prisma-zod-generator/docs
+📚 Docs: /docs
 💬 Support: https://github.com/omar-dulaimi/prisma-zod-generator/issues
 ```
 

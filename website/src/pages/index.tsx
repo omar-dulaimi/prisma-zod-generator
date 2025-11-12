@@ -237,7 +237,7 @@ const Home: React.FC = () => {
           <div>
             <Link
               className="pz-hero-badge"
-              to="https://omar-dulaimi.github.io/prisma-zod-generator/pricing"
+              to="/pricing"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Start 14-day Pro trial (opens in new tab)"
@@ -333,7 +333,7 @@ const Home: React.FC = () => {
               </Link>
               <Link
                 className="pz-btn pz-btn-secondary"
-                to="https://omar-dulaimi.github.io/prisma-zod-generator/pricing"
+                to="/pricing"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{

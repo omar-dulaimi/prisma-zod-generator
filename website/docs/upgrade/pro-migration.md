@@ -52,7 +52,7 @@ Decide which Pro features you want to use:
 ## 🛒 Getting Your License
 
 ### 1. Choose Your Plan
-Visit [the pricing page](https://omar-dulaimi.github.io/prisma-zod-generator/pricing) and select:
+Visit [the pricing page](/pricing) and select:
 
 - **Starter ($69/year)** – 1 developer, Server Actions + Forms (CLI plan slug `starter`)
 - **Professional ($199/year)** – up to 5 developers, security & governance suite (`professional`)

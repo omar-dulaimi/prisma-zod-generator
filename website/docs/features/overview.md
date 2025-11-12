@@ -5,6 +5,7 @@ title: Pro Features Overview
 Upgrade the core generator with production‑ready feature packs. Generate UI, SDKs, docs, security helpers, CI tooling — all in minutes.
 
 import Link from '@docusaurus/Link';
+import tiersImg from '@site/static/img/tiers.png';
 
 ## How to Get Pro Features
 
@@ -26,6 +27,29 @@ Purchase any tier through GitHub Sponsors and get started in minutes:
     📊 View Full Pricing
   </Link>
 </div>
+
+:::note Picking the right tier on GitHub Sponsors
+The sponsors page has two tabs: **Monthly** and **One-time**. PZG plans live under the One-time tab
+(second tab). Monthly supporter tiers such as **Pro (Individual)** do **not** include Prisma Zod Generator
+licenses. Switch to the One-time tab and choose a yearly tier labeled **PZG Starter**, **PZG
+Professional**, **PZG Business**, or **PZG Enterprise** when you need Pro features.
+:::
+
+<figure style={{ textAlign: 'center', margin: '1rem auto 2rem', maxWidth: 360 }}>
+  <img
+    src={tiersImg}
+    alt="GitHub Sponsors One-time tab showing Prisma Zod Generator tiers"
+    style={{
+      width: '100%',
+      borderRadius: '12px',
+      boxShadow: '0 6px 30px rgba(15, 23, 42, 0.35)',
+      border: '1px solid rgba(148, 163, 184, 0.4)',
+    }}
+  />
+  <figcaption style={{ fontSize: '0.85rem', color: 'var(--ifm-color-emphasis-700)' }}>
+    Switch to <strong>One-time</strong> to see the Prisma Zod Generator Starter, Professional, and Business tiers.
+  </figcaption>
+</figure>
 
 **After purchasing:**
 
