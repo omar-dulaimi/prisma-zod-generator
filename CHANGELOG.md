@@ -1,3 +1,9 @@
+## [1.31.8](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.7...v1.31.8) (2025-11-12)
+
+### 🐛 Bug Fixes
+
+* ensure pnpm exec is used for JSON schema generation ([b5b6788](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b5b6788e2d14449e1c01c745ba27d51280ae704c))
+
 ## [1.31.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.6...v1.31.7) (2025-11-09)
 
 ### 🐛 Bug Fixes
