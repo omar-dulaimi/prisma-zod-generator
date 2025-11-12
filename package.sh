@@ -43,8 +43,15 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅ TypeScript compiled"
 echo ""
+tsx scripts/generate-jsonschema.ts
+if [ $? -ne 0 ]; then
+  echo "❌ JSON schema generation failed"
+  exit 1
+fi
+echo "✅ JSON schema generated"
+echo ""
 
-# Step 4: Obfuscate pro features
+Step 4: Obfuscate pro features
 echo "🔒 Step 4/6: Obfuscating pro features..."
 node scripts/obfuscate-pro.js
 if [ $? -ne 0 ]; then

@@ -13,6 +13,11 @@ export const ConfigurationSchema: JSONSchema7 = {
   type: 'object',
   additionalProperties: false,
   properties: {
+    "$schema": {
+      type: "string",
+      default: "http://json-schema.org/draft-07/schema#", // Placeholder most likely would be https://omar-dulaimi.github.io/prisma-zod-generator/docs/schema.json
+      description: 'JSON Schema for the Prisma Zod Generator configuration',
+    },
     mode: {
       type: 'string',
       enum: ['full', 'minimal', 'custom'],
