@@ -7,8 +7,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const JSONSCHEMA_PATH = path.join(ROOT, 'lib', 'config', 'schema.json');
 
 writeFile(JSONSCHEMA_PATH, JSON.stringify(ConfigurationSchema, null, 2), (err) => {
-    if (err) {
-        console.error(err);
-        process.exit(1);
-    }
+  if (err) {
+    console.error(err);
+    process.exit(1);
+  }
 });
