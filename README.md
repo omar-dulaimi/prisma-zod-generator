@@ -222,6 +222,19 @@ generator zod {
 npx prisma generate
 ```
 
+## 🧠 Config IntelliSense
+
+Point your config file at the published JSON Schema to get autocomplete, hover docs, and validation errors in any JSON-aware editor:
+
+```json title="prisma/config.json"
+{
+  "$schema": "../node_modules/prisma-zod-generator/lib/config/schema.json",
+  "mode": "full"
+}
+```
+
+Use a relative path that matches your repo layout (for example `./node_modules/...`). See the [JSON Schema IntelliSense guide](https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/schema-json) for monorepo examples, CI validation scripts, and tips on shipping the schema with custom tooling.
+
 ## 💡 Usage Examples
 
 - See the [full documentation](https://omar-dulaimi.github.io/prisma-zod-generator/) for detailed guides, upgrade notes, and feature walkthroughs.

@@ -1,4 +1,5 @@
 {
+  "$schema": "../lib/config/schema.json",
   "mode": "full",
   "useMultipleFiles": true,
   "zodImportTarget": "v4",

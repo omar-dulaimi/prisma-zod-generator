@@ -24,6 +24,7 @@ const sidebars: SidebarsConfig = {
         'config/filtering',
         'config/emission-controls',
         'config/file-layout',
+        'config/schema-json',
       ],
     },
     {
