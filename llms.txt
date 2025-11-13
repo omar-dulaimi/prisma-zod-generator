@@ -5,72 +5,73 @@
 - GitHub: https://github.com/omar-dulaimi/prisma-zod-generator
 
 ## All Docs Links
-- Prisma Zod Generator: https://omar-dulaimi.github.io/prisma-zod-generator/docs/intro/what-is
-- Quick Start: https://omar-dulaimi.github.io/prisma-zod-generator/docs/intro/quick-start
-- Core Concepts: https://omar-dulaimi.github.io/prisma-zod-generator/docs/intro/concepts
-- Configuration Precedence: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/precedence
-- Generation Modes: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/modes
-- Variants System: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/variants
-- Strict Mode Configuration: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/strict-mode
-- Naming & Presets: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/naming
-- Optional Field Behavior: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/optional-fields
+- Changelog: https://omar-dulaimi.github.io/prisma-zod-generator/docs/changelog
 - DateTime Strategy: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/datetime-strategy
-- JSON Schema Compatibility: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/json-schema-compatibility
 - Dual Schema Exports: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/dual-exports
-- Model / Operation / Field Filtering: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/filtering
 - Emission Controls: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/emission-controls
 - File Layout & Single File Mode: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/file-layout
+- Model / Operation / Field Filtering: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/filtering
+- JSON Schema Compatibility: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/json-schema-compatibility
+- Generation Modes: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/modes
+- Naming & Presets: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/naming
+- Optional Field Behavior: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/optional-fields
+- Configuration Precedence: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/precedence
+- JSON Schema IntelliSense: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/schema-json
+- Strict Mode Configuration: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/strict-mode
+- Variants System: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/variants
+- Contributing: https://omar-dulaimi.github.io/prisma-zod-generator/docs/contributing
+- API Docs Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/api-docs
+- Contract Testing Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/contracts
+- Data Factories: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/factories
+- Form UX Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/forms
+- Drift Guard: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/guard
+- Multi-Tenant Kit: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/multi-tenant
+- Pro Features Overview: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/overview
+- Performance Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/performance
+- Policies & Redaction: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/policies
+- PostgreSQL RLS: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/postgres-rls
+- SDK Publisher: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/sdk
+- Server Actions Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/server-actions
+- Integration Guides Overview: https://omar-dulaimi.github.io/prisma-zod-generator/docs/integrations/overview
+- Core Concepts: https://omar-dulaimi.github.io/prisma-zod-generator/docs/intro/concepts
+- Quick Start: https://omar-dulaimi.github.io/prisma-zod-generator/docs/intro/quick-start
+- Prisma Zod Generator: https://omar-dulaimi.github.io/prisma-zod-generator/docs/intro/what-is
+- Performance & Build Tips: https://omar-dulaimi.github.io/prisma-zod-generator/docs/performance
 - Object & CRUD Generation: https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/objects-crud
 - Pure Model Schemas: https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/pure-models
 - Single File Mode: https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/single-file
 - Special Type Mapping: https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/special-types
 - @zod Comment Annotations: https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/zod-comments
-- Minimal CRUD: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/minimal-crud
-- Models Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/models-only
-- Pure Models Lean: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/pure-models-lean
+- Circular Dependency Exclusion: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/circular-dependency-exclusion
 - CRUD Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/crud-only
-- Result Variant Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/result-only
-- Input Variant Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/input-only
-- Zod import targets: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/zod-import-targets
-- tRPC Optimized: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/trpc-optimized
-- Single File Bundle: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/single-file
+- Flexible API Validation: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/flexible-api-validation
 - Granular Per Model: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/granular-per-model
 - Hide Sensitive Fields: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/hide-fields
-- Flexible API Validation: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/flexible-api-validation
-- Circular Dependency Exclusion: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/circular-dependency-exclusion
+- Input Variant Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/input-only
+- JSON-friendly DateTime (Split Strategy Default): https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/json-friendly-datetime
+- Minimal CRUD: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/minimal-crud
+- Models Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/models-only
 - Optional Field Control: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/optional-field-control
+- Pure Models Lean: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/pure-models-lean
+- Result Variant Only: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/result-only
 - Custom Safety Configuration: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/safety-custom-configuration
+- Disable Safety System Completely: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/safety-disable-completely
 - Force Using Dangerous Paths: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/safety-force-dangerous-path
 - Project Migration Safety Guide: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/safety-project-migration
-- Disable Safety System Completely: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/safety-disable-completely
-- Safety System: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/safety-system
+- Single File Bundle: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/single-file
+- tRPC Optimized: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/trpc-optimized
+- Zod import targets: https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/zod-import-targets
 - Bytes & JSON Details: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/bytes-json
-- WhereUniqueInput Semantics: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/where-unique-input
-- Naming Preset Map: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/naming-preset-map
-- Logging & Debug Output: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/logging-debug
 - FAQ: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/faq
-- Troubleshooting: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/troubleshooting
+- Logging & Debug Output: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/logging-debug
+- Naming Preset Map: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/naming-preset-map
 - PZG Pro CLI & API Reference: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/pro-cli
-- Integration Guides Overview: https://omar-dulaimi.github.io/prisma-zod-generator/docs/integrations/overview
-- Pro Features Overview: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/overview
-- Policies & Redaction: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/policies
-- Form UX Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/forms
-- SDK Publisher: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/sdk
-- API Docs Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/api-docs
-- PostgreSQL RLS: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/postgres-rls
-- Multi-Tenant Kit: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/multi-tenant
-- Performance Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/performance
-- Data Factories: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/factories
-- Drift Guard: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/guard
-- Contract Testing Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/contracts
-- Server Actions Pack: https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/server-actions
-- Usage Patterns: https://omar-dulaimi.github.io/prisma-zod-generator/docs/usage-patterns
-- Performance & Build Tips: https://omar-dulaimi.github.io/prisma-zod-generator/docs/performance
+- Safety System: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/safety-system
+- Troubleshooting: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/troubleshooting
+- WhereUniqueInput Semantics: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/where-unique-input
 - Upgrade Guide: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade-guide
 - Upgrade from Free to Pro: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade/pro-migration
-- Contributing: https://omar-dulaimi.github.io/prisma-zod-generator/docs/contributing
-- Changelog: https://omar-dulaimi.github.io/prisma-zod-generator/docs/changelog
-- JSON-friendly DateTime (Split Strategy Default): https://omar-dulaimi.github.io/prisma-zod-generator/docs/recipes/json-friendly-datetime
+- Usage Patterns: https://omar-dulaimi.github.io/prisma-zod-generator/docs/usage-patterns
 
 # Prisma Zod Generator
 
@@ -1377,6 +1378,58 @@ Output path resolution is deferred until after merging so a JSON `output` applie
 Conflict warnings are logged (file layout options) via `warnOnFileLayoutConflicts`—generator block wins.
 
 Legacy flags (e.g. `isGenerateSelect`, `isGenerateInclude`) are folded into the unified config; minimal mode forcibly disables select/include even if legacy flags true.
+
+# JSON Schema IntelliSense
+
+The generator ships a full [JSON Schema draft‑07](https://json-schema.org/) definition for every config option. Point your config files at it once and editors, CI scripts, and custom tooling all get the same contract the generator enforces internally.
+
+## Quick Start
+
+1. Make sure `prisma-zod-generator` is installed (the schema is published with every npm release under `lib/config/schema.json`).
+2. Open the config file you pass through the Prisma generator block (for example `prisma/config.json`, `zod-generator.config.json`, or whatever you set via `config = "./..."`).
+3. Add a `$schema` field that points to the installed package:
+
+```json title="prisma/config.json"
+{
+  "$schema": "../node_modules/prisma-zod-generator/lib/config/schema.json",
+  "mode": "full",
+  "pureModels": true
+}
+```
+
+Save the file and your editor immediately enables IntelliSense, hover docs, and red squiggles for invalid values.
+
+## Picking the Right Path
+
+- **Relative to config file** – Recommended because it survives CI and other machines. Use `../node_modules/...` if your config file sits inside the `prisma/` directory, or `./node_modules/...` if it lives at the project root.
+- **Absolute path** – Works for quick tests but breaks across machines. Prefer relative paths once you confirm things locally.
+- **Hosted copy** – If you host the schema at a stable URL (for example on your docs site or an internal CDN), set `$schema` to the HTTPS URL. Any consumer that understands JSON Schema will pull it remotely.
+
+## Programmatic Validation
+
+Need to fail CI when someone pushes an invalid config? Reuse the same schema through the compiled validator:
+
+```ts title="scripts/validate-config.ts"
+import { readFileSync } from 'node:fs';
+import { ConfigurationValidator } from 'prisma-zod-generator/lib/config/validator.js';
+
+const configPath = process.argv[2] ?? './prisma/config.json';
+const validator = new ConfigurationValidator();
+const config = JSON.parse(readFileSync(configPath, 'utf8'));
+const result = validator.validate(config);
+
+if (!result.valid) {
+  console.error('❌ Invalid Prisma Zod Generator config:');
+  console.error(result.errors);
+  process.exit(1);
+}
+
+console.log('✅ Config looks good');
+```
+
+Pair this with the `$schema` hint so editors catch problems before CI does.
+
+Once the `$schema` field is in place, every upgrade automatically refreshes the schema definition because the path always points to the version installed in `node_modules`.
 
 # Strict Mode Configuration
 
@@ -2755,6 +2808,7 @@ See generated comments in the file for more integration patterns.
 Upgrade the core generator with production‑ready feature packs. Generate UI, SDKs, docs, security helpers, CI tooling — all in minutes.
 
 import Link from '@docusaurus/Link';
+import tiersImg from '@site/static/img/tiers.png';
 
 ## How to Get Pro Features
 
@@ -2769,6 +2823,30 @@ Purchase any tier through GitHub Sponsors and get started in minutes:
     📊 View Full Pricing
   </Link>
 </div>
+
+:::note Picking the right tier on GitHub Sponsors
+The sponsors page has two tabs: **Monthly** and **One-time**. PZG plans live under the One-time tab
+(second tab). Monthly supporter tiers such as **Pro (Individual)** do **not** include Prisma Zod Generator
+licenses. Switch to the One-time tab and choose a yearly tier labeled **PZG Starter**, **PZG
+Professional**, **PZG Business**, or **PZG Enterprise** when you need Pro features.
+:::
+
+<figure style={{ textAlign: 'center', margin: '1rem auto 2rem', maxWidth: 360 }}>
+  <img
+    src={tiersImg}
+    alt="GitHub Sponsors One-time tab showing Prisma Zod Generator tiers"
+    style={{
+    width: '100%',
+    borderRadius: '12px',
+    boxShadow: '0 6px 30px rgba(15, 23, 42, 0.35)',
+    border: '1px solid rgba(148, 163, 184, 0.4)',
+  }}
+  />
+
+  <figcaption style={{ fontSize: '0.85rem', color: 'var(--ifm-color-emphasis-700)' }}>
+    Switch to <strong>One-time</strong> to see the Prisma Zod Generator Starter, Professional, and Business tiers.
+  </figcaption>
+</figure>
 
 **After purchasing:**
 
@@ -7049,7 +7127,7 @@ prisma-zod-generator license-check
 🌐 License verified with server
 
 🚀 Ready to use PZG Pro features!
-📚 Docs: https://omar-dulaimi.github.io/prisma-zod-generator/docs
+📚 Docs: /docs
 💬 Support: https://github.com/omar-dulaimi/prisma-zod-generator/issues
 ```
 
@@ -8518,7 +8596,7 @@ Decide which Pro features you want to use:
 
 ### 1. Choose Your Plan
 
-Visit [the pricing page](https://omar-dulaimi.github.io/prisma-zod-generator/pricing) and select:
+Visit [the pricing page](/pricing) and select:
 
 - **Starter ($69/year)** – 1 developer, Server Actions + Forms (CLI plan slug `starter`)
 - **Professional ($199/year)** – up to 5 developers, security & governance suite (`professional`)
