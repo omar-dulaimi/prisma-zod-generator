@@ -348,6 +348,7 @@ export const ConfigurationSchema: JSONSchema7 = {
             ],
           },
           uniqueItems: true,
+          minItems: 1,
           description: 'Operations to exclude globally from all models',
         },
       },
