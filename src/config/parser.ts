@@ -366,7 +366,7 @@ export async function validateFileExists(filePath: string): Promise<void> {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       throw new ConfigParseError(
         `Configuration file not found at resolved path: ${filePath}. ` +
-        `Please verify the file exists or remove the config attribute to use defaults.`,
+          `Please verify the file exists or remove the config attribute to use defaults.`,
       );
     }
     throw new ConfigParseError(
