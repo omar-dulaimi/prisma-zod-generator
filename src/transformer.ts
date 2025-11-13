@@ -211,30 +211,28 @@ export default class Transformer {
       logger.debug(`🔍 Operation check: ${modelName}.${operationName} = true (no config)`);
       return true;
     }
-
+    // Map operation names for backward compatibility
+    const operationMapping: Record<string, string[]> = {
+      findMany: ['findMany'],
+      findUnique: ['findUnique'],
+      findUniqueOrThrow: ['findUniqueOrThrow'],
+      findFirst: ['findFirst'],
+      findFirstOrThrow: ['findFirstOrThrow'],
+      createOne: ['create', 'createOne'],
+      createMany: ['create', 'createMany'],
+      createManyAndReturn: ['createManyAndReturn'],
+      updateOne: ['update', 'updateOne'],
+      updateMany: ['update', 'updateMany'],
+      updateManyAndReturn: ['updateManyAndReturn'],
+      deleteOne: ['delete', 'deleteOne'],
+      deleteMany: ['delete', 'deleteMany'],
+      upsertOne: ['upsert', 'upsertOne'],
+      aggregate: ['aggregate'],
+      groupBy: ['groupBy'],
+      count: ['count'],
+    };
     // Check global operation exclusions first
     if (config.globalExclusions?.operations) {
-      // Map operation names for backward compatibility to check exclusions
-      const operationMapping: Record<string, string[]> = {
-        findMany: ['findMany'],
-        findUnique: ['findUnique'],
-        findUniqueOrThrow: ['findUniqueOrThrow'],
-        findFirst: ['findFirst'],
-        findFirstOrThrow: ['findFirstOrThrow'],
-        createOne: ['create', 'createOne'],
-        createMany: ['create', 'createMany'],
-        createManyAndReturn: ['createManyAndReturn'],
-        updateOne: ['update', 'updateOne'],
-        updateMany: ['update', 'updateMany'],
-        updateManyAndReturn: ['updateManyAndReturn'],
-        deleteOne: ['delete', 'deleteOne'],
-        deleteMany: ['delete', 'deleteMany'],
-        upsertOne: ['upsert', 'upsertOne'],
-        aggregate: ['aggregate'],
-        groupBy: ['groupBy'],
-        count: ['count'],
-      };
-
       const mappedOperationNames = operationMapping[operationName] || [operationName];
       const isExcluded = mappedOperationNames.some(
         (opName) => config.globalExclusions?.operations?.includes(opName) ?? false,
@@ -251,23 +249,6 @@ export default class Transformer {
     // Check if model has specific configuration
     const modelConfig = config.models?.[modelName];
     if (modelConfig && modelConfig.operations) {
-      // Map operation names for backward compatibility
-      const operationMapping: Record<string, string[]> = {
-        findMany: ['findMany'],
-        findUnique: ['findUnique'],
-        findFirst: ['findFirst'],
-        createOne: ['create', 'createOne'],
-        createMany: ['create', 'createMany'],
-        updateOne: ['update', 'updateOne'],
-        updateMany: ['update', 'updateMany'],
-        deleteOne: ['delete', 'deleteOne'],
-        deleteMany: ['delete', 'deleteMany'],
-        upsertOne: ['upsert', 'upsertOne'],
-        aggregate: ['aggregate'],
-        groupBy: ['groupBy'],
-        count: ['count'],
-      };
-
       const allowedOperationNames = operationMapping[operationName] || [operationName];
       const isEnabled = allowedOperationNames.some(
         (opName) => modelConfig.operations?.includes(opName) ?? false,

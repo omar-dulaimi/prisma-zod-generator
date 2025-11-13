@@ -52,9 +52,10 @@ model Admin {
           writeFileSync(configPath, JSON.stringify(config, null, 2));
 
           // Update schema with correct config path
+          const prismaFriendlyConfigPath = configPath.replace(/\\/g, '\\\\');
           const schemaWithConfigPath = schema.replace(
             'config   = "./config.json"',
-            `config   = "${configPath}"`,
+            `config   = "${prismaFriendlyConfigPath}"`,
           );
           writeFileSync(testEnv.schemaPath, schemaWithConfigPath);
 
