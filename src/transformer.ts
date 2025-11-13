@@ -212,6 +212,42 @@ export default class Transformer {
       return true;
     }
 
+    // Check global operation exclusions first
+    if (config.globalExclusions?.operations) {
+      // Map operation names for backward compatibility to check exclusions
+      const operationMapping: Record<string, string[]> = {
+        findMany: ['findMany'],
+        findUnique: ['findUnique'],
+        findUniqueOrThrow: ['findUniqueOrThrow'],
+        findFirst: ['findFirst'],
+        findFirstOrThrow: ['findFirstOrThrow'],
+        createOne: ['create', 'createOne'],
+        createMany: ['create', 'createMany'],
+        createManyAndReturn: ['createManyAndReturn'],
+        updateOne: ['update', 'updateOne'],
+        updateMany: ['update', 'updateMany'],
+        updateManyAndReturn: ['updateManyAndReturn'],
+        deleteOne: ['delete', 'deleteOne'],
+        deleteMany: ['delete', 'deleteMany'],
+        upsertOne: ['upsert', 'upsertOne'],
+        aggregate: ['aggregate'],
+        groupBy: ['groupBy'],
+        count: ['count'],
+      };
+
+      const mappedOperationNames = operationMapping[operationName] || [operationName];
+      const isExcluded = mappedOperationNames.some(
+        (opName) => config.globalExclusions?.operations?.includes(opName) ?? false,
+      );
+
+      if (isExcluded) {
+        logger.debug(
+          `🔍 Operation check: ${modelName}.${operationName} = false (globally excluded: [${config.globalExclusions.operations.join(', ')}])`,
+        );
+        return false;
+      }
+    }
+
     // Check if model has specific configuration
     const modelConfig = config.models?.[modelName];
     if (modelConfig && modelConfig.operations) {

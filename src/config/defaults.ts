@@ -357,6 +357,11 @@ export class DefaultConfigurationManager {
       }
     });
 
+    // Normalize operations in global exclusions
+    if (result.globalExclusions && !Array.isArray(result.globalExclusions.operations)) {
+      result.globalExclusions.operations = [];
+    }
+
     // Normalize variants
     if (!result.variants) {
       result.variants = {};
