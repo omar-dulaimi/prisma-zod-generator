@@ -1,3 +1,9 @@
+## [1.32.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.0...v1.32.1) (2025-11-14)
+
+### 🐛 Bug Fixes
+
+* **transformer:** optional inverse relation lists ([502dc17](https://github.com/omar-dulaimi/prisma-zod-generator/commit/502dc178d90032663b6e6e8f31e8a4daa704720e))
+
 ## [1.32.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.8...v1.32.0) (2025-11-14)
 
 ### 🚀 Features
