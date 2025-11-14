@@ -1076,4 +1076,76 @@ model Post {
       GENERATION_TIMEOUT,
     );
   });
+
+  describe('Unchecked create relation optionality', () => {
+    it(
+      'marks inverse relation fields as optional in CreateInput and UncheckedCreateInput',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('unchecked-create-optional');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model Task {
+  id           Int      @id @default(autoincrement())
+  title        String
+  notes        String
+  parentTaskId Int?
+  parentTask   Task?     @relation("TaskToSubtasks", fields: [parentTaskId], references: [id])
+  subtasks     Task[]    @relation("TaskToSubtasks")
+  logs         TaskLog[] @relation()
+}
+
+model TaskLog {
+  id     Int  @id @default(autoincrement())
+  taskId Int
+  task   Task @relation(fields: [taskId], references: [id])
+}
+`;
+
+          writeFileSync(testEnv.schemaPath, schema);
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+          const createInputPath = join(objectsDir, 'TaskCreateInput.schema.ts');
+          const uncheckedCreatePath = join(objectsDir, 'TaskUncheckedCreateInput.schema.ts');
+
+          SchemaValidationUtils.expectSchemaContent(createInputPath, {
+            hasValidations: [
+              'subtasks: z.lazy(() => TaskCreateNestedManyWithoutParentTaskInputObjectSchema).optional()',
+              'logs: z.lazy(() => TaskLogCreateNestedManyWithoutTaskInputObjectSchema).optional()',
+            ],
+          });
+
+          SchemaValidationUtils.expectSchemaContent(uncheckedCreatePath, {
+            hasValidations: [
+              'subtasks: z.lazy(() => TaskUncheckedCreateNestedManyWithoutParentTaskInputObjectSchema).optional()',
+              'logs: z.lazy(() => TaskLogUncheckedCreateNestedManyWithoutTaskInputObjectSchema).optional()',
+            ],
+          });
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });
