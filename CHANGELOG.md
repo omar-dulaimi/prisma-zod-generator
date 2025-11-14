@@ -1,3 +1,15 @@
+## [1.32.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.8...v1.32.0) (2025-11-14)
+
+### 🚀 Features
+
+* added global operation exclusions ([6775f5d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6775f5d6ba587b7251be051b0882724f801a550a))
+* **core:** add support for globalExclusions on operations ([39d7b9e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/39d7b9ed45211d6fa46747b0cc6aeb7458872ae1))
+
+### 📚 Documentation
+
+* add JSON Schema IntelliSense guide and update config references ([ccfff04](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ccfff04dcd65efebc151c6e81b01faeaa7d481a7))
+* enhance pricing documentation and add sponsor notice with image ([82888df](https://github.com/omar-dulaimi/prisma-zod-generator/commit/82888df1be9254199e59658dcaef760390eba9b7))
+
 ## [1.31.8](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.31.7...v1.31.8) (2025-11-12)
 
 ### 🐛 Bug Fixes
