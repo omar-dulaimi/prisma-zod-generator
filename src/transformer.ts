@@ -1835,7 +1835,16 @@ export default class Transformer {
             if (modelField.isUpdatedAt) {
               return [];
             }
-            isRequired = modelField.isRequired && !modelField.hasDefaultValue;
+            const isListField = modelField.isList;
+
+            if (isListField) {
+              // Prisma marks list fields (relation or scalar) as required in the datamodel,
+              // but the generated CreateInput/UncheckedCreateInput types expose them as optional.
+              // Treat them as optional to stay aligned with @prisma/client.
+              isRequired = false;
+            } else {
+              isRequired = modelField.isRequired && !modelField.hasDefaultValue;
+            }
           }
         }
       }
