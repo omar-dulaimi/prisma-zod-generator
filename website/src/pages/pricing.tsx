@@ -153,11 +153,11 @@ export default function Pricing(): JSX.Element {
           </p>
           <div className={styles.sponsorNotice}>
             <div className={styles.sponsorNoticeContent}>
-              <strong>Heads up:</strong> GitHub Sponsors also lists general supporter tiers (for example
-              “Pro (Individual)” monthly). Those tiers do <em>not</em> include Prisma Zod Generator licenses.
-              Switch to the <strong>One-time</strong> tab (second tab) on the Sponsors page and choose the
-              yearly tier labeled “PZG Starter”, “PZG Professional”, “PZG Business”, or “PZG Enterprise” to
-              unlock the corresponding plan.
+              <strong>Heads up:</strong> GitHub Sponsors also lists general supporter tiers (for
+              example “Pro (Individual)” monthly). Those tiers do <em>not</em> include Prisma Zod
+              Generator licenses. Switch to the <strong>One-time</strong> tab (second tab) on the
+              Sponsors page and choose the yearly tier labeled “PZG Starter”, “PZG Professional”,
+              “PZG Business”, or “PZG Enterprise” to unlock the corresponding plan.
             </div>
             <img
               src={tiersImage}

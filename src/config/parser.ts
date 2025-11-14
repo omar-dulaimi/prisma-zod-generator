@@ -97,6 +97,7 @@ export interface GeneratorConfig {
     input?: string[];
     result?: string[];
     pure?: string[];
+    operations?: string[];
   };
 
   /** Variant configuration */
