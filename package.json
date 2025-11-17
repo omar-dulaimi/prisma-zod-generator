@@ -162,7 +162,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/json-schema": "^7.0.15",
     "@types/node": "^24.10.0",
-    "@types/validator": "^13.15.4",
+    "@types/validator": "^13.15.9",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
     "@vitest/coverage-v8": "^4.0.8",
