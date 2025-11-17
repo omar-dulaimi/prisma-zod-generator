@@ -3,7 +3,7 @@
 	<p><strong>Unify Prisma validation, policy guardrails, and developer workflows in a single generator.</strong></p>
 	<p>
 		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/pricing"><strong>🚀 Get PZG Pro – Purchase on GitHub</strong></a> |
-		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/docs"><strong>📚 Documentation</strong></a> |
+		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/"><strong>📚 Documentation</strong></a> |
 		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/guard"><strong>🛡️ Drift Guard</strong></a>
 	</p>
 	<p>
