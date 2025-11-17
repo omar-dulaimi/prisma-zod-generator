@@ -88,8 +88,8 @@ importers:
         specifier: ^7.0.15
         version: 7.0.15
       '@types/node':
-        specifier: ^24.10.0
-        version: 24.10.0
+        specifier: ^24.10.1
+        version: 24.10.1
       '@types/validator':
         specifier: ^13.15.4
         version: 13.15.4
@@ -101,7 +101,7 @@ importers:
         version: 8.46.4(eslint@9.39.1(jiti@1.21.7))(typescript@5.9.3)
       '@vitest/coverage-v8':
         specifier: ^4.0.8
-        version: 4.0.8(vitest@4.0.8(@types/debug@4.1.12)(@types/node@24.10.0)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6))
+        version: 4.0.8(vitest@4.0.8(@types/debug@4.1.12)(@types/node@24.10.1)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6))
       conventional-changelog-conventionalcommits:
         specifier: ^9.1.0
         version: 9.1.0
@@ -152,7 +152,7 @@ importers:
         version: 25.0.2(typescript@5.9.3)
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@types/node@24.10.0)(typescript@5.9.3)
+        version: 10.9.2(@types/node@24.10.1)(typescript@5.9.3)
       tsx:
         specifier: ^4.20.6
         version: 4.20.6
@@ -164,7 +164,7 @@ importers:
         version: 13.15.23
       vitest:
         specifier: ^4.0.8
-        version: 4.0.8(@types/debug@4.1.12)(@types/node@24.10.0)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6)
+        version: 4.0.8(@types/debug@4.1.12)(@types/node@24.10.1)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6)
       zod:
         specifier: ^4.1.12
         version: 4.1.12
@@ -209,19 +209,10 @@ packages:
     resolution: {integrity: sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/parser@7.28.4':
-    resolution: {integrity: sha512-yZbBqeM6TkpP9du/I2pUZnJsRMGGvOuIrhjzC1AwHwW+6he4mni6Bp/m8ijn0iOuZuPI2BfkCoSRunpyjnrQKg==}
-    engines: {node: '>=6.0.0'}
-    hasBin: true
-
   '@babel/parser@7.28.5':
     resolution: {integrity: sha512-KKBU1VGYR7ORr3At5HAtUQ+TV3SzRCXmA/8OdDZiLDBIZxVyzXuztPjfLd3BV1PRAQGCMWWSHYhL0F8d5uHBDQ==}
     engines: {node: '>=6.0.0'}
     hasBin: true
-
-  '@babel/types@7.28.4':
-    resolution: {integrity: sha512-bkFqkLhh3pMBUQQkpVgWDWq/lqzc2678eUyDlTBhRqhCHFguYYGM0Efga7tYk4TogG/3x0EEl66/OQ+WGbWB/Q==}
-    engines: {node: '>=6.9.0'}
 
   '@babel/types@7.28.5':
     resolution: {integrity: sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA==}
@@ -1159,8 +1150,8 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
-  '@types/node@24.10.0':
-    resolution: {integrity: sha512-qzQZRBqkFsYyaSWXuEHc2WR9c0a0CXwiE5FWUvn7ZM+vdy1uZLfCunD38UzhuB7YN/J11ndbDBcTmOdxJo9Q7A==}
+  '@types/node@24.10.1':
+    resolution: {integrity: sha512-GNWcUTRBgIRJD5zj+Tq0fKOJ5XZajIiBroOF0yvj2bSU1WvNdYS/dn9UxwsujGW4JX06dnHyjV2y9rRaybH0iQ==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -1459,11 +1450,16 @@ packages:
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
-  bare-events@2.7.0:
-    resolution: {integrity: sha512-b3N5eTW1g7vXkw+0CXh/HazGTcO5KYuu/RCNaJbDMPI6LHDi+7qe8EmxKUVe1sUbY2KZOVZFyj62x0OEz9qyAA==}
+  bare-events@2.8.2:
+    resolution: {integrity: sha512-riJjyv1/mHLIPX4RwiK+oW9/4c3TEUeORHKefKAKnZ5kyslbN+HXowtbaVEqt4IMUB7OXlfixcs6gsFeo/jhiQ==}
+    peerDependencies:
+      bare-abort-controller: '*'
+    peerDependenciesMeta:
+      bare-abort-controller:
+        optional: true
 
-  bare-fs@4.4.5:
-    resolution: {integrity: sha512-TCtu93KGLu6/aiGWzMr12TmSRS6nKdfhAnzTQRbXoSWxkbb9eRd53jQ51jG7g1gYjjtto3hbBrrhzg6djcgiKg==}
+  bare-fs@4.5.1:
+    resolution: {integrity: sha512-zGUCsm3yv/ePt2PHNbVxjjn0nNB1MkIaR4wOCxJ2ig5pCf5cCVAYJXVhQg/3OhhJV6DB1ts7Hv0oUaElc2TPQg==}
     engines: {bare: '>=1.16.0'}
     peerDependencies:
       bare-buffer: '*'
@@ -1489,8 +1485,8 @@ packages:
       bare-events:
         optional: true
 
-  bare-url@2.2.2:
-    resolution: {integrity: sha512-g+ueNGKkrjMazDG3elZO1pNs3HY5+mMmOet1jtKyhOaCnkLzitxf26z7hoAEkDNgdNmnc1KIlt/dw6Po6xZMpA==}
+  bare-url@2.3.2:
+    resolution: {integrity: sha512-ZMq4gd9ngV5aTMa5p9+UfY0b3skwhHELaDkhEHetMdX0LRkW9kzaym4oo/Eh+Ghm0CCDuMTsRIGM/ytUc1ZYmw==}
 
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
@@ -2680,8 +2676,8 @@ packages:
   inversify@6.0.1:
     resolution: {integrity: sha512-B3ex30927698TJENHR++8FfEaJGqoWOgI6ZY5Ht/nLUsFCwHn6akbwtnUAPCgUepAnTpe2qHxhDNjoKLyz6rgQ==}
 
-  ip-address@10.0.1:
-    resolution: {integrity: sha512-NWv9YLW4PoW2B7xtzaS3NCot75m6nK7Icdv0o3lfMceJVRfSoQwqD4wEH5rLwoKJwUiZ/rfpiVBhnaF0FK4HoA==}
+  ip-address@10.1.0:
+    resolution: {integrity: sha512-XXADHxXmvT9+CRxhXg56LJovE+bmWnEWB78LB83VZTprKTmaC5QfruXocxzTZ2Kl0DNwKuBdlIhjL8LeY8Sf8Q==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -4026,6 +4022,11 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  semver@7.7.3:
+    resolution: {integrity: sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q==}
+    engines: {node: '>=10'}
+    hasBin: true
+
   send@1.2.0:
     resolution: {integrity: sha512-uaW0WwXKpL9blXE2o0bRhoL2EGXIrZxQ2ZQ4mgcfoBxdFmQold+qWsD2jLrfZ0trjKL6vOw0j//eAwcALFjKSw==}
     engines: {node: '>= 18'}
@@ -4779,20 +4780,9 @@ snapshots:
 
   '@babel/helper-validator-identifier@7.28.5': {}
 
-  '@babel/parser@7.28.4':
-    dependencies:
-      '@babel/types': 7.28.4
-    optional: true
-
   '@babel/parser@7.28.5':
     dependencies:
       '@babel/types': 7.28.5
-
-  '@babel/types@7.28.4':
-    dependencies:
-      '@babel/helper-string-parser': 7.27.1
-      '@babel/helper-validator-identifier': 7.27.1
-    optional: true
 
   '@babel/types@7.28.5':
     dependencies:
@@ -5062,7 +5052,7 @@ snapshots:
 
   '@jest/pattern@30.0.1':
     dependencies:
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
       jest-regex-util: 30.0.1
 
   '@jest/schemas@30.0.5':
@@ -5075,7 +5065,7 @@ snapshots:
       '@jest/schemas': 30.0.5
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
       '@types/yargs': 17.0.34
       chalk: 4.1.2
 
@@ -5317,11 +5307,12 @@ snapshots:
       extract-zip: 2.0.1
       progress: 2.0.3
       proxy-agent: 6.5.0
-      semver: 7.7.2
+      semver: 7.7.3
       tar-fs: 3.1.1
       unbzip2-stream: 1.4.3
       yargs: 17.7.2
     transitivePeerDependencies:
+      - bare-abort-controller
       - bare-buffer
       - react-native-b4a
       - supports-color
@@ -5594,7 +5585,7 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
 
   '@types/chai@5.2.2':
     dependencies:
@@ -5602,11 +5593,11 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
 
   '@types/cors@2.8.19':
     dependencies:
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
 
   '@types/d3-array@3.2.2': {}
 
@@ -5739,7 +5730,7 @@ snapshots:
 
   '@types/express-serve-static-core@5.1.0':
     dependencies:
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
       '@types/qs': 6.14.0
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
@@ -5787,7 +5778,7 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
-  '@types/node@24.10.0':
+  '@types/node@24.10.1':
     dependencies:
       undici-types: 7.16.0
 
@@ -5800,16 +5791,16 @@ snapshots:
   '@types/send@0.17.6':
     dependencies:
       '@types/mime': 1.3.5
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
 
   '@types/send@1.2.1':
     dependencies:
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
 
   '@types/serve-static@1.15.10':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
       '@types/send': 0.17.6
 
   '@types/stack-utils@2.0.3': {}
@@ -5831,7 +5822,7 @@ snapshots:
 
   '@types/yauzl@2.10.3':
     dependencies:
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
     optional: true
 
   '@typescript-eslint/eslint-plugin@8.46.4(@typescript-eslint/parser@8.46.4(eslint@9.39.1(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.1(jiti@1.21.7))(typescript@5.9.3)':
@@ -5927,7 +5918,7 @@ snapshots:
       '@typescript-eslint/types': 8.46.4
       eslint-visitor-keys: 4.2.1
 
-  '@vitest/coverage-v8@4.0.8(vitest@4.0.8(@types/debug@4.1.12)(@types/node@24.10.0)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6))':
+  '@vitest/coverage-v8@4.0.8(vitest@4.0.8(@types/debug@4.1.12)(@types/node@24.10.1)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6))':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/utils': 4.0.8
@@ -5940,7 +5931,7 @@ snapshots:
       magicast: 0.5.1
       std-env: 3.10.0
       tinyrainbow: 3.0.3
-      vitest: 4.0.8(@types/debug@4.1.12)(@types/node@24.10.0)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6)
+      vitest: 4.0.8(@types/debug@4.1.12)(@types/node@24.10.1)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6)
     transitivePeerDependencies:
       - supports-color
 
@@ -5953,13 +5944,13 @@ snapshots:
       chai: 6.2.0
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@4.0.8(vite@7.1.6(@types/node@24.10.0)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6))':
+  '@vitest/mocker@4.0.8(vite@7.1.6(@types/node@24.10.1)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6))':
     dependencies:
       '@vitest/spy': 4.0.8
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.1.6(@types/node@24.10.0)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6)
+      vite: 7.1.6(@types/node@24.10.1)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6)
 
   '@vitest/pretty-format@4.0.8':
     dependencies:
@@ -6143,16 +6134,17 @@ snapshots:
 
   balanced-match@1.0.2: {}
 
-  bare-events@2.7.0: {}
+  bare-events@2.8.2: {}
 
-  bare-fs@4.4.5:
+  bare-fs@4.5.1:
     dependencies:
-      bare-events: 2.7.0
+      bare-events: 2.8.2
       bare-path: 3.0.0
-      bare-stream: 2.7.0(bare-events@2.7.0)
-      bare-url: 2.2.2
+      bare-stream: 2.7.0(bare-events@2.8.2)
+      bare-url: 2.3.2
       fast-fifo: 1.3.2
     transitivePeerDependencies:
+      - bare-abort-controller
       - react-native-b4a
     optional: true
 
@@ -6164,16 +6156,17 @@ snapshots:
       bare-os: 3.6.2
     optional: true
 
-  bare-stream@2.7.0(bare-events@2.7.0):
+  bare-stream@2.7.0(bare-events@2.8.2):
     dependencies:
       streamx: 2.23.0
     optionalDependencies:
-      bare-events: 2.7.0
+      bare-events: 2.8.2
     transitivePeerDependencies:
+      - bare-abort-controller
       - react-native-b4a
     optional: true
 
-  bare-url@2.2.2:
+  bare-url@2.3.2:
     dependencies:
       bare-path: 3.0.0
     optional: true
@@ -6981,7 +6974,9 @@ snapshots:
 
   events-universal@1.0.1:
     dependencies:
-      bare-events: 2.7.0
+      bare-events: 2.8.2
+    transitivePeerDependencies:
+      - bare-abort-controller
 
   events@3.3.0: {}
 
@@ -7461,7 +7456,7 @@ snapshots:
 
   inversify@6.0.1: {}
 
-  ip-address@10.0.1: {}
+  ip-address@10.1.0: {}
 
   ipaddr.js@1.9.1: {}
 
@@ -7645,7 +7640,7 @@ snapshots:
   jest-mock@30.2.0:
     dependencies:
       '@jest/types': 30.2.0
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
       jest-util: 30.2.0
 
   jest-regex-util@30.0.1: {}
@@ -7653,7 +7648,7 @@ snapshots:
   jest-util@30.2.0:
     dependencies:
       '@jest/types': 30.2.0
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
       chalk: 4.1.2
       ci-info: 4.3.1
       graceful-fs: 4.2.11
@@ -7796,8 +7791,8 @@ snapshots:
 
   magicast@0.3.5:
     dependencies:
-      '@babel/parser': 7.28.4
-      '@babel/types': 7.28.4
+      '@babel/parser': 7.28.5
+      '@babel/types': 7.28.5
       source-map-js: 1.2.1
     optional: true
 
@@ -8776,6 +8771,7 @@ snapshots:
       typed-query-selector: 2.12.0
       ws: 8.18.3
     transitivePeerDependencies:
+      - bare-abort-controller
       - bare-buffer
       - bufferutil
       - react-native-b4a
@@ -8791,6 +8787,7 @@ snapshots:
       puppeteer-core: 23.11.1
       typed-query-selector: 2.12.0
     transitivePeerDependencies:
+      - bare-abort-controller
       - bare-buffer
       - bufferutil
       - react-native-b4a
@@ -9089,6 +9086,8 @@ snapshots:
 
   semver@7.7.2: {}
 
+  semver@7.7.3: {}
+
   send@1.2.0:
     dependencies:
       debug: 4.4.3
@@ -9197,7 +9196,7 @@ snapshots:
 
   socks@2.8.7:
     dependencies:
-      ip-address: 10.0.1
+      ip-address: 10.1.0
       smart-buffer: 4.2.0
 
   sonic-boom@3.8.1:
@@ -9260,6 +9259,7 @@ snapshots:
       fast-fifo: 1.3.2
       text-decoder: 1.2.3
     transitivePeerDependencies:
+      - bare-abort-controller
       - react-native-b4a
 
   string-template@1.0.0: {}
@@ -9392,9 +9392,10 @@ snapshots:
       pump: 3.0.3
       tar-stream: 3.1.7
     optionalDependencies:
-      bare-fs: 4.4.5
+      bare-fs: 4.5.1
       bare-path: 3.0.0
     transitivePeerDependencies:
+      - bare-abort-controller
       - bare-buffer
       - react-native-b4a
 
@@ -9404,6 +9405,7 @@ snapshots:
       fast-fifo: 1.3.2
       streamx: 2.23.0
     transitivePeerDependencies:
+      - bare-abort-controller
       - react-native-b4a
 
   temp-dir@3.0.0: {}
@@ -9482,14 +9484,14 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
-  ts-node@10.9.2(@types/node@24.10.0)(typescript@5.9.3):
+  ts-node@10.9.2(@types/node@24.10.1)(typescript@5.9.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
       '@tsconfig/node12': 1.0.11
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
       acorn: 8.15.0
       acorn-walk: 8.3.4
       arg: 4.1.3
@@ -9651,7 +9653,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite@7.1.6(@types/node@24.10.0)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6):
+  vite@7.1.6(@types/node@24.10.1)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6):
     dependencies:
       esbuild: 0.25.10
       fdir: 6.5.0(picomatch@4.0.3)
@@ -9660,16 +9662,16 @@ snapshots:
       rollup: 4.53.2
       tinyglobby: 0.2.15
     optionalDependencies:
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
       fsevents: 2.3.3
       jiti: 1.21.7
       terser: 5.44.0
       tsx: 4.20.6
 
-  vitest@4.0.8(@types/debug@4.1.12)(@types/node@24.10.0)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6):
+  vitest@4.0.8(@types/debug@4.1.12)(@types/node@24.10.1)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6):
     dependencies:
       '@vitest/expect': 4.0.8
-      '@vitest/mocker': 4.0.8(vite@7.1.6(@types/node@24.10.0)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6))
+      '@vitest/mocker': 4.0.8(vite@7.1.6(@types/node@24.10.1)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6))
       '@vitest/pretty-format': 4.0.8
       '@vitest/runner': 4.0.8
       '@vitest/snapshot': 4.0.8
@@ -9686,11 +9688,11 @@ snapshots:
       tinyexec: 0.3.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: 7.1.6(@types/node@24.10.0)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6)
+      vite: 7.1.6(@types/node@24.10.1)(jiti@1.21.7)(terser@5.44.0)(tsx@4.20.6)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/debug': 4.1.12
-      '@types/node': 24.10.0
+      '@types/node': 24.10.1
     transitivePeerDependencies:
       - jiti
       - less
