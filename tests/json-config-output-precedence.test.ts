@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { prismaGenerate } from './helpers/prisma-generate';
 
 const execAsync = promisify(exec);
 
@@ -39,9 +40,7 @@ describe('JSON config output precedence (no output in generator block)', () => {
     await execAsync('tsc', { cwd: path.join(__dirname, '..') });
 
     // Run generate (no output attribute in block)
-    await execAsync(`npx prisma generate --schema="${schemaPath}"`, {
-      cwd: path.join(__dirname, '..'),
-    });
+    await prismaGenerate(schemaPath, path.join(__dirname, '..'));
   });
 
   afterAll(async () => {

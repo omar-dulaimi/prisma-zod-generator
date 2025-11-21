@@ -34,12 +34,12 @@ ls -la prisma/generated/ # or wherever your schemas are generated
 ```
 
 ### 2. Compatibility Check
-Ensure your environment meets Pro requirements:
+Ensure your environment meets Pro requirements (Prisma 7 baseline):
 
-- **Node.js**: 18+ (same as free version)
-- **Prisma**: 5.0+ (same as free version)
-- **TypeScript**: 4.9+ (recommended)
-- **Zod**: 3.22+ (same as free version)
+- **Node.js**: 20.19+ (22.x recommended)
+- **Prisma**: 7.0+
+- **TypeScript**: 5.4+ (5.9 recommended)
+- **Zod**: 4.x recommended (>=3.25 supported)
 
 ### 3. Feature Planning
 Decide which Pro features you want to use:

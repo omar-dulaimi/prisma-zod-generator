@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { prismaGenerate } from './helpers/prisma-generate';
 
 const execAsync = promisify(exec);
 
@@ -69,9 +70,7 @@ model TestPost {
     await execAsync('tsc', { cwd: path.join(__dirname, '..') });
 
     // Run prisma generate with our test schema
-    await execAsync(`npx prisma generate --schema="${tempSchemaPath}"`, {
-      cwd: path.join(__dirname, '..'),
-    });
+    await prismaGenerate(tempSchemaPath, path.join(__dirname, '..'));
 
     // Verify the directory structure
     const schemasExists = await fs
@@ -162,9 +161,7 @@ model TestUser {
 
     try {
       // Run prisma generate with regular output directory
-      await execAsync(`npx prisma generate --schema="${tempSchemaPath2}"`, {
-        cwd: path.join(__dirname, '..'),
-      });
+      await prismaGenerate(tempSchemaPath2, path.join(__dirname, '..'));
 
       // For regular output (not ending with 'schemas'), it should create a schemas subdirectory
       const schemasPath = path.join(regularOutputDir, 'schemas');

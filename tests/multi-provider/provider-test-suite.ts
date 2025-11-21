@@ -5,8 +5,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 // import { SchemaTestUtils } from '../schema-test-utils';
 import { MultiProviderTestRunner } from '../../prisma/utils/multi-provider-test-runner';
 import { getProviderConfig, ProviderConfig } from '../../prisma/utils/provider-config';
-import { execSync } from 'child_process';
 import { join } from 'path';
+import { prismaGenerateSync } from '../helpers/prisma-generate';
 
 export class ProviderTestSuite {
   private testRunner: MultiProviderTestRunner;
@@ -53,12 +53,7 @@ export class ProviderTestSuite {
 
       // Generate schemas
       const schemaPath = join(process.cwd(), this.config.schemaPath);
-      const generateCommand = `npx prisma generate --schema="${schemaPath}"`;
-
-      execSync(generateCommand, {
-        cwd: process.cwd(),
-        stdio: 'inherit',
-      });
+      prismaGenerateSync(schemaPath, process.cwd());
 
       // Import generated schemas
       await this.importGeneratedSchemas();

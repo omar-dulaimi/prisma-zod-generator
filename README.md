@@ -11,10 +11,10 @@
 		<a href="https://www.npmjs.com/package/prisma-zod-generator"><img alt="downloads" src="https://img.shields.io/npm/dw/prisma-zod-generator.svg?color=8B5CF6&label=downloads"></a>
 		<a href="https://github.com/omar-dulaimi/prisma-zod-generator/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/omar-dulaimi/prisma-zod-generator/ci.yml?branch=master&label=CI"></a>
 		<a href="https://github.com/omar-dulaimi/prisma-zod-generator/blob/master/LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-0a0a0a.svg"></a>
-		<img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript-blue.svg">
+		<img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript%20>=5.4%20(rec%205.9)-3178c6.svg">
 		<img alt="Module formats" src="https://img.shields.io/badge/modules-ESM%20%2B%20CJS-444.svg">
 		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/"><img alt="Docs" src="https://img.shields.io/badge/docs-website-0ea5e9.svg"></a>
-		<img alt="Node.js" src="https://img.shields.io/badge/node-%3E%3D18.18.0-339933?logo=node.js&logoColor=white">
+		<img alt="Node.js" src="https://img.shields.io/badge/node-%3E%3D20.19.0%20(rec%2022.x)-339933?logo=node.js&logoColor=white">
 	</p>
 	<sub>
 		Prisma → Zod generator for end-to-end workflows.<br/>

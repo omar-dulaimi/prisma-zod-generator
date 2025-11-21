@@ -750,8 +750,8 @@ model Notification {
         await testEnv.runGeneration();
         const endTime = Date.now();
 
-        // Should complete within reasonable time (less than 30 seconds)
-        expect(endTime - startTime).toBeLessThan(30000);
+        // Allow more breathing room under Prisma 7 driver adapters
+        expect(endTime - startTime).toBeLessThan(90000);
 
         const schemasDir = join(testEnv.outputDir, 'schemas');
 
@@ -804,40 +804,36 @@ model Notification {
   });
 
   describe('Configuration Edge Cases', () => {
-    it(
-      'should handle empty and minimal configurations',
-      async () => {
-        const testEnv = await TestEnvironment.createTestEnv('integration-minimal-config');
+    it('should handle empty and minimal configurations', async () => {
+      const testEnv = await TestEnvironment.createTestEnv('integration-minimal-config');
 
-        try {
-          // Minimal configuration - just output directory
-          const config = {
-            output: `${testEnv.outputDir}/schemas`,
-          };
+      try {
+        // Minimal configuration - just output directory
+        const config = {
+          output: `${testEnv.outputDir}/schemas`,
+        };
 
-          const schema = PrismaSchemaGenerator.createBasicSchema({
-            generatorOptions: { config: './config.json' },
-          });
+        const schema = PrismaSchemaGenerator.createBasicSchema({
+          generatorOptions: { config: './config.json' },
+        });
 
-          const configPath = join(testEnv.testDir, 'config.json');
-          writeFileSync(configPath, JSON.stringify(config, null, 2));
-          writeFileSync(testEnv.schemaPath, schema);
+        const configPath = join(testEnv.testDir, 'config.json');
+        writeFileSync(configPath, JSON.stringify(config, null, 2));
+        writeFileSync(testEnv.schemaPath, schema);
 
-          await testEnv.runGeneration();
+        await testEnv.runGeneration();
 
-          const schemasDir = join(testEnv.outputDir, 'schemas');
+        const schemasDir = join(testEnv.outputDir, 'schemas');
 
-          // Should still generate basic schemas with default settings
-          expect(existsSync(schemasDir)).toBe(true);
+        // Should still generate basic schemas with default settings
+        expect(existsSync(schemasDir)).toBe(true);
 
-          // Should use single file mode by default
-          expect(existsSync(join(schemasDir, 'index.ts'))).toBe(true);
-        } finally {
-          await testEnv.cleanup();
-        }
-      },
-      GENERATION_TIMEOUT,
-    );
+        // Should use single file mode by default
+        expect(existsSync(join(schemasDir, 'index.ts'))).toBe(true);
+      } finally {
+        await testEnv.cleanup();
+      }
+    }, 120_000);
 
     it(
       'should handle maximum configuration complexity',

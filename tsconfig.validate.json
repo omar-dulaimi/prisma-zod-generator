@@ -5,6 +5,7 @@
   },
   "include": [
     "./src/**/*.ts",
+    "./src/**/*.d.ts",
     "./prisma/generated/**/*.ts"
   ]
 }

@@ -1,7 +1,7 @@
-import { execSync } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { prismaGenerateSync } from './helpers/prisma-generate';
 
 /*
   Full (optional) matrix test for prisma-client preview configuration permutations.
@@ -87,10 +87,7 @@ describe('Full prisma-client config variation matrix', () => {
         writeFileSync(schemaPath, schemaFor(combo));
         // Removed unused variable 'success'
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, {
-            cwd: projectRoot,
-            stdio: 'pipe',
-          });
+          prismaGenerateSync(schemaPath, projectRoot);
           // success flag removed; test passes if no exception thrown
           successCount++; // count scenario as succeeded if generation worked
         } catch {
@@ -131,7 +128,7 @@ describe('Full prisma-client config variation matrix', () => {
         schemaFor({ runtime: 'nodejs', moduleFormat: 'esm', genExt: 'ts', importExt: 'js' }),
       );
       try {
-        execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: projectRoot, stdio: 'pipe' });
+        prismaGenerateSync(schemaPath, projectRoot);
         successCount++;
       } catch {
         // leave successCount at 0

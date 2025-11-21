@@ -77,7 +77,7 @@
 
 > Prisma → Zod in one generate. Ship validated, typed data everywhere.
 
-Last updated: 2025-11-14 • Version: 1.32.1
+Last updated: 2025-11-21 • Version: 1.32.1
 
 ## Quick start
 
@@ -3921,12 +3921,12 @@ import TabItem from '@theme/TabItem';
 
 ### Requirements
 
-| Component                | Minimum |
-| ------------------------ | ------- |
-| Node.js                  | 18.x    |
-| Prisma                   | 6.12.0  |
-| Zod                      | 4.0.5   |
-| TypeScript (recommended) | 5.2+    |
+| Component  | Minimum | Recommended |
+| ---------- | ------- | ----------- |
+| Node.js    | 20.19.0 | 22.x        |
+| Prisma     | 7.0.0   | Latest 7.x  |
+| Zod        | 4.0.5   | Latest 4.x  |
+| TypeScript | 5.4.0   | 5.9.x       |
 
 <Tabs>
   <TabItem value="npm" label="npm">
@@ -8433,7 +8433,7 @@ When reporting issues, include:
 
 ```
 **PZG Version**: 1.21.8
-**Node Version**: 20.10.0
+**Node Version**: 20.19.0
 **License Plan**: Pro
 **Feature**: Policies & Redaction
 
@@ -8576,12 +8576,12 @@ ls -la prisma/generated/ # or wherever your schemas are generated
 
 ### 2. Compatibility Check
 
-Ensure your environment meets Pro requirements:
+Ensure your environment meets Pro requirements (Prisma 7 baseline):
 
-- **Node.js**: 18+ (same as free version)
-- **Prisma**: 5.0+ (same as free version)
-- **TypeScript**: 4.9+ (recommended)
-- **Zod**: 3.22+ (same as free version)
+- **Node.js**: 20.19+ (22.x recommended)
+- **Prisma**: 7.0+
+- **TypeScript**: 5.4+ (5.9 recommended)
+- **Zod**: 4.x recommended (>=3.25 supported)
 
 ### 3. Feature Planning
 

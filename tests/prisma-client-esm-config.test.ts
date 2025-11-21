@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'fs';
 import { join, relative } from 'path';
-import { execSync } from 'child_process';
 import Transformer from '../src/transformer';
+import { prismaGenerateSync } from './helpers/prisma-generate';
 
 describe('Prisma Client ESM Configuration Tests', () => {
   const testDir = join(process.cwd(), 'test-esm-configs');
   const schemaPath = join(testDir, 'schema.prisma');
   const outputDir = join(testDir, 'generated');
+  const runPrismaGenerate = () => prismaGenerateSync(schemaPath, process.cwd());
 
   // Base schema template
   const baseSchema = `
@@ -61,10 +62,7 @@ ${baseSchema}`;
       writeFileSync(schemaPath, schemaContent);
 
       try {
-        execSync(`npx prisma generate --schema ${schemaPath}`, {
-          cwd: process.cwd(),
-          stdio: 'pipe',
-        });
+        runPrismaGenerate();
 
         // Check generated files don't have extensions in imports
         const userWhereInputPath = join(
@@ -117,10 +115,7 @@ ${baseSchema}`;
         writeFileSync(schemaPath, schemaContent);
 
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, {
-            cwd: process.cwd(),
-            stdio: 'pipe',
-          });
+          runPrismaGenerate();
 
           // Check generated files don't have extensions for CJS
           const userWhereInputPath = join(
@@ -157,10 +152,7 @@ ${baseSchema}`;
         writeFileSync(schemaPath, schemaContent);
 
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, {
-            cwd: process.cwd(),
-            stdio: 'pipe',
-          });
+          runPrismaGenerate();
 
           // Check multiple generated files have .js extensions in imports
           const testFiles = [
@@ -203,10 +195,7 @@ ${baseSchema}`;
         writeFileSync(schemaPath, schemaContent);
 
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, {
-            cwd: process.cwd(),
-            stdio: 'pipe',
-          });
+          runPrismaGenerate();
 
           const userWhereInputPath = join(
             outputDir,
@@ -245,10 +234,7 @@ ${baseSchema}`;
           writeFileSync(schemaPath, schemaContent);
 
           try {
-            execSync(`npx prisma generate --schema ${schemaPath}`, {
-              cwd: process.cwd(),
-              stdio: 'pipe',
-            });
+            runPrismaGenerate();
 
             const userWhereInputPath = join(
               outputDir,
@@ -284,10 +270,7 @@ ${baseSchema}`;
         writeFileSync(schemaPath, schemaContent);
 
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, {
-            cwd: process.cwd(),
-            stdio: 'pipe',
-          });
+          runPrismaGenerate();
 
           const userWhereInputPath = join(
             outputDir,
@@ -350,10 +333,7 @@ model Post {
         writeFileSync(schemaPath, schemaContent);
 
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, {
-            cwd: process.cwd(),
-            stdio: 'pipe',
-          });
+          runPrismaGenerate();
 
           // Check that Prisma client imports include .js extension with custom output path
           const testFiles = [
@@ -442,10 +422,7 @@ model Post {
         writeFileSync(schemaPath, schemaContent);
 
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, {
-            cwd: process.cwd(),
-            stdio: 'pipe',
-          });
+          runPrismaGenerate();
 
           // Check that all index files have .js extensions for ESM compatibility
           const indexFiles = [
@@ -499,10 +476,7 @@ ${baseSchema}`;
         writeFileSync(schemaPath, schemaContent);
 
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, {
-            cwd: process.cwd(),
-            stdio: 'pipe',
-          });
+          runPrismaGenerate();
 
           const userWhereInputPath = join(
             outputDir,
@@ -532,10 +506,7 @@ ${baseSchema}`;
         writeFileSync(schemaPath, schemaContent);
 
         try {
-          execSync(`npx prisma generate --schema ${schemaPath}`, {
-            cwd: process.cwd(),
-            stdio: 'pipe',
-          });
+          runPrismaGenerate();
 
           const userWhereInputPath = join(
             outputDir,
@@ -772,10 +743,7 @@ ${baseSchema}`;
       writeFileSync(schemaPath, schemaContent);
 
       try {
-        execSync(`npx prisma generate --schema ${schemaPath}`, {
-          cwd: process.cwd(),
-          stdio: 'pipe',
-        });
+        runPrismaGenerate();
 
         // Test different types of imports
         const testCases = [

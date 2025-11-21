@@ -7,7 +7,7 @@ import { generateDecimalInputSchema, isDecimalJsAvailable } from './helpers/deci
 import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
 import type { CustomImport } from './parsers/zod-comments';
-import { TransformerParams } from './types';
+import { SchemaEnumWithValues, TransformerParams } from './types';
 import { logger } from './utils/logger';
 import {
   generateExportName,
@@ -37,7 +37,7 @@ export default class Transformer {
   schemaImports = new Set<string>();
   models: PrismaDMMF.Model[];
   modelOperations: PrismaDMMF.ModelMapping[];
-  enumTypes: PrismaDMMF.SchemaEnum[];
+  enumTypes: SchemaEnumWithValues[];
   enhancedModels: EnhancedModelInfo[];
 
   static enumNames: string[] = [];
@@ -1090,7 +1090,9 @@ export default class Transformer {
         await writeFileSafely(
           path.join(Transformer.getSchemasPath(), `enums/${fileName}`),
           `${this.generateImportZodStatement()}\n` +
-            `export const ${schemaExportName} = z.enum([${values.map((v) => `'${v}'`).join(', ')}])\n\n` +
+            `export const ${schemaExportName} = z.enum([${values
+              .map((v: string) => `'${v}'`)
+              .join(', ')}])\n\n` +
             `export type ${enumName} = z.infer<typeof ${schemaExportName}>;`,
         );
       }
