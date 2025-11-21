@@ -331,7 +331,7 @@ When reporting issues, include:
 
 ```
 **PZG Version**: 1.21.8
-**Node Version**: 20.10.0
+**Node Version**: 20.19.0
 **License Plan**: Pro
 **Feature**: Policies & Redaction
 

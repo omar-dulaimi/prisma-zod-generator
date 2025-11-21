@@ -10,12 +10,12 @@ import TabItem from '@theme/TabItem';
 
 ### Requirements
 
-| Component                | Minimum |
-| ------------------------ | ------- |
-| Node.js                  | 18.x    |
-| Prisma                   | 6.12.0  |
-| Zod                      | 4.0.5   |
-| TypeScript (recommended) | 5.2+    |
+| Component | Minimum  | Recommended |
+| --------- | -------- | ----------- |
+| Node.js   | 20.19.0  | 22.x        |
+| Prisma    | 7.0.0    | Latest 7.x  |
+| Zod       | 4.0.5    | Latest 4.x  |
+| TypeScript | 5.4.0   | 5.9.x       |
 
 <Tabs>
 <TabItem value="npm" label="npm">
