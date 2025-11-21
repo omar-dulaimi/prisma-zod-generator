@@ -1,14 +1,12 @@
 generator client {
   provider            = "prisma-client"
   output              = "../src/dsrc"
-  engineType          = "client"
   moduleFormat        = "esm"
   importFileExtension = "js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator zod {

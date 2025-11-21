@@ -1,7 +1,7 @@
-import { execSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { prismaGenerateSync } from './helpers/prisma-generate';
 
 // This test suite validates compatibility with the new `prisma-client` generator options
 // (runtime, moduleFormat, generatedFileExtension, importFileExtension, binaryTargets, previewFeatures)
@@ -18,6 +18,8 @@ describe('prisma-client generator option', () => {
   const root = join(process.cwd(), 'test-preview-options');
   const schemaPath = join(root, 'schema.prisma');
   const zodOut = join(root, 'zod');
+
+  const runPrismaGenerate = () => prismaGenerateSync(schemaPath, root);
 
   beforeAll(() => {
     if (existsSync(root)) rmSync(root, { recursive: true, force: true });
@@ -41,7 +43,7 @@ describe('prisma-client generator option', () => {
       const schema = buildSchema({ generatorBlock: genBlock });
       writeFileSync(schemaPath, schema);
       try {
-        execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
+        runPrismaGenerate();
       } catch {
         // If the preview generator isn't available, skip the scenario gracefully
         continue;
@@ -67,7 +69,7 @@ describe('prisma-client generator option', () => {
       const schema = buildSchema({ generatorBlock: genBlock });
       writeFileSync(schemaPath, schema);
       try {
-        execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
+        runPrismaGenerate();
       } catch {
         continue;
       }
@@ -78,12 +80,12 @@ describe('prisma-client generator option', () => {
     }
   });
 
-  it('handles binaryTargets and previewFeatures with legacy generator', () => {
-    const genBlock = `generator client {\n  provider      = "prisma-client-js"\n  binaryTargets = ["native"]\n  previewFeatures = ["queryCompiler", "driverAdapters"]\n}`;
+  it('handles binaryTargets with legacy generator', () => {
+    const genBlock = `generator client {\n  provider      = "prisma-client-js"\n  binaryTargets = ["native"]\n}`;
     const schema = buildSchema({ generatorBlock: genBlock });
     writeFileSync(schemaPath, schema);
     try {
-      execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
+      runPrismaGenerate();
     } catch {
       return;
     }
@@ -100,7 +102,7 @@ describe('prisma-client generator option', () => {
     const schema = buildSchema({ generatorBlock: genBlock });
     writeFileSync(schemaPath, schema);
     try {
-      execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
+      runPrismaGenerate();
     } catch {
       return;
     }
@@ -120,7 +122,7 @@ model Invoice {
 }`;
     writeFileSync(schemaPath, schema);
     try {
-      execSync(`npx prisma generate --schema ${schemaPath}`, { cwd: root, stdio: 'pipe' });
+      runPrismaGenerate();
     } catch {
       return;
     }

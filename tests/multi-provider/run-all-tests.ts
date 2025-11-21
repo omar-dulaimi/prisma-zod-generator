@@ -7,6 +7,7 @@ import { MultiProviderTestRunner } from '../../prisma/utils/multi-provider-test-
 import { getAllProviders } from '../../prisma/utils/provider-config';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
+import { prismaGenerateSync } from '../helpers/prisma-generate';
 // import { join } from 'path';
 
 interface TestOptions {
@@ -102,12 +103,7 @@ class ComprehensiveTestRunner {
         }
 
         // Generate schemas
-        const generateCommand = `npx prisma generate --schema="${schemaPath}"`;
-        execSync(generateCommand, {
-          cwd: this.basePath,
-          stdio: this.options.verbose ? 'inherit' : 'pipe',
-          env: { ...process.env, PRISMA_SCHEMA_PATH: schemaPath },
-        });
+        prismaGenerateSync(schemaPath, this.basePath);
 
         console.log(`✅ ${provider} schema generation completed`);
       } catch (error) {

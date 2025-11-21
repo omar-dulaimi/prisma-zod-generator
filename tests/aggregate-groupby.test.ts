@@ -2,6 +2,7 @@ import { expect, test, describe, beforeAll, afterAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { prismaGenerateSync } from './helpers/prisma-generate';
 
 describe('Aggregate and GroupBy Operations', () => {
   const testDir = `test-env-aggregate-groupby-${Date.now()}`;
@@ -47,10 +48,7 @@ model Post {
     fs.writeFileSync(path.join(testDir, 'schema.prisma'), schemaContent);
 
     // Generate schemas
-    execSync(`npx prisma generate --schema ${path.join(testDir, 'schema.prisma')}`, {
-      cwd: process.cwd(),
-      stdio: 'inherit',
-    });
+    prismaGenerateSync(path.join(testDir, 'schema.prisma'));
   });
 
   afterAll(() => {
@@ -243,10 +241,7 @@ model TestModel {
           fs.writeFileSync(path.join(providerTestDir, 'schema.prisma'), schemaWithProvider);
 
           // Generate schemas
-          execSync(`npx prisma generate --schema ${path.join(providerTestDir, 'schema.prisma')}`, {
-            cwd: process.cwd(),
-            stdio: 'pipe', // Suppress output for provider tests
-          });
+          prismaGenerateSync(path.join(providerTestDir, 'schema.prisma'));
 
           // Check that aggregate/groupBy operations include avg/sum for numeric fields
           const aggregatePath = path.join(
@@ -313,10 +308,7 @@ model TextOnlyModel {
         fs.writeFileSync(path.join(testDirNoNumeric, 'schema.prisma'), schemaNoNumeric);
 
         // Generate schemas
-        execSync(`npx prisma generate --schema ${path.join(testDirNoNumeric, 'schema.prisma')}`, {
-          cwd: process.cwd(),
-          stdio: 'pipe',
-        });
+        prismaGenerateSync(path.join(testDirNoNumeric, 'schema.prisma'));
 
         // Check if AvgAggregateInput and SumAggregateInput exist (they shouldn't for text-only models)
         const avgInputPath = path.join(

@@ -1,7 +1,7 @@
-import { DMMF as PrismaDMMF } from '@prisma/client/runtime/library';
+import type { DMMF as PrismaDMMF } from '@prisma/generator-helper';
 
 export type TransformerParams = {
-  enumTypes?: PrismaDMMF.SchemaEnum[];
+  enumTypes?: SchemaEnumWithValues[];
   fields?: PrismaDMMF.SchemaArg[];
   name?: string;
   models?: PrismaDMMF.Model[];
@@ -9,3 +9,5 @@ export type TransformerParams = {
   isDefaultPrismaClientOutput?: boolean;
   prismaClientOutputPath?: string;
 };
+
+export type SchemaEnumWithValues = PrismaDMMF.SchemaEnum & { values: string[] };

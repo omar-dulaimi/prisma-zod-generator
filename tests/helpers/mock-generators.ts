@@ -1,10 +1,71 @@
 import { DMMF } from '@prisma/generator-helper';
 import { exec } from 'child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import path, { join } from 'path';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
+
+const DEFAULT_DATASOURCE_URLS: Record<string, string> = {
+  sqlite: 'file:./test.db',
+  postgresql: 'postgresql://postgres:postgres@localhost:5432/postgres',
+  mysql: 'mysql://root:root@localhost:3306/test',
+  sqlserver:
+    'sqlserver://localhost:1433;database=master;user=SA;password=YourStrong!Passw0rd;trustServerCertificate=true;',
+  mongodb: 'mongodb://127.0.0.1:27017/test',
+};
+
+function detectProvider(schemaContent: string): string | undefined {
+  const providerMatch = schemaContent.match(/datasource\s+\w+\s*{[^}]*provider\s*=\s*"([^"]+)"/);
+  return providerMatch?.[1];
+}
+
+function stripLegacyUrlLines(schemaContent: string): string {
+  // Remove datasource url lines which are no longer supported in Prisma 7
+  return schemaContent.replace(/^\s*url\s*=.*$/gm, '');
+}
+
+function stripDriverAdaptersPreviewFeature(schemaContent: string): string {
+  return schemaContent.replace(
+    /^\s*previewFeatures\s*=\s*\[([^\]]*)\]\s*$/gm,
+    (_match, features) => {
+      const filtered = features
+        .split(',')
+        .map((f: string) => f.trim())
+        .filter((f: string) => !/driverAdapters/i.test(f.replace(/['"`]/g, '')))
+        .filter(Boolean);
+
+      return filtered.length > 0 ? `  previewFeatures = [${filtered.join(', ')}]` : '';
+    },
+  );
+}
+
+function sanitizeSchemaFile(schemaPath: string): { provider: string } {
+  const rawSchema = readFileSync(schemaPath, 'utf8');
+  const provider = detectProvider(rawSchema) ?? 'postgresql';
+  const cleaned = stripDriverAdaptersPreviewFeature(stripLegacyUrlLines(rawSchema));
+  writeFileSync(schemaPath, cleaned);
+  return { provider };
+}
+
+function writePrismaConfig(testDir: string, schemaPath: string, provider: string): string {
+  const configPath = path.join(testDir, 'prisma.config.mjs');
+  const datasourceUrl = DEFAULT_DATASOURCE_URLS[provider] ?? DEFAULT_DATASOURCE_URLS.postgresql;
+  const normalizedSchemaPath = schemaPath.split(path.sep).join('/');
+
+  const configContents = `import { defineConfig } from 'prisma/config';
+
+export default defineConfig({
+  schema: '${normalizedSchemaPath}',
+  datasource: {
+    url: '${datasourceUrl}',
+  },
+});
+`;
+
+  writeFileSync(configPath, configContents);
+  return configPath;
+}
 
 /**
  * Mock generators for creating test data and scenarios
@@ -407,9 +468,10 @@ export class TestEnvironment {
     const runGeneration = async () => {
       // Always build the generator to ensure latest code is used
       await execAsync('npx tsc', { cwd: process.cwd() });
+      const { provider } = sanitizeSchemaFile(schemaPath);
+      const configPath = writePrismaConfig(testDir, schemaPath, provider);
 
-      // Run prisma generate
-      await execAsync(`npx prisma generate --schema="${schemaPath}"`, {
+      await execAsync(`npx prisma generate --config="${configPath}"`, {
         cwd: process.cwd(),
       });
     };
@@ -417,7 +479,10 @@ export class TestEnvironment {
     // Same as runGeneration, but returns stdout/stderr for assertions
     const runGenerationWithOutput = async (): Promise<{ stdout: string; stderr: string }> => {
       await execAsync('npx tsc', { cwd: process.cwd() });
-      return execAsync(`npx prisma generate --schema="${schemaPath}"`, {
+      const { provider } = sanitizeSchemaFile(schemaPath);
+      const configPath = writePrismaConfig(testDir, schemaPath, provider);
+
+      return execAsync(`npx prisma generate --config="${configPath}"`, {
         cwd: process.cwd(),
       });
     };
@@ -471,16 +536,20 @@ export class TestEnvironment {
     const runGeneration = async () => {
       // Always build the generator to ensure latest code is used
       await execAsync('npx tsc', { cwd: process.cwd() });
+      const { provider } = sanitizeSchemaFile(env.schemaPath);
+      const configPath = writePrismaConfig(env.testDir, env.schemaPath, provider);
 
-      // Run prisma generate
-      await execAsync(`npx prisma generate --schema="${env.schemaPath}"`, {
+      await execAsync(`npx prisma generate --config="${configPath}"`, {
         cwd: process.cwd(),
       });
     };
 
     const runGenerationWithOutput = async (): Promise<{ stdout: string; stderr: string }> => {
       await execAsync('npx tsc', { cwd: process.cwd() });
-      return execAsync(`npx prisma generate --schema="${env.schemaPath}"`, {
+      const { provider } = sanitizeSchemaFile(env.schemaPath);
+      const configPath = writePrismaConfig(env.testDir, env.schemaPath, provider);
+
+      return execAsync(`npx prisma generate --config="${configPath}"`, {
         cwd: process.cwd(),
       });
     };

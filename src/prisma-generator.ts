@@ -22,6 +22,7 @@ import {
   resolveModelsComments,
 } from './helpers';
 import Transformer from './transformer';
+import type { SchemaEnumWithValues } from './types';
 import { ResolvedSafetyConfig } from './types/safety';
 import { logger } from './utils/logger';
 import { addFileToManifest, safeCleanupOutput, saveManifest } from './utils/safeOutputManagement';
@@ -343,9 +344,12 @@ export async function generate(options: GeneratorOptions) {
     const models: DMMF.Model[] = [...prismaClientDmmf.datamodel.models];
 
     const mutableModelOperations = [...modelOperations];
-    const mutableEnumTypes = {
-      model: enumTypes.model ? [...enumTypes.model] : undefined,
-      prisma: [...enumTypes.prisma],
+    const mutableEnumTypes: {
+      model: SchemaEnumWithValues[] | undefined;
+      prisma: SchemaEnumWithValues[];
+    } = {
+      model: enumTypes.model ? enumTypes.model.map(normalizeSchemaEnum) : undefined,
+      prisma: enumTypes.prisma.map(normalizeSchemaEnum),
     };
     const hiddenModels: string[] = [];
     const hiddenFields: string[] = [];
@@ -412,10 +416,12 @@ export async function generate(options: GeneratorOptions) {
           (datamodelEnum) =>
             !mutableEnumTypes.model?.some((schemaEnum) => schemaEnum.name === datamodelEnum.name),
         )
-        .map((datamodelEnum) => ({
-          name: datamodelEnum.name,
-          values: datamodelEnum.values.map((v) => v.name),
-        }));
+        .map((datamodelEnum) =>
+          normalizeSchemaEnum({
+            name: datamodelEnum.name,
+            values: datamodelEnum.values.map((v) => v.name),
+          }),
+        );
 
       const allModelEnums = [...(mutableEnumTypes.model ?? []), ...transformedDatamodelEnums];
       await generateEnumSchemas(mutableEnumTypes.prisma, allModelEnums);
@@ -766,9 +772,41 @@ function setPrismaClientConfig(prismaClientGeneratorConfig: GeneratorConfig | un
   }
 }
 
+function normalizeSchemaEnum(enumType: {
+  name: string;
+  values?: readonly unknown[];
+  data?: readonly { key: string; value: string }[];
+}): SchemaEnumWithValues {
+  const rawValues = Array.isArray(enumType.values) ? Array.from(enumType.values) : undefined;
+  const values = rawValues
+    ? rawValues.map((v) => {
+        if (typeof v === 'string') return v;
+        if (v && typeof v === 'object' && 'name' in (v as Record<string, unknown>)) {
+          return (v as { name: string }).name;
+        }
+        if (v && typeof v === 'object' && 'value' in (v as Record<string, unknown>)) {
+          return (v as { value: string }).value;
+        }
+        return String(v);
+      })
+    : Array.isArray(enumType.data)
+      ? Array.from(enumType.data).map((entry) => entry.value || entry.key)
+      : [];
+
+  const data = enumType.data
+    ? Array.from(enumType.data)
+    : values.map((val) => ({ key: val, value: val }));
+
+  return {
+    name: enumType.name,
+    data,
+    values,
+  };
+}
+
 async function generateEnumSchemas(
-  prismaSchemaEnum: DMMF.SchemaEnum[],
-  modelSchemaEnum: DMMF.SchemaEnum[],
+  prismaSchemaEnum: SchemaEnumWithValues[],
+  modelSchemaEnum: SchemaEnumWithValues[],
 ) {
   const enumTypes = [...prismaSchemaEnum, ...modelSchemaEnum];
   // Include both raw and normalized enum names so import/name checks work
