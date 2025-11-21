@@ -20,6 +20,7 @@
   "exclude": [
     "src/schemas/**",
     "src/dsrc/**",
-    "src/generated/**"
+    "src/generated/**",
+    "src/pro/**"
   ]
 }

@@ -102,7 +102,7 @@
     "test:docker:mysql": "docker compose up -d mysql && sleep 5 && pnpm test:provider:mysql",
     "test:docker:mongodb": "docker compose up -d mongodb && sleep 5 && pnpm test:provider:mongodb",
     "test:docker:sqlserver": "docker compose up -d sqlserver && sleep 10 && pnpm test:provider:sqlserver",
-    "lint": "eslint src/ tests/ --ignore-pattern 'tests/multi-provider/schemas/*/generated/**/*' --fix",
+    "lint": "eslint src/ tests/ --ignore-pattern 'tests/multi-provider/schemas/*/generated/**/*' --ignore-pattern 'src/pro/**' --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prerelease": "pnpm run gen-example && pnpm run test:type-check && pnpm run lint",
