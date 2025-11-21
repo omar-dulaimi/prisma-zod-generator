@@ -11,13 +11,20 @@ echo ""
 
 # Step 1: Verify submodule
 echo "🔍 Step 1/6: Verifying pro submodule..."
-SKIP_PRO=false
-if [ ! -e "src/pro/.git" ] || [ ! -f "src/pro/index.ts" ]; then
-  echo "⚠️  Pro submodule missing; building core-only package."
-  SKIP_PRO=true
-else
-  echo "✅ Pro submodule verified"
+if [ ! -e "src/pro/.git" ]; then
+  echo "❌ Error: Pro submodule not initialized"
+  echo "   Run: git submodule update --init --recursive"
+  exit 1
 fi
+
+# Check if submodule has content
+if [ ! -f "src/pro/index.ts" ]; then
+  echo "❌ Error: Pro submodule is empty"
+  echo "   Run: git submodule update --init --recursive"
+  exit 1
+fi
+
+echo "✅ Pro submodule verified"
 echo ""
 
 # Step 2: Clean previous build
@@ -45,17 +52,13 @@ echo "✅ JSON schema generated"
 echo ""
 
 # Step 4: Obfuscate pro features
-if [ "$SKIP_PRO" = true ]; then
-  echo "🔒 Step 4/6: Skipping pro obfuscation (core-only build)"
-else
-  echo "🔒 Step 4/6: Obfuscating pro features..."
-  node scripts/obfuscate-pro.js
-  if [ $? -ne 0 ]; then
-    echo "❌ Obfuscation failed"
-    exit 1
-  fi
-  echo ""
+echo "🔒 Step 4/6: Obfuscating pro features..."
+node scripts/obfuscate-pro.js
+if [ $? -ne 0 ]; then
+  echo "❌ Obfuscation failed"
+  exit 1
 fi
+echo ""
 
 # Step 5: Prepare package directory
 echo "📂 Step 5/6: Preparing package..."
