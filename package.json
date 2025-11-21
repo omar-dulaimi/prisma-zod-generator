@@ -212,6 +212,6 @@
   "homepage": "https://omar-dulaimi.github.io/prisma-zod-generator",
   "private": true,
   "engines": {
-    "node": ">=18.18.0"
+    "node": ">=20.19.0"
   }
 }

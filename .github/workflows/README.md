@@ -8,7 +8,7 @@ This repository uses GitHub Actions for automated testing, building, and releasi
 **Trigger**: Push/PR to master branch
 
 **Jobs**:
-- **test**: Runs on Node.js 18.x, 20.x, 22.x
+- **test**: Runs on Node.js 20.19.0, 22.x, 24.x
   - Builds project with `npm run gen-example`
   - Type checking with `npm run test:type-check`
   - Linting with `npm run lint`
@@ -46,7 +46,7 @@ This repository uses GitHub Actions for automated testing, building, and releasi
 
 **Features**:
 - Cross-platform testing (Ubuntu, Windows, macOS)
-- Extended Node.js version matrix (16.x, 18.x, 20.x, 22.x)
+- Extended Node.js version matrix (20.19.0, 22.x, 24.x)
 - Database compatibility testing with real databases
 - Performance and compatibility tests
 - Comprehensive test reporting

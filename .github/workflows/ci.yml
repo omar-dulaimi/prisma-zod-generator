@@ -78,7 +78,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x, 24.x]
+        node-version: [20.19.0, 22.x, 24.x]
 
     steps:
       - name: Checkout code
@@ -109,9 +109,7 @@ jobs:
         run: pnpm run lint || echo "Linting failed but continuing for now"
         continue-on-error: true
 
-      # Vitest 3.x requires Node 20.19.0+ or 22.12.0+, so skip tests for Node 18
       - name: Run basic tests
-        if: matrix.node-version != '18.x'
         run: pnpm run test:basic
 
   package-test:
