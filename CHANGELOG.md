@@ -1,3 +1,13 @@
+## [1.32.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.1...v1.32.2) (2025-11-21)
+
+### 🐛 Bug Fixes
+
+* **types:** support legacy getConfig flag ([e47d4d7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e47d4d7d9b4611ede201455d0863873890312e93))
+
+### 📚 Documentation
+
+* update runtime requirements for prisma 7 ([c4789bd](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c4789bda936818b8cf234f826078afb808dbe847))
+
 ## [1.32.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.0...v1.32.1) (2025-11-14)
 
 ### 🐛 Bug Fixes
