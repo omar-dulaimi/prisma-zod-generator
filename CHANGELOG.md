@@ -1,3 +1,9 @@
+## [2.1.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.1...v2.1.2) (2025-11-22)
+
+### 🐛 Bug Fixes
+
+* remove redundant version assignment in maybeWarnOnUnsupportedPrismaVersion function ([02a8c98](https://github.com/omar-dulaimi/prisma-zod-generator/commit/02a8c9886a8a34972cb0db5221c0654dbaef7a14))
+
 ## [2.1.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.0...v2.1.1) (2025-11-22)
 
 ### 🐛 Bug Fixes
