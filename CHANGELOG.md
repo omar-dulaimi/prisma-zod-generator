@@ -1,3 +1,9 @@
+## [2.1.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.0.0...v2.1.0) (2025-11-22)
+
+### 🚀 Features
+
+* add warning for unsupported Prisma versions and detect installed version ([ef7a1d2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ef7a1d2e78fbfbd133f70cadba32f3cb7f207a18))
+
 ## [2.0.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.2...v2.0.0) (2025-11-22)
 
 ### ⚠ BREAKING CHANGES
