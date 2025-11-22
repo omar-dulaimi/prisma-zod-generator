@@ -8,6 +8,16 @@
 
 * **breaking:** enforce prisma 7 minimum ([bbfd16a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bbfd16a5f5351b8bffb7b44da9a31f3b65ac89e0))
 
+## [2.0.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.2...v2.0.0) (2025-11-22)
+
+### ⚠ BREAKING CHANGES
+
+* **breaking:** v2.0.0 officially requires Prisma >=7; stay on <=1.32.1 for Prisma 6.
+
+### 🚀 Features
+
+* **breaking:** enforce prisma 7 minimum ([bbfd16a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bbfd16a5f5351b8bffb7b44da9a31f3b65ac89e0))
+
 ## [2.0.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.0.0...v2.0.1) (2025-11-22)
 
 ### ⏪ Reverts

@@ -106,7 +106,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prerelease": "pnpm run gen-example && pnpm run test:type-check && pnpm run lint",
-    "release": "semantic-release",
+    "release": "semantic-release --otp=693145",
     "release:dry": "semantic-release --dry-run",
     "release:predict": "git fetch --tags --quiet && semantic-release --dry-run --no-ci --plugins @semantic-release/commit-analyzer",
     "release:predict:notes": "git fetch --tags --quiet && semantic-release --dry-run --no-ci --plugins @semantic-release/commit-analyzer,@semantic-release/release-notes-generator",
