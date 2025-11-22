@@ -1,9 +1,3 @@
-## [2.0.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.2...v2.0.0) (2025-11-22)
-
-### ⚠️ Breaking Changes
-
-* promote the Prisma 7 runtime requirement introduced unintentionally in 1.32.2 to a major release so Prisma 6 users can safely remain on 1.32.1 or earlier. No source changes beyond the version bump were made for this release.
-
 ## [1.32.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.1...v1.32.2) (2025-11-21)
 
 ### 🐛 Bug Fixes
@@ -13,10 +7,6 @@
 ### 📚 Documentation
 
 * update runtime requirements for prisma 7 ([c4789bd](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c4789bda936818b8cf234f826078afb808dbe847))
-
-### ⚠️ Breaking Changes
-
-* Requiring `@prisma/client@^7` bundled the new Prisma 7 engines/internals. Prisma 6 projects that pick up 1.32.2 will see no generated schemas at runtime. Pin to `prisma-zod-generator@1.32.1` while on Prisma 6, or upgrade both Prisma and the generator together.
 
 ## [1.32.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.0...v1.32.1) (2025-11-14)
 
