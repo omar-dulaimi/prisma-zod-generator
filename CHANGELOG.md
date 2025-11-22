@@ -1,20 +1,5 @@
 ## [2.0.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.2...v2.0.0) (2025-11-22)
 
-### ⚠ BREAKING CHANGES
-
-* **breaking:** v2.0.0 officially requires Prisma >=7; stay on <=1.32.1 for Prisma 6.
-* **release:** mark v2.0.0 as Prisma 7-only so Prisma 6 users stay on <=1.32.1.
-
-### 🚀 Features
-
-* **breaking:** enforce prisma 7 minimum ([bbfd16a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bbfd16a5f5351b8bffb7b44da9a31f3b65ac89e0))
-
-### 🔧 Miscellaneous Chores
-
-* **release:** reissue prisma 7 requirement ([c76750e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c76750e6235fda5cdadbfbc00dd6cb6b5b4d60c0))
-
-## [2.0.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.2...v2.0.0) (2025-11-22)
-
 ### ⚠️ Breaking Changes
 
 * promote the Prisma 7 runtime requirement introduced unintentionally in 1.32.2 to a major release so Prisma 6 users can safely remain on 1.32.1 or earlier. No source changes beyond the version bump were made for this release.
