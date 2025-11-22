@@ -776,7 +776,7 @@ function setPrismaClientConfig(prismaClientGeneratorConfig: GeneratorConfig | un
 }
 
 function maybeWarnOnUnsupportedPrismaVersion(options: GeneratorOptions) {
-  const version = options.version || detectInstalledPrismaVersion(options.schemaPath);
+  const version = detectInstalledPrismaVersion(options.schemaPath);
   if (!version) return;
 
   const major = Number.parseInt(version.split('.')[0] ?? '', 10);
@@ -784,7 +784,7 @@ function maybeWarnOnUnsupportedPrismaVersion(options: GeneratorOptions) {
 
   if (major < 7) {
     logger.info(
-      `[prisma-zod-generator] ⚠️ Detected prisma@${version}, but this release requires Prisma >=7.\n` +
+      `\n[prisma-zod-generator] ⚠️ Detected prisma@${version}, but this release requires Prisma >=7.\n` +
         'Please pin prisma-zod-generator to ^1.32.1 while you remain on Prisma 6, or upgrade Prisma before using 2.x.',
     );
   }
