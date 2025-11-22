@@ -1,6 +1,7 @@
 import { DMMF, EnvValue, GeneratorConfig, GeneratorOptions } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import fsFull, { promises as fs } from 'fs';
+import { createRequire } from 'module';
 import path from 'path';
 import { processConfiguration } from './config/defaults';
 import {
@@ -82,6 +83,8 @@ export async function generate(options: GeneratorOptions) {
           '}',
       );
     }
+
+    maybeWarnOnUnsupportedPrismaVersion(options);
 
     const prismaClientDmmf = await getDMMF({
       datamodel: options.datamodel,
@@ -769,6 +772,31 @@ function setPrismaClientProvider(prismaClientGeneratorConfig: GeneratorConfig | 
 function setPrismaClientConfig(prismaClientGeneratorConfig: GeneratorConfig | undefined) {
   if (prismaClientGeneratorConfig?.config) {
     Transformer.setPrismaClientConfig(prismaClientGeneratorConfig.config);
+  }
+}
+
+function maybeWarnOnUnsupportedPrismaVersion(options: GeneratorOptions) {
+  const version = options.version || detectInstalledPrismaVersion(options.schemaPath);
+  if (!version) return;
+
+  const major = Number.parseInt(version.split('.')[0] ?? '', 10);
+  if (!Number.isFinite(major)) return;
+
+  if (major < 7) {
+    logger.warn(
+      `[prisma-zod-generator] ⚠️ Detected prisma@${version}, but this release requires Prisma >=7.\n` +
+        'Please pin prisma-zod-generator to ^1.32.1 while you remain on Prisma 6, or upgrade Prisma before using 2.x.',
+    );
+  }
+}
+
+function detectInstalledPrismaVersion(schemaPath: string): string | undefined {
+  try {
+    const req = createRequire(schemaPath);
+    const pkg = req('prisma/package.json') as { version?: string };
+    return pkg?.version;
+  } catch {
+    return undefined;
   }
 }
 
