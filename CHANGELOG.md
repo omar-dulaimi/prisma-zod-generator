@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.0.0...v2.0.1) (2025-11-22)
+
+### ⏪ Reverts
+
+* Revert "chore(release): 2.0.0 [skip ci]" ([d185d92](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d185d92edab1d0cd41a919b2941244200a4cb40a))
+* Revert "chore(release)!: reissue prisma 7 requirement" ([6c558e7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6c558e74a95538dd3ea46ca9cdc139353335dfc9))
+
 ## [1.32.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.1...v1.32.2) (2025-11-21)
 
 ### 🐛 Bug Fixes
