@@ -783,7 +783,7 @@ function maybeWarnOnUnsupportedPrismaVersion(options: GeneratorOptions) {
   if (!Number.isFinite(major)) return;
 
   if (major < 7) {
-    logger.warn(
+    logger.info(
       `[prisma-zod-generator] ⚠️ Detected prisma@${version}, but this release requires Prisma >=7.\n` +
         'Please pin prisma-zod-generator to ^1.32.1 while you remain on Prisma 6, or upgrade Prisma before using 2.x.',
     );
