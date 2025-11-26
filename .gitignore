@@ -41,8 +41,6 @@ test-*.json
 *.log
 
 # Environment files
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -110,3 +108,4 @@ scripts/branding/.venv/bin/pip3.12
 scripts/branding/.venv/bin/python
 scripts/branding/.venv/bin/python3
 scripts/branding/.venv/bin/python3.12
+config.bat
