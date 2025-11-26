@@ -1,3 +1,48 @@
+## [2.1.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.1...v2.1.2) (2025-11-22)
+
+### 🐛 Bug Fixes
+
+* remove redundant version assignment in maybeWarnOnUnsupportedPrismaVersion function ([02a8c98](https://github.com/omar-dulaimi/prisma-zod-generator/commit/02a8c9886a8a34972cb0db5221c0654dbaef7a14))
+
+## [2.1.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.0...v2.1.1) (2025-11-22)
+
+### 🐛 Bug Fixes
+
+* change warning to info for unsupported Prisma version detection ([6e88699](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6e886998a43a3123b042a9ce39dc6c4fccda6b47))
+
+## [2.1.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.0.0...v2.1.0) (2025-11-22)
+
+### 🚀 Features
+
+* add warning for unsupported Prisma versions and detect installed version ([ef7a1d2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ef7a1d2e78fbfbd133f70cadba32f3cb7f207a18))
+
+## [2.0.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.2...v2.0.0) (2025-11-22)
+
+### ⚠ BREAKING CHANGES
+
+* **breaking:** v2.0.0 officially requires Prisma >=7; stay on <=1.32.1 for Prisma 6.
+
+### 🚀 Features
+
+* **breaking:** enforce prisma 7 minimum ([bbfd16a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bbfd16a5f5351b8bffb7b44da9a31f3b65ac89e0))
+
+## [2.0.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.2...v2.0.0) (2025-11-22)
+
+### ⚠ BREAKING CHANGES
+
+* **breaking:** v2.0.0 officially requires Prisma >=7; stay on <=1.32.1 for Prisma 6.
+
+### 🚀 Features
+
+* **breaking:** enforce prisma 7 minimum ([bbfd16a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bbfd16a5f5351b8bffb7b44da9a31f3b65ac89e0))
+
+## [2.0.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.0.0...v2.0.1) (2025-11-22)
+
+### ⏪ Reverts
+
+* Revert "chore(release): 2.0.0 [skip ci]" ([d185d92](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d185d92edab1d0cd41a919b2941244200a4cb40a))
+* Revert "chore(release)!: reissue prisma 7 requirement" ([6c558e7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6c558e74a95538dd3ea46ca9cdc139353335dfc9))
+
 ## [1.32.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v1.32.1...v1.32.2) (2025-11-21)
 
 ### 🐛 Bug Fixes
