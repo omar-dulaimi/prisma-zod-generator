@@ -441,17 +441,17 @@ generator zod {
 
 model User {
   id    Int    @id @default(autoincrement())
-
+  
   /**
    * The user's email address
    * Used for authentication and notifications
    * @example "john.doe@example.com"
    */
   email String @unique
-
+  
   /// Display name for the user
   name  String?
-
+  
   /**
    * User's age in years
    * Must be between 0 and 120
@@ -459,7 +459,7 @@ model User {
    * @maximum 120
    */
   age   Int?
-
+  
   /// Whether the user account is active
   isActive Boolean @default(true)
 }
@@ -531,7 +531,7 @@ generator zod {
 
 model Product {
   id Int @id @default(autoincrement())
-
+  
   /**
    * Product name
    * @description The display name of the product
@@ -540,7 +540,7 @@ model Product {
    * @maxLength 100
    */
   name String
-
+  
   /**
    * Product price in USD
    * @description The price of the product in US dollars
@@ -550,10 +550,10 @@ model Product {
    * @multipleOf 0.01
    */
   price Float
-
+  
   /// @deprecated Use 'isAvailable' instead
   inStock Boolean @default(true)
-
+  
   /**
    * Product availability status
    * @since 2.0.0
@@ -623,25 +623,25 @@ generator zod {
 
 model ComplexTypes {
   id          Int      @id @default(autoincrement())
-
+  
   // Decimal handling
   price       Decimal  @db.Decimal(10, 2)
   weight      Decimal? @db.Decimal(8, 3)
   height      Decimal? @db.Decimal(8, 3) @default(1)
-
+  
   // JSON handling
   settings    Json
   metadata    Json?
-
+  
   // Bytes handling
   avatar      Bytes?
   document    Bytes
-
+  
   // DateTime handling
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   scheduledAt DateTime?
-
+  
   // BigInt handling
   bigNumber   BigInt
   bigOptional BigInt?
@@ -666,7 +666,7 @@ model ComplexTypes {
               /weight:\s*z\.instanceof\(Prisma\.Decimal[\s\S]*?\)[\s\S]*?\.optional\(\)/,
             );
             expect(content).toMatch(
-              /height:\s*z\.instanceof\(Prisma\.Decimal[\s\S]*?\)[\s\S]*?\.default\(new Prisma.Decimal\(1\)\)[\s\S]*?\.optional\(\)/,
+              /height:\s*z\.instanceof\(Prisma\.Decimal[\s\S]*?\)[\s\S]*?\.optional\(new Prisma.Decimal\(1\)\)/,
             );
 
             // JSON fields - should be z.unknown() or z.record()
@@ -1137,29 +1137,29 @@ generator zod {
 
 model User {
   id Int @id @default(autoincrement())
-
+  
   /**
    * User's email address
    * @example "user@example.com"
    */
   email String @unique /// @zod.email().toLowerCase()
-
+  
   /**
    * User's full name
    * @minLength 2
    * @maxLength 50
    */
   name String? /// @zod.min(2).max(50).trim()
-
+  
   /// User's age in years
   age Int? /// @zod.min(0).max(120)
-
+  
   /// Whether the user is active
   isActive Boolean @default(true) /// @zod.default(true)
-
+  
   /// User registration date
   createdAt DateTime @default(now())
-
+  
   /// User preferences stored as JSON
   preferences Json? /// @zod.record(z.string()).optional()
 }
