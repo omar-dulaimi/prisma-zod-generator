@@ -1445,6 +1445,12 @@ export class PrismaTypeMapper {
             literalValue = asString;
           }
         }
+
+        // Handle decimal defaults
+        const mode = this.config.decimalMode || 'decimal';
+        if(field.type === 'Decimal' && mode === 'decimal') {
+          literalValue = `new Prisma.Decimal(${literalValue})`
+        }
         // Defer duplicate default check to wrapper stage
         result.zodModifier += `.default(${literalValue})`;
         result.additionalNotes.push(`Default value: ${literalValue}`);
