@@ -627,6 +627,7 @@ model ComplexTypes {
   // Decimal handling
   price       Decimal  @db.Decimal(10, 2)
   weight      Decimal? @db.Decimal(8, 3)
+  height      Decimal? @db.Decimal(8, 3) @default(1)
   
   // JSON handling
   settings    Json
@@ -663,6 +664,9 @@ model ComplexTypes {
             expect(content).toMatch(/price.*z\.instanceof\(Prisma\.Decimal/);
             expect(content).toMatch(
               /weight:\s*z\.instanceof\(Prisma\.Decimal[\s\S]*?\)[\s\S]*?\.optional\(\)/,
+            );
+            expect(content).toMatch(
+              /height:\s*z\.instanceof\(Prisma\.Decimal[\s\S]*?\)[\s\S]*?\.optional\(new Prisma.Decimal\(1\)\)/,
             );
 
             // JSON fields - should be z.unknown() or z.record()
