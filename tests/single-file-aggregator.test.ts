@@ -52,4 +52,77 @@ export type PurchaseType = z.infer<typeof PurchaseSchema>;
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it('should not duplicate literalSchema and jsonSchema definitions in single file mode', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'pzg-single-file-json-'));
+    const bundlePath = join(dir, 'schemas', 'index.ts');
+
+    try {
+      initSingleFile(bundlePath);
+
+      // First schema with JSON field (inline helpers in minimal mode)
+      appendSingleFile(
+        'src/schemas/objects/UserCreateInput.schema.ts',
+        `
+import * as z from 'zod';
+
+const literalSchema = z.union([z.string(), z.number(), z.boolean()]);
+const jsonSchema: any = z.lazy(() =>
+  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])
+);
+
+export const UserCreateInputObjectSchema = z.object({
+  name: z.string(),
+  metadata: z.union([jsonSchema]),
+});
+`.trim(),
+      );
+
+      // Second schema with JSON field (inline helpers in minimal mode)
+      appendSingleFile(
+        'src/schemas/objects/PostCreateInput.schema.ts',
+        `
+import * as z from 'zod';
+
+const literalSchema = z.union([z.string(), z.number(), z.boolean()]);
+const jsonSchema: any = z.lazy(() =>
+  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])
+);
+
+export const PostCreateInputObjectSchema = z.object({
+  title: z.string(),
+  data: z.union([jsonSchema]),
+});
+`.trim(),
+      );
+
+      await flushSingleFile();
+
+      const content = readFileSync(bundlePath, 'utf-8');
+
+      // Count occurrences of literalSchema definition
+      const literalSchemaMatches = content.match(
+        /const literalSchema = z\.union\(\[z\.string\(\), z\.number\(\), z\.boolean\(\)\]\);/g,
+      );
+      expect(literalSchemaMatches).toHaveLength(1);
+
+      // Count occurrences of jsonSchema definition
+      const jsonSchemaMatches = content.match(/const jsonSchema: any = z\.lazy\(\(\) =>/g);
+      expect(jsonSchemaMatches).toHaveLength(1);
+
+      // Verify both schemas are present
+      expect(content).toContain('UserCreateInputObjectSchema');
+      expect(content).toContain('PostCreateInputObjectSchema');
+
+      // Verify the hoisted helpers are at the top
+      const literalSchemaIndex = content.indexOf('const literalSchema');
+      const userSchemaIndex = content.indexOf('UserCreateInputObjectSchema');
+      const postSchemaIndex = content.indexOf('PostCreateInputObjectSchema');
+
+      expect(literalSchemaIndex).toBeLessThan(userSchemaIndex);
+      expect(literalSchemaIndex).toBeLessThan(postSchemaIndex);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
