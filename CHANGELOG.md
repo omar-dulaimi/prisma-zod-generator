@@ -1,3 +1,14 @@
+## [2.1.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.2...v2.1.3) (2026-02-14)
+
+### 🐛 Bug Fixes
+
+* **form-ux:** ensure shadcn output avoids deprecated form wrappers ([135b13a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/135b13abf0c6dd94a771691d7dfd8c05cbf2b43f)), closes [#375](https://github.com/omar-dulaimi/prisma-zod-generator/issues/375) [#375](https://github.com/omar-dulaimi/prisma-zod-generator/issues/375)
+* **pro:** bump submodule for shadcn controller form output ([b86320b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b86320b4436acefe15db545f95b831300763cfdc))
+
+### 📚 Documentation
+
+* **llms:** refresh generated llms metadata for WSL flow ([3b994d7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3b994d7276c3fa628de93f70d484aa896d60137b))
+
 ## [2.1.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.1...v2.1.2) (2025-11-22)
 
 ### 🐛 Bug Fixes
