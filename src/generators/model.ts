@@ -722,7 +722,9 @@ export class PrismaTypeMapper {
    * Extract decimal precision/scale from Prisma native type metadata when available.
    * Falls back to parsing field documentation in environments where nativeType is absent.
    */
-  private extractDecimalPrecisionScale(field: DMMF.Field): { precision: number; scale: number } | null {
+  private extractDecimalPrecisionScale(
+    field: DMMF.Field,
+  ): { precision: number; scale: number } | null {
     const fieldWithNativeType = field as DMMF.Field & { nativeType?: unknown };
     const nativeType = fieldWithNativeType.nativeType;
 
