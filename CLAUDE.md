@@ -10,6 +10,12 @@ This is a Prisma Generator that automatically generates Zod schemas from Prisma 
 
 **IMPORTANT**: Always use `pnpm`, never use `npm` or `npx`.
 
+## Windows + WSL Policy
+
+- On Windows hosts, run repository commands through WSL by default.
+- Prefer: `wsl.exe bash -lc "<command>"`.
+- Only use PowerShell/CMD when explicitly requested or when a task is Windows-only.
+
 ### Build and Generate
 - `pnpm exec tsc` - Compile TypeScript to JavaScript in the `lib/` directory
 - `pnpm prisma generate` - Generate Zod schemas from Prisma schema
@@ -83,4 +89,9 @@ The generator creates schemas in the output directory (default: `./generated/sch
   - Create a new body file (e.g., `.github/PR_BODY.md`) containing: Summary, Problem, Fix, Validation, and linked issues (e.g., `Fixes #234`).
   - Open the PR: `gh pr create --base master --head <branch> --title "fix(scope): concise title" --body-file .github/PR_BODY.md`.
   - Prefer keeping PR body files untracked unless explicitly requested.
--. Ensure `pnpm build`, `pnpm test`, `pnpm format:check`, and `pnpm lint` succeed prior to push/PR.
+- Ensure `pnpm build`, `pnpm test`, `pnpm format:check`, and `pnpm lint` succeed prior to push/PR.
+
+## Local Overrides
+
+- Use `CLAUDE.local.md` for private, repository-local Claude instructions.
+- Keep `CLAUDE.local.md` untracked.

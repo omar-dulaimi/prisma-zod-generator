@@ -2547,7 +2547,7 @@ export default async function EditUserPage({ params }: { params: { id: string } 
 
 ### Validation & Controllers
 
-Generated forms rely on `react-hook-form` with Zod validation. By default the generator emits `<FormField>` components that wrap `Controller` for you. If you prefer manual `register()` calls (e.g., for simple text inputs), you can skip the generated wrappers and wire up `useForm` directly—just make sure to use the same Zod resolver.
+Generated forms rely on `react-hook-form` with Zod validation. For shadcn output, the generator uses `Controller` with shadcn primitives (`Input`, `Textarea`, `Checkbox`, and `Select`) and avoids the deprecated `@/components/ui/form` abstraction. If you prefer manual `register()` calls (e.g., for simple text inputs), you can still wire up `useForm` directly—just make sure to use the same Zod resolver.
 
 ### Schema Imports
 
