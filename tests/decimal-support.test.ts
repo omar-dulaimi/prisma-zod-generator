@@ -64,7 +64,9 @@ model Product {
           expect(content).toMatch(/Location: \['Models', 'Product'\]/);
 
           // Should have Prisma import (non-type import)
-          expect(content).toMatch(/import\s+{\s*Prisma\s*}\s+from\s+['"]@prisma\/client['"]/);
+          expect(content).toMatch(
+            /import\s+{\s*Prisma\s*}\s+from\s+['"](?:@prisma\/client|(?:\.\.\/)+prisma-client)['"]/,
+          );
         } finally {
           await testEnv.cleanup();
         }
@@ -182,7 +184,9 @@ model Payment {
           const content = readFileSync(paymentModelPath, 'utf-8');
 
           // Should have Prisma import as non-type import (for instanceof check)
-          expect(content).toMatch(/import\s+{\s*Prisma\s*}\s+from\s+['"]@prisma\/client['"]/);
+          expect(content).toMatch(
+            /import\s+{\s*Prisma\s*}\s+from\s+['"](?:@prisma\/client|(?:\.\.\/)+prisma-client)['"]/,
+          );
 
           // Should NOT have type-only import for Prisma in decimal mode
           expect(content).not.toMatch(/import\s+type\s+{\s*Prisma\s*}\s+from/);
@@ -312,6 +316,67 @@ model Product {
       },
       GENERATION_TIMEOUT,
     );
+
+    it(
+      'should use @db.Decimal precision and scale in string mode regex',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('decimal-string-mode-db-precision');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            pureModels: true,
+            decimalMode: 'string',
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model Product {
+  id           Int     @id @default(autoincrement())
+  largeWhole   Decimal @db.Decimal(78, 0)
+  withFraction Decimal @db.Decimal(77, 1)
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const modelsDir = join(testEnv.outputDir, 'schemas', 'models');
+          const productModelPath = join(modelsDir, 'Product.schema.ts');
+
+          expect(existsSync(productModelPath)).toBe(true);
+
+          const content = readFileSync(productModelPath, 'utf-8');
+
+          expect(content).toContain(
+            'largeWhole: z.string().regex(/^-?\\d{1,78}$/, "Invalid decimal format")',
+          );
+          expect(content).toContain(
+            'withFraction: z.string().regex(/^-?\\d{1,76}(?:\\.\\d{1,1})?$/, "Invalid decimal format")',
+          );
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
   });
 
   describe('Default Decimal Mode', () => {
@@ -364,7 +429,9 @@ model Account {
 
           // Should default to decimal mode (instanceof Prisma.Decimal)
           expect(content).toMatch(/balance:\s*z\.instanceof\(Prisma\.Decimal/);
-          expect(content).toMatch(/import\s+{\s*Prisma\s*}\s+from\s+['"]@prisma\/client['"]/);
+          expect(content).toMatch(
+            /import\s+{\s*Prisma\s*}\s+from\s+['"](?:@prisma\/client|(?:\.\.\/)+prisma-client)['"]/,
+          );
         } finally {
           await testEnv.cleanup();
         }
@@ -487,7 +554,9 @@ model Product {
           const content = readFileSync(variantPath, 'utf-8');
 
           // Should have Prisma value import (not type-only)
-          expect(content).toMatch(/import\s+{\s*Prisma\s+}\s+from\s+['"]@prisma\/client['"]/);
+          expect(content).toMatch(
+            /import\s+{\s*Prisma\s+}\s+from\s+['"](?:@prisma\/client|(?:\.\.\/)+prisma-client)['"]/,
+          );
           expect(content).not.toMatch(/import\s+type\s+{\s*Prisma\s+}\s+from/);
 
           // Should have instanceof(Prisma.Decimal)

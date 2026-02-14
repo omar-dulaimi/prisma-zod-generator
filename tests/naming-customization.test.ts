@@ -542,7 +542,6 @@ describe('Naming Customization (experimental)', () => {
   it('uses owning model alias for CreateMany nested inputs', async () => {
     const env = await TestEnvironment.createTestEnv('naming-create-many-alias');
     try {
-      const generatorPath = join(process.cwd(), 'lib', 'generator.js').replace(/\\/g, '\\\\');
       const outputDir = join(env.outputDir, 'schemas').replace(/\\/g, '\\\\');
       const schema = `
 generator client {
@@ -555,7 +554,7 @@ datasource db {
 }
 
 generator zod {
-  provider = "node ${generatorPath}"
+  provider = "node ./lib/generator.js"
   output   = "${outputDir}"
 }
 
