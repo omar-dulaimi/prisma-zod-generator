@@ -719,6 +719,55 @@ export class PrismaTypeMapper {
   }
 
   /**
+   * Extract decimal precision/scale from Prisma native type metadata when available.
+   * Falls back to parsing field documentation in environments where nativeType is absent.
+   */
+  private extractDecimalPrecisionScale(field: DMMF.Field): { precision: number; scale: number } | null {
+    const fieldWithNativeType = field as DMMF.Field & { nativeType?: unknown };
+    const nativeType = fieldWithNativeType.nativeType;
+
+    if (Array.isArray(nativeType) && nativeType.length >= 2) {
+      const [typeName, params] = nativeType as [unknown, unknown];
+      const supportedTypeNames = new Set(['Decimal', 'Numeric', 'DECIMAL', 'NUMERIC']);
+
+      if (typeof typeName === 'string' && supportedTypeNames.has(typeName)) {
+        if (Array.isArray(params) && params.length >= 2) {
+          const precision = Number(params[0]);
+          const scale = Number(params[1]);
+
+          if (
+            Number.isInteger(precision) &&
+            Number.isInteger(scale) &&
+            precision > 0 &&
+            scale >= 0 &&
+            precision >= scale
+          ) {
+            return { precision, scale };
+          }
+        }
+      }
+    }
+
+    const documentation = field.documentation ?? '';
+    const docMatch = documentation.match(/@db\.(?:Decimal|Numeric)\((\d+),\s*(\d+)\)/i);
+    if (docMatch) {
+      const precision = parseInt(docMatch[1], 10);
+      const scale = parseInt(docMatch[2], 10);
+      if (
+        Number.isInteger(precision) &&
+        Number.isInteger(scale) &&
+        precision > 0 &&
+        scale >= 0 &&
+        precision >= scale
+      ) {
+        return { precision, scale };
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Map Decimal type with enhanced validation based on configuration
    */
   private mapDecimalType(
@@ -729,6 +778,9 @@ export class PrismaTypeMapper {
     const decimalConfig = this.config.complexTypes.decimal;
     // Default to 'decimal' mode if not specified
     const mode = this.config.decimalMode || 'decimal';
+    const decimalNativeConstraints = this.extractDecimalPrecisionScale(field);
+    const maxPrecision = decimalNativeConstraints?.precision ?? decimalConfig.maxPrecision;
+    const maxScale = decimalNativeConstraints?.scale ?? decimalConfig.maxScale;
 
     switch (mode) {
       case 'string': {
@@ -740,14 +792,18 @@ export class PrismaTypeMapper {
           regexPattern += '-?';
         }
 
-        if (decimalConfig.validatePrecision && decimalConfig.maxPrecision) {
-          const maxIntegerDigits = decimalConfig.maxPrecision - (decimalConfig.maxScale || 0);
-          const maxScaleDigits = decimalConfig.maxScale || 0;
+        if (decimalConfig.validatePrecision && maxPrecision) {
+          const maxIntegerDigits = maxPrecision - (maxScale || 0);
+          const maxScaleDigits = maxScale || 0;
 
-          if (maxScaleDigits > 0) {
-            regexPattern += `\\d{1,${maxIntegerDigits}}(?:\\.\\d{1,${maxScaleDigits}})?`;
+          if (maxIntegerDigits > 0) {
+            if (maxScaleDigits > 0) {
+              regexPattern += `\\d{1,${maxIntegerDigits}}(?:\\.\\d{1,${maxScaleDigits}})?`;
+            } else {
+              regexPattern += `\\d{1,${maxIntegerDigits}}`;
+            }
           } else {
-            regexPattern += `\\d{1,${maxIntegerDigits}}`;
+            regexPattern += '\\d*\\.?\\d+';
           }
         } else {
           regexPattern += '\\d*\\.?\\d+';
@@ -757,9 +813,9 @@ export class PrismaTypeMapper {
         result.additionalValidations.push(`.regex(/${regexPattern}/, "Invalid decimal format")`);
 
         // Add precision validation documentation
-        if (decimalConfig.validatePrecision) {
+        if (decimalConfig.validatePrecision && maxPrecision) {
           result.additionalValidations.push(
-            `// Precision: max ${decimalConfig.maxPrecision} digits, scale ${decimalConfig.maxScale}`,
+            `// Precision: max ${maxPrecision} digits, scale ${maxScale || 0}`,
           );
         }
         if (!decimalConfig.allowNegative) {

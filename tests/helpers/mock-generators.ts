@@ -40,10 +40,39 @@ function stripDriverAdaptersPreviewFeature(schemaContent: string): string {
   );
 }
 
+function normalizeGeneratorProviderPath(schemaContent: string): string {
+  // Avoid absolute "node /path/.../lib/generator.js" providers in tests because
+  // unescaped spaces in paths (e.g. "Open Source") break Prisma generator execution.
+  return schemaContent.replace(
+    /provider\s*=\s*"node\s+[^"\r\n]*lib[\\/]+generator\.js"/g,
+    'provider = "node ./lib/generator.js"',
+  );
+}
+
+function ensureIsolatedPrismaClientOutput(schemaContent: string): string {
+  // Parallel prisma generate calls can contend on the default Prisma Client output path.
+  // Give each test env its own client output if none is explicitly set.
+  return schemaContent.replace(/generator\s+client\s*{([\s\S]*?)}/m, (block, body) => {
+    if (!/provider\s*=\s*"prisma-client(?:-js)?"/.test(body)) {
+      return block;
+    }
+    if (/\boutput\s*=/.test(body)) {
+      return block;
+    }
+
+    const trimmedBody = body.replace(/\s+$/, '');
+    return `generator client {${trimmedBody}\n  output   = "./generated/prisma-client"\n}`;
+  });
+}
+
 function sanitizeSchemaFile(schemaPath: string): { provider: string } {
   const rawSchema = readFileSync(schemaPath, 'utf8');
   const provider = detectProvider(rawSchema) ?? 'postgresql';
-  const cleaned = stripDriverAdaptersPreviewFeature(stripLegacyUrlLines(rawSchema));
+  const cleaned = ensureIsolatedPrismaClientOutput(
+    normalizeGeneratorProviderPath(
+      stripDriverAdaptersPreviewFeature(stripLegacyUrlLines(rawSchema)),
+    ),
+  );
   writeFileSync(schemaPath, cleaned);
   return { provider };
 }
@@ -146,7 +175,7 @@ datasource db {
 }
 
 generator zod {
-  provider = "node ${join(process.cwd(), 'lib', 'generator.js')}"
+  provider = "node ./lib/generator.js"
   output   = "${outputPath}"
 ${generatorOptionsStr}
 }
