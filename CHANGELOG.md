@@ -1,3 +1,9 @@
+## [2.1.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.3...v2.1.4) (2026-02-14)
+
+### 🐛 Bug Fixes
+
+* resolve issue [#362](https://github.com/omar-dulaimi/prisma-zod-generator/issues/362) decimal precision and stabilize parallel tests ([111d22a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/111d22a70b3b7d2f82a6b235f39d83b61185c84b))
+
 ## [2.1.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.2...v2.1.3) (2026-02-14)
 
 ### 🐛 Bug Fixes
