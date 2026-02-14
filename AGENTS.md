@@ -106,3 +106,14 @@ Create and push a feature branch, generate a rich PR body, and open a PR with Gi
 
 Policies
 - PR title follows Conventional Commits; no AI mentions.
+
+## Windows Execution Policy
+- On Windows hosts, run repository commands through WSL by default.
+- Prefer: `wsl.exe bash -lc "<command>"`.
+- Only use native PowerShell/CMD when the user explicitly asks for it or a task is Windows-only.
+- If WSL is unavailable or broken, stop and ask the user before falling back.
+
+## Local Agent Overrides
+- Codex local override file: `AGENTS.override.md` (applied after this file).
+- Claude local override file: `CLAUDE.local.md` (applied after `CLAUDE.md`).
+- Keep local override files untracked (for example via `.git/info/exclude`).
