@@ -1,10 +1,13 @@
 import { DMMF } from '@prisma/generator-helper';
 import { exec } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import path, { join } from 'path';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
+const TEST_ENV_PREFIX = 'test-env-';
+const TEST_ENV_TIMESTAMP_REGEX = /-(\d{13})$/;
+const STALE_TEST_ENV_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
 const DEFAULT_DATASOURCE_URLS: Record<string, string> = {
   sqlite: 'file:./test.db',
@@ -474,6 +477,62 @@ export class ConfigGenerator {
  * Test environment setup utilities
  */
 export class TestEnvironment {
+  private static activeTestDirs = new Set<string>();
+  private static cleanupHooksRegistered = false;
+  private static staleCleanupPerformed = false;
+
+  private static registerCleanupHooks(): void {
+    if (this.cleanupHooksRegistered) {
+      return;
+    }
+
+    const cleanupActiveDirs = () => {
+      for (const dir of this.activeTestDirs) {
+        rmSync(dir, { recursive: true, force: true });
+      }
+      this.activeTestDirs.clear();
+    };
+
+    process.once('exit', cleanupActiveDirs);
+    process.once('SIGINT', cleanupActiveDirs);
+    process.once('SIGTERM', cleanupActiveDirs);
+
+    this.cleanupHooksRegistered = true;
+  }
+
+  private static cleanupStaleInterruptedDirs(): void {
+    if (this.staleCleanupPerformed) {
+      return;
+    }
+
+    this.staleCleanupPerformed = true;
+
+    const now = Date.now();
+    const entries = readdirSync(process.cwd(), { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (!entry.isDirectory() || !entry.name.startsWith(TEST_ENV_PREFIX)) {
+        continue;
+      }
+
+      const match = entry.name.match(TEST_ENV_TIMESTAMP_REGEX);
+      if (!match) {
+        continue;
+      }
+
+      const createdAt = Number(match[1]);
+      if (!Number.isFinite(createdAt)) {
+        continue;
+      }
+
+      if (now - createdAt < STALE_TEST_ENV_MAX_AGE_MS) {
+        continue;
+      }
+
+      rmSync(join(process.cwd(), entry.name), { recursive: true, force: true });
+    }
+  }
+
   /**
    * Create a temporary test environment
    */
@@ -485,13 +544,17 @@ export class TestEnvironment {
     runGenerationWithOutput: () => Promise<{ stdout: string; stderr: string }>;
     cleanup: () => Promise<void>;
   }> {
-    const testDir = join(process.cwd(), `test-env-${testName}-${Date.now()}`);
+    this.cleanupStaleInterruptedDirs();
+    this.registerCleanupHooks();
+
+    const testDir = join(process.cwd(), `${TEST_ENV_PREFIX}${testName}-${Date.now()}`);
     const schemaPath = join(testDir, 'schema.prisma');
     const outputDir = join(testDir, 'generated');
 
     // Create directories
     mkdirSync(testDir, { recursive: true });
     mkdirSync(outputDir, { recursive: true });
+    this.activeTestDirs.add(testDir);
 
     // Function to run generation
     const runGeneration = async () => {
@@ -518,10 +581,10 @@ export class TestEnvironment {
 
     // Cleanup function
     const cleanup = async () => {
-      const { rmSync } = await import('fs');
       if (existsSync(testDir)) {
         rmSync(testDir, { recursive: true, force: true });
       }
+      this.activeTestDirs.delete(testDir);
     };
 
     return {

@@ -28,6 +28,7 @@
     "llms:gen": "node scripts/generate-llms-txt.mjs",
     "test": "pnpm test:features:parallel",
     "test:watch": "vitest --config vitest.config.mjs --watch",
+    "test:clean-envs": "node scripts/clean-test-envs.js",
     "test:basic": "vitest --config vitest.config.mjs run tests/generated-schema.test.ts --reporter=default",
     "test:coverage": "vitest --config vitest.config.mjs run --coverage",
     "test:coverage:fast": "vitest --config vitest.config.mjs run --coverage tests/generated-schema.test.ts --reporter=default",
