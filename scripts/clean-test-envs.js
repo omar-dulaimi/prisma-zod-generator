@@ -77,13 +77,17 @@ function main() {
     removed.push(dirName);
   }
 
-  console.log(`[clean-test-envs] Removed ${removed.length} director${removed.length === 1 ? 'y' : 'ies'}.`);
+  console.log(
+    `[clean-test-envs] Removed ${removed.length} director${removed.length === 1 ? 'y' : 'ies'}.`,
+  );
   for (const dirName of removed) {
     console.log(`- ${dirName}`);
   }
 
   if (skipped.length > 0) {
-    console.log(`[clean-test-envs] Skipped ${skipped.length} director${skipped.length === 1 ? 'y' : 'ies'}.`);
+    console.log(
+      `[clean-test-envs] Skipped ${skipped.length} director${skipped.length === 1 ? 'y' : 'ies'}.`,
+    );
     for (const message of skipped) {
       console.log(`- ${message}`);
     }
