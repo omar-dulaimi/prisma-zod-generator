@@ -1193,6 +1193,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     // New methods that require parameters - Issue #233
     'hash', // hash requires algorithm parameter like "sha256"
     'custom', // custom requires object/array schema parameter
+    'meta', // meta requires object parameter
   ];
 
   // Methods that don't allow parameters

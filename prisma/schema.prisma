@@ -157,4 +157,7 @@ model ZodV4Examples {
 
   /// @zod.uuid().nullable()
   nullableUuid String?
+
+  /// @zod.meta({ "description": "This is a test field", "examples": ["example1", "example2"] })
+  metaField String
 }
