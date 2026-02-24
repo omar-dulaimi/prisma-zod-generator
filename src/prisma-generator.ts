@@ -86,7 +86,7 @@ export async function generate(options: GeneratorOptions) {
 
     maybeWarnOnUnsupportedPrismaVersion(options);
 
-    const prismaClientDmmf = await getDMMF({
+    const prismaClientDmmf = options.dmmf ?? await getDMMF({
       datamodel: options.datamodel,
       previewFeatures: prismaClientGeneratorConfig?.previewFeatures,
     });
