@@ -80,6 +80,46 @@ describe('prisma-client generator option', () => {
     }
   });
 
+  it('infers .js imports from NodeNext tsconfig when importFileExtension is omitted', () => {
+    const tsconfigPath = join(root, 'tsconfig.json');
+    const clientOut = join(root, 'client');
+    writeFileSync(
+      tsconfigPath,
+      JSON.stringify(
+        {
+          compilerOptions: {
+            module: 'NodeNext',
+            moduleResolution: 'NodeNext',
+          },
+        },
+        null,
+        2,
+      ),
+    );
+
+    try {
+      rmSync(zodOut, { recursive: true, force: true });
+      rmSync(clientOut, { recursive: true, force: true });
+
+      const genBlock = `generator client {\n  provider = "prisma-client"\n  output   = "./client"\n  runtime  = "nodejs"\n}`;
+      const schema = buildSchema({ generatorBlock: genBlock });
+      writeFileSync(schemaPath, schema);
+
+      try {
+        runPrismaGenerate();
+      } catch {
+        return;
+      }
+
+      const zodIndex = join(zodOut, 'index.ts');
+      if (!existsSync(zodIndex)) return;
+      const content = readFileSync(zodIndex, 'utf8');
+      expect(content).toMatch(/import type { Prisma } from '\.\.\/client\/client\.js';/);
+    } finally {
+      rmSync(tsconfigPath, { force: true });
+    }
+  });
+
   it('handles binaryTargets with legacy generator', () => {
     const genBlock = `generator client {\n  provider      = "prisma-client-js"\n  binaryTargets = ["native"]\n}`;
     const schema = buildSchema({ generatorBlock: genBlock });

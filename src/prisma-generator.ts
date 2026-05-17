@@ -335,7 +335,7 @@ export async function generate(options: GeneratorOptions) {
       path.dirname(options.schemaPath),
     );
     setPrismaClientProvider(prismaClientGeneratorConfig);
-    setPrismaClientConfig(prismaClientGeneratorConfig);
+    setPrismaClientConfig(prismaClientGeneratorConfig, path.dirname(options.schemaPath));
 
     const modelOperations = prismaClientDmmf.mappings.modelOperations;
     const inputObjectTypes = prismaClientDmmf.schema.inputObjectTypes.prisma;
@@ -769,10 +769,112 @@ function setPrismaClientProvider(prismaClientGeneratorConfig: GeneratorConfig | 
   }
 }
 
-function setPrismaClientConfig(prismaClientGeneratorConfig: GeneratorConfig | undefined) {
-  if (prismaClientGeneratorConfig?.config) {
-    Transformer.setPrismaClientConfig(prismaClientGeneratorConfig.config);
+function setPrismaClientConfig(
+  prismaClientGeneratorConfig: GeneratorConfig | undefined,
+  schemaBaseDir: string,
+) {
+  const config = { ...(prismaClientGeneratorConfig?.config ?? {}) };
+  const provider = prismaClientGeneratorConfig?.provider
+    ? parseEnvValue(prismaClientGeneratorConfig.provider)
+    : undefined;
+
+  if (
+    provider === 'prisma-client' &&
+    !config.importFileExtension &&
+    String(config.moduleFormat ?? 'esm').toLowerCase() === 'esm' &&
+    shouldUseNodeEsmImportExtensions(schemaBaseDir)
+  ) {
+    config.moduleFormat = 'esm';
+    config.importFileExtension = 'js';
   }
+
+  Transformer.setPrismaClientConfig(config);
+}
+
+function shouldUseNodeEsmImportExtensions(schemaBaseDir: string): boolean {
+  const tsconfigPath = findNearestTsconfig(schemaBaseDir);
+  if (!tsconfigPath) return false;
+
+  try {
+    const raw = fsFull.readFileSync(tsconfigPath, 'utf8');
+    const parsed = JSON.parse(stripJsonComments(raw).replace(/,\s*([}\]])/g, '$1')) as {
+      compilerOptions?: Record<string, unknown>;
+    };
+    const compilerOptions = parsed.compilerOptions ?? {};
+    const moduleResolution = String(compilerOptions.moduleResolution ?? '').toLowerCase();
+    const moduleKind = String(compilerOptions.module ?? '').toLowerCase();
+
+    return (
+      moduleResolution === 'nodenext' ||
+      moduleResolution === 'node16' ||
+      moduleKind === 'nodenext' ||
+      moduleKind === 'node16'
+    );
+  } catch {
+    return false;
+  }
+}
+
+function findNearestTsconfig(startDir: string): string | undefined {
+  let current = path.resolve(startDir);
+
+  while (true) {
+    const candidate = path.join(current, 'tsconfig.json');
+    if (fsFull.existsSync(candidate)) return candidate;
+
+    const parent = path.dirname(current);
+    if (parent === current) return undefined;
+    current = parent;
+  }
+}
+
+function stripJsonComments(source: string): string {
+  let result = '';
+  let inString = false;
+  let quote = '';
+  let escaped = false;
+
+  for (let i = 0; i < source.length; i++) {
+    const char = source[i];
+    const next = source[i + 1];
+
+    if (inString) {
+      result += char;
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        inString = false;
+        quote = '';
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      inString = true;
+      quote = char;
+      result += char;
+      continue;
+    }
+
+    if (char === '/' && next === '/') {
+      while (i < source.length && source[i] !== '\n') i++;
+      result += '\n';
+      continue;
+    }
+
+    if (char === '/' && next === '*') {
+      i += 2;
+      while (i < source.length && !(source[i] === '*' && source[i + 1] === '/')) i++;
+      i++;
+      continue;
+    }
+
+    result += char;
+  }
+
+  return result;
 }
 
 function maybeWarnOnUnsupportedPrismaVersion(options: GeneratorOptions) {
