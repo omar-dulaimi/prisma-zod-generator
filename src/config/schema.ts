@@ -24,6 +24,13 @@ export const ConfigurationSchema: JSONSchema7 = {
       default: 'full',
       description: 'Generation mode: full (all schemas), minimal (basic CRUD only), or custom',
     },
+    enumStrategy: {
+      type: 'string',
+      enum: ['full', 'datamode'],
+      default: 'full',
+      description:
+        'Which enum schemas to generate: all includes Prisma query/internal enums; datamodel emits only enums declared in schema.prisma',
+    },
 
     output: {
       type: 'string',

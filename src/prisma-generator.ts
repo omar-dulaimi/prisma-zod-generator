@@ -427,7 +427,7 @@ export async function generate(options: GeneratorOptions) {
         );
 
       const allModelEnums = [...(mutableEnumTypes.model ?? []), ...transformedDatamodelEnums];
-      await generateEnumSchemas(mutableEnumTypes.prisma, allModelEnums);
+      await generateEnumSchemas(mutableEnumTypes.prisma, allModelEnums, generatorConfig);
     } else {
       logger.debug('[prisma-zod-generator] ⏭️  emit.enums=false (skipping enum schemas)');
     }
@@ -645,11 +645,6 @@ export async function generate(options: GeneratorOptions) {
       logger.debug('[prisma-zod-generator] ⏭️  emit.crud=false (skipping CRUD operation schemas)');
     }
 
-    // Only create objects index if objects or crud emitted (legacy expectation)
-    if ((emitObjects || emitCrud) && !shouldSkipCrudAndObjectsDueToHeuristics) {
-      await generateIndex();
-    }
-
     if (emitPureModels) {
       logger.debug(
         `[debug] Before pure model generation: pureModels=${String(generatorConfig.pureModels || emitPureModels)} namingPreset=${generatorConfig.naming?.preset || 'none'}`,
@@ -670,6 +665,29 @@ export async function generate(options: GeneratorOptions) {
       logger.debug(
         '[prisma-zod-generator] ⏭️  emit.variants=false (skipping variant wrapper schemas)',
       );
+    }
+    try {
+      await generateIndex();
+      if (!singleFileMode) {
+        const rootDir = Transformer.getOutputPath();
+        const rootIndexPath = path.join(rootDir, 'index.ts');
+        const importExtension = Transformer.getImportFileExtension();
+
+        const rootContent = [
+          '/**',
+          ' * Root Schemas Index',
+          ' * Auto-generated - do not edit manually',
+          ' */',
+          '',
+          `export * from './schemas/index${importExtension}';`,
+          '',
+        ].join('\n');
+
+        await writeFileSafely(rootIndexPath, rootContent, false);
+        logger.debug(`[prisma-zod-generator] 🏠 Generated root index.ts at: ${rootIndexPath}`);
+      }
+    } catch (error) {
+      console.error('[prisma-zod-generator] ⚠️ Failed to generate root index:', error);
     }
 
     // Result schemas are generated inside Transformer.generateResultSchemas; we guard via emit.results if specified
@@ -835,8 +853,14 @@ function normalizeSchemaEnum(enumType: {
 async function generateEnumSchemas(
   prismaSchemaEnum: SchemaEnumWithValues[],
   modelSchemaEnum: SchemaEnumWithValues[],
+  config: CustomGeneratorConfig,
 ) {
-  const enumTypes = [...prismaSchemaEnum, ...modelSchemaEnum];
+  // Determine the enum generation strategy from configuration
+  const strategy = config?.enumStrategy || 'full';
+  // If strategy is set to 'datamode', filter out Prisma's internal query/internal enums
+  // (like ScalarFieldEnum) and generate schemas ONLY for enums declared in schema.prisma
+  const enumTypes =
+    strategy === 'datamode' ? [...modelSchemaEnum] : [...prismaSchemaEnum, ...modelSchemaEnum];
   // Include both raw and normalized enum names so import/name checks work
   const rawEnumNames = enumTypes.map((e) => e.name);
 
@@ -867,6 +891,56 @@ async function generateEnumSchemas(
     enumTypes,
   });
   await transformer.generateEnumSchemas();
+  await generateEnumIndex();
+}
+
+/**
+ * Generate an index.ts inside the enums directory and add it to the main index
+ */
+async function generateEnumIndex() {
+  try {
+    const schemasPath = Transformer.getSchemasPath();
+    const enumsDir = path.join(schemasPath, 'enums');
+
+    try {
+      await fs.mkdir(enumsDir, { recursive: true });
+    } catch {}
+
+    let entries: string[] = [];
+
+    try {
+      const dirents = await fs.readdir(enumsDir, { withFileTypes: true });
+      entries = dirents
+        .filter((d) => d.isFile() && d.name.endsWith('.ts') && d.name !== 'index.ts')
+        .map((d) => d.name.replace(/\.ts$/, ''));
+    } catch {
+      entries = [];
+    }
+
+    if (entries.length === 0) return;
+
+    const importExtension = Transformer.getImportFileExtension();
+    const exportLines = entries.map((base) => `export * from './${base}${importExtension}';`);
+
+    const content = [
+      '/**',
+      ' * Enum Schemas Index',
+      ' * Auto-generated - do not edit manually',
+      ' */',
+      '',
+      ...exportLines,
+      '',
+    ].join('\n');
+
+    const indexPath = path.join(enumsDir, 'index.ts');
+
+    await writeFileSafely(indexPath, content, false);
+
+    const { addIndexExport } = await import('./utils/writeIndexFile');
+    addIndexExport(indexPath);
+  } catch (err) {
+    console.error('⚠️  Failed to generate enums index:', err);
+  }
 }
 
 async function generateObjectSchemas(inputObjectTypes: DMMF.InputType[], models: DMMF.Model[]) {
@@ -2600,11 +2674,12 @@ async function generatePureModelSchemas(
         ' * Auto-generated - do not edit manually',
         ' */',
         '',
-        ...Array.from(schemaCollection.schemas.keys()).map((modelName) => {
-          const { fileName, schemaExport } = buildNames(modelName);
+        ...Array.from(schemaCollection.schemas.keys()).flatMap((modelName) => {
+          // <-- тут flatMap
+          const { fileName } = buildNames(modelName);
           const base = fileName.replace(/\.ts$/, '');
           const importExtension = Transformer.getImportFileExtension();
-          return `export { ${schemaExport} } from './${base}${importExtension}';`;
+          return [`export * from './${base}${importExtension}';`];
         }),
         '',
       ].join('\n');

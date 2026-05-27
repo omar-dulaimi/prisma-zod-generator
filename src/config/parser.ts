@@ -226,7 +226,12 @@ export interface GeneratorConfig {
     /** Generate variant wrapper schemas (variants/ directory & index). Default true if any variant enabled. */
     variants?: boolean;
   };
-
+  /**
+   * Strategy for generated enum schemas.
+   * - 'full': Emit Prisma internal/query enums and datamodel enums (default).
+   * - 'datamode': Emit only enums declared in schema.prisma.
+   */
+  enumStrategy?: 'datamode' | 'full';
   /**
    * Safety system configuration to protect user code from accidental deletion.
    * Controls how the generator handles potentially dangerous output paths.

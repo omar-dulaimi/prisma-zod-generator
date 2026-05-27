@@ -1059,6 +1059,7 @@ export default class Transformer {
   }
 
   async generateEnumSchemas() {
+    const generatedEnumBases: string[] = [];
     for (const enumType of this.enumTypes) {
       const { name, values } = enumType;
 
@@ -1094,9 +1095,12 @@ export default class Transformer {
               .map((v: string) => `'${v}'`)
               .join(', ')}])\n\n` +
             `export type ${enumName} = z.infer<typeof ${schemaExportName}>;`,
+          false,
         );
+        generatedEnumBases.push(fileName.replace(/\.ts$/, ''));
       }
     }
+    return generatedEnumBases;
   }
 
   /**
