@@ -17,6 +17,8 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      # Required for npm Trusted Publishing (OIDC token exchange)
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -91,7 +93,7 @@ jobs:
       - name: Semantic Release (with npm lifecycle)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # npm auth uses Trusted Publishing (OIDC) — no NPM_TOKEN needed.
         run: pnpm run release
 
       # Removed changelog sync: docs page now links to GitHub
