@@ -167,13 +167,14 @@ model ArrayModelV4 {
             const content = readFileSync(createInputPath, 'utf-8');
 
             // For String[] arrays, .min should apply to the array wrapper (union branch)
+            // (v4 emits object-ref unions getter-wrapped for lazy resolution — issue #377)
             expect(content).toMatch(
-              /searchArea:\s*z\.union\(\[.*z\.array\(z\.string\(\)\)\.min\(1, 'Veuillez selectionner au moins un element'\)\.array\(\)\]\)/s,
+              /get\s+searchArea\s*\(\)\s*\{\s*return\s+z\.union\(\[.*z\.array\(z\.string\(\)\)\.min\(1, 'Veuillez selectionner au moins un element'\)\.array\(\)\]\)/s,
             );
 
             // For enum[] arrays, .min should apply to the array wrapper (union branch)
             expect(content).toMatch(
-              /propertyWear:\s*z\.union\(\[.*z\.array\(WearTypeV4Schema\)\.min\(1, 'Veuillez selectionner au moins un element'\)\.array\(\)\]\)/s,
+              /get\s+propertyWear\s*\(\)\s*\{\s*return\s+z\.union\(\[.*z\.array\(WearTypeV4Schema\)\.min\(1, 'Veuillez selectionner au moins un element'\)\.array\(\)\]\)/s,
             );
           }
         } finally {

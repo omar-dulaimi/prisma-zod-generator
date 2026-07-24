@@ -43,6 +43,12 @@ describe('Single-file mode: Zod versions (v4 getters vs v3 lazy)', () => {
         );
         // No z.lazy in v4 single-file bundle
         expect(content).not.toMatch(/z\.lazy\s*\(/);
+        // Issue #377: strict object schemas must use z.strictObject — .strict() on
+        // getter-based shapes invokes every getter at module-init time and crashes
+        expect(content).toContain('z.strictObject({');
+        // Issue #377: multi-inputType unions with object refs are getter-wrapped so
+        // forward/self references resolve lazily at first parse
+        expect(content).toMatch(/get\s+AND\s*\(\)\s*\{\s*return\s+z\.union\(/);
       } finally {
         await env.cleanup();
       }
