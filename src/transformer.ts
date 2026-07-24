@@ -1022,6 +1022,17 @@ export default class Transformer {
     }
   }
 
+  /**
+   * The `import type { Prisma }` line for CRUD operation schema files, or '' when
+   * typed exports are disabled — the typed exports are the only consumers of the
+   * Prisma namespace in those files, so the import would otherwise be unused.
+   */
+  static prismaTypeImportLine(prismaImportPath: string): string {
+    return Transformer.exportTypedSchemas
+      ? `import type { Prisma } from '${prismaImportPath}';\n`
+      : '';
+  }
+
   static setPrismaClientProvider(provider: string) {
     this.prismaClientProvider = provider;
   }
@@ -2643,6 +2654,21 @@ const isValidDecimalInput = (
   }
 
   /**
+   * Whether generateExportObjectSchemaStatement will emit a `z.ZodType<Prisma.X>`
+   * annotated export for this object schema. Mirrors its decision exactly so the
+   * `import type { Prisma }` line is only emitted when it is actually referenced
+   * (e.g. `<Model>Args` schemas are always exported untyped).
+   */
+  private willGenerateTypedObjectExport(): boolean {
+    if (!Transformer.exportTypedSchemas) return false;
+    let name = this.name;
+    if (Transformer.provider === 'mongodb' && isMongodbRawOp(name)) {
+      name = Transformer.rawOpsMap[name];
+    }
+    return !name.endsWith('Args') && this.resolvePrismaTypeForObject(this.name) !== null;
+  }
+
+  /**
    * Resolve the appropriate Prisma type identifier for an object schema export.
    * In Prisma 6, certain aggregate input types are exported with a `Type` suffix.
    * Example: Prisma.PlanetCountAggregateInputType instead of Prisma.PlanetCountAggregateInput
@@ -2775,10 +2801,11 @@ ${helperCode}
     }
 
     // Import Prisma - use value import if Decimal mode is active, otherwise type-only
+    // (and only when the file's typed export will actually reference Prisma)
     const cfg = Transformer.getGeneratorConfig();
     const mode = cfg?.decimalMode || 'decimal';
     const needsPrismaValueImport = this.hasDecimal && mode === 'decimal';
-    const needsPrismaTypeImport = Transformer.exportTypedSchemas && !needsPrismaValueImport;
+    const needsPrismaTypeImport = !needsPrismaValueImport && this.willGenerateTypedObjectExport();
 
     if (needsPrismaValueImport || needsPrismaTypeImport) {
       const objectsDir = path.join(Transformer.getSchemasPath(), 'objects');
@@ -3301,7 +3328,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for FindUnique operation
           const strictModeSuffix =
@@ -3331,7 +3358,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for FindUniqueOrThrow operation
           const strictModeSuffix =
@@ -3406,7 +3433,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          let schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Add inline select schema definitions (dual export pattern)
           if (shouldInline) {
@@ -3482,7 +3509,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          let schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Add inline select schema definitions (dual export pattern)
           if (shouldInline) {
@@ -3562,7 +3589,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir2 = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir2);
-          let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          let schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Add inline select schema definitions (dual export pattern)
           if (shouldInline) {
@@ -3602,7 +3629,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDirCount = Transformer.getSchemasPath();
           const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
-          const schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPathCount)}${this.generateImportStatements(imports)}`;
 
           const strictModeSuffix =
             Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(modelName, 'count') ||
@@ -3643,7 +3670,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for CreateOne operation
           const strictModeSuffix =
@@ -3673,7 +3700,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for CreateMany operation
             const strictModeSuffix =
@@ -3709,7 +3736,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for CreateManyAndReturn operation
             const strictModeSuffix =
@@ -3754,7 +3781,7 @@ ${helperCode}
               // Add Prisma type import for explicit type binding
               const crudDir = Transformer.getSchemasPath();
               const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-              const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+              const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
               // Generate dual schema exports for DeleteOne operation
               const strictModeSuffix =
@@ -3786,7 +3813,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for DeleteOne operation
             const strictModeSuffix =
@@ -3816,7 +3843,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for DeleteMany operation
             const strictModeSuffix =
@@ -3855,7 +3882,7 @@ ${helperCode}
               // Add Prisma type import for explicit type binding
               const crudDir = Transformer.getSchemasPath();
               const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-              const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+              const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
               // Generate dual schema exports for UpdateOne operation
               const strictModeSuffix =
@@ -3889,7 +3916,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpdateOne operation
             const strictModeSuffix =
@@ -3922,7 +3949,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpdateMany operation
             const strictModeSuffix =
@@ -3957,7 +3984,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpdateManyAndReturn operation
             const strictModeSuffix =
@@ -3999,7 +4026,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpsertOne operation
             const strictModeSuffix =
@@ -4070,7 +4097,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDirAggregate = Transformer.getSchemasPath();
           const prismaImportPathAggregate = Transformer.resolvePrismaImportPath(crudDirAggregate);
-          const schemaContent = `import type { Prisma } from '${prismaImportPathAggregate}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPathAggregate)}${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for Aggregate operation
           const strictModeSuffix =
@@ -4128,7 +4155,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDirGroupBy = Transformer.getSchemasPath();
           const prismaImportPathGroupBy = Transformer.resolvePrismaImportPath(crudDirGroupBy);
-          const schemaContent = `import type { Prisma } from '${prismaImportPathGroupBy}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPathGroupBy)}${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for GroupBy operation
           const baseFields = [
