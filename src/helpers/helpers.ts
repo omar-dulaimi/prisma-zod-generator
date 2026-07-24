@@ -36,6 +36,10 @@ export function addMissingInputObjectTypes(
       outputObjectTypes,
       inputObjectTypes,
     );
+  } else {
+    // Reset any stale mongodb raw-ops map so it cannot leak into a
+    // subsequent non-mongodb run within the same process (static state).
+    Transformer.rawOpsMap = {};
   }
 
   // Filter out fieldRefTypes from input types to avoid generating non-existent schemas

@@ -2552,9 +2552,11 @@ const isValidDecimalInput = (
     let name = this.name;
     let exportName = this.name;
     if (Transformer.provider === 'mongodb') {
-      if (isMongodbRawOp(name)) {
-        name = Transformer.rawOpsMap[name];
-        exportName = name.replace('Args', '');
+      // Only remap when the lookup succeeds so a miss can never crash generation
+      const mapped = Transformer.rawOpsMap[name];
+      if (mapped) {
+        name = mapped;
+        exportName = mapped.replace('Args', '');
       }
     }
 
@@ -3230,11 +3232,12 @@ ${helperCode}
   }
 
   resolveObjectSchemaName() {
-    let name = this.name;
+    const name = this.name;
     let exportName = this.name;
-    if (isMongodbRawOp(name)) {
-      name = Transformer.rawOpsMap[name];
-      exportName = name.replace('Args', '');
+    // Only remap when the lookup succeeds so a miss can never crash generation
+    const mapped = Transformer.rawOpsMap[name];
+    if (mapped) {
+      exportName = mapped.replace('Args', '');
     }
     return exportName;
   }
