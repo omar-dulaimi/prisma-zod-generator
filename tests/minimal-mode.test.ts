@@ -797,7 +797,7 @@ model Tag {
             const content = readFileSync(findManyPath, 'utf-8');
 
             // Should import Prisma types for type safety
-            expect(content).toMatch(/import.*@prisma\/client/);
+            expect(content).toMatch(/import\s+(type\s+)?\{\s*Prisma\s*\}\s+from/);
 
             // Should have proper TypeScript types
             expect(content).toMatch(/Prisma\./);

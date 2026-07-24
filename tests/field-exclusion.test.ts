@@ -973,8 +973,8 @@ model User {
           if (existsSync(userCreatePath)) {
             const content = readFileSync(userCreatePath, 'utf-8');
 
-            // Should import Prisma types
-            expect(content).toMatch(/import.*@prisma\/client/);
+            // Should import Prisma types (package or generated client path)
+            expect(content).toMatch(/import\s+(type\s+)?\{\s*Prisma\s*\}\s+from/);
 
             // Should have correct TypeScript types that match excluded fields
             expect(content).toMatch(/Prisma\./);

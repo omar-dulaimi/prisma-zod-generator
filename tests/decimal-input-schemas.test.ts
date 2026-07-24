@@ -403,8 +403,9 @@ model Product {
           expect(content).toMatch(/export const DECIMAL_STRING_REGEX/);
           expect(content).toMatch(/export const isValidDecimalInput/);
 
-          // Should have Prisma import
-          expect(content).toMatch(/import\s+{\s*Prisma\s+}\s+from\s+['"]@prisma\/client['"]/);
+          // Should have Prisma import from a clean source (package or generated client path)
+          expect(content).toMatch(/import\s+{\s*Prisma\s+}\s+from\s+['"][^'"]+['"]/);
+          expect(content).not.toMatch(/node_modules/);
         } finally {
           await testEnv.cleanup();
         }

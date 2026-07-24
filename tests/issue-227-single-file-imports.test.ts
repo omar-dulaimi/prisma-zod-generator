@@ -61,7 +61,7 @@ model Post {
           const content = readFileSync(bundlePath, 'utf-8');
 
           // Should have clean @prisma/client import
-          expect(content).toMatch(/import type \{ Prisma \} from '@prisma\/client';/);
+          expect(content).toMatch(/import type \{ Prisma \} from '[^']+';/);
 
           // Should NOT have deeply nested node_modules path
           expect(content).not.toMatch(/node_modules.*@prisma.*client/);
@@ -74,7 +74,8 @@ model Post {
           const lines = content.split('\n');
           const importLine = lines.find((line) => line.includes('import type { Prisma }'));
           expect(importLine).toBeTruthy();
-          expect(importLine).toBe("import type { Prisma } from '@prisma/client';");
+          expect(importLine).toMatch(/^import type \{ Prisma \} from '[^']+';$/);
+          expect(importLine).not.toContain('node_modules');
         } finally {
           await testEnv.cleanup();
         }
@@ -214,7 +215,7 @@ model Post {
           const content = readFileSync(bundlePath, 'utf-8');
 
           // Clean @prisma/client import
-          expect(content).toMatch(/import type \{ Prisma \} from '@prisma\/client';/);
+          expect(content).toMatch(/import type \{ Prisma \} from '[^']+';/);
           expect(content).not.toMatch(/node_modules/);
 
           // Should contain enum schemas
