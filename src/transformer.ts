@@ -4,7 +4,10 @@ import type { GeneratorConfig as ZodGeneratorConfig } from './config/parser';
 import { ResultSchemaGenerator } from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
 import { generateDecimalInputSchema, isDecimalJsAvailable } from './helpers/decimal-helpers';
-import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
+import {
+  checkModelHasEnabledModelRelation,
+  isOperationEnabledForModel,
+} from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
 import type { CustomImport } from './parsers/zod-comments';
 import { SchemaEnumWithValues, TransformerParams } from './types';
@@ -3370,7 +3373,7 @@ ${helperCode}
 
           // Add select import only if NOT inlining, add inline imports if inlining
           const imports = shouldInline
-            ? [...baseImports, ...this.generateInlineSelectImports(model)]
+            ? [...baseImports, ...this.generateInlineSelectImports(model, 'FindFirst')]
             : [...baseImports, selectImport];
 
           // Determine select field reference based on dual export strategy
@@ -3447,7 +3450,7 @@ ${helperCode}
 
           // Add select import only if NOT inlining, add inline imports if inlining
           const imports = shouldInline
-            ? [...baseImports, ...this.generateInlineSelectImports(model)]
+            ? [...baseImports, ...this.generateInlineSelectImports(model, 'FindFirstOrThrow')]
             : [...baseImports, selectImport];
           // Determine select field reference based on dual export strategy
           const cfg2 = Transformer.getGeneratorConfig();
@@ -3524,7 +3527,7 @@ ${helperCode}
 
           // Add select import only if NOT inlining, add inline imports if inlining
           const imports = shouldInline
-            ? [...baseImports, ...this.generateInlineSelectImports(model)]
+            ? [...baseImports, ...this.generateInlineSelectImports(model, 'FindMany')]
             : [...baseImports, selectImport];
 
           // Determine select/include field reference based on dual export strategy and zod target
@@ -4784,49 +4787,131 @@ ${helperCode}
    * Follows community generator pattern with aggressive inlining.
    */
   generateInlineSelectSchema(model: PrismaDMMF.Model): string {
-    const { name: modelName, fields } = model;
+    const modelName = model.name;
+    // Wrap the shared definition so this helper cannot diverge from
+    // generateInlineSelectSchemaDefinition (used by the dual export path).
+    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${this.getPrismaTypeName(modelName)}Select> = ${this.generateInlineSelectSchemaDefinition(model)}`;
+  }
 
-    // Generate field definitions for the select schema
-    const selectFields: string[] = [];
+  /**
+   * Resolves the nested-args schema a relation field should union with inside an
+   * inline select schema, mirroring the gating used for objects/<Model>Select.schema.ts
+   * (see select-helpers/include-helpers). Returns null when only booleans are allowed
+   * (minimal mode, select+include both disabled, or the related model disabled).
+   */
+  private resolveInlineSelectRelationTarget(
+    field: PrismaDMMF.Field,
+  ): { kind: 'query'; modelName: string } | { kind: 'args'; typeName: string } | null {
+    if (!field.relationName) return null;
+    const config = Transformer.getGeneratorConfig();
+    if (config?.mode === 'minimal') return null;
+    if (!Transformer.isGenerateSelect && !Transformer.isGenerateInclude) return null;
+    if (!Transformer.isModelEnabled(field.type)) return null;
+    if (field.isList && isOperationEnabledForModel(field.type, 'findMany')) {
+      return { kind: 'query', modelName: field.type };
+    }
+    return { kind: 'args', typeName: `${field.type}Args` };
+  }
 
-    for (const field of fields) {
-      const { name: fieldName, relationName } = field;
+  /**
+   * Resolves the <Model>CountOutputTypeArgs reference for the `_count` field of an
+   * inline select schema, or null when `_count` must remain boolean-only.
+   */
+  private resolveInlineSelectCountArgsReference(model: PrismaDMMF.Model): string | null {
+    const config = Transformer.getGeneratorConfig();
+    if (config?.mode === 'minimal') return null;
+    if (!Transformer.isGenerateSelect) return null;
+    return Transformer.getObjectSchemaName(`${model.name}CountOutputTypeArgs`);
+  }
 
-      if (relationName) {
-        // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
-        selectFields.push(`  ${fieldName}: z.boolean().optional()`);
-      } else {
-        // Scalar field: just boolean
-        selectFields.push(`  ${fieldName}: z.boolean().optional()`);
+  /**
+   * Resolve the actual exported identifier of a model query schema file, matching the
+   * naming used by generateDualSchemaExports (typed export when enabled, Zod export
+   * otherwise, honoring naming.schema.exportNamePattern).
+   */
+  private resolveModelQueryExportName(modelName: string, operationType: string): string {
+    let baseExportName = `${modelName}${operationType}`;
+    try {
+      const schemaNamingConfig = Transformer.getGeneratorConfig()?.naming?.schema;
+      if (schemaNamingConfig?.exportNamePattern) {
+        const customExportName = generateExportName(
+          schemaNamingConfig.exportNamePattern,
+          modelName,
+          operationType,
+        );
+        if (customExportName) {
+          baseExportName = customExportName;
+        }
       }
+    } catch {
+      // Fallback to default naming
     }
-
-    // Add _count field if model has array relations (for aggregation support)
-    const hasArrayRelations = fields.some((field) => field.relationName && field.isList);
-    if (hasArrayRelations) {
-      selectFields.push(`  _count: z.boolean().optional()`);
+    if (Transformer.exportTypedSchemas) {
+      return baseExportName.endsWith('Schema')
+        ? baseExportName
+        : `${baseExportName}${Transformer.typedSchemaSuffix}`;
     }
+    return `${baseExportName}${Transformer.zodSchemaSuffix}`;
+  }
 
-    // Apply strict mode based on configuration for object schemas
-    const strictModeSuffix =
-      Transformer.getStrictModeResolver()?.getObjectStrictModeSuffix(modelName) || '';
-
-    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${this.getPrismaTypeName(modelName)}Select> = z.object({
-${selectFields.join(',\n')}
-})${strictModeSuffix}`;
+  /**
+   * Generate an import statement for a root-level model query schema file
+   * (e.g. findManyPost.schema.ts), honoring naming.schema patterns. `from`
+   * selects the relative prefix: './' for root-level CRUD files, '../' for
+   * files inside objects/.
+   */
+  private generateModelQueryImport(
+    modelName: string,
+    queryName: string,
+    from: 'objects' | 'root' = 'objects',
+  ): string {
+    const importExtension = this.getImportFileExtension();
+    const prefix = from === 'objects' ? '..' : '.';
+    const operation = queryName.charAt(0).toUpperCase() + queryName.slice(1);
+    const aliasName = this.resolveModelQuerySchemaName(modelName, queryName);
+    try {
+      const schemaCfg = resolveSchemaNaming(Transformer.getGeneratorConfig());
+      const fileName = generateFileName(schemaCfg.filePattern, modelName, operation);
+      const baseName = fileName.replace(/\.ts$/, '');
+      const exportName = this.resolveModelQueryExportName(modelName, operation);
+      if (exportName === aliasName) {
+        return `import { ${exportName} } from '${prefix}/${baseName}${importExtension}'`;
+      }
+      return `import { ${exportName} as ${aliasName} } from '${prefix}/${baseName}${importExtension}'`;
+    } catch {
+      // Fallback to legacy hardcoded naming if naming resolver fails
+      return `import { ${aliasName} } from '${prefix}/${operation}${modelName}.schema${importExtension}'`;
+    }
   }
 
   /**
    * Generates the additional imports needed for inlined select schemas.
-   * Returns import statements for Args schemas referenced in relation fields.
+   * Returns import statements for the model query / Args schemas referenced by
+   * relation-field unions (mirroring objects/<Model>Select.schema.ts imports).
    */
-  generateInlineSelectImports(_model: PrismaDMMF.Model): string[] {
+  generateInlineSelectImports(
+    model: PrismaDMMF.Model,
+    operation?: 'FindFirst' | 'FindFirstOrThrow' | 'FindMany',
+  ): string[] {
     const imports: string[] = [];
 
-    // Since select schemas are simplified to only use z.boolean().optional() for relation fields,
-    // we don't need to import Args schemas. Only import _count schema if needed.
+    for (const field of model.fields) {
+      const relationTarget = this.resolveInlineSelectRelationTarget(field);
+      if (!relationTarget) continue;
+      if (relationTarget.kind === 'query') {
+        // A self list relation inside the findMany file references an export declared
+        // later in the same file; z.lazy defers the dereference, so no import is needed.
+        if (operation === 'FindMany' && relationTarget.modelName === model.name) continue;
+        imports.push(this.generateModelQueryImport(relationTarget.modelName, 'findMany', 'root'));
+      } else {
+        imports.push(this.generateObjectInputImport(relationTarget.typeName, 'root'));
+      }
+    }
 
-    // No extra imports required; _count remains a boolean in inlined select schemas.
+    const hasArrayRelations = model.fields.some((field) => field.relationName && field.isList);
+    if (hasArrayRelations && this.resolveInlineSelectCountArgsReference(model)) {
+      imports.push(this.generateObjectInputImport(`${model.name}CountOutputTypeArgs`, 'root'));
+    }
 
     // Remove duplicates
     return [...new Set(imports)];
@@ -4919,13 +5004,21 @@ ${selectFields.join(',\n')}
     const selectFields: string[] = [];
 
     for (const field of fields) {
-      const { name: fieldName, relationName } = field;
+      const { name: fieldName } = field;
 
-      if (relationName) {
-        // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
-        selectFields.push(`    ${fieldName}: z.boolean().optional()`);
+      const relationTarget = this.resolveInlineSelectRelationTarget(field);
+      if (relationTarget) {
+        // Relation selection mirrors objects/<Model>Select.schema.ts: Prisma's
+        // <Model>Select accepts boolean OR nested args (select/include/where/...).
+        const reference =
+          relationTarget.kind === 'query'
+            ? this.resolveModelQuerySchemaName(relationTarget.modelName, 'findMany')
+            : Transformer.getObjectSchemaName(relationTarget.typeName);
+        selectFields.push(
+          `    ${fieldName}: z.union([z.boolean(), z.lazy(() => ${reference})]).optional()`,
+        );
       } else {
-        // Scalar field: just boolean
+        // Scalar field (or relation without a generated nested-args schema): boolean only
         selectFields.push(`    ${fieldName}: z.boolean().optional()`);
       }
     }
@@ -4933,7 +5026,12 @@ ${selectFields.join(',\n')}
     // Add _count field if model has array relations (for aggregation support)
     const hasArrayRelations = fields.some((field) => field.relationName && field.isList);
     if (hasArrayRelations) {
-      selectFields.push(`    _count: z.boolean().optional()`);
+      const countArgsReference = this.resolveInlineSelectCountArgsReference(model);
+      selectFields.push(
+        countArgsReference
+          ? `    _count: z.union([z.boolean(), z.lazy(() => ${countArgsReference})]).optional()`
+          : `    _count: z.boolean().optional()`,
+      );
     }
 
     // Apply strict mode based on configuration for object schemas
