@@ -1701,7 +1701,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
               let zod =
                 field.kind === 'enum'
                   ? `${String(field.type)}Schema`
-                  : `z.${getZodTypeForField(field)}`;
+                  : `z.${getZodTypeForField(field, variantNameForRules)}`;
 
               // Apply optionality rules
               const wasRequired = field.isRequired;
@@ -2154,7 +2154,7 @@ async function generateVariantSchemaContent(
 
       // Fallback to basic type generation
       const isEnum = field.kind === 'enum';
-      let base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field)}`;
+      let base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field, variantName)}`;
 
       // Handle arrays - only add .array() for enums, scalar fields already handled by getZodTypeForField
       if (field.isList && isEnum) {
@@ -2247,7 +2247,7 @@ export type ${typeName} = z.infer<typeof ${schemaName}>;
 /**
  * Get Zod type for a Prisma field
  */
-function getZodTypeForField(field: DMMF.Field): string {
+function getZodTypeForField(field: DMMF.Field, variantName?: string): string {
   let baseType: string;
 
   // Check for JSON Schema compatibility mode
@@ -2282,6 +2282,16 @@ function getZodTypeForField(field: DMMF.Field): string {
           baseType =
             'string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime")';
         }
+      } else if (cfg?.dateTimeStrategy === 'coerce') {
+        baseType = 'coerce.date()';
+      } else if (cfg?.dateTimeStrategy === 'isoString') {
+        const target = (cfg?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
+        baseType =
+          target === 'v4'
+            ? 'iso.datetime().transform(v => new Date(v))'
+            : 'string().regex(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/, "Invalid ISO datetime").transform(v => new Date(v))';
+      } else if (cfg?.dateTimeSplitStrategy === true && variantName === 'input') {
+        baseType = 'coerce.date()';
       } else {
         baseType = 'date()';
       }
