@@ -1,3 +1,23 @@
+## [2.1.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.5...v2.1.6) (2026-07-24)
+
+### 🐛 Bug Fixes
+
+* **aggregates:** capitalize AggregateArgs type name regardless of model casing ([b27695c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b27695c41fa18253b7ecf689da6c21e7cd6a53e7))
+* helper/decimal client-safety fixes for [#364](https://github.com/omar-dulaimi/prisma-zod-generator/issues/364), [#367](https://github.com/omar-dulaimi/prisma-zod-generator/issues/367) (batch C) ([3fcf5d7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3fcf5d78d9511bdd18354898a44920c9246478e4))
+* **helpers:** align InputJsonValue type alias with runtime schema and Prisma ([0a368e2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0a368e2cf29b65da4ab226f99e3b011c09b47093)), closes [#364](https://github.com/omar-dulaimi/prisma-zod-generator/issues/364)
+* **pure-models:** emit BigInt/DateTime literal defaults as constructors, parse Json defaults ([cf72c92](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cf72c9225ae147f7317ff193fb056e338b63e38f)), closes [#373](https://github.com/omar-dulaimi/prisma-zod-generator/issues/373)
+* transformer-area fixes for [#388](https://github.com/omar-dulaimi/prisma-zod-generator/issues/388), [#387](https://github.com/omar-dulaimi/prisma-zod-generator/issues/387), [#378](https://github.com/omar-dulaimi/prisma-zod-generator/issues/378), [#382](https://github.com/omar-dulaimi/prisma-zod-generator/issues/382) (batch A) ([94a4403](https://github.com/omar-dulaimi/prisma-zod-generator/commit/94a4403288a6c84cd4d781d1c8068e4c12f545ef))
+* **transformer:** accept nested relation args in inline select schemas ([e260c85](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e260c85dddc9c2269565b98d02a599249cb8d5db)), closes [#387](https://github.com/omar-dulaimi/prisma-zod-generator/issues/387)
+* **transformer:** capitalize AggregateArgs type name regardless of model casing ([#391](https://github.com/omar-dulaimi/prisma-zod-generator/issues/391)) ([d600e71](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d600e716178ed1931510314768a487e661014615)), closes [#366](https://github.com/omar-dulaimi/prisma-zod-generator/issues/366)
+* **transformer:** drop unused Prisma type imports from generated schemas ([7e02f12](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7e02f127c81326b942e032512d35b006c89d5ebb)), closes [#378](https://github.com/omar-dulaimi/prisma-zod-generator/issues/378)
+* **transformer:** make Decimal schemas client-bundle safe for the prisma-client provider ([30739da](https://github.com/omar-dulaimi/prisma-zod-generator/commit/30739da1171691cd9701213a1f0f5d06e67c00ee)), closes [#367](https://github.com/omar-dulaimi/prisma-zod-generator/issues/367)
+* **transformer:** never promote DMMF-optional create-input fields to required ([bf94034](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bf94034ab21f061082ffdf66e14d3609fc3aaa90)), closes [#388](https://github.com/omar-dulaimi/prisma-zod-generator/issues/388)
+* **transformer:** stop misclassifying models named *Raw* as mongo raw ops ([3a95413](https://github.com/omar-dulaimi/prisma-zod-generator/commit/3a954131ba950facf42ecad9f3316809b1ed914e)), closes [#382](https://github.com/omar-dulaimi/prisma-zod-generator/issues/382)
+* **transformer:** stop zod v4 getter schemas crashing at import time ([f7caece](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f7caecea94ff1cfd080da2e2dd04e86f62eec624)), closes [#377](https://github.com/omar-dulaimi/prisma-zod-generator/issues/377)
+* variant/zod-v4 fixes for [#368](https://github.com/omar-dulaimi/prisma-zod-generator/issues/368), [#377](https://github.com/omar-dulaimi/prisma-zod-generator/issues/377) (batch B) ([26c8e48](https://github.com/omar-dulaimi/prisma-zod-generator/commit/26c8e484449a2bd7811d12b2ab59ae92fe5fd75f))
+* **variants:** honor dateTimeStrategy in split and array-based variant files ([8999c69](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8999c69915fc17b57e0fbd236cda81170e899076)), closes [#368](https://github.com/omar-dulaimi/prisma-zod-generator/issues/368)
+* **zod-comments:** accept object-form error messages and no-op base-type tokens ([8b1ca04](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8b1ca048629c49012969e9ba33af4fcf217b8dee)), closes [#374](https://github.com/omar-dulaimi/prisma-zod-generator/issues/374)
+
 ## [2.1.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.4...v2.1.5) (2026-07-24)
 
 ### 🐛 Bug Fixes
