@@ -222,6 +222,14 @@ function transformContentForSingleFile(filePath: string, source: string): string
     needsPrismaValueImport = true;
   }
 
+  // Decimal helpers use Prisma.Decimal as a runtime value:
+  // new Prisma.Decimal(...), Prisma.Decimal.isDecimal(...), z.instanceof(Prisma.Decimal)
+  const prismaDecimalValueUseRe =
+    /new\s+Prisma\.Decimal\s*\(|Prisma\.Decimal\.isDecimal\s*\(|instanceof\s*\(\s*Prisma\.Decimal|instanceof\s+Prisma\.Decimal/;
+  if (prismaDecimalValueUseRe.test(text)) {
+    needsPrismaValueImport = true;
+  }
+
   // Check for Prisma type usage in ZodType generics like z.ZodType<Prisma.Something>
   const prismaTypeUseRe = /z\.ZodType<Prisma\.([A-Za-z][A-Za-z0-9]*)/g;
   if (prismaTypeUseRe.test(text)) {
@@ -315,14 +323,12 @@ export async function flushSingleFile(): Promise<void> {
       header.push(`import * as z from 'zod';`);
     }
   }
-  // Handle Prisma imports - if we need both type and value imports, use separate lines
-  if (needsPrismaTypeImport && needsPrismaValueImport) {
-    header.push(`import type { Prisma } from '${prismaImportBase}';`);
+  // Handle Prisma imports - a value import also provides the types, so it wins
+  // (emitting both an `import type` and a value import of the same name is a TS error)
+  if (needsPrismaValueImport) {
     header.push(`import { Prisma } from '${prismaImportBase}';`);
   } else if (needsPrismaTypeImport) {
     header.push(`import type { Prisma } from '${prismaImportBase}';`);
-  } else if (needsPrismaValueImport) {
-    header.push(`import { Prisma } from '${prismaImportBase}';`);
   }
 
   if (prismaValueImports.size > 0) {

@@ -690,7 +690,7 @@ ${baseSchema}`;
     });
 
     describe('resolvePrismaImportPath', () => {
-      it('should append the client entrypoint for custom outputs ending with client directory', () => {
+      it('should append the browser-safe entrypoint for custom outputs of the new generator', () => {
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
         const originalOutputPath = (Transformer as unknown as { prismaClientOutputPath: string })
@@ -703,6 +703,7 @@ ${baseSchema}`;
             importFileExtension: 'ts',
           });
 
+          // Directory does not exist on disk: assume the modern layout with a browser entry
           const customOutput = join(process.cwd(), 'tmp', 'generated', 'client');
           Transformer.setPrismaClientOutputPath(customOutput);
 
@@ -713,7 +714,7 @@ ${baseSchema}`;
             }
           ).resolvePrismaImportPath(targetDir);
 
-          const expectedRelative = relative(targetDir, join(customOutput, 'client')).replace(
+          const expectedRelative = relative(targetDir, join(customOutput, 'browser')).replace(
             /\\/g,
             '/',
           );
@@ -723,6 +724,53 @@ ${baseSchema}`;
           Transformer.setPrismaClientProvider(originalProvider);
           Transformer.setPrismaClientConfig(originalConfig);
           Transformer.setPrismaClientOutputPath(originalOutputPath);
+        }
+      });
+
+      it('should fall back to the server entrypoint when only an old client-only layout exists', () => {
+        const originalProvider = Transformer.getPrismaClientProvider();
+        const originalConfig = Transformer.getPrismaClientConfig();
+        const originalOutputPath = (Transformer as unknown as { prismaClientOutputPath: string })
+          .prismaClientOutputPath;
+
+        const fixtureRoot = join(process.cwd(), `tmp-esm-entry-fixture-${Date.now()}`);
+        const oldLayoutDir = join(fixtureRoot, 'old-client');
+        const modernLayoutDir = join(fixtureRoot, 'modern-client');
+
+        try {
+          mkdirSync(oldLayoutDir, { recursive: true });
+          writeFileSync(join(oldLayoutDir, 'client.ts'), 'export const Prisma = {};\n');
+          mkdirSync(modernLayoutDir, { recursive: true });
+          writeFileSync(join(modernLayoutDir, 'client.ts'), 'export const Prisma = {};\n');
+          writeFileSync(join(modernLayoutDir, 'browser.ts'), 'export const Prisma = {};\n');
+
+          Transformer.setPrismaClientProvider('prisma-client');
+          Transformer.setPrismaClientConfig({
+            moduleFormat: 'esm',
+            importFileExtension: 'ts',
+          });
+
+          const targetDir = join(fixtureRoot, 'zod', 'schemas');
+          const resolve = (
+            Transformer as unknown as {
+              resolvePrismaImportPath(dir: string): string;
+            }
+          ).resolvePrismaImportPath.bind(Transformer);
+
+          Transformer.setPrismaClientOutputPath(oldLayoutDir);
+          expect(resolve(targetDir)).toBe(
+            `${relative(targetDir, join(oldLayoutDir, 'client')).replace(/\\/g, '/')}.ts`,
+          );
+
+          Transformer.setPrismaClientOutputPath(modernLayoutDir);
+          expect(resolve(targetDir)).toBe(
+            `${relative(targetDir, join(modernLayoutDir, 'browser')).replace(/\\/g, '/')}.ts`,
+          );
+        } finally {
+          Transformer.setPrismaClientProvider(originalProvider);
+          Transformer.setPrismaClientConfig(originalConfig);
+          Transformer.setPrismaClientOutputPath(originalOutputPath);
+          rmSync(fixtureRoot, { recursive: true, force: true });
         }
       });
     });

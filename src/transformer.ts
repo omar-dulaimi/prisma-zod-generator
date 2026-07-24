@@ -50,6 +50,7 @@ export default class Transformer {
   private static prismaClientOutputPath: string = '@prisma/client';
   private static isCustomPrismaClientOutputPath: boolean = false;
   private static prismaClientProvider: string = 'prisma-client-js';
+  private static prismaClientEntryBasenameCache = new Map<string, 'browser' | 'client'>();
   private static prismaClientConfig: Record<string, unknown> = {};
   private static isGenerateSelect: boolean = false;
   private static isGenerateInclude: boolean = false;
@@ -990,14 +991,21 @@ export default class Transformer {
     try {
       let prismaClientImportTarget = this.prismaClientOutputPath;
 
-      // For the new Prisma generator (provider = 'prisma-client'), the public entrypoint
-      // lives in a generated `client.*` file inside the configured output directory.
-      // The Prisma output config represents the directory, so we explicitly target the file.
+      // For the new Prisma generator (provider = 'prisma-client'), the public entrypoints
+      // live in generated `client.*` / `browser.*` files inside the configured output
+      // directory. The Prisma output config represents the directory, so we explicitly
+      // target a file. We target the browser-safe entrypoint: the server entry (client.*)
+      // hard-imports node: builtins (node:process/node:path/node:url/node:buffer) and
+      // breaks browser bundles, while browser.* exports everything the generated schemas
+      // need (the Prisma namespace with Decimal/DbNull/JsonNull values plus all types).
       if (this.prismaClientProvider === 'prisma-client') {
         const hasFileExtension = path.extname(prismaClientImportTarget) !== '';
 
         if (!hasFileExtension) {
-          prismaClientImportTarget = path.join(prismaClientImportTarget, 'client');
+          prismaClientImportTarget = path.join(
+            prismaClientImportTarget,
+            this.resolvePrismaClientEntryBasename(),
+          );
         }
       }
 
@@ -1017,6 +1025,35 @@ export default class Transformer {
     } catch {
       return '@prisma/client';
     }
+  }
+
+  /**
+   * Determine which generated prisma-client entrypoint to import.
+   * Prefers the browser-safe `browser.*` entry so generated schemas can be bundled
+   * for client-side use. Falls back to the server `client.*` entry only when an
+   * older prisma-client output layout without a browser entry is positively
+   * detected on disk. When the client output has not been generated yet, assume
+   * the modern layout (browser entry present).
+   */
+  static resolvePrismaClientEntryBasename(): 'browser' | 'client' {
+    const outputDir = this.prismaClientOutputPath;
+    const cached = this.prismaClientEntryBasenameCache.get(outputDir);
+    if (cached) return cached;
+
+    let entry: 'browser' | 'client' = 'browser';
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require keeps fs out of the module top level
+      const fs = require('fs') as typeof import('fs');
+      const entries: string[] = fs.readdirSync(outputDir);
+      const entryFileRegex = /^(browser|client)\.(ts|mts|cts|js|mjs|cjs)$/;
+      const hasBrowserEntry = entries.some((name) => entryFileRegex.exec(name)?.[1] === 'browser');
+      const hasClientEntry = entries.some((name) => entryFileRegex.exec(name)?.[1] === 'client');
+      if (!hasBrowserEntry && hasClientEntry) entry = 'client';
+    } catch {
+      // Output directory unreadable or not generated yet: assume modern layout.
+    }
+    this.prismaClientEntryBasenameCache.set(outputDir, entry);
+    return entry;
   }
 
   static setPrismaClientProvider(provider: string) {
@@ -2496,7 +2533,8 @@ const isValidDecimalInput = (
 ): v is string | number | Prisma.DecimalJsLike => {
   if (v === undefined || v === null) return false;
   return (
-    v instanceof Prisma.Decimal ||
+    // Cross-runtime-copy safe check (browser and server runtimes bundle separate Decimal classes)
+    Prisma.Decimal.isDecimal(v) ||
     (typeof v === 'object' &&
       'd' in v &&
       'e' in v &&

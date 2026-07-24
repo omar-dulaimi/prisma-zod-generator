@@ -851,13 +851,15 @@ export class PrismaTypeMapper {
 
       case 'decimal': {
         // Full Decimal.js support matching zod-prisma-types
-        // For pure models, use instanceof(Prisma.Decimal)
+        // For pure models, use a structural Decimal.isDecimal check instead of instanceof:
+        // the browser and server Prisma runtimes bundle separate Decimal class copies, so
+        // instanceof fails across copies while Decimal.isDecimal is cross-copy safe.
         const modelContext = modelName
           ? `, {
   message: "Field '${field.name}' must be a Decimal. Location: ['Models', '${modelName}']",
 }`
           : '';
-        result.zodSchema = `z.instanceof(Prisma.Decimal${modelContext})`;
+        result.zodSchema = `z.custom<InstanceType<typeof Prisma.Decimal>>((v) => Prisma.Decimal.isDecimal(v)${modelContext})`;
         result.additionalValidations.push('// Decimal field using Prisma.Decimal type');
         result.requiresSpecialHandling = true;
         // Mark that we need Prisma import (non-type import)

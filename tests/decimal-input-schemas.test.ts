@@ -66,14 +66,16 @@ model Product {
           );
           expect(content).toMatch(/\/helpers\/decimal-helpers/);
 
-          // Should have union with Decimal instanceof checks
+          // Should have union with Decimal checks (cross-runtime-safe isDecimal for Prisma.Decimal)
           expect(content).toMatch(/z\.union\(\[/);
           // Decimal instanceof check is conditional based on decimal.js availability
           const hasDecimalJsImport = content.includes("import Decimal from 'decimal.js'");
           if (hasDecimalJsImport) {
             expect(content).toMatch(/z\.instanceof\(Decimal\)/);
           }
-          expect(content).toMatch(/z\.instanceof\(Prisma\.Decimal\)/);
+          expect(content).toMatch(
+            /z\.custom<InstanceType<typeof Prisma\.Decimal>>\(\(v\) => Prisma\.Decimal\.isDecimal\(v\)\)/,
+          );
           expect(content).toMatch(/DecimalJSLikeSchema/);
 
           // Should have refine with validation function
@@ -202,7 +204,9 @@ model Payment {
           const hasDecimalJsImport = content.includes("import Decimal from 'decimal.js'");
 
           // Either way, should have Prisma.Decimal support
-          expect(content).toMatch(/z\.instanceof\(Prisma\.Decimal\)/);
+          expect(content).toMatch(
+            /z\.custom<InstanceType<typeof Prisma\.Decimal>>\(\(v\) => Prisma\.Decimal\.isDecimal\(v\)\)/,
+          );
 
           // If decimal.js import exists, should also check for it in instanceof
           if (hasDecimalJsImport) {

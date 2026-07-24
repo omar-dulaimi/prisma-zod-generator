@@ -45,8 +45,10 @@ export const isValidDecimalInput = (
 ): v is string | number | Prisma.DecimalJsLike => {
   if (v === undefined || v === null) return false;
   return (
-    // Explicit instance checks first
-    v instanceof Prisma.Decimal ||
+    // Explicit instance checks first. Decimal.isDecimal is used instead of instanceof because
+    // the browser and server Prisma runtimes bundle separate Decimal class copies, so
+    // instanceof fails across copies while the structural isDecimal check is cross-copy safe.
+    Prisma.Decimal.isDecimal(v) ||
     // If Decimal.js is present and imported by the generator, this symbol exists at runtime
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - Decimal may be undefined when not installed; codegen controls the import
@@ -85,7 +87,12 @@ export function generateDecimalInputSchema(
     unionTypes.push(`${zodNamespace}.instanceof(Decimal)`);
   }
 
-  unionTypes.push(`${zodNamespace}.instanceof(Prisma.Decimal)`, 'DecimalJSLikeSchema');
+  // Structural cross-runtime-copy safe branch: keeps foreign-copy Decimal instances intact
+  // (instanceof would miss them and DecimalJSLikeSchema would strip them to plain objects).
+  unionTypes.push(
+    `${zodNamespace}.custom<InstanceType<typeof Prisma.Decimal>>((v) => Prisma.Decimal.isDecimal(v))`,
+    'DecimalJSLikeSchema',
+  );
 
   const errorMessage = fieldName ? `Field '${fieldName}' must be a Decimal` : 'Must be a Decimal';
 
@@ -98,7 +105,7 @@ export function generateDecimalInputSchema(
 
 /**
  * Generate Decimal field schema for pure models (output/result types)
- * Uses instanceof check for Prisma.Decimal
+ * Uses the cross-runtime-copy safe Prisma.Decimal.isDecimal check
  *
  * @param zodNamespace - The zod namespace to use (e.g., 'z' or 'zod')
  * @param fieldName - Name of the field
@@ -110,7 +117,7 @@ export function generateDecimalModelSchema(
   fieldName: string,
   modelName: string,
 ): string {
-  return `${zodNamespace}.instanceof(Prisma.Decimal, {
+  return `${zodNamespace}.custom<InstanceType<typeof Prisma.Decimal>>((v) => Prisma.Decimal.isDecimal(v), {
   message: "Field '${fieldName}' must be a Decimal. Location: ['Models', '${modelName}']",
 })`;
 }
