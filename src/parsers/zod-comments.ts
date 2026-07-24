@@ -1426,7 +1426,10 @@ function validateNumberMethodParameters(method: string, parameters: unknown[]): 
     case 'int':
     case 'finite':
       // Allow 0 parameters or 1 parameter (error message)
-      if (parameters.length > 1 || (parameters.length === 1 && !isErrorMessageParam(parameters[0]))) {
+      if (
+        parameters.length > 1 ||
+        (parameters.length === 1 && !isErrorMessageParam(parameters[0]))
+      ) {
         throw new Error(`${method} accepts optional error message parameter`);
       }
       break;
