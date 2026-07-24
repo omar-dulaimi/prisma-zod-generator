@@ -4,7 +4,10 @@ import type { GeneratorConfig as ZodGeneratorConfig } from './config/parser';
 import { ResultSchemaGenerator } from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
 import { generateDecimalInputSchema, isDecimalJsAvailable } from './helpers/decimal-helpers';
-import { checkModelHasEnabledModelRelation } from './helpers/model-helpers';
+import {
+  checkModelHasEnabledModelRelation,
+  isOperationEnabledForModel,
+} from './helpers/model-helpers';
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
 import type { CustomImport } from './parsers/zod-comments';
 import { SchemaEnumWithValues, TransformerParams } from './types';
@@ -1019,6 +1022,17 @@ export default class Transformer {
     }
   }
 
+  /**
+   * The `import type { Prisma }` line for CRUD operation schema files, or '' when
+   * typed exports are disabled — the typed exports are the only consumers of the
+   * Prisma namespace in those files, so the import would otherwise be unused.
+   */
+  static prismaTypeImportLine(prismaImportPath: string): string {
+    return Transformer.exportTypedSchemas
+      ? `import type { Prisma } from '${prismaImportPath}';\n`
+      : '';
+  }
+
   static setPrismaClientProvider(provider: string) {
     this.prismaClientProvider = provider;
   }
@@ -1846,7 +1860,12 @@ export default class Transformer {
               // Treat them as optional to stay aligned with @prisma/client.
               isRequired = false;
             } else {
-              isRequired = modelField.isRequired && !modelField.hasDefaultValue;
+              // DMMF schema.inputObjectTypes isRequired is the source of truth — it is
+              // exactly what @prisma/client's input types are generated from. The datamodel
+              // recompute may only relax requiredness (e.g. a field with a default becomes
+              // optional); it must never promote a DMMF-optional field to required
+              // (e.g. a to-one relation whose FK scalar has a default).
+              isRequired = field.isRequired && modelField.isRequired && !modelField.hasDefaultValue;
             }
           }
         }
@@ -2534,9 +2553,11 @@ const isValidDecimalInput = (
     let name = this.name;
     let exportName = this.name;
     if (Transformer.provider === 'mongodb') {
-      if (isMongodbRawOp(name)) {
-        name = Transformer.rawOpsMap[name];
-        exportName = name.replace('Args', '');
+      // Only remap when the lookup succeeds so a miss can never crash generation
+      const mapped = Transformer.rawOpsMap[name];
+      if (mapped) {
+        name = mapped;
+        exportName = mapped.replace('Args', '');
       }
     }
 
@@ -2633,6 +2654,21 @@ const isValidDecimalInput = (
     // According to the factory pattern spec, we should NOT add satisfies annotations
     // to pure Zod schemas as they break .extend()/.omit() functionality
     return '';
+  }
+
+  /**
+   * Whether generateExportObjectSchemaStatement will emit a `z.ZodType<Prisma.X>`
+   * annotated export for this object schema. Mirrors its decision exactly so the
+   * `import type { Prisma }` line is only emitted when it is actually referenced
+   * (e.g. `<Model>Args` schemas are always exported untyped).
+   */
+  private willGenerateTypedObjectExport(): boolean {
+    if (!Transformer.exportTypedSchemas) return false;
+    let name = this.name;
+    if (Transformer.provider === 'mongodb' && isMongodbRawOp(name)) {
+      name = Transformer.rawOpsMap[name];
+    }
+    return !name.endsWith('Args') && this.resolvePrismaTypeForObject(this.name) !== null;
   }
 
   /**
@@ -2768,10 +2804,11 @@ ${helperCode}
     }
 
     // Import Prisma - use value import if Decimal mode is active, otherwise type-only
+    // (and only when the file's typed export will actually reference Prisma)
     const cfg = Transformer.getGeneratorConfig();
     const mode = cfg?.decimalMode || 'decimal';
     const needsPrismaValueImport = this.hasDecimal && mode === 'decimal';
-    const needsPrismaTypeImport = Transformer.exportTypedSchemas && !needsPrismaValueImport;
+    const needsPrismaTypeImport = !needsPrismaValueImport && this.willGenerateTypedObjectExport();
 
     if (needsPrismaValueImport || needsPrismaTypeImport) {
       const objectsDir = path.join(Transformer.getSchemasPath(), 'objects');
@@ -3196,11 +3233,12 @@ ${helperCode}
   }
 
   resolveObjectSchemaName() {
-    let name = this.name;
+    const name = this.name;
     let exportName = this.name;
-    if (isMongodbRawOp(name)) {
-      name = Transformer.rawOpsMap[name];
-      exportName = name.replace('Args', '');
+    // Only remap when the lookup succeeds so a miss can never crash generation
+    const mapped = Transformer.rawOpsMap[name];
+    if (mapped) {
+      exportName = mapped.replace('Args', '');
     }
     return exportName;
   }
@@ -3294,7 +3332,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for FindUnique operation
           const strictModeSuffix =
@@ -3324,7 +3362,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for FindUniqueOrThrow operation
           const strictModeSuffix =
@@ -3366,7 +3404,7 @@ ${helperCode}
 
           // Add select import only if NOT inlining, add inline imports if inlining
           const imports = shouldInline
-            ? [...baseImports, ...this.generateInlineSelectImports(model)]
+            ? [...baseImports, ...this.generateInlineSelectImports(model, 'FindFirst')]
             : [...baseImports, selectImport];
 
           // Determine select field reference based on dual export strategy
@@ -3399,7 +3437,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          let schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Add inline select schema definitions (dual export pattern)
           if (shouldInline) {
@@ -3443,7 +3481,7 @@ ${helperCode}
 
           // Add select import only if NOT inlining, add inline imports if inlining
           const imports = shouldInline
-            ? [...baseImports, ...this.generateInlineSelectImports(model)]
+            ? [...baseImports, ...this.generateInlineSelectImports(model, 'FindFirstOrThrow')]
             : [...baseImports, selectImport];
           // Determine select field reference based on dual export strategy
           const cfg2 = Transformer.getGeneratorConfig();
@@ -3475,7 +3513,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          let schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Add inline select schema definitions (dual export pattern)
           if (shouldInline) {
@@ -3520,7 +3558,7 @@ ${helperCode}
 
           // Add select import only if NOT inlining, add inline imports if inlining
           const imports = shouldInline
-            ? [...baseImports, ...this.generateInlineSelectImports(model)]
+            ? [...baseImports, ...this.generateInlineSelectImports(model, 'FindMany')]
             : [...baseImports, selectImport];
 
           // Determine select/include field reference based on dual export strategy and zod target
@@ -3555,7 +3593,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir2 = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir2);
-          let schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          let schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Add inline select schema definitions (dual export pattern)
           if (shouldInline) {
@@ -3595,7 +3633,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDirCount = Transformer.getSchemasPath();
           const prismaImportPathCount = Transformer.resolvePrismaImportPath(crudDirCount);
-          const schemaContent = `import type { Prisma } from '${prismaImportPathCount}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPathCount)}${this.generateImportStatements(imports)}`;
 
           const strictModeSuffix =
             Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(modelName, 'count') ||
@@ -3636,7 +3674,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDir = Transformer.getSchemasPath();
           const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-          const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for CreateOne operation
           const strictModeSuffix =
@@ -3666,7 +3704,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for CreateMany operation
             const strictModeSuffix =
@@ -3702,7 +3740,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for CreateManyAndReturn operation
             const strictModeSuffix =
@@ -3747,7 +3785,7 @@ ${helperCode}
               // Add Prisma type import for explicit type binding
               const crudDir = Transformer.getSchemasPath();
               const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-              const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+              const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
               // Generate dual schema exports for DeleteOne operation
               const strictModeSuffix =
@@ -3779,7 +3817,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for DeleteOne operation
             const strictModeSuffix =
@@ -3809,7 +3847,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for DeleteMany operation
             const strictModeSuffix =
@@ -3848,7 +3886,7 @@ ${helperCode}
               // Add Prisma type import for explicit type binding
               const crudDir = Transformer.getSchemasPath();
               const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-              const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+              const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
               // Generate dual schema exports for UpdateOne operation
               const strictModeSuffix =
@@ -3882,7 +3920,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpdateOne operation
             const strictModeSuffix =
@@ -3915,7 +3953,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpdateMany operation
             const strictModeSuffix =
@@ -3950,7 +3988,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpdateManyAndReturn operation
             const strictModeSuffix =
@@ -3992,7 +4030,7 @@ ${helperCode}
             // Add Prisma type import for explicit type binding
             const crudDir = Transformer.getSchemasPath();
             const prismaImportPath = Transformer.resolvePrismaImportPath(crudDir);
-            const schemaContent = `import type { Prisma } from '${prismaImportPath}';\n${this.generateImportStatements(imports)}`;
+            const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPath)}${this.generateImportStatements(imports)}`;
 
             // Generate dual schema exports for UpsertOne operation
             const strictModeSuffix =
@@ -4063,7 +4101,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDirAggregate = Transformer.getSchemasPath();
           const prismaImportPathAggregate = Transformer.resolvePrismaImportPath(crudDirAggregate);
-          const schemaContent = `import type { Prisma } from '${prismaImportPathAggregate}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPathAggregate)}${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for Aggregate operation
           const strictModeSuffix =
@@ -4121,7 +4159,7 @@ ${helperCode}
           // Add Prisma type import for explicit type binding
           const crudDirGroupBy = Transformer.getSchemasPath();
           const prismaImportPathGroupBy = Transformer.resolvePrismaImportPath(crudDirGroupBy);
-          const schemaContent = `import type { Prisma } from '${prismaImportPathGroupBy}';\n${this.generateImportStatements(imports)}`;
+          const schemaContent = `${Transformer.prismaTypeImportLine(prismaImportPathGroupBy)}${this.generateImportStatements(imports)}`;
 
           // Generate dual schema exports for GroupBy operation
           const baseFields = [
@@ -4780,49 +4818,131 @@ ${helperCode}
    * Follows community generator pattern with aggressive inlining.
    */
   generateInlineSelectSchema(model: PrismaDMMF.Model): string {
-    const { name: modelName, fields } = model;
+    const modelName = model.name;
+    // Wrap the shared definition so this helper cannot diverge from
+    // generateInlineSelectSchemaDefinition (used by the dual export path).
+    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${this.getPrismaTypeName(modelName)}Select> = ${this.generateInlineSelectSchemaDefinition(model)}`;
+  }
 
-    // Generate field definitions for the select schema
-    const selectFields: string[] = [];
+  /**
+   * Resolves the nested-args schema a relation field should union with inside an
+   * inline select schema, mirroring the gating used for objects/<Model>Select.schema.ts
+   * (see select-helpers/include-helpers). Returns null when only booleans are allowed
+   * (minimal mode, select+include both disabled, or the related model disabled).
+   */
+  private resolveInlineSelectRelationTarget(
+    field: PrismaDMMF.Field,
+  ): { kind: 'query'; modelName: string } | { kind: 'args'; typeName: string } | null {
+    if (!field.relationName) return null;
+    const config = Transformer.getGeneratorConfig();
+    if (config?.mode === 'minimal') return null;
+    if (!Transformer.isGenerateSelect && !Transformer.isGenerateInclude) return null;
+    if (!Transformer.isModelEnabled(field.type)) return null;
+    if (field.isList && isOperationEnabledForModel(field.type, 'findMany')) {
+      return { kind: 'query', modelName: field.type };
+    }
+    return { kind: 'args', typeName: `${field.type}Args` };
+  }
 
-    for (const field of fields) {
-      const { name: fieldName, relationName } = field;
+  /**
+   * Resolves the <Model>CountOutputTypeArgs reference for the `_count` field of an
+   * inline select schema, or null when `_count` must remain boolean-only.
+   */
+  private resolveInlineSelectCountArgsReference(model: PrismaDMMF.Model): string | null {
+    const config = Transformer.getGeneratorConfig();
+    if (config?.mode === 'minimal') return null;
+    if (!Transformer.isGenerateSelect) return null;
+    return Transformer.getObjectSchemaName(`${model.name}CountOutputTypeArgs`);
+  }
 
-      if (relationName) {
-        // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
-        selectFields.push(`  ${fieldName}: z.boolean().optional()`);
-      } else {
-        // Scalar field: just boolean
-        selectFields.push(`  ${fieldName}: z.boolean().optional()`);
+  /**
+   * Resolve the actual exported identifier of a model query schema file, matching the
+   * naming used by generateDualSchemaExports (typed export when enabled, Zod export
+   * otherwise, honoring naming.schema.exportNamePattern).
+   */
+  private resolveModelQueryExportName(modelName: string, operationType: string): string {
+    let baseExportName = `${modelName}${operationType}`;
+    try {
+      const schemaNamingConfig = Transformer.getGeneratorConfig()?.naming?.schema;
+      if (schemaNamingConfig?.exportNamePattern) {
+        const customExportName = generateExportName(
+          schemaNamingConfig.exportNamePattern,
+          modelName,
+          operationType,
+        );
+        if (customExportName) {
+          baseExportName = customExportName;
+        }
       }
+    } catch {
+      // Fallback to default naming
     }
-
-    // Add _count field if model has array relations (for aggregation support)
-    const hasArrayRelations = fields.some((field) => field.relationName && field.isList);
-    if (hasArrayRelations) {
-      selectFields.push(`  _count: z.boolean().optional()`);
+    if (Transformer.exportTypedSchemas) {
+      return baseExportName.endsWith('Schema')
+        ? baseExportName
+        : `${baseExportName}${Transformer.typedSchemaSuffix}`;
     }
+    return `${baseExportName}${Transformer.zodSchemaSuffix}`;
+  }
 
-    // Apply strict mode based on configuration for object schemas
-    const strictModeSuffix =
-      Transformer.getStrictModeResolver()?.getObjectStrictModeSuffix(modelName) || '';
-
-    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${this.getPrismaTypeName(modelName)}Select> = z.object({
-${selectFields.join(',\n')}
-})${strictModeSuffix}`;
+  /**
+   * Generate an import statement for a root-level model query schema file
+   * (e.g. findManyPost.schema.ts), honoring naming.schema patterns. `from`
+   * selects the relative prefix: './' for root-level CRUD files, '../' for
+   * files inside objects/.
+   */
+  private generateModelQueryImport(
+    modelName: string,
+    queryName: string,
+    from: 'objects' | 'root' = 'objects',
+  ): string {
+    const importExtension = this.getImportFileExtension();
+    const prefix = from === 'objects' ? '..' : '.';
+    const operation = queryName.charAt(0).toUpperCase() + queryName.slice(1);
+    const aliasName = this.resolveModelQuerySchemaName(modelName, queryName);
+    try {
+      const schemaCfg = resolveSchemaNaming(Transformer.getGeneratorConfig());
+      const fileName = generateFileName(schemaCfg.filePattern, modelName, operation);
+      const baseName = fileName.replace(/\.ts$/, '');
+      const exportName = this.resolveModelQueryExportName(modelName, operation);
+      if (exportName === aliasName) {
+        return `import { ${exportName} } from '${prefix}/${baseName}${importExtension}'`;
+      }
+      return `import { ${exportName} as ${aliasName} } from '${prefix}/${baseName}${importExtension}'`;
+    } catch {
+      // Fallback to legacy hardcoded naming if naming resolver fails
+      return `import { ${aliasName} } from '${prefix}/${operation}${modelName}.schema${importExtension}'`;
+    }
   }
 
   /**
    * Generates the additional imports needed for inlined select schemas.
-   * Returns import statements for Args schemas referenced in relation fields.
+   * Returns import statements for the model query / Args schemas referenced by
+   * relation-field unions (mirroring objects/<Model>Select.schema.ts imports).
    */
-  generateInlineSelectImports(_model: PrismaDMMF.Model): string[] {
+  generateInlineSelectImports(
+    model: PrismaDMMF.Model,
+    operation?: 'FindFirst' | 'FindFirstOrThrow' | 'FindMany',
+  ): string[] {
     const imports: string[] = [];
 
-    // Since select schemas are simplified to only use z.boolean().optional() for relation fields,
-    // we don't need to import Args schemas. Only import _count schema if needed.
+    for (const field of model.fields) {
+      const relationTarget = this.resolveInlineSelectRelationTarget(field);
+      if (!relationTarget) continue;
+      if (relationTarget.kind === 'query') {
+        // A self list relation inside the findMany file references an export declared
+        // later in the same file; z.lazy defers the dereference, so no import is needed.
+        if (operation === 'FindMany' && relationTarget.modelName === model.name) continue;
+        imports.push(this.generateModelQueryImport(relationTarget.modelName, 'findMany', 'root'));
+      } else {
+        imports.push(this.generateObjectInputImport(relationTarget.typeName, 'root'));
+      }
+    }
 
-    // No extra imports required; _count remains a boolean in inlined select schemas.
+    const hasArrayRelations = model.fields.some((field) => field.relationName && field.isList);
+    if (hasArrayRelations && this.resolveInlineSelectCountArgsReference(model)) {
+      imports.push(this.generateObjectInputImport(`${model.name}CountOutputTypeArgs`, 'root'));
+    }
 
     // Remove duplicates
     return [...new Set(imports)];
@@ -4915,13 +5035,21 @@ ${selectFields.join(',\n')}
     const selectFields: string[] = [];
 
     for (const field of fields) {
-      const { name: fieldName, relationName } = field;
+      const { name: fieldName } = field;
 
-      if (relationName) {
-        // Simplified relation selection: allow boolean only (drop ArgsObjectSchema dependency)
-        selectFields.push(`    ${fieldName}: z.boolean().optional()`);
+      const relationTarget = this.resolveInlineSelectRelationTarget(field);
+      if (relationTarget) {
+        // Relation selection mirrors objects/<Model>Select.schema.ts: Prisma's
+        // <Model>Select accepts boolean OR nested args (select/include/where/...).
+        const reference =
+          relationTarget.kind === 'query'
+            ? this.resolveModelQuerySchemaName(relationTarget.modelName, 'findMany')
+            : Transformer.getObjectSchemaName(relationTarget.typeName);
+        selectFields.push(
+          `    ${fieldName}: z.union([z.boolean(), z.lazy(() => ${reference})]).optional()`,
+        );
       } else {
-        // Scalar field: just boolean
+        // Scalar field (or relation without a generated nested-args schema): boolean only
         selectFields.push(`    ${fieldName}: z.boolean().optional()`);
       }
     }
@@ -4929,7 +5057,12 @@ ${selectFields.join(',\n')}
     // Add _count field if model has array relations (for aggregation support)
     const hasArrayRelations = fields.some((field) => field.relationName && field.isList);
     if (hasArrayRelations) {
-      selectFields.push(`    _count: z.boolean().optional()`);
+      const countArgsReference = this.resolveInlineSelectCountArgsReference(model);
+      selectFields.push(
+        countArgsReference
+          ? `    _count: z.union([z.boolean(), z.lazy(() => ${countArgsReference})]).optional()`
+          : `    _count: z.boolean().optional()`,
+      );
     }
 
     // Apply strict mode based on configuration for object schemas

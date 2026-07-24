@@ -24,35 +24,19 @@ function resolveMongoDbRawOperations(modelOperations: DMMF.ModelMapping[]) {
     Transformer.isModelEnabled(operation.model),
   );
 
-  const rawOpsNames = [
-    ...new Set(
-      enabledModelOperations.reduce<string[]>((result, current) => {
-        const keys = Object.keys(current);
-        keys?.forEach((key) => {
-          if (key.includes('Raw')) {
-            result.push(key);
-          }
-        });
-        return result;
-      }, []),
-    ),
-  ];
-
-  const modelNames = enabledModelOperations.map((item) => item.model);
-
-  rawOpsNames.forEach((opName) => {
-    modelNames.forEach((modelName) => {
-      // Check if the specific raw operation is enabled for this model
-      const operation = opName === 'findRaw' ? 'findRaw' : 'aggregateRaw';
-      if (!isMongoDbRawOperationEnabledForModel(modelName, operation)) {
-        return; // Skip this operation if not enabled
-      }
-
-      const isFind = opName === 'findRaw';
-      const opWithModel = `${opName.replace('Raw', '')}${modelName}Raw`;
-      rawOpsMap[opWithModel] = isFind ? `${modelName}FindRawArgs` : `${modelName}AggregateRawArgs`;
-    });
-  });
+  // Register the exact operation names Prisma exposes in its model mappings
+  // (DMMF.ModelMapping.findRaw / aggregateRaw). Reconstructing names from
+  // substring heuristics false-positives on models whose own name contains
+  // 'Raw' (e.g. model MaterialRaw: findFirstMaterialRaw is NOT a raw op).
+  for (const mapping of enabledModelOperations) {
+    const modelName = mapping.model;
+    if (mapping.findRaw && isMongoDbRawOperationEnabledForModel(modelName, 'findRaw')) {
+      rawOpsMap[mapping.findRaw] = `${modelName}FindRawArgs`;
+    }
+    if (mapping.aggregateRaw && isMongoDbRawOperationEnabledForModel(modelName, 'aggregateRaw')) {
+      rawOpsMap[mapping.aggregateRaw] = `${modelName}AggregateRawArgs`;
+    }
+  }
 
   return rawOpsMap;
 }
@@ -78,52 +62,23 @@ function resolveMongoDbRawQueryInputObjectTypes(outputObjectTypes: DMMF.OutputTy
 function getMongoDbRawQueries(outputObjectTypes: DMMF.OutputType[]) {
   const queryOutputTypes = outputObjectTypes.filter((item) => item.name === 'Query');
 
+  // Match Query fields against the exact raw-op names registered in rawOpsMap
+  // (assigned before this runs). A substring check on 'Raw' would sweep in every
+  // regular operation of models whose name contains 'Raw'.
   const mongodbRawQueries =
-    queryOutputTypes?.[0].fields.filter((field) => field.name.includes('Raw')) ?? [];
+    queryOutputTypes?.[0].fields.filter((field) => isMongodbRawOp(field.name)) ?? [];
 
   return mongodbRawQueries;
 }
 
 function getFilteredMongoDbRawQueries(outputObjectTypes: DMMF.OutputType[]) {
-  const mongoDbRawQueries = getMongoDbRawQueries(outputObjectTypes);
-
-  return mongoDbRawQueries.filter((field) => {
-    // Extract model name from raw query field name
-    // Examples: "findUserRaw" -> "User", "aggregatePostRaw" -> "Post"
-    const modelName = extractModelNameFromRawQuery(field.name);
-    if (!modelName) return true; // Keep queries we can't parse
-
-    // Check if model is enabled and raw operations are allowed
-    if (!Transformer.isModelEnabled(modelName)) {
-      return false;
-    }
-
-    // Check if specific raw operation is enabled for this model
-    const operation = field.name.includes('find') ? 'findRaw' : 'aggregateRaw';
-    return isMongoDbRawOperationEnabledForModel(modelName, operation);
-  });
+  // Model and per-operation enablement is already applied while building
+  // Transformer.rawOpsMap, which getMongoDbRawQueries matches against.
+  return getMongoDbRawQueries(outputObjectTypes);
 }
 
 export const isMongodbRawOp = (name: string) =>
-  /find([^]*?)Raw/.test(name) || /aggregate([^]*?)Raw/.test(name);
-
-/**
- * Extract model name from MongoDB raw query field name
- * Examples: "findUserRaw" -> "User", "aggregatePostRaw" -> "Post"
- */
-function extractModelNameFromRawQuery(fieldName: string): string | null {
-  const findMatch = fieldName.match(/find([A-Z][a-zA-Z]*)Raw/);
-  if (findMatch) {
-    return findMatch[1];
-  }
-
-  const aggregateMatch = fieldName.match(/aggregate([A-Z][a-zA-Z]*)Raw/);
-  if (aggregateMatch) {
-    return aggregateMatch[1];
-  }
-
-  return null;
-}
+  Object.prototype.hasOwnProperty.call(Transformer.rawOpsMap, name);
 
 /**
  * Check if a MongoDB raw operation is enabled for a model

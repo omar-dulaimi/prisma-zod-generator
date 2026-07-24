@@ -1141,6 +1141,85 @@ model TaskLog {
               'logs: z.lazy(() => TaskLogUncheckedCreateNestedManyWithoutTaskInputObjectSchema).optional()',
             ],
           });
+
+          // Negative control: requiredness must not be lost where Prisma keeps it.
+          // TaskLog.task has a required FK without default, so it stays required.
+          const taskLogCreateInputPath = join(objectsDir, 'TaskLogCreateInput.schema.ts');
+          const taskLogCreateInputContent = readFileSync(taskLogCreateInputPath, 'utf-8');
+          expect(taskLogCreateInputContent).toContain(
+            'task: z.lazy(() => TaskCreateNestedOneWithoutLogsInputObjectSchema)',
+          );
+          expect(taskLogCreateInputContent).not.toContain(
+            'TaskCreateNestedOneWithoutLogsInputObjectSchema).optional()',
+          );
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'marks to-one relations with defaulted FK optional in CreateInput',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv(
+          'create-defaulted-fk-relation-optional',
+        );
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "${configPath}"
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  posts Post[]
+}
+
+model Post {
+  id       Int    @id @default(autoincrement())
+  title    String
+  authorId Int    @default(1)
+  author   User   @relation(fields: [authorId], references: [id])
+}
+`;
+
+          writeFileSync(testEnv.schemaPath, schema);
+          await testEnv.runGeneration();
+
+          const objectsDir = join(testEnv.outputDir, 'schemas', 'objects');
+
+          // The FK scalar has a default, so Prisma's own PostCreateInput marks the
+          // relation field optional — the generated Zod schema must match.
+          SchemaValidationUtils.expectSchemaContent(join(objectsDir, 'PostCreateInput.schema.ts'), {
+            hasValidations: [
+              'author: z.lazy(() => UserCreateNestedOneWithoutPostsInputObjectSchema).optional()',
+              'title: z.string()',
+            ],
+          });
+
+          SchemaValidationUtils.expectSchemaContent(
+            join(objectsDir, 'PostUncheckedCreateInput.schema.ts'),
+            {
+              hasValidations: ['authorId: z.number().int().optional()'],
+            },
+          );
         } finally {
           await testEnv.cleanup();
         }
