@@ -696,6 +696,122 @@ model ComplexTypes {
     );
 
     it(
+      'should emit BigInt and DateTime literal defaults as valid literals (issue #373)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('pure-models-373-literal-defaults');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            pureModels: true,
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model Counter {
+  id     Int      @id @default(autoincrement())
+  count  BigInt   @default(0)
+  big    BigInt   @default(9007199254740993)
+  bigOpt BigInt?  @default(1)
+  when   DateTime @default("2020-01-01T00:00:00.000Z")
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const modelPath = join(testEnv.outputDir, 'schemas', 'models', 'Counter.schema.ts');
+          const content = readFileSync(modelPath, 'utf-8');
+
+          expect(content).toMatch(/count:\s*z\.bigint\(\)\.default\(BigInt\("0"\)\)/);
+          expect(content).toMatch(/big:\s*z\.bigint\(\)\.default\(BigInt\("9007199254740993"\)\)/);
+          expect(content).toMatch(
+            /bigOpt:\s*z\.bigint\(\)\.default\(BigInt\("1"\)\)[\s\S]*?\.(nullish|optional|nullable)\(\)/,
+          );
+          expect(content).toMatch(
+            /when:\s*z\.date\(\)\.default\(new Date\("2020-01-01T00:00:00(\.000Z|\.000\+00:00|\+00:00)"\)\)/,
+          );
+          // The regression: string literals that fail their own schema
+          expect(content).not.toMatch(/\.default\("0"\)/);
+          expect(content).not.toMatch(/\.default\("2020-01-01/);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should keep BigInt defaults as strings in jsonSchemaCompatible string mode (issue #373)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('pure-models-373-jsoncompat');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            pureModels: true,
+            jsonSchemaCompatible: true,
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model Counter {
+  id    Int    @id @default(autoincrement())
+  count BigInt @default(0)
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const modelPath = join(testEnv.outputDir, 'schemas', 'models', 'Counter.schema.ts');
+          const content = readFileSync(modelPath, 'utf-8');
+
+          // String base keeps the quoted default; no BigInt() constructor here
+          expect(content).toMatch(/count:\s*z\.string\(\)\.regex\([^)]*\)[\s\S]*?\.default\("0"\)/);
+          expect(content).not.toMatch(/BigInt\(/);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
       'should handle enum types properly',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('pure-models-enums');

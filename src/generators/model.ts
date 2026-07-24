@@ -1352,7 +1352,11 @@ export class PrismaTypeMapper {
       const hasExistingDefault = /\.default\(/.test(result.zodSchema);
       if (hasExistingDefault) {
         // Strip .default(...) from the modifier if present
-        const cleanedModifier = optionalityResult.zodModifier.replace(/\.default\([^)]*\)/g, '');
+        // One-level-nested parens: strips .default(BigInt("0")) / .default(new Date("...")) whole
+        const cleanedModifier = optionalityResult.zodModifier.replace(
+          /\.default\((?:[^()]|\([^()]*\))*\)/g,
+          '',
+        );
         result.zodSchema = `${result.zodSchema}${cleanedModifier}`;
       } else {
         result.zodSchema = `${result.zodSchema}${optionalityResult.zodModifier}`;
@@ -1501,6 +1505,55 @@ export class PrismaTypeMapper {
             literalValue = `${asString}.0`;
           } else {
             literalValue = asString;
+          }
+        }
+
+        // BigInt/DateTime literal defaults arrive from DMMF as strings; they
+        // must be emitted as constructors matching the base schema type, not
+        // as quoted strings (issue #373). jsonSchemaCompatible modes keep
+        // string/number bases, so the raw literal stays correct there.
+        let jsonCompatCfg: {
+          jsonSchemaCompatible?: boolean;
+          jsonSchemaOptions?: { bigIntFormat?: string };
+          dateTimeStrategy?: string;
+        } | null = null;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular import
+          jsonCompatCfg = require('../transformer').default.getGeneratorConfig?.() ?? null;
+        } catch {
+          /* ignore */
+        }
+
+        if (
+          field.type === 'BigInt' &&
+          (typeof defaultValue === 'string' || typeof defaultValue === 'number') &&
+          /^-?\d+$/.test(String(defaultValue))
+        ) {
+          if (jsonCompatCfg?.jsonSchemaCompatible) {
+            const format = jsonCompatCfg.jsonSchemaOptions?.bigIntFormat || 'string';
+            literalValue = format === 'number' ? String(defaultValue) : literalValue;
+          } else {
+            // String-argument constructor: exact above 2^53 and target-agnostic
+            // (bigint literals like 0n require an ES2020+ tsconfig target).
+            literalValue = `BigInt("${String(defaultValue)}")`;
+          }
+        }
+
+        if (field.type === 'DateTime' && typeof defaultValue === 'string') {
+          const strategy = jsonCompatCfg?.jsonSchemaCompatible
+            ? 'isoString'
+            : jsonCompatCfg?.dateTimeStrategy || 'date';
+          if (strategy === 'date' || strategy === 'coerce') {
+            literalValue = `new Date(${JSON.stringify(defaultValue)})`;
+          }
+        }
+
+        if (field.type === 'Json' && typeof defaultValue === 'string') {
+          try {
+            JSON.parse(defaultValue);
+            literalValue = defaultValue;
+          } catch {
+            /* not JSON text — keep the stringified form */
           }
         }
 
