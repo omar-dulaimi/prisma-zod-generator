@@ -54,6 +54,7 @@ function transformContentForSingleFile(filePath: string, source: string): string
   const lines = source.split(/\r?\n/);
   const kept: string[] = [];
   let inJsonSkip = false;
+  let inInlineJsonSchemaSkip = false;
   const relImportRe = /^\s*import\s+[^'";]+from\s+['"](\.\.?\/)[^'"]+['"];?\s*$/;
   // Detect Zod import variant (zod or zod/v4) importing z
   const zodImportRe =
@@ -92,6 +93,28 @@ function transformContentForSingleFile(filePath: string, source: string): string
       )
     ) {
       needsJsonHelpers = true;
+      continue;
+    }
+    // Strip inline literalSchema definition (minimal mode)
+    if (
+      /^\s*const\s+literalSchema\s*=\s*z\.union\(\[z\.string\(\),\s*z\.number\(\),\s*z\.boolean\(\)\]\);?\s*$/.test(
+        line,
+      )
+    ) {
+      needsJsonHelpers = true;
+      continue;
+    }
+    // Strip inline jsonSchema definition (minimal mode) - starts with "const jsonSchema: any = z.lazy"
+    if (/^\s*const\s+jsonSchema\s*:\s*any\s*=\s*z\.lazy\(\(\)\s*=>\s*$/.test(line)) {
+      needsJsonHelpers = true;
+      inInlineJsonSchemaSkip = true;
+      continue;
+    }
+    // Skip lines within inline jsonSchema definition until we hit the closing ");"
+    if (inInlineJsonSchemaSkip) {
+      if (/^\s*\);?\s*$/.test(line)) {
+        inInlineJsonSchemaSkip = false;
+      }
       continue;
     }
     if (zodImportRe.test(line)) {
@@ -313,17 +336,12 @@ export async function flushSingleFile(): Promise<void> {
   }
   if (needsJsonHelpers) {
     header.push(`// JSON helper schemas (hoisted)`);
-    header.push(`const jsonSchema = (() => {`);
-    header.push(`  const JsonValueSchema: any = (() => {`);
-    header.push(`    const recur: any = z.lazy(() => z.union([`);
-    header.push(`      z.string(), z.number(), z.boolean(), z.literal(null),`);
-    header.push(`      z.record(z.string(), z.lazy(() => recur.optional())),`);
-    header.push(`      z.array(z.lazy(() => recur)),`);
-    header.push(`    ]));`);
-    header.push(`    return recur;`);
-    header.push(`  })();`);
-    header.push(`  return JsonValueSchema;`);
-    header.push(`})();`);
+    header.push(`const literalSchema = z.union([z.string(), z.number(), z.boolean()]);`);
+    header.push(`const jsonSchema: any = z.lazy(() =>`);
+    header.push(
+      `  z.union([literalSchema, z.array(jsonSchema.nullable()), z.record(z.string(), jsonSchema.nullable())])`,
+    );
+    header.push(`);`);
   }
   if (sawPrismaAlias) {
     header.push(`type __PrismaAlias = Prisma.JsonValue | Prisma.InputJsonValue;`);
