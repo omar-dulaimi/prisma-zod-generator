@@ -1845,7 +1845,12 @@ export default class Transformer {
               // Treat them as optional to stay aligned with @prisma/client.
               isRequired = false;
             } else {
-              isRequired = modelField.isRequired && !modelField.hasDefaultValue;
+              // DMMF schema.inputObjectTypes isRequired is the source of truth — it is
+              // exactly what @prisma/client's input types are generated from. The datamodel
+              // recompute may only relax requiredness (e.g. a field with a default becomes
+              // optional); it must never promote a DMMF-optional field to required
+              // (e.g. a to-one relation whose FK scalar has a default).
+              isRequired = field.isRequired && modelField.isRequired && !modelField.hasDefaultValue;
             }
           }
         }
