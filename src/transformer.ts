@@ -1177,8 +1177,9 @@ export default class Transformer {
    * Prisma uses the original model name as-is (e.g., doc_parser_agent -> Prisma.doc_parser_agentSelect)
    */
   private getPrismaTypeName(modelName: string, operationType?: string): string {
-    // Special case: Aggregate operations use capitalized first letter for snake_case models
-    if (operationType === 'Aggregate' && modelName.includes('_')) {
+    /* Special case: Aggregate operations capitalize the first letter of model names.
+    This applies to all naming conventions since kebab-case is not allowed in Prisma schemas.*/
+    if (operationType === 'Aggregate') {
       return modelName.charAt(0).toUpperCase() + modelName.slice(1);
     }
 
