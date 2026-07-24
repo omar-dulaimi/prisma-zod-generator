@@ -96,7 +96,7 @@
           }
         ],
         "successComment": "🎉 This issue has been resolved in version ${nextRelease.version} 🎉\n\nThe release is available on:\n- [npm package (@latest dist-tag)](https://www.npmjs.com/package/prisma-zod-generator/v/${nextRelease.version})\n- [GitHub release](${releases.url})\n\nYour **${issue.title}** is now live. Thanks for contributing! 🙌",
-        "failComment": "❌ The release from branch `${branch.name}` had an error during the release step.\n\nPlease check the [build logs](${env.BUILD_URL}) for more details.",
+        "failComment": "❌ The release from branch `${branch.name}` had an error during the release step.\n\nPlease check the [build logs](https://github.com/omar-dulaimi/prisma-zod-generator/actions/workflows/semantic-release.yml) for more details.",
         "failTitle": "🚨 The automated release failed",
         "labels": ["released"],
         "assignees": ["omar-dulaimi"]
