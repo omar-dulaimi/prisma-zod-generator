@@ -9,8 +9,8 @@ import { z } from 'zod';
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };
 export type InputJsonValue =
-  | JsonPrimitive
-  | InputJsonValue[]
+  | Exclude<JsonPrimitive, null>
+  | Array<InputJsonValue | null>
   | { [k: string]: InputJsonValue | null };
 export type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;
 
@@ -38,7 +38,8 @@ export const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
 
 export type JsonValueType = z.infer<typeof JsonValueSchema>;
 
-// Input JSON value schema (accepts toJSON objects + nullable branches).
+// Input JSON value schema (no top-level null; null allowed only inside object values / array elements,
+// mirroring Prisma's InputJsonValue — use DbNull/JsonNull sentinels for top-level JSON null).
 export const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>
   z.union([
     z.string(),
