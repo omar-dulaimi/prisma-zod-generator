@@ -406,4 +406,81 @@ model test_model {
     },
     GENERATION_TIMEOUT,
   );
+
+  // Issue #366 / PR #391: Prisma always capitalizes the first letter of
+  // <Model>AggregateArgs, independent of the model's own casing.
+  const aggregateCasingScenarios = [
+    { modelName: 'user', expectedAggregateArgs: 'UserAggregateArgs' },
+    { modelName: 'userSession', expectedAggregateArgs: 'UserSessionAggregateArgs' },
+    { modelName: 'doc_parser_agent', expectedAggregateArgs: 'Doc_parser_agentAggregateArgs' },
+  ];
+
+  for (const scenario of aggregateCasingScenarios) {
+    it(
+      `capitalizes AggregateArgs Prisma type name for ${scenario.modelName} models`,
+      async () => {
+        const env = await TestEnvironment.createTestEnv(
+          `aggregate-args-casing-${scenario.modelName.toLowerCase()}`,
+        );
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            useMultipleFiles: true,
+          };
+          const configPath = join(env.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "./generated"
+  config   = "./config.json"
+}
+
+model ${scenario.modelName} {
+  id   String @id @default(uuid())
+  created_at DateTime @default(now())
+}
+          `.trim();
+
+          writeFileSync(env.schemaPath, schema);
+          await env.runGeneration();
+
+          const aggregatePath = join(
+            env.testDir,
+            'generated/schemas',
+            `aggregate${scenario.modelName}.schema.ts`,
+          );
+
+          expect(existsSync(aggregatePath)).toBe(true);
+
+          const aggregateContent = readFileSync(aggregatePath, 'utf-8');
+          expect(aggregateContent).toMatch(
+            new RegExp(`z\\.ZodType<Prisma\\.${scenario.expectedAggregateArgs}>`),
+          );
+
+          if (scenario.modelName === 'userSession') {
+            expect(aggregateContent).not.toMatch(/Prisma\.userSessionAggregateArgs/);
+          }
+
+          if (scenario.modelName === 'doc_parser_agent') {
+            expect(aggregateContent).not.toMatch(/Prisma\.DocParserAgentAggregateArgs/);
+          }
+        } finally {
+          await env.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  }
 });
