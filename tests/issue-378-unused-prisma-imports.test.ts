@@ -141,7 +141,11 @@ model Post {
         'utf-8',
       );
       expect(decimalFilterContent).toMatch(/import\s+\{\s*Prisma\s*\}/);
-      expect(decimalFilterContent).toContain('z.instanceof(Prisma.Decimal)');
+      // Decimal runtime check references Prisma as a value — either the legacy
+      // instanceof form or the client-bundle-safe isDecimal form (issue #367).
+      expect(decimalFilterContent).toMatch(
+        /z\.instanceof\(Prisma\.Decimal\)|Prisma\.Decimal\.isDecimal\(/,
+      );
     });
   });
 
