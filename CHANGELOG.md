@@ -28,6 +28,21 @@
 
 * **security:** add security policy with private reporting channel ([a930412](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a930412a405bbda0c040ac93d87a0964227a7799))
 
+## [2.1.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.4...v2.1.5) (2026-07-24)
+
+### 🐛 Bug Fixes
+
+* **generator:** prefer options.dmmf over re-parsing with @prisma/internals ([#384](https://github.com/omar-dulaimi/prisma-zod-generator/issues/384)) ([9d305a0](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9d305a0d7b6f63096ad86d6285d1f046a3c61fbb))
+* **pure-models:** wrap Decimal defaults in new Prisma.Decimal() ([#372](https://github.com/omar-dulaimi/prisma-zod-generator/issues/372)) ([1e03392](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1e033925edf48d6082776474c322de9f0d0e5e7f))
+* **safety:** stop smart cleanup from deleting Prisma client generator output ([d07738e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d07738ee84b9dd6da74aca363fd87d7c6f7ccb9c)), closes [#365](https://github.com/omar-dulaimi/prisma-zod-generator/issues/365)
+* **single-file:** hoist shared literalSchema/jsonSchema helpers to avoid duplicate definitions ([#358](https://github.com/omar-dulaimi/prisma-zod-generator/issues/358)) ([d646a43](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d646a43a2edb5573ef1651b49e164b2d12c71df5))
+* **single-file:** remove duplicate literalSchema/jsonSchema definitions ([086f9a8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/086f9a85b3c1e3ddd18db400d7de48fe736db0ff))
+* use options.dmmf to avoid version mismatch with @prisma/internals ([f6d77e7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/f6d77e7d6674ce61f7d8c977fd87b4e682765e8d))
+
+### 📚 Documentation
+
+* **security:** add security policy with private reporting channel ([a930412](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a930412a405bbda0c040ac93d87a0964227a7799))
+
 ## [2.1.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.3...v2.1.4) (2026-02-14)
 
 ### 🐛 Bug Fixes
