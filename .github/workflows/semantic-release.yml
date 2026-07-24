@@ -9,6 +9,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    env:
+      # Disable husky entirely in CI; npm publish runs the packaged
+      # package.json's prepare script inside package/ where no .git exists.
+      HUSKY: 0
     permissions:
       contents: write
       issues: write
