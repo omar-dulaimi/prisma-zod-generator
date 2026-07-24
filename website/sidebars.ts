@@ -56,6 +56,7 @@ const sidebars: SidebarsConfig = {
         'recipes/flexible-api-validation',
         'recipes/circular-dependency-exclusion',
         'recipes/optional-field-control',
+        'recipes/nodenext-imports',
         {
           type: 'category',
           label: 'Safety System',
