@@ -660,13 +660,13 @@ model ComplexTypes {
           if (existsSync(complexTypesPath)) {
             const content = readFileSync(complexTypesPath, 'utf-8');
 
-            // Decimal fields - default to z.instanceof(Prisma.Decimal) in decimal mode
-            expect(content).toMatch(/price.*z\.instanceof\(Prisma\.Decimal/);
+            // Decimal fields - default to the Prisma.Decimal.isDecimal custom check in decimal mode
+            expect(content).toMatch(/price.*z\.custom<InstanceType<typeof Prisma\.Decimal>>/);
             expect(content).toMatch(
-              /weight:\s*z\.instanceof\(Prisma\.Decimal[\s\S]*?\)[\s\S]*?\.optional\(\)/,
+              /weight:\s*z\.custom<InstanceType<typeof Prisma\.Decimal>>[\s\S]*?\)[\s\S]*?\.optional\(\)/,
             );
             expect(content).toMatch(
-              /height:\s*z\.instanceof\(Prisma\.Decimal[\s\S]*?\)[\s\S]*?\.default\(new Prisma.Decimal\(1\)\)[\s\S]*?\.optional\(\)/,
+              /height:\s*z\.custom<InstanceType<typeof Prisma\.Decimal>>[\s\S]*?\)[\s\S]*?\.default\(new Prisma.Decimal\(1\)\)[\s\S]*?\.optional\(\)/,
             );
 
             // JSON fields - should be z.unknown() or z.record()

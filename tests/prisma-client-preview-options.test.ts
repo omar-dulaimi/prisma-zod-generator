@@ -129,6 +129,7 @@ model Invoice {
     const helperPath = join(zodOut, 'helpers', 'decimal-helpers.ts');
     if (!existsSync(helperPath)) return;
     const helperContent = readFileSync(helperPath, 'utf8');
-    expect(helperContent).toMatch(/from '\.\.\/\.\.\/client\/client\.js'/);
+    // Browser-safe entrypoint keeps generated schemas bundleable for the client side
+    expect(helperContent).toMatch(/from '\.\.\/\.\.\/client\/browser\.js'/);
   });
 });

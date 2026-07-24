@@ -393,12 +393,18 @@ export async function generate(options: GeneratorOptions) {
             if (!rel || rel === '') {
               setSingleFilePrismaImportPath('@prisma/client');
             } else {
-              // For the new prisma client generator, the public entry is the 'client' module
+              // For the new prisma client generator, the public entry is a module file
+              // inside the output directory. Target the browser-safe entry so bundled
+              // schemas do not pull in the server runtime's node: builtins (falls back
+              // to 'client' only for older layouts without a browser entry).
               const provider =
                 Transformer.getPrismaClientProvider?.() ||
                 prismaClientGeneratorConfig?.provider?.value;
-              if (provider === 'prisma-client' && !/\/client\/?$/.test(rel)) {
-                rel = `${rel.replace(/\/$/, '')}/client`;
+              if (provider === 'prisma-client') {
+                const entryBasename = Transformer.resolvePrismaClientEntryBasename();
+                if (!new RegExp(`/${entryBasename}/?$`).test(rel)) {
+                  rel = `${rel.replace(/\/$/, '')}/${entryBasename}`;
+                }
               }
               const importPath = rel.startsWith('.') || rel.startsWith('/') ? rel : `./${rel}`;
               const importExtension = Transformer.getImportFileExtension();
@@ -2332,7 +2338,9 @@ function getZodTypeForField(field: DMMF.Field, variantName?: string): string {
       if (cfg?.decimalMode === 'decimal') {
         // For decimal mode, use Prisma.Decimal in input types as well
         // Note: Full union with helpers is handled in object schema generation
-        baseType = 'instanceof(Prisma.Decimal)';
+        // Decimal.isDecimal instead of instanceof: safe across browser/server runtime copies
+        baseType =
+          'custom<InstanceType<typeof Prisma.Decimal>>((v) => Prisma.Decimal.isDecimal(v))';
       } else if (cfg?.decimalMode === 'string') {
         baseType = 'string()';
       } else {

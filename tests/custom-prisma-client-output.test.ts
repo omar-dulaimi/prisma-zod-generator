@@ -43,6 +43,40 @@ describe('Custom Prisma Client output path integration', () => {
   );
 
   it(
+    'targets the browser-safe entrypoint for the new prisma-client provider',
+    async () => {
+      const testEnv = await TestEnvironment.createTestEnv('custom-client-output-new-provider');
+      try {
+        const clientRel = './prismaClient';
+        const base = PrismaSchemaGenerator.createBasicSchema({
+          outputPath: './generated',
+        });
+        const schema = base.replace(
+          'generator client {\n  provider = "prisma-client-js"\n}',
+          `generator client {\n  provider = "prisma-client"\n  output   = "${clientRel}"\n}`,
+        );
+        expect(schema).toContain('provider = "prisma-client"');
+        await fs.writeFile(testEnv.schemaPath, schema, 'utf8');
+
+        await testEnv.runGeneration();
+
+        const objectsDir = join(testEnv.testDir, 'generated', 'schemas', 'objects');
+        const files = await fs.readdir(objectsDir);
+        const target = files.find((f) => /User.*\.schema\.ts$/.test(f)) || files[0];
+        const content = await fs.readFile(join(objectsDir, target), 'utf8');
+
+        expect(content).not.toContain("from '@prisma/client'");
+        // New generator: import must target the browser-safe entry, never the server entry
+        expect(content).toMatch(/from '\.\.\/\.\.\/\.\.\/prismaClient\/browser'/);
+        expect(content).not.toMatch(/prismaClient\/client'/);
+      } finally {
+        await testEnv.cleanup();
+      }
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
     'emits relative Prisma import in CRUD operation schema files',
     async () => {
       const testEnv = await TestEnvironment.createTestEnv('custom-client-output-crud');

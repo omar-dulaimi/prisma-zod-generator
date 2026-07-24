@@ -55,9 +55,13 @@ model Product {
 
           const content = readFileSync(productModelPath, 'utf-8');
 
-          // Should use instanceof(Prisma.Decimal) for pure models
-          expect(content).toMatch(/price:\s*z\.instanceof\(Prisma\.Decimal/);
-          expect(content).toMatch(/weight:\s*z\.instanceof\(Prisma\.Decimal/);
+          // Should use the cross-runtime-safe Prisma.Decimal.isDecimal check for pure models
+          expect(content).toMatch(
+            /price:\s*z\.custom<InstanceType<typeof Prisma\.Decimal>>\(\(v\) => Prisma\.Decimal\.isDecimal\(v\)/,
+          );
+          expect(content).toMatch(
+            /weight:\s*z\.custom<InstanceType<typeof Prisma\.Decimal>>\(\(v\) => Prisma\.Decimal\.isDecimal\(v\)/,
+          );
 
           // Should have custom error messages
           expect(content).toMatch(/Field 'price' must be a Decimal/);
@@ -123,11 +127,13 @@ model Transaction {
           const content = readFileSync(transactionModelPath, 'utf-8');
 
           // Required field should not have nullable/optional
-          expect(content).toMatch(/amount:\s*z\.instanceof\(Prisma\.Decimal/);
+          expect(content).toMatch(
+            /amount:\s*z\.custom<InstanceType<typeof Prisma\.Decimal>>\(\(v\) => Prisma\.Decimal\.isDecimal\(v\)/,
+          );
 
           // Optional field should have .optional(), .nullable() or .nullish()
           expect(content).toMatch(
-            /fee:\s*z\.instanceof\(Prisma\.Decimal[^)]*\)[^,]*\.(nullable|nullish|optional)\(\)/,
+            /fee:\s*z\.custom<InstanceType<typeof Prisma\.Decimal>>\([\s\S]*?\)[\s\S]*?\.(nullable|nullish|optional)\(\)/,
           );
         } finally {
           await testEnv.cleanup();
@@ -249,8 +255,8 @@ model Product {
           // Should use z.number() for number mode
           expect(content).toMatch(/price:\s*z\.number\(\)/);
 
-          // Should NOT use instanceof
-          expect(content).not.toMatch(/instanceof\(Prisma\.Decimal\)/);
+          // Should NOT reference Prisma.Decimal at all in number mode
+          expect(content).not.toMatch(/Prisma\.Decimal/);
         } finally {
           await testEnv.cleanup();
         }
@@ -427,8 +433,10 @@ model Account {
 
           const content = readFileSync(accountModelPath, 'utf-8');
 
-          // Should default to decimal mode (instanceof Prisma.Decimal)
-          expect(content).toMatch(/balance:\s*z\.instanceof\(Prisma\.Decimal/);
+          // Should default to decimal mode (Prisma.Decimal.isDecimal custom check)
+          expect(content).toMatch(
+            /balance:\s*z\.custom<InstanceType<typeof Prisma\.Decimal>>\(\(v\) => Prisma\.Decimal\.isDecimal\(v\)/,
+          );
           expect(content).toMatch(
             /import\s+{\s*Prisma\s*}\s+from\s+['"](?:@prisma\/client|(?:\.\.\/)+prisma-client)['"]/,
           );
@@ -489,7 +497,9 @@ model PriceHistory {
           const content = readFileSync(priceHistoryPath, 'utf-8');
 
           // Should use array of Prisma.Decimal
-          expect(content).toMatch(/prices:\s*z\.array\(z\.instanceof\(Prisma\.Decimal/);
+          expect(content).toMatch(
+            /prices:\s*z\.array\(z\.custom<InstanceType<typeof Prisma\.Decimal>>/,
+          );
         } finally {
           await testEnv.cleanup();
         }
@@ -559,8 +569,9 @@ model Product {
           );
           expect(content).not.toMatch(/import\s+type\s+{\s*Prisma\s+}\s+from/);
 
-          // Should have instanceof(Prisma.Decimal)
-          expect(content).toMatch(/z\.instanceof\(Prisma\.Decimal/);
+          // Should have the cross-runtime-safe Prisma.Decimal.isDecimal custom check
+          expect(content).toMatch(/z\.custom<InstanceType<typeof Prisma\.Decimal>>/);
+          expect(content).toMatch(/Prisma\.Decimal\.isDecimal\(v\)/);
         } finally {
           await testEnv.cleanup();
         }
