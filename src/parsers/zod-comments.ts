@@ -592,6 +592,15 @@ export function parseZodAnnotations(
       }
     }
 
+    // Drop bare base-type tokens (e.g. the leading `.string()` in
+    // `@zod.string().min(1)`): they are no-ops in the emitted chain, and
+    // passing them through validation rejects the whole comment (issue #374).
+    // 'date' is intentionally absent: @zod.date() is a registered format method.
+    const BASE_TYPE_TOKENS = new Set(['string', 'number', 'boolean', 'bigint']);
+    result.annotations = result.annotations.filter(
+      (a) => !(BASE_TYPE_TOKENS.has(a.method) && (!a.parameters || a.parameters.length === 0)),
+    );
+
     // Validate and filter the parsed annotations
     if (result.annotations.length > 0) {
       const validAnnotations: ParsedZodAnnotation[] = [];
@@ -1310,9 +1319,9 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   if (
     optionalErrorMessage.includes(method) &&
     parameters.length === 1 &&
-    typeof parameters[0] !== 'string'
+    !isErrorMessageParam(parameters[0])
   ) {
-    throw new Error(`Method ${method} error message parameter must be a string`);
+    throw new Error(`Method ${method} error message parameter must be a string or params object`);
   }
 
   // Type-specific validations based on field type
@@ -1321,6 +1330,21 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   } else if (context.fieldType === 'Int' || context.fieldType === 'Float') {
     validateNumberMethodParameters(method, parameters);
   }
+}
+
+/**
+ * Accept both error-message shapes Zod supports: the string shorthand and the
+ * params object form (`{ message: "..." }` / `{ error: "..." }`). Object-form
+ * arguments arrive either JSON-parsed or as `{ __js_object_literal__ }` markers.
+ */
+function isErrorMessageParam(param: unknown): boolean {
+  return (
+    typeof param === 'string' ||
+    (typeof param === 'object' &&
+      param !== null &&
+      !Array.isArray(param) &&
+      !(param instanceof RegExp))
+  );
 }
 
 /**
@@ -1340,10 +1364,10 @@ function validateStringMethodParameters(method: string, parameters: unknown[]): 
         parameters.length > 2 ||
         typeof parameters[0] !== 'number' ||
         parameters[0] < 0 ||
-        (parameters.length === 2 && typeof parameters[1] !== 'string')
+        (parameters.length === 2 && !isErrorMessageParam(parameters[1]))
       ) {
         throw new Error(
-          `${method} requires a non-negative number parameter and optional error message`,
+          `${method} requires a non-negative number parameter and optional error message (string or params object)`,
         );
       }
       break;
@@ -1391,7 +1415,7 @@ function validateNumberMethodParameters(method: string, parameters: unknown[]): 
         parameters.length < 1 ||
         parameters.length > 2 ||
         typeof parameters[0] !== 'number' ||
-        (parameters.length === 2 && typeof parameters[1] !== 'string')
+        (parameters.length === 2 && !isErrorMessageParam(parameters[1]))
       ) {
         throw new Error(`${method} requires a number parameter and optional error message`);
       }
@@ -1402,7 +1426,7 @@ function validateNumberMethodParameters(method: string, parameters: unknown[]): 
     case 'int':
     case 'finite':
       // Allow 0 parameters or 1 parameter (error message)
-      if (parameters.length > 1 || (parameters.length === 1 && typeof parameters[0] !== 'string')) {
+      if (parameters.length > 1 || (parameters.length === 1 && !isErrorMessageParam(parameters[0]))) {
         throw new Error(`${method} accepts optional error message parameter`);
       }
       break;
@@ -1414,7 +1438,7 @@ function validateNumberMethodParameters(method: string, parameters: unknown[]): 
         parameters.length < 1 ||
         parameters.length > 2 ||
         typeof parameters[0] !== 'number' ||
-        (parameters.length === 2 && typeof parameters[1] !== 'string')
+        (parameters.length === 2 && !isErrorMessageParam(parameters[1]))
       ) {
         throw new Error(`${method} requires a number parameter and optional error message`);
       }

@@ -6,6 +6,7 @@
  */
 
 import { DMMF } from '@prisma/generator-helper';
+import { logger } from '../utils/logger';
 import {
   extractFieldComments,
   parseZodAnnotations,
@@ -245,6 +246,12 @@ function processFieldWithZodIntegration(
     if (!parseResult.isValid) {
       enhancedField.zodErrors.push(...parseResult.parseErrors);
       enhancedField.fallbackToDefault = true;
+      // Surface the rejection — silently dropping @zod annotations means
+      // users ship schemas without the validation they wrote (issue #374).
+      logger.warn(
+        `[prisma-zod-generator] Skipping @zod annotations for field "${field.name}":`,
+        parseResult.parseErrors.join('; '),
+      );
       return enhancedField;
     }
 

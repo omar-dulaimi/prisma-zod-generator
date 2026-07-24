@@ -3297,4 +3297,118 @@ model AdvancedModifiers {
       GENERATION_TIMEOUT,
     );
   });
+
+  describe('Issue #374: object-form error messages in chained validators', () => {
+    it(
+      'should apply validators carrying { message } params objects instead of dropping them',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-374-object-messages');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model Customer {
+  id      Int     @id @default(autoincrement())
+  /// @zod.string().min(1, { message: "Name is required" })
+  name    String
+  /// @zod.string.email({ message: "Invalid email address" })
+  email   String?
+  /// @zod.min(18, { message: "Adults only" })
+  age     Int
+  /// @zod.max(50, { message: "too long" })
+  title   String
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const content = readFileSync(
+            join(testEnv.outputDir, 'schemas', 'objects', 'CustomerCreateInput.schema.ts'),
+            'utf-8',
+          );
+
+          expect(content).toMatch(
+            /name:\s*z\.string\(\)\.min\(1,\s*\{\s*message:\s*"Name is required"\s*\}\)/,
+          );
+          expect(content).toMatch(/age:.*\.min\(18,\s*\{\s*message:\s*"Adults only"\s*\}\)/);
+          expect(content).toMatch(/title:.*\.max\(50,\s*\{\s*message:\s*"too long"\s*\}\)/);
+          expect(content).toMatch(/z\.email\(\{\s*message:/);
+          // The regression: the field must NOT silently fall back to a bare type
+          expect(content).not.toMatch(/name:\s*z\.string\(\)\s*,/);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'should treat a leading base-type token as a no-op instead of rejecting the chain',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('zod-comments-374-base-token');
+
+        try {
+          const config = ConfigGenerator.createBasicConfig();
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model Handle {
+  id   Int    @id @default(autoincrement())
+  /// @zod.string().min(2).max(10)
+  slug String
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const content = readFileSync(
+            join(testEnv.outputDir, 'schemas', 'objects', 'HandleCreateInput.schema.ts'),
+            'utf-8',
+          );
+
+          expect(content).toMatch(/slug:\s*z\.string\(\)\.min\(2\)\.max\(10\)/);
+          expect(content).not.toMatch(/\.string\(\)\.string\(\)/);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });
