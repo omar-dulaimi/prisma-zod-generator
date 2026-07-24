@@ -1859,6 +1859,19 @@ export default class Transformer {
       resString += '.nullable()';
     }
 
+    // Zod v4 target: object schema references composed eagerly (e.g. inside
+    // z.union([...])) dereference other module-scope consts before they are
+    // initialized (TDZ/undefined crashes on forward or circular references).
+    // Wrap the whole composed expression in a getter so resolution is deferred
+    // to first parse, mirroring v3's z.lazy semantics.
+    const unionTarget = (Transformer.getGeneratorConfig()?.zodImportTarget ?? 'auto') as string;
+    const hasObjectSchemaRef = field.inputTypes.some(
+      (it) => it.type === this.name || (it.namespace === 'prisma' && it.location !== 'enumTypes'),
+    );
+    if (unionTarget === 'v4' && hasObjectSchemaRef) {
+      return [[`  get ${field.name}(){ return ${resString.trim()}; }`, field, true]];
+    }
+
     return [[`  ${fieldName} ${resString} `, field, true]];
   }
 
@@ -2659,7 +2672,15 @@ const isValidDecimalInput = (
     const modelName = this.name ? Transformer.extractModelNameFromContext(this.name) : undefined;
     const strictModeSuffix =
       Transformer.getStrictModeResolver()?.getObjectStrictModeSuffix(modelName || undefined) || '';
-    let base = this.wrapWithZodObject(fields) + strictModeSuffix;
+    // Zod v4's .strict() clones the schema def and spreads its shape, which invokes
+    // every field getter at module-init time — defeating getter-based recursion and
+    // crashing on forward/circular references. Use z.strictObject instead (identical
+    // strictness semantics; the shape stays lazy until first parse).
+    const isV4 = ((Transformer.getGeneratorConfig()?.zodImportTarget ?? 'auto') as string) === 'v4';
+    let base =
+      isV4 && strictModeSuffix === '.strict()'
+        ? this.wrapWithZodObject(fields, true)
+        : this.wrapWithZodObject(fields) + strictModeSuffix;
 
     // WhereUniqueInput optional refinement (opt-in): require at least one selector
     if (this.name && /WhereUniqueInput$/.test(this.name)) {
@@ -3180,18 +3201,33 @@ ${helperCode}
       : `${baseName}${Transformer.zodSchemaSuffix}`;
   }
 
-  wrapWithZodObject(zodStringFields: string | string[]) {
+  wrapWithZodObject(zodStringFields: string | string[], useStrictObject = false) {
     let wrapped = '';
     const fieldsText = Array.isArray(zodStringFields)
       ? zodStringFields.filter(Boolean).join(',\n  ')
       : zodStringFields;
 
-    wrapped += 'z.object({';
+    wrapped += useStrictObject ? 'z.strictObject({' : 'z.object({';
     wrapped += '\n';
     wrapped += '  ' + fieldsText;
     wrapped += '\n';
     wrapped += '})';
     return wrapped;
+  }
+
+  /**
+   * Compose an operation schema object definition with strict-mode handling.
+   * For Zod v4 targets, `.strict()` clones the schema def and spreads its shape,
+   * invoking `get select/include` getters at module-init time and crashing on
+   * circular imports. z.strictObject keeps identical strictness semantics while
+   * leaving the shape lazy until first parse.
+   */
+  private composeObjectDefinition(body: string, strictSuffix: string): string {
+    const target = (Transformer.getGeneratorConfig()?.zodImportTarget ?? 'auto') as string;
+    if (target === 'v4' && strictSuffix === '.strict()') {
+      return `z.strictObject({ ${body} })`;
+    }
+    return `z.object({ ${body} })${strictSuffix}`;
   }
 
   resolveObjectSchemaName() {
@@ -3301,7 +3337,10 @@ ${helperCode}
               modelName,
               'findUnique',
             ) || '';
-          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
+          const schemaObjectDefinition = this.composeObjectDefinition(
+            `${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}`,
+            strictModeSuffix,
+          );
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'FindUnique',
@@ -3331,7 +3370,10 @@ ${helperCode}
               modelName,
               'findUniqueOrThrow',
             ) || '';
-          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
+          const schemaObjectDefinition = this.composeObjectDefinition(
+            `${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}`,
+            strictModeSuffix,
+          );
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'FindUniqueOrThrow',
@@ -3411,7 +3453,10 @@ ${helperCode}
               modelName,
               'findFirst',
             ) || '';
-          const schemaObjectDefinition = `z.object({ ${schemaFields} })${strictModeSuffix}`;
+          const schemaObjectDefinition = this.composeObjectDefinition(
+            schemaFields,
+            strictModeSuffix,
+          );
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'FindFirst',
@@ -3486,7 +3531,10 @@ ${helperCode}
               modelName,
               'findFirstOrThrow',
             ) || '';
-          const schemaObjectDefinition = `z.object({ ${schemaFields} })${strictModeSuffix}`;
+          const schemaObjectDefinition = this.composeObjectDefinition(
+            schemaFields,
+            strictModeSuffix,
+          );
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'FindFirstOrThrow',
@@ -3567,7 +3615,10 @@ ${helperCode}
               modelName,
               'findMany',
             ) || '';
-          const schemaObjectDefinition = `z.object({ ${schemaFields} })${strictModeSuffix}`;
+          const schemaObjectDefinition = this.composeObjectDefinition(
+            schemaFields,
+            strictModeSuffix,
+          );
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'FindMany',
@@ -3599,7 +3650,10 @@ ${helperCode}
           const strictModeSuffix =
             Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(modelName, 'count') ||
             '';
-          const countSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional() })${strictModeSuffix}`;
+          const countSchemaObject = this.composeObjectDefinition(
+            `${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional()`,
+            strictModeSuffix,
+          );
 
           const dualExports = this.generateDualSchemaExports(
             modelName,
@@ -3643,7 +3697,10 @@ ${helperCode}
               modelName,
               'createOne',
             ) || '';
-          const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion} })${strictModeSuffix}`;
+          const schemaObjectDefinition = this.composeObjectDefinition(
+            `${selectZodSchemaLine} ${includeZodSchemaLine} data: ${dataUnion}`,
+            strictModeSuffix,
+          );
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'CreateOne',
@@ -3673,11 +3730,14 @@ ${helperCode}
                 modelName,
                 'createMany',
               ) || '';
-            const schemaObjectDefinition = `z.object({ data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
-              Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
-                ? 'skipDuplicates: z.boolean().optional()'
-                : ''
-            } })${strictModeSuffix}`;
+            const schemaObjectDefinition = this.composeObjectDefinition(
+              `data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
+                Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
+                  ? 'skipDuplicates: z.boolean().optional()'
+                  : ''
+              }`,
+              strictModeSuffix,
+            );
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'CreateMany',
@@ -3709,11 +3769,14 @@ ${helperCode}
                 modelName,
                 'createManyAndReturn',
               ) || '';
-            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
-              Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
-                ? 'skipDuplicates: z.boolean().optional()'
-                : ''
-            } })${strictModeSuffix}`;
+            const schemaObjectDefinition = this.composeObjectDefinition(
+              `${selectZodSchemaLine} data: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}, z.array(${Transformer.getObjectSchemaName(`${modelName}CreateManyInput`)}) ]), ${
+                Transformer.provider === 'postgresql' || Transformer.provider === 'cockroachdb'
+                  ? 'skipDuplicates: z.boolean().optional()'
+                  : ''
+              }`,
+              strictModeSuffix,
+            );
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'CreateManyAndReturn',
@@ -3754,7 +3817,10 @@ ${helperCode}
                   modelName,
                   'deleteOne',
                 ) || '';
-              const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
+              const schemaObjectDefinition = this.composeObjectDefinition(
+                `${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}`,
+                strictModeSuffix,
+              );
               const dualExports = this.generateDualSchemaExports(
                 modelName,
                 'DeleteOne',
@@ -3786,7 +3852,10 @@ ${helperCode}
                 modelName,
                 'deleteOne',
               ) || '';
-            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
+            const schemaObjectDefinition = this.composeObjectDefinition(
+              `${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}`,
+              strictModeSuffix,
+            );
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'DeleteOne',
@@ -3816,7 +3885,10 @@ ${helperCode}
                 modelName,
                 'deleteMany',
               ) || '';
-            const schemaObjectDefinition = `z.object({ where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() })${strictModeSuffix}`;
+            const schemaObjectDefinition = this.composeObjectDefinition(
+              `where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()`,
+              strictModeSuffix,
+            );
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'DeleteMany',
@@ -3855,7 +3927,10 @@ ${helperCode}
                   modelName,
                   'updateOne',
                 ) || '';
-              const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
+              const schemaObjectDefinition = this.composeObjectDefinition(
+                `${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}`,
+                strictModeSuffix,
+              );
               const dualExports = this.generateDualSchemaExports(
                 modelName,
                 'UpdateOne',
@@ -3889,7 +3964,10 @@ ${helperCode}
                 modelName,
                 'updateOne',
               ) || '';
-            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)} })${strictModeSuffix}`;
+            const schemaObjectDefinition = this.composeObjectDefinition(
+              `${selectZodSchemaLine} ${includeZodSchemaLine} data: z.union([${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)}]), where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}`,
+              strictModeSuffix,
+            );
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpdateOne',
@@ -3922,7 +4000,10 @@ ${helperCode}
                 modelName,
                 'updateMany',
               ) || '';
-            const schemaObjectDefinition = `z.object({ data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() })${strictModeSuffix}`;
+            const schemaObjectDefinition = this.composeObjectDefinition(
+              `data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()`,
+              strictModeSuffix,
+            );
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpdateMany',
@@ -3957,7 +4038,10 @@ ${helperCode}
                 modelName,
                 'updateManyAndReturn',
               ) || '';
-            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional() })${strictModeSuffix}`;
+            const schemaObjectDefinition = this.composeObjectDefinition(
+              `${selectZodSchemaLine} data: ${Transformer.getObjectSchemaName(`${modelName}UpdateManyMutationInput`)}, where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()`,
+              strictModeSuffix,
+            );
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpdateManyAndReturn',
@@ -3999,7 +4083,10 @@ ${helperCode}
                 modelName,
                 'upsertOne',
               ) || '';
-            const schemaObjectDefinition = `z.object({ ${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ]) })${strictModeSuffix}`;
+            const schemaObjectDefinition = this.composeObjectDefinition(
+              `${selectZodSchemaLine} ${includeZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}, create: z.union([ ${Transformer.getObjectSchemaName(`${modelName}CreateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedCreateInput`)} ]), update: z.union([ ${Transformer.getObjectSchemaName(`${modelName}UpdateInput`)}, ${Transformer.getObjectSchemaName(`${modelName}UncheckedUpdateInput`)} ])`,
+              strictModeSuffix,
+            );
             const dualExports = this.generateDualSchemaExports(
               modelName,
               'UpsertOne',
@@ -4070,9 +4157,12 @@ ${helperCode}
               modelName,
               'aggregate',
             ) || '';
-          const aggregateSchemaObject = `z.object({ ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
-            ', ',
-          )} })${strictModeSuffix}`;
+          const aggregateSchemaObject = this.composeObjectDefinition(
+            `${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
+              ', ',
+            )}`,
+            strictModeSuffix,
+          );
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'Aggregate',
@@ -4148,7 +4238,10 @@ ${helperCode}
               modelName,
               'groupBy',
             ) || '';
-          const groupBySchemaObject = `z.object({ ${baseFields.join(', ')} })${strictModeSuffix}`;
+          const groupBySchemaObject = this.composeObjectDefinition(
+            baseFields.join(', '),
+            strictModeSuffix,
+          );
           const dualExports = this.generateDualSchemaExports(
             modelName,
             'GroupBy',
