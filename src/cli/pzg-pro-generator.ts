@@ -90,10 +90,12 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
       throw new Error('prisma-client-js or prisma-client generator is required');
     }
 
-    const dmmf = options.dmmf ?? await getDMMF({
-      datamodel: options.datamodel,
-      previewFeatures: prismaClientGeneratorConfig.previewFeatures,
-    });
+    const dmmf =
+      options.dmmf ??
+      (await getDMMF({
+        datamodel: options.datamodel,
+        previewFeatures: prismaClientGeneratorConfig.previewFeatures,
+      }));
 
     console.log(
       `📋 Analyzed schema: ${dmmf.datamodel.models.length} models, ${

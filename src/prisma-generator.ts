@@ -86,10 +86,12 @@ export async function generate(options: GeneratorOptions) {
 
     maybeWarnOnUnsupportedPrismaVersion(options);
 
-    const prismaClientDmmf = options.dmmf ?? await getDMMF({
-      datamodel: options.datamodel,
-      previewFeatures: prismaClientGeneratorConfig?.previewFeatures,
-    });
+    const prismaClientDmmf =
+      options.dmmf ??
+      (await getDMMF({
+        datamodel: options.datamodel,
+        previewFeatures: prismaClientGeneratorConfig?.previewFeatures,
+      }));
 
     // Load and process configuration with proper precedence hierarchy:
     // 1. Generator options (highest priority - from Prisma schema)
