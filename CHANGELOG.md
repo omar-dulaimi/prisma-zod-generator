@@ -1,3 +1,9 @@
+## [2.3.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.0...v2.3.1) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **pure-models:** honor [@zod](https://github.com/zod).import().custom.use() for typed JSON fields ([a4e1a10](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a4e1a10c860baf58790e5182d643257cfefe04e5)), closes [#386](https://github.com/omar-dulaimi/prisma-zod-generator/issues/386)
+
 ## [2.3.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.2.0...v2.3.0) (2026-07-25)
 
 ### 🚀 Features
