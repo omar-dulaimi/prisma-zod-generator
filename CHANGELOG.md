@@ -1,3 +1,13 @@
+## [2.5.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.4.2...v2.5.0) (2026-07-25)
+
+### 🚀 Features
+
+* **form-ux:** all five uiLibrary values now emit compiling components ([833fd7c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/833fd7c5a59db8374c1a448c7b71a2765382605d))
+
+### 📚 Documentation
+
+* **llms:** regenerate for the Form UX library implementations ([9f38a3f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9f38a3f32266e234a34a8f3f3f4ed44b974c8a3c))
+
 ## [2.4.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.4.1...v2.4.2) (2026-07-25)
 
 ### 🐛 Bug Fixes
