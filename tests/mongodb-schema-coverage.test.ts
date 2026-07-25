@@ -128,7 +128,9 @@ const testImportedSchemas = async () => {
 // Test additional schemas by sampling from each category
 const testSampleSchemas = async () => {
   const results: Array<{ name: string; success: boolean; schema?: z.ZodTypeAny }> = [];
-  const basePath = 'multi-provider/schemas/mongodb/generated/schemas';
+  // Resolve from this file, not the CWD: a CWD-relative path silently found
+  // nothing (the sampling swallows errors), so this block never actually ran.
+  const basePath = join(__dirname, 'multi-provider/schemas/mongodb/generated/schemas');
 
   try {
     // Sample operation schemas (findMany, createOne, etc.)
