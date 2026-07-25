@@ -545,15 +545,28 @@ export async function requireFeature(
 /**
  * Get license status for CLI commands
  */
+export type LicenseFailureReason =
+  | 'missing_key'
+  | 'invalid_key'
+  | 'expired'
+  | 'code_tampering_detected'
+  | 'validation_failed';
+
 export async function getLicenseStatus(): Promise<{
   valid: boolean;
   plan?: PlanSlug;
   cached?: boolean;
+  /** Why validation failed, so callers can print the remedy that actually applies. */
+  reason?: LicenseFailureReason;
+  /** Underlying error message, safe to show the user. */
+  detail?: string;
 }> {
   try {
     const license = await validateLicense(false);
     if (!license) {
-      return { valid: false };
+      // validateLicense(false) returns null instead of throwing: either no key
+      // was set at all, or the key it found did not validate.
+      return { valid: false, reason: getLicenseKey() ? 'invalid_key' : 'missing_key' };
     }
 
     return {
@@ -561,7 +574,19 @@ export async function getLicenseStatus(): Promise<{
       plan: license.plan,
       cached: license.cached,
     };
-  } catch {
-    return { valid: false };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return { valid: false, reason: classifyLicenseFailure(error, detail), detail };
   }
+}
+
+function classifyLicenseFailure(error: unknown, detail: string): LicenseFailureReason {
+  const reason = error instanceof LicenseError ? error.context?.reason : undefined;
+  if (reason === 'code_tampering_detected') {
+    return 'code_tampering_detected';
+  }
+  if (/expired/i.test(detail)) {
+    return 'expired';
+  }
+  return 'validation_failed';
 }

@@ -9,7 +9,7 @@ import type { GeneratorOptions } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { describePlan, getLicenseStatus } from '../license';
+import { describePlan, getLicenseStatus, type LicenseFailureReason } from '../license';
 
 export const PRO_HELP_MESSAGE = [
   'PZG Pro modules are not available in this repository.',
@@ -20,6 +20,48 @@ export const PRO_HELP_MESSAGE = [
   '  3. Re-run your command',
   'Docs & pricing: https://omar-dulaimi.github.io/prisma-zod-generator/pricing',
 ].join('\n');
+
+/**
+ * Remedy text for the case where the Pro modules *are* installed but the
+ * license did not validate. Distinct from PRO_HELP_MESSAGE, which tells the
+ * reader to initialize a git submodule — advice that cannot help an npm
+ * consumer whose only problem is an unset or expired PZG_LICENSE_KEY.
+ */
+export function buildProLicenseMessage(status: {
+  reason?: LicenseFailureReason;
+  detail?: string;
+}): string {
+  const lines = [status.detail || 'PZG Pro license required.', ''];
+
+  if (status.reason === 'code_tampering_detected') {
+    lines.push('Docs & support: https://github.com/omar-dulaimi/prisma-zod-generator/issues');
+    return lines.join('\n');
+  }
+
+  lines.push(
+    'The Pro modules are installed, so this is a licensing problem rather than a broken install.',
+    status.reason === 'expired'
+      ? '  1. Renew your subscription, then set the new key:'
+      : '  1. Set your license key:',
+    '       export PZG_LICENSE_KEY=<your key>',
+    '  2. Verify it:  npx prisma-zod-generator license-check',
+    '  3. Re-run `prisma generate`',
+    '',
+    'Docs & pricing: https://omar-dulaimi.github.io/prisma-zod-generator/pricing',
+  );
+
+  return lines.join('\n');
+}
+
+/** True when the private Pro modules resolve, regardless of license state. */
+function proModulesAvailable(): boolean {
+  try {
+    require.resolve(['..', 'pro'].join('/'));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 type FeatureGenerator = (...args: any[]) => Promise<void>;
 
@@ -69,6 +111,11 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
 
     const licenseStatus = await getLicenseStatus();
     if (!licenseStatus.valid) {
+      // Distinguish "Pro isn't installed" from "Pro is installed but unlicensed":
+      // they need completely different remedies.
+      if (proModulesAvailable()) {
+        throw new Error(buildProLicenseMessage(licenseStatus));
+      }
       throwProMissing();
     }
 
