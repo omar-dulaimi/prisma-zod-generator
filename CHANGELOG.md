@@ -1,3 +1,14 @@
+## [2.3.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.4...v2.3.5) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **config:** add emit, safety, optionalFieldBehavior and decimalMode to the JSON schema ([9456395](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9456395758afab0980f836afb80178e42d2f9f2a))
+
+### 📚 Documentation
+
+* audit and correct the documentation site; add five missing pages ([6b18a19](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6b18a197d00af723d1b4b1e2c8cea66581352f30))
+* **security:** drop maintenance-mode caveat from the security policy ([98e669f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/98e669f288f42aad5a3e591f9ee9ceb5f8b94c0a))
+
 ## [2.3.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.3...v2.3.4) (2026-07-25)
 
 ### 🐛 Bug Fixes
