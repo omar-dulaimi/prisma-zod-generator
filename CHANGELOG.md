@@ -1,3 +1,13 @@
+## [2.6.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.5.0...v2.6.0) (2026-07-25)
+
+### 🚀 Features
+
+* **sdk,api-docs:** honour the options both packs accepted and ignored ([a678f2e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/a678f2e26756c181d570b970a90feef03688ecba))
+
+### 📚 Documentation
+
+* **llms:** regenerate for the SDK and API Docs option work ([87a6e22](https://github.com/omar-dulaimi/prisma-zod-generator/commit/87a6e22b2ec38cc4d9699b9870e3d784c1b09dc6))
+
 ## [2.5.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.4.2...v2.5.0) (2026-07-25)
 
 ### 🚀 Features
