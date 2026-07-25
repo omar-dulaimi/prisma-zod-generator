@@ -1057,7 +1057,13 @@ export default class Transformer {
     const cached = this.prismaClientEntryBasenameCache.get(outputDir);
     if (cached) return cached;
 
-    let entry: 'browser' | 'client' = 'browser';
+    // Default to the server entry: `client.*` is always present in a
+    // prisma-client output, whereas `browser.*` is not guaranteed. The
+    // generators can also run before the client output exists (the directory is
+    // then unreadable), and guessing `browser` there emits an import that does
+    // not resolve — strictly worse than the server entry, which merely is not
+    // browser-optimised. Prefer `browser` only when we can see it on disk.
+    let entry: 'browser' | 'client' = 'client';
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require keeps fs out of the module top level
       const fs = require('fs') as typeof import('fs');
@@ -1065,9 +1071,10 @@ export default class Transformer {
       const entryFileRegex = /^(browser|client)\.(ts|mts|cts|js|mjs|cjs)$/;
       const hasBrowserEntry = entries.some((name) => entryFileRegex.exec(name)?.[1] === 'browser');
       const hasClientEntry = entries.some((name) => entryFileRegex.exec(name)?.[1] === 'client');
-      if (!hasBrowserEntry && hasClientEntry) entry = 'client';
+      if (hasBrowserEntry) entry = 'browser';
+      else if (hasClientEntry) entry = 'client';
     } catch {
-      // Output directory unreadable or not generated yet: assume modern layout.
+      // Output directory unreadable or not generated yet: keep the server entry.
     }
     this.prismaClientEntryBasenameCache.set(outputDir, entry);
     return entry;

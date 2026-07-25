@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from 'fs';
+import { tmpdir } from 'os';
 import { join, relative } from 'path';
 import Transformer from '../src/transformer';
 import { prismaGenerateSync } from './helpers/prisma-generate';
@@ -690,7 +691,7 @@ ${baseSchema}`;
     });
 
     describe('resolvePrismaImportPath', () => {
-      it('should append the browser-safe entrypoint for custom outputs of the new generator', () => {
+      it('should append the browser entrypoint when the client output has one on disk', () => {
         const originalProvider = Transformer.getPrismaClientProvider();
         const originalConfig = Transformer.getPrismaClientConfig();
         const originalOutputPath = (Transformer as unknown as { prismaClientOutputPath: string })
@@ -703,8 +704,12 @@ ${baseSchema}`;
             importFileExtension: 'ts',
           });
 
-          // Directory does not exist on disk: assume the modern layout with a browser entry
-          const customOutput = join(process.cwd(), 'tmp', 'generated', 'client');
+          // The browser entry is only chosen when it is actually observable: the
+          // generators can run before the client output is written, and guessing
+          // browser then emits an import that does not resolve.
+          const customOutput = mkdtempSync(join(tmpdir(), 'pzg-client-browser-'));
+          writeFileSync(join(customOutput, 'browser.ts'), 'export {};\n');
+          writeFileSync(join(customOutput, 'client.ts'), 'export {};\n');
           Transformer.setPrismaClientOutputPath(customOutput);
 
           const targetDir = join(process.cwd(), 'tmp', 'zod', 'schemas');
