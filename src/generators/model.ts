@@ -507,10 +507,15 @@ export class PrismaTypeMapper {
     try {
       // Check for custom schema replacements first (before any type-specific processing)
       if (field.documentation) {
-        // Fast-path: support custom full schema replacement via @zod.custom.use(<expr>)
-        const customUseMatch = field.documentation.match(
-          /@zod\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m,
-        );
+        // Fast-path: support custom full schema replacement via @zod.custom.use(<expr>).
+        // Anchor on `.custom.use(` (not `@zod.custom.use(`) so the import-prefixed
+        // form `@zod.import([...]).custom.use(...)` is honored too — this is how a
+        // Json field references an imported schema, e.g. z.array(WorkflowNodeSchema)
+        // (issue #386). The @zod.import(...) portion is emitted separately via
+        // extractFieldCustomImports.
+        const customUseMatch = /@zod\b/.test(field.documentation)
+          ? field.documentation.match(/\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m)
+          : null;
         if (customUseMatch) {
           const baseExpression = customUseMatch[1].trim();
           const chainedMethods = customUseMatch[2].trim();
