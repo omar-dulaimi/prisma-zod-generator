@@ -11415,7 +11415,15 @@ pnpm exec prisma generate
 ls prisma/generated/pro/server-actions/
 ```
 
-> Need only a subset of models? Use Prisma's generator filtering (`model` / `exclude`) so the Pro generator only processes the models you care about.
+> Need only a subset of models? Point `configPath` at your generator config and mark the models you
+> want left out — the same `models` block the core generator uses, so one file governs both:
+>
+> ```json
+> { "models": { "AuditLog": { "enabled": false }, "SessionToken": { "enabled": false } } }
+> ```
+>
+> Every pack respects this, so an excluded model gets no endpoints, no form, no SDK method and no
+> policy wrapper. Requires **2.4.0+**; earlier versions generated for every model in the schema.
 
 ### 2. Review Generated Code
 
