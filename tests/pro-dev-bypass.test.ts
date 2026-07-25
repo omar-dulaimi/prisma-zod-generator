@@ -54,6 +54,19 @@ describe('Pro development bypass', () => {
     }
   });
 
+  it('applies consistently to every gate that consults it', async () => {
+    // detectTampering() and requireFeature() honoured the bypass while
+    // getLicenseStatus() did not, so the documented `prisma generate` path could
+    // not be exercised by a contributor or a test — only by someone holding a real
+    // licence key. That asymmetry is the most plausible reason so much Pro output
+    // had never been compiled end to end.
+    process.env.PZG_DEV_MODE = 'true';
+    const { getLicenseStatus, isProDevBypassEnabled } = await import('../src/license');
+
+    const status = await getLicenseStatus();
+    expect(status.valid).toBe(isProDevBypassEnabled());
+  });
+
   it('requires the private submodule in addition to the opt-in', () => {
     process.env.PZG_DEV_MODE = 'true';
 

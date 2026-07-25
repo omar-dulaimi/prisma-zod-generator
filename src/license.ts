@@ -593,6 +593,16 @@ export async function getLicenseStatus(): Promise<{
   /** Underlying error message, safe to show the user. */
   detail?: string;
 }> {
+  // Honour the same local-development bypass as detectTampering() and
+  // requireFeature(). Without this the documented `prisma generate` path could not
+  // be exercised at all without a real licence key — not by a contributor, not by a
+  // test — which is the most plausible reason so much Pro output had never been
+  // compiled end to end. The bypass still requires a checkout with the private
+  // submodule present, so an npm install cannot reach it.
+  if (isProDevBypassEnabled()) {
+    return { valid: true, plan: 'enterprise', cached: false };
+  }
+
   try {
     const license = await validateLicense(false);
     if (!license) {
