@@ -1,3 +1,14 @@
+## [2.3.8](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.7...v2.3.8) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **llms:** stop the aggregate cap from silently dropping docs pages ([adf9413](https://github.com/omar-dulaimi/prisma-zod-generator/commit/adf941349d2e2ce0ca175734528e80cf86463c74))
+* **output:** write non-TypeScript artefacts instead of silently dropping them ([8c5d0c8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8c5d0c8eb31ccef0b903a9b04b7291c0af8abd9f))
+
+### 📚 Documentation
+
+* **pro:** correct the Pro reference against what the packs actually emit ([e261238](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e261238910fa06ffdbedead7e4a8b7ee61fa6abc))
+
 ## [2.3.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.6...v2.3.7) (2026-07-25)
 
 ### 🐛 Bug Fixes
