@@ -4766,6 +4766,31 @@ messages: z.array(
 
 This short-circuits other annotations for that field.
 
+### Typed JSON fields with a referenced schema
+
+Combine `@zod.import([...])` with `.custom.use(...)` to type a `Json` field with a schema defined elsewhere — the runtime-validation counterpart to [prisma-json-types-generator](https://github.com/arthurfiorette/prisma-json-types-generator):
+
+```prisma
+model Workflow {
+  id    Int  @id @default(autoincrement())
+  /// @zod.import(["import { WorkflowNodeSchema } from '../json-types'"]).custom.use(z.array(WorkflowNodeSchema))
+  nodes Json
+  edges Json // no annotation → stays z.unknown() / jsonSchema
+}
+```
+
+Generates the referenced import plus the typed field, in both CRUD object schemas and pure models:
+
+```ts
+import { WorkflowNodeSchema } from '../json-types';
+// object schema:
+nodes: z.union([JsonNullValueInputSchema, z.array(WorkflowNodeSchema)]),
+// pure model:
+nodes: z.array(WorkflowNodeSchema),
+```
+
+Un-annotated `Json` fields keep the default `z.unknown()` / `jsonSchema` base, so this is fully opt-in per field.
+
 ## Custom Object Schema (@zod.custom)
 
 For JSON fields, use `@zod.custom()` to define structured object schemas using JavaScript object literals:
