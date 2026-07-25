@@ -1437,13 +1437,25 @@ function generateFilteringSummary(models: DMMF.Model[], config: CustomGeneratorC
 
   // Show global exclusions if any
   const globalExclusions = config.globalExclusions;
-  if (globalExclusions && Object.values(globalExclusions).some((arr) => arr && arr.length > 0)) {
-    logger.debug('   Global exclusions:');
-    Object.entries(globalExclusions).forEach(([variant, fields]) => {
-      if (fields && fields.length > 0) {
-        logger.debug(`     ${variant}: ${fields.join(', ')}`);
+  if (globalExclusions) {
+    // globalExclusions accepts either a per-variant object or a flat array that
+    // applies to every variant. Object.entries() over an array yields string
+    // values, so treating every value as a list crashed the whole generation
+    // here — in a debug log — for the array form.
+    if (Array.isArray(globalExclusions)) {
+      if (globalExclusions.length > 0) {
+        logger.debug(`   Global exclusions (all variants): ${globalExclusions.join(', ')}`);
       }
-    });
+    } else if (
+      Object.values(globalExclusions).some((arr) => Array.isArray(arr) && arr.length > 0)
+    ) {
+      logger.debug('   Global exclusions:');
+      Object.entries(globalExclusions).forEach(([variant, fields]) => {
+        if (Array.isArray(fields) && fields.length > 0) {
+          logger.debug(`     ${variant}: ${fields.join(', ')}`);
+        }
+      });
+    }
   }
 
   // Show model-specific configurations if any

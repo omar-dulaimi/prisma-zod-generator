@@ -11,6 +11,28 @@ Common issues, solutions, and debugging tips. The first section covers the free 
 
 Most symptoms below were fixed in a released version — check your installed version first (`npm ls prisma-zod-generator`) and upgrade before filing a report.
 
+### `Error: spawn prisma-zod-generator ENOENT`
+
+**Cause**: Prisma resolves a generator by looking for its executable in the project's `node_modules/.bin`. The error means it was not there, which usually has one of two causes:
+
+- `prisma-zod-generator` is not installed in the project (or not installed yet — run `pnpm install` / `npm install`).
+- Prisma itself is being run from an ephemeral context that does not expose the project's `node_modules/.bin`, for example `pnpx prisma generate` or `npx --yes prisma generate`.
+
+**Fix**: install the generator locally and run Prisma through your package manager so the local `node_modules/.bin` is on `PATH`:
+
+```bash
+npm install --save-dev prisma-zod-generator
+npx prisma generate      # or: pnpm prisma generate / yarn prisma generate
+```
+
+Confirm the binary is linked before filing a report:
+
+```bash
+ls node_modules/.bin | grep prisma-zod-generator
+```
+
+A global install does not help: Prisma looks in the project, not on the global `PATH`.
+
 ### `TS2835: Relative import paths need explicit file extensions in ECMAScript imports`
 
 **Cause**: `moduleResolution: "nodenext"` — or Node's native TypeScript type-stripping — requires explicit extensions on relative ESM imports.

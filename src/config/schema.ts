@@ -287,7 +287,7 @@ export const ConfigurationSchema: JSONSchema7 = {
       type: 'boolean',
       default: false,
       description:
-        'When true, Args for create operations infer types from generated schemas instead of Prisma.*',
+        'Reserved, currently no effect. Intended to let create-operation Args infer types from the generated schemas instead of Prisma.*; the generation pipeline does not read it yet. Create-input shape is controlled by strictCreateInputs and preserveRequiredScalarsOnCreate.',
     },
 
     globalExclusions: {
