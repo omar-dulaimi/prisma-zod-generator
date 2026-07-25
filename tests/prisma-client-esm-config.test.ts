@@ -96,8 +96,11 @@ ${baseSchema}`;
           expect(content).toMatch(/from '\.\/enums\//);
         }
       } catch (error) {
-        console.warn('Skipping legacy generator test - might not be available');
-        console.error('Original error:', error);
+        // Assertion failures used to be caught here and logged as "might not be
+        // available", so every test in this file passed unconditionally. `lib/` is
+        // built once in globalSetup and `prisma generate` runs throughout the suite,
+        // so there is nothing optional left to hedge against.
+        throw error;
       }
     });
   });
@@ -132,8 +135,11 @@ ${baseSchema}`;
             expect(content).not.toMatch(/from.*\.js'/);
           }
         } catch (error) {
-          console.warn('Skipping new generator CJS test - might not be available');
-          console.error('Original error:', error);
+          // Assertion failures used to be caught here and logged as "might not be
+          // available", so every test in this file passed unconditionally. `lib/` is
+          // built once in globalSetup and `prisma generate` runs throughout the suite,
+          // so there is nothing optional left to hedge against.
+          throw error;
         }
       });
     });
@@ -177,8 +183,11 @@ ${baseSchema}`;
             }
           }
         } catch (error) {
-          console.warn('Skipping ESM .js extension test - might not be available');
-          console.error('Original error:', error);
+          // Assertion failures used to be caught here and logged as "might not be
+          // available", so every test in this file passed unconditionally. `lib/` is
+          // built once in globalSetup and `prisma generate` runs throughout the suite,
+          // so there is nothing optional left to hedge against.
+          throw error;
         }
       });
 
@@ -213,8 +222,11 @@ ${baseSchema}`;
             }
           }
         } catch (error) {
-          console.warn('Skipping ESM .mjs extension test - might not be available');
-          console.error('Original error:', error);
+          // Assertion failures used to be caught here and logged as "might not be
+          // available", so every test in this file passed unconditionally. `lib/` is
+          // built once in globalSetup and `prisma generate` runs throughout the suite,
+          // so there is nothing optional left to hedge against.
+          throw error;
         }
       });
 
@@ -252,8 +264,11 @@ ${baseSchema}`;
               }
             }
           } catch (error) {
-            console.warn(`Skipping runtime ${runtime} test - might not be available`);
-            console.error('Original error:', error);
+            // Assertion failures used to be caught here and logged as "might not be
+            // available", so every test in this file passed unconditionally. `lib/` is
+            // built once in globalSetup and `prisma generate` runs throughout the suite,
+            // so there is nothing optional left to hedge against.
+            throw error;
           }
         }
       });
@@ -286,8 +301,12 @@ ${baseSchema}`;
             expect(content).not.toMatch(/import.*\.js'/);
             expect(content).not.toMatch(/import.*\.mjs'/);
           }
-        } catch {
-          console.warn('Skipping ESM without extension test - might not be available');
+        } catch (error) {
+          // Assertion failures used to be caught here and logged as "might not be
+          // available", so every test in this file passed unconditionally. `lib/` is
+          // built once in globalSetup and `prisma generate` runs throughout the suite,
+          // so there is nothing optional left to hedge against.
+          throw error;
         }
       });
 
@@ -352,8 +371,16 @@ model Post {
                 // The import should include the .js extension for custom client paths
                 expect(content).toMatch(/import type \{ Prisma \} from ['"'][^'"]*\.js['"];?/);
 
-                // Specifically check for the custom client path pattern
-                expect(content).toMatch(/from ['"]\.\.[^'"]*client\.js['"];?/);
+                // Which entrypoint gets picked depends on what the client generator
+                // put on disk: `browser` when it exists, otherwise the server one.
+                // That rule has two dedicated tests below ("should append the browser
+                // entrypoint…", "should fall back to the server entrypoint…"), and the
+                // emitted schemas typecheck at zero errors through either.
+                //
+                // This assertion demanded `client.js` specifically, so it had been
+                // failing ever since the browser rule landed — invisibly, because the
+                // whole test body was wrapped in a catch that logged and passed.
+                expect(content).toMatch(/from ['"]\.\.[^'"]*\/(browser|client)\.js['"];?/);
               }
 
               // Should also contain .js extensions in other imports
@@ -363,8 +390,11 @@ model Post {
             }
           }
         } catch (error) {
-          console.warn('Skipping custom Prisma client ESM test - might not be available');
-          console.error('Original error:', error);
+          // Assertion failures used to be caught here and logged as "might not be
+          // available", so every test in this file passed unconditionally. `lib/` is
+          // built once in globalSetup and `prisma generate` runs throughout the suite,
+          // so there is nothing optional left to hedge against.
+          throw error;
         } finally {
           if (existsSync(customClientOutput)) {
             rmSync(customClientOutput, { recursive: true, force: true });
@@ -459,8 +489,11 @@ model Post {
             }
           }
         } catch (error) {
-          console.warn('Skipping index files ESM test - generator might not be available');
-          console.error('Original error:', error);
+          // Assertion failures used to be caught here and logged as "might not be
+          // available", so every test in this file passed unconditionally. `lib/` is
+          // built once in globalSetup and `prisma generate` runs throughout the suite,
+          // so there is nothing optional left to hedge against.
+          throw error;
         }
       });
     });
@@ -491,8 +524,12 @@ ${baseSchema}`;
             // Should not add extensions when moduleFormat is not esm
             expect(content).not.toMatch(/import.*\.js'/);
           }
-        } catch {
-          console.warn('Skipping runtime-only test - might not be available');
+        } catch (error) {
+          // Assertion failures used to be caught here and logged as "might not be
+          // available", so every test in this file passed unconditionally. `lib/` is
+          // built once in globalSetup and `prisma generate` runs throughout the suite,
+          // so there is nothing optional left to hedge against.
+          throw error;
         }
       });
 
@@ -521,8 +558,12 @@ ${baseSchema}`;
             // Should not add extensions when importFileExtension is not specified
             expect(content).not.toMatch(/import.*\.js'/);
           }
-        } catch {
-          console.warn('Skipping moduleFormat-only test - might not be available');
+        } catch (error) {
+          // Assertion failures used to be caught here and logged as "might not be
+          // available", so every test in this file passed unconditionally. `lib/` is
+          // built once in globalSetup and `prisma generate` runs throughout the suite,
+          // so there is nothing optional left to hedge against.
+          throw error;
         }
       });
     });
@@ -826,8 +867,12 @@ ${baseSchema}`;
             }
           }
         }
-      } catch {
-        console.warn('Skipping integration test - generator might not be available');
+      } catch (error) {
+        // Assertion failures used to be caught here and logged as "might not be
+        // available", so every test in this file passed unconditionally. `lib/` is
+        // built once in globalSetup and `prisma generate` runs throughout the suite,
+        // so there is nothing optional left to hedge against.
+        throw error;
       }
     });
   });
