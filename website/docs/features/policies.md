@@ -241,10 +241,18 @@ app.use(async (ctx, next) => {
 })
 ```
 
-:::caution `redactPII()` is a stub
-The policies index also exports a `redactPII(data, config?)` helper. In the current implementation it
-returns its input unchanged — it is a placeholder, not a redactor. Use the per-model
-`<Model>Redactor` class instead.
+:::note `redactPII()` is not implemented
+The policies index also exports `redactPII(data, config?)`, which cannot work: redaction is per model
+and it has no way to tell which model an arbitrary object came from. From **2.4.1+** it throws and
+points at the per-model `<Model>Redactor`. Before that it returned its input unchanged, so a caller
+received unredacted PII with no indication of it.
+:::
+
+:::note Redaction applies in every context (2.4.1+)
+A field marked `@pii` is masked whether you call `redact(row)`, `redact(row, 'logs')`, or let the
+generated Express middleware do it. Earlier versions only masked for the `logs` and `analytics`
+contexts while both the default call and the middleware used `api`, so the redactor returned its
+input untouched and the middleware was a no-op.
 :::
 
 ## Hashing and Browser Support

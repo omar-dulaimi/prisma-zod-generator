@@ -1,7 +1,8 @@
 import { getDMMF } from '@prisma/internals';
-import { existsSync } from 'fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import { join } from 'path';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { GENERATION_TIMEOUT } from './helpers';
 
 const PRO_DRIFT_GUARD = join(
@@ -163,6 +164,86 @@ describe.skipIf(!proAvailable)('Drift Guard report formatting', () => {
     },
     GENERATION_TIMEOUT,
   );
+
+  /**
+   * `validateDrift` is exported from src/pro/index.ts but was a demo stub: it
+   * returned hardcoded changes keyed off `strictMode` without opening either
+   * schema, so a caller reaching for the obvious name got fabricated results.
+   */
+  describe('validateDrift by file path', () => {
+    let base: string;
+    let head: string;
+    let dir: string;
+    const savedDevMode = process.env.PZG_DEV_MODE;
+
+    beforeAll(() => {
+      // This entry point checks the licence, unlike the generator class the tests
+      // above drive directly.
+      process.env.PZG_DEV_MODE = 'true';
+      dir = mkdtempSync(join(tmpdir(), 'pzg-drift-'));
+      base = join(dir, 'base.prisma');
+      head = join(dir, 'head.prisma');
+      writeFileSync(base, BASE_SCHEMA);
+      writeFileSync(head, HEAD_SCHEMA);
+    });
+
+    afterAll(() => {
+      if (savedDevMode === undefined) delete process.env.PZG_DEV_MODE;
+      else process.env.PZG_DEV_MODE = savedDevMode;
+      rmSync(dir, { recursive: true, force: true });
+    });
+
+    it(
+      'reports the changes actually present in the two files',
+      async () => {
+        const { validateDrift } = await import('../src/pro/features/drift-guard/drift-guard');
+
+        const result = await validateDrift({
+          basePath: base,
+          headPath: head,
+          outputFormat: 'json',
+        });
+        const parsed = JSON.parse(result.output);
+
+        expect(parsed.summary).toEqual({ total: 5, breaking: 3, nonBreaking: 2 });
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'reports no changes when both paths are the same schema',
+      async () => {
+        const { validateDrift } = await import('../src/pro/features/drift-guard/drift-guard');
+
+        const result = await validateDrift({
+          basePath: base,
+          headPath: base,
+          outputFormat: 'json',
+        });
+
+        expect(JSON.parse(result.output).summary.total).toBe(0);
+        expect(result.success).toBe(true);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'fails under strictMode when a breaking change is present',
+      async () => {
+        const { validateDrift } = await import('../src/pro/features/drift-guard/drift-guard');
+
+        const result = await validateDrift({
+          basePath: base,
+          headPath: head,
+          strictMode: true,
+          outputFormat: 'json',
+        });
+
+        expect(result.success).toBe(false);
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 
   it(
     'honours allowedBreaks when deciding whether CI should fail',

@@ -98,6 +98,13 @@ console.log(`Valid: ${result.valid.length}`)
 console.log(`Invalid: ${result.invalid.length}`)
 ```
 
+:::note `enablePrecompilation: false` is not supported
+The streaming, batching, wrapper, utility and benchmark modules all import the precompiled validator
+map, so `precompiled.ts` is always generated. Passing `false` used to skip it while still emitting the
+five modules that import it, leaving a pack that could not compile; from **2.4.1+** the file is
+emitted regardless and the generator says so.
+:::
+
 :::note Memory scales with the result, not the chunk size
 `chunkSize` bounds how much is validated per tick, not how much is retained:
 every valid record is accumulated into `result.valid` (and every failure into

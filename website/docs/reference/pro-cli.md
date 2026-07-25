@@ -239,9 +239,10 @@ console.log('member updated:', redactor.redact(member, 'logs'));
 ```
 
 :::note
-`redact()` masks the fields you marked `/// @pii`. The `redactPII()` helper
-exported from the barrel is a placeholder that returns its input unchanged —
-use the per-model redactor.
+`redact()` masks the fields you marked `/// @pii`, in every context. The
+`redactPII()` helper exported from the barrel cannot infer a model and throws
+(2.4.1+; before that it silently returned its input unchanged) — use the
+per-model redactor.
 :::
 
 ## ⚡ Server Actions API {#server-actions-api}
@@ -392,7 +393,10 @@ always false.
 ## 🚨 Drift Guard API {#drift-guard-api}
 
 :::note
-Drift Guard is driven through the `pzg-pro guard` CLI documented above. There is no supported programmatic entry point — integrate it by shelling out to the CLI and reading `--format json` from stdout.
+Drift Guard is driven through the `pzg-pro guard` CLI documented above. For programmatic use,
+`validateDrift({ basePath, headPath, outputFormat, strictMode })` compares two schema files and
+returns `{ success, changes, output }` — available from **2.4.1+**, where it began reading the files
+it is given rather than returning a fixed sample.
 :::
 
 ### Configuration Type

@@ -218,6 +218,100 @@ describe.skipIf(!proAvailable)('Policies enforcement', () => {
     });
   });
 
+  describe('write policies', () => {
+    it('scopes a delete with the model read policies', async () => {
+      // Read policies constrain what a caller can see; a delete that ignores them
+      // lets that caller remove rows they were never allowed to read.
+      const { DocumentSafeCRUD } = await import(join(dir, 'policies', 'safe-crud', 'document.ts'));
+      const prisma = recordingPrisma();
+      const ops = new DocumentSafeCRUD(prisma.client, { tenantId: 'tenant-a' });
+
+      await ops.delete({ tenantId: 'tenant-a' }, { where: { id: 'doc-1' } });
+
+      expect((prisma.calls[0].args as { where: unknown }).where).toMatchObject({
+        id: 'doc-1',
+        tenantId: 'tenant-a',
+      });
+    });
+
+    it('scopes an update the same way', async () => {
+      const { DocumentSafeCRUD } = await import(join(dir, 'policies', 'safe-crud', 'document.ts'));
+      const prisma = recordingPrisma();
+      const ops = new DocumentSafeCRUD(prisma.client, { tenantId: 'tenant-a' });
+
+      await ops.update({ tenantId: 'tenant-a' }, { where: { id: 'doc-1' }, data: { title: 'x' } });
+
+      expect((prisma.calls[0].args as { where: unknown }).where).toMatchObject({
+        tenantId: 'tenant-a',
+      });
+    });
+  });
+
+  describe('redaction', () => {
+    async function redactor() {
+      const { MemberRedactor } = await import(join(dir, 'policies', 'redaction', 'member.ts'));
+      return new MemberRedactor();
+    }
+
+    it('masks a @pii field by default', async () => {
+      // The default context was 'api', which shouldRedactField never matched, so
+      // the redactor returned its input untouched.
+      const result = (await redactor()).redact({
+        id: 'm1',
+        email: 'someone@example.com',
+        tenantId: 't1',
+        role: 'MEMBER',
+      });
+
+      expect(result.email).not.toBe('someone@example.com');
+    });
+
+    it('still masks for an explicit logs context', async () => {
+      const result = (await redactor()).redact(
+        { id: 'm1', email: 'someone@example.com', tenantId: 't1', role: 'MEMBER' },
+        'logs',
+      );
+
+      expect(result.email).not.toBe('someone@example.com');
+    });
+
+    it('leaves non-PII fields alone', async () => {
+      const result = (await redactor()).redact({
+        id: 'm1',
+        email: 'someone@example.com',
+        tenantId: 't1',
+        role: 'MEMBER',
+      });
+
+      expect(result.tenantId).toBe('t1');
+      expect(result.role).toBe('MEMBER');
+    });
+
+    it('refuses to hand back unredacted data from the barrel helper', async () => {
+      // `redactPII` returned its input unchanged with a "placeholder" comment. A
+      // caller reaching for that name is trying to protect PII, so silently
+      // returning it is the one outcome that must not happen.
+      const { redactPII } = await import(join(dir, 'policies', 'index.ts'));
+
+      expect(() => redactPII({ email: 'someone@example.com' })).toThrow(/Redactor/);
+    });
+
+    it('redacts the body the Express middleware passes through', async () => {
+      const { createMemberRedactionMiddleware } = await import(
+        join(dir, 'policies', 'redaction', 'member.ts')
+      );
+
+      let sent: { email?: string } = {};
+      const res = { json: (body: unknown) => (sent = body as { email?: string }) };
+      const middleware = createMemberRedactionMiddleware();
+
+      middleware({}, res, () => {});
+      res.json({ id: 'm1', email: 'someone@example.com', tenantId: 't1', role: 'MEMBER' });
+
+      expect(sent.email).not.toBe('someone@example.com');
+    });
+  });
+
   describe('DTO schemas', () => {
     it('loads a model with an enum field', async () => {
       // The enum was referenced as a bare name with no import, so the module
