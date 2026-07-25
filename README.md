@@ -1,273 +1,185 @@
-<div align="center">
-	<h1>Prisma Zod Generator</h1>
-	<p><strong>Unify Prisma validation, policy guardrails, and developer workflows in a single generator.</strong></p>
-	<p>
-		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/pricing"><strong>🚀 Get PZG Pro – Purchase on GitHub</strong></a> |
-		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/"><strong>📚 Documentation</strong></a> |
-		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/guard"><strong>🛡️ Drift Guard</strong></a>
-	</p>
-	<p>
-		<a href="https://www.npmjs.com/package/prisma-zod-generator"><img alt="npm version" src="https://img.shields.io/npm/v/prisma-zod-generator.svg?color=16C464&label=npm"></a>
-		<a href="https://www.npmjs.com/package/prisma-zod-generator"><img alt="downloads" src="https://img.shields.io/npm/dw/prisma-zod-generator.svg?color=8B5CF6&label=downloads"></a>
-		<a href="https://github.com/omar-dulaimi/prisma-zod-generator/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/omar-dulaimi/prisma-zod-generator/ci.yml?branch=master&label=CI"></a>
-		<a href="https://github.com/omar-dulaimi/prisma-zod-generator/blob/master/LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-0a0a0a.svg"></a>
-		<img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript%20>=5.4%20(rec%205.9)-3178c6.svg">
-		<img alt="Module formats" src="https://img.shields.io/badge/modules-ESM%20%2B%20CJS-444.svg">
-		<a href="https://omar-dulaimi.github.io/prisma-zod-generator/"><img alt="Docs" src="https://img.shields.io/badge/docs-website-0ea5e9.svg"></a>
-		<img alt="Node.js" src="https://img.shields.io/badge/node-%3E%3D20.19.0%20(rec%2022.x)-339933?logo=node.js&logoColor=white">
-	</p>
-	<sub>
-		Prisma → Zod generator for end-to-end workflows.<br/>
-		🚀 generate validation · 🔐 gate policies · 📚 ship docs · ⚙️ automate server actions
-	</sub>
-</div>
+# Prisma Zod Generator
 
----
+A Prisma generator that emits [Zod](https://zod.dev) schemas from your Prisma schema. It runs as part of
+`prisma generate`, so your validation schemas are regenerated from the same source of truth as your Prisma Client.
 
-> Docs: https://omar-dulaimi.github.io/prisma-zod-generator/
+[![npm version](https://img.shields.io/npm/v/prisma-zod-generator.svg?color=16C464&label=npm)](https://www.npmjs.com/package/prisma-zod-generator)
+[![downloads](https://img.shields.io/npm/dw/prisma-zod-generator.svg?color=8B5CF6&label=downloads)](https://www.npmjs.com/package/prisma-zod-generator)
+[![CI](https://img.shields.io/github/actions/workflow/status/omar-dulaimi/prisma-zod-generator/ci.yml?branch=master&label=CI)](https://github.com/omar-dulaimi/prisma-zod-generator/actions)
+[![license MIT](https://img.shields.io/badge/license-MIT-0a0a0a.svg)](https://github.com/omar-dulaimi/prisma-zod-generator/blob/master/LICENSE)
 
-## 🌟 All Features (Core + Pro)
+[Documentation](https://omar-dulaimi.github.io/prisma-zod-generator/) ·
+[PZG Pro](https://omar-dulaimi.github.io/prisma-zod-generator/pricing)
 
-<div align="center">
-  <img src="https://img.shields.io/badge/🎯_Core_Features_(Free)-27AE60?style=for-the-badge&color=27AE60&logoColor=white" alt="Core Features" />
-  <img src="https://img.shields.io/badge/💎_Pro_Features_(Paid)-9B59B6?style=for-the-badge&color=9B59B6&logoColor=white" alt="Pro Features" />
-</div>
+## Requirements
 
-<br />
+| Dependency | Supported                                         |
+| ---------- | ------------------------------------------------- |
+| Node.js    | >= 20.19.0 (22.x recommended)                     |
+| Prisma     | 7.x                                               |
+| Zod        | >= 3.25.0 < 5 (both v3 and v4 output are emitted) |
+| TypeScript | >= 5.4 (5.9.x recommended)                        |
 
-<details open>
-<summary>
-  <h3>📋 <strong>Complete Feature Overview</strong></h3>
-</summary>
-
-<div align="center">
-  <p><sub>Green = Free (MIT) • Purple/Gold = Pro (Paid)</sub></p>
-</div>
-
-<br />
-<!-- diagram:diagram-01-23b43096d1 -->
-<p align="center">
-  <img src="docs/assets/diagrams/diagram-01-23b43096d1.svg" alt="Prisma Zod Generator feature map (Core vs Pro tiers)" width="960" />
-</p>
-<details data-mermaid-source>
-  <summary>View Mermaid source</summary>
-
-```mermaid
-graph TB
-    classDef coreRoot fill:#1e8449,stroke:#0b5345,stroke-width:4px,color:#fff;
-    classDef coreCategory fill:#27ae60,stroke:#145a32,stroke-width:3px,color:#fff;
-    classDef coreItem fill:#58d68d,stroke:#196f3d,color:#0b3d1f;
-    classDef proRoot fill:#f39c12,stroke:#7d6608,stroke-width:4px,color:#fff;
-    classDef proCategory fill:#9b59b6,stroke:#512e5f,stroke-width:3px,color:#fff;
-    classDef proItem fill:#bb8fce,stroke:#5b2c6f,color:#2e0f3a;
-
-    subgraph "🎯 CORE FEATURES (Free Forever)"
-        PZG[Prisma Zod Generator]
-
-        PZG --> GEN[Schema Generation]
-        PZG --> CUSTOM[Customization]
-        PZG --> SAFETY[Type Safety]
-        PZG --> PERF[Performance]
-
-        GEN --> GEN1["⚡ Minimal Mode"]
-        GEN --> GEN2["🌟 Full Mode"]
-        GEN --> GEN3["🎛️ Custom Mode"]
-        GEN --> GEN4["📦 Schema Variants"]
-        GEN --> GEN5["🔢 Decimal Handling"]
-        GEN --> GEN6["📅 DateTime Support"]
-
-        CUSTOM --> CUST1["🎨 Naming Patterns"]
-        CUSTOM --> CUST2["📂 File Organization"]
-        CUSTOM --> CUST3["🎯 Selective Generation"]
-        CUSTOM --> CUST4["🔧 Config Options"]
-        CUSTOM --> CUST5["🧰 Multi-Provider Helpers"]
-
-        SAFETY --> SAFE1["✅ Zod v4 Formats"]
-        SAFETY --> SAFE2["🛡️ Strict Mode"]
-        SAFETY --> SAFE3["🔒 Type Checking"]
-        SAFETY --> SAFE4["📋 Validation Suites"]
-
-        PERF --> PERF1["⚡ Fast Output"]
-        PERF --> PERF2["📦 Tree Shaking"]
-        PERF --> PERF3["🎯 Selective Imports"]
-        PERF --> PERF4["📁 Granular Emit Control"]
-    end
-
-    subgraph "💎 PRO FEATURES (Paid Plans)"
-        PRO[PZG Pro]
-
-        PRO --> SEC[Security & Governance]
-        PRO --> DEV[Developer Experience]
-        PRO --> PLAT[Platform & Scale]
-
-        SEC --> SEC1["🛡️ Policies & Redaction"]
-        SEC --> SEC2["🚨 Drift Guard"]
-        SEC --> SEC3["🐘 PostgreSQL RLS"]
-        SEC --> SEC4["🧪 Contract Testing"]
-
-        SEC1 --> SEC1A["Role-Based Policies"]
-        SEC1 --> SEC1B["Conditional Access"]
-        SEC1 --> SEC1C["PII Redaction"]
-
-        SEC2 --> SEC2A["CI Integration"]
-        SEC2 --> SEC2B["Breaking Change Alerts"]
-        SEC2 --> SEC2C["Auto-Block Enforcement"]
-
-        DEV --> DEV1["⚡ Server Actions Pack"]
-        DEV --> DEV2["📝 Form UX Pack"]
-        DEV --> DEV3["📄 API Docs Pack"]
-        DEV --> DEV4["🏭 Data Factories"]
-
-        DEV1 --> DEV1A["Next.js Actions"]
-        DEV1 --> DEV1B["Type-Safe Handlers"]
-        DEV1 --> DEV1C["Error Recovery"]
-
-        PLAT --> PLAT1["📦 SDK Publisher"]
-        PLAT --> PLAT2["🏢 Multi-Tenant Kit"]
-        PLAT --> PLAT3["🚀 Performance Pack"]
-
-        PLAT3 --> PLAT3A["Streaming Validation"]
-        PLAT3 --> PLAT3B["Chunked Processing"]
-        PLAT3 --> PLAT3C["Memory Efficient Pipelines"]
-    end
-
-    class PZG coreRoot;
-    class GEN,CUSTOM,SAFETY,PERF coreCategory;
-    class GEN1,GEN2,GEN3,GEN4,GEN5,GEN6,CUST1,CUST2,CUST3,CUST4,CUST5,SAFE1,SAFE2,SAFE3,SAFE4,PERF1,PERF2,PERF3,PERF4 coreItem;
-
-    class PRO proRoot;
-    class SEC,DEV,PLAT proCategory;
-    class SEC1,SEC2,SEC3,SEC4,SEC1A,SEC1B,SEC1C,SEC2A,SEC2B,SEC2C,DEV1,DEV2,DEV3,DEV4,DEV1A,DEV1B,DEV1C,PLAT1,PLAT2,PLAT3,PLAT3A,PLAT3B,PLAT3C proItem;
-```
-</details>
-<!-- /diagram:diagram-01-23b43096d1 -->
-
-### 🎯 Core Features (MIT License - Free Forever)
-
-**Schema Generation**
-- ⚡ Minimal Mode - Essential CRUD only
-- 🌟 Full Mode - Complete ecosystem
-- 🎛️ Custom Mode - Granular control
-- 📦 Schema Variants - Input, result, pure models
-- 🔢 Decimal Handling - BigInt & Decimal support
-- 📅 DateTime Support - ISO formats & Zod v4
-
-**Customization**
-- 🎨 Naming Patterns - Custom schema names
-- 📂 Organization - File structure control
-- 🎯 Selective Generation - Filter what gets generated
-- 🔧 Config Options - Extensive configuration
-- 🧰 Multi-Provider Helpers - Ready-made presets for each datasource
-
-**Type Safety**
-- ✅ Zod v4 Formats - ISO string methods (`.iso.date()`, `.iso.datetime()`, etc.)
-- 🛡️ Strict Mode - Enforce type correctness
-- 🔒 Type Checking - Full TypeScript integration
-- 📋 Validation - Runtime type validation
-
-**Performance**
-- ⚡ Fast Output - Optimized generation
-- 📦 Tree Shaking - Remove unused code
-- 🎯 Selective Imports - Import only what you need
-- 📁 Granular Emit Control - Precise directory + preset outputs
-
----
-
-### 💎 Pro Features (Paid Plans)
-
-**Security & Governance**
-- 🛡️ **Policies & Redaction** (Professional+) - Role-based policies, conditional access, PII protection
-- 🚨 **Drift Guard** (Professional+) - Breaking change detection, CI integration
-- 🐘 **PostgreSQL RLS** (Professional+) - Row-level security, tenant isolation
-- 🧪 **Contract Testing** (Business+) - Pact.js integration, consumer-driven contracts
-
-**Developer Experience**
-- ⚡ **Server Actions Pack** (Starter+) - Next.js typed server actions
-- 📝 **Form UX Pack** (Starter+) - React Hook Form + UI library integration
-- 📄 **API Docs Pack** (Business+) - OpenAPI v3, Swagger UI generation
-- 🏭 **Data Factories** (Business+) - Test data generation
-
-**Platform & Scale**
-- 📦 **SDK Publisher** (Professional+) - Generate typed client SDKs
-- 🏢 **Multi-Tenant Kit** (Enterprise) - Tenant isolation, context management
-- 🚀 **Performance Pack** (Professional+) - Streaming validation, chunked processing, memory efficient
-
-<div align="center">
-  <p>
-    <a href="https://omar-dulaimi.github.io/prisma-zod-generator/pricing"><strong>View Pricing & Plans</strong></a> |
-    <a href="https://omar-dulaimi.github.io/prisma-zod-generator/docs"><strong>Full Documentation</strong></a>
-  </p>
-</div>
-
-</details>
-
-<br />
-
----
-
-## 📖 Quick Start
-
-> ⭐️ Tip: Star the repo to keep track of new generators, recipes, and fixes.
+## Install
 
 ```bash
-# Install
-npm install -D prisma-zod-generator
+npm install --save-dev prisma-zod-generator
+npm install zod
+```
 
-# Add to schema.prisma
-generator zod {
-  provider = "prisma-zod-generator"
+Install the generator locally rather than globally: Prisma resolves the generator executable from
+`node_modules/.bin`, so a project-local install is what makes `provider = "prisma-zod-generator"` work.
+`zod` is a peer dependency (`>=3.25.0 <5`) because the generated files import it at runtime.
+
+## Usage
+
+Add the generator to `schema.prisma`:
+
+```prisma
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
-# Generate
+generator zod {
+  provider = "prisma-zod-generator"
+  // output defaults to <schema dir>/generated
+  // config = "./zod-generator.config.json"
+}
+```
+
+Then run:
+
+```bash
 npx prisma generate
 ```
 
-## 🧠 Config IntelliSense
+With no configuration you get one schema file per Prisma CRUD operation, plus the input object and enum
+schemas they reference:
 
-Point your config file at the published JSON Schema to get autocomplete, hover docs, and validation errors in any JSON-aware editor:
+```
+prisma/generated/schemas/
+├── findManyUser.schema.ts     # UserFindManySchema, UserFindManyZodSchema
+├── createOneUser.schema.ts    # UserCreateOneSchema, UserCreateOneZodSchema
+├── objects/                   # UserWhereInputObjectSchema, UserCreateInputObjectSchema, ...
+├── enums/                     # SortOrderSchema, UserScalarFieldEnumSchema, ...
+├── results/                   # UserFindManyResultSchema, ...
+├── variants/                  # pure/ input/ result/ variants of each model
+└── index.ts                   # barrel re-export
+```
 
-```json title="prisma/config.json"
-{
-  "$schema": "../node_modules/prisma-zod-generator/lib/config/schema.json",
-  "mode": "full"
+A `helpers/` directory is emitted next to `schemas/` when the Prisma schema contains `Json` or `Decimal`
+fields, and `models/` appears under `schemas/` once `pureModels` is enabled.
+
+Every operation file exports the schema twice. `<Model><Operation>Schema` is annotated as
+`z.ZodType<Prisma.<Model><Operation>Args>`, so parsed output can be handed straight to the Prisma Client;
+`<Model><Operation>ZodSchema` is the unannotated object, for when you need `.extend()`, `.partial()` or
+`.omit()`.
+
+```ts
+import { UserFindManySchema } from './prisma/generated/schemas/findManyUser.schema';
+
+const args = UserFindManySchema.parse(req.query);
+const users = await prisma.user.findMany(args);
+```
+
+### Model schemas
+
+Set `pureModels: true` to also emit one plain schema per model, with no CRUD wrappers and no Prisma types:
+
+```ts
+// prisma/generated/schemas/models/User.schema.ts
+import * as z from 'zod';
+
+export const UserSchema = z.object({
+  id: z.number().int(),
+  email: z.string(),
+  name: z.string().nullish(),
+});
+
+export type UserType = z.infer<typeof UserSchema>;
+```
+
+### Validators declared in the Prisma schema
+
+`@zod` annotations in triple-slash comments are compiled into the generated field schemas:
+
+```prisma
+model User {
+  id    Int     @id @default(autoincrement())
+  /// @zod.email()
+  email String  @unique
+  /// @zod.min(2).max(80)
+  name  String?
 }
 ```
 
-Use a relative path that matches your repo layout (for example `./node_modules/...`). See the [JSON Schema IntelliSense guide](https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/schema-json) for monorepo examples, CI validation scripts, and tips on shipping the schema with custom tooling.
+See [Zod comment annotations](https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/zod-comments)
+for the supported validators, custom imports, and metadata annotations.
 
-## 💡 Usage Examples
+## Configuration
 
-- See the [full documentation](https://omar-dulaimi.github.io/prisma-zod-generator/) for detailed guides, upgrade notes, and feature walkthroughs.
-- Browse `recipes/` for copy-paste presets, CI snippets, and integration templates that match your stack.
-- Share `llms.txt` with AI copilots for an on-ramp to the architecture, commands, and conventions.
+Options can be set in the generator block or in a JSON file next to `schema.prisma`.
+`zod-generator.config.json` is discovered automatically; any other path can be passed via
+`config = "./my-config.json"` (resolved relative to the schema file).
 
-## ❤️ Sponsor Development
+```json
+{
+  "$schema": "../node_modules/prisma-zod-generator/lib/config/schema.json",
+  "mode": "full",
+  "pureModels": true,
+  "useMultipleFiles": true
+}
+```
 
-If Prisma Zod Generator saves you time or catches bugs before production, consider sponsoring to fund maintenance and new feature work.
+The `$schema` line gives autocomplete, hover docs, and validation in any JSON-aware editor; adjust the
+relative path to match your layout. Commonly used options: `mode` (`full` | `minimal` | `custom`), `output`,
+`useMultipleFiles` / `singleFileName`, `pureModels`, `variants`, `naming`, `optionalFieldBehavior`,
+`dateTimeStrategy`, `strictMode`, `emit`, `zodImportTarget`, `zodImportPath`. `useMultipleFiles: false`
+collapses the output into a single `schemas.ts`.
 
-- On GitHub Sponsors, switch to the **One-time** tab (second tab) to see the PZG plan tiers. Pick the
-  yearly tiers labeled **PZG Starter**, **PZG Professional**, **PZG Business**, or **PZG Enterprise** to
-  unlock the corresponding Pro licenses—monthly “support” tiers (e.g., *Pro (Individual)*) in the
-  Monthly tab do not include PZG Pro.
+- [Quick start](https://omar-dulaimi.github.io/prisma-zod-generator/docs/intro/quick-start)
+- [Configuration precedence](https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/precedence)
+- [File layout and single-file mode](https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/file-layout)
+- [JSON Schema IntelliSense](https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/schema-json)
+- [Troubleshooting](https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/troubleshooting)
 
-<p align="center">
-  <img src="website/static/img/tiers.png" alt="GitHub Sponsors One-time tab showing PZG yearly tiers" width="320" />
-  <br />
-  <sub>Open the One-time tab to see the Prisma Zod Generator Starter, Professional, and Business tiers.</sub>
-</p>
-- Become a sponsor: https://github.com/sponsors/omar-dulaimi
+The [`recipes/`](recipes) directory holds ready-made config presets (minimal CRUD, models only, single file,
+tRPC-optimized, and more); each one is a `zod-generator.config.json` with a short README explaining the
+trade-offs.
 
-## 🤝 Contributing
+## PZG Pro
 
-PRs are welcome! Keep diffs focused, open an issue before large refactors, and lean on the test suites for expected behavior and coverage.
+The generator above is MIT licensed and complete on its own. Optional commercial packs build on it:
 
-## 🖼️ Updating Diagrams
+| Pack                                                                          | Minimum plan |
+| ----------------------------------------------------------------------------- | ------------ |
+| Server Actions, Form UX                                                       | Starter      |
+| Policies & Redaction, Drift Guard, PostgreSQL RLS, SDK Publisher, Performance  | Professional |
+| API Docs, Contract Testing, Data Factories                                    | Business     |
+| Multi-Tenant Kit                                                              | Enterprise   |
 
-When you edit Mermaid blocks in this README, run `pnpm render:diagrams` afterwards. The script refreshes the SVG fallbacks in `docs/assets/diagrams/` so diagrams render correctly on npm and GitHub Mobile.
+Pro code ships inside the published package, is unlocked with a `PZG_LICENSE_KEY`, and is invoked through the
+bundled `pzg-pro` CLI.
+[Pro features](https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/overview) ·
+[Pricing](https://omar-dulaimi.github.io/prisma-zod-generator/pricing)
 
-## 📄 License
+## Sponsor
 
-MIT © [Omar Dulaimi](https://github.com/omar-dulaimi)
+Sponsorships fund maintenance and new feature work: <https://github.com/sponsors/omar-dulaimi>
 
-**Core features**: MIT licensed, free forever  
-**Pro features**: Commercial license, see [pricing](https://omar-dulaimi.github.io/prisma-zod-generator/pricing)
+Pro licenses are sold through the same page. Open the **One-time** tab (the second one) and pick a yearly
+**PZG Starter**, **PZG Professional**, **PZG Business**, or **PZG Enterprise** tier; the monthly support tiers
+do not include a PZG Pro license.
+
+<img src="website/static/img/tiers.png" alt="GitHub Sponsors One-time tab showing the PZG yearly tiers" width="320" />
+
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the repository layout,
+commit conventions, and test commands. Please open an issue before large refactors, and keep diffs focused.
+
+## License
+
+MIT © [Omar Dulaimi](https://github.com/omar-dulaimi) — see [LICENSE](LICENSE).
+PZG Pro packs are covered by a separate commercial license ([LICENSE-PRO.md](LICENSE-PRO.md)).

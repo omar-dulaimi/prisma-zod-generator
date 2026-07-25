@@ -400,6 +400,104 @@ export const ConfigurationSchema: JSONSchema7 = {
         "Custom module path to import z from instead of 'zod' (e.g. './lib/zod' re-exporting a configured Zod instance with an i18n error map). The binding style still follows zodImportTarget, so the module must export z to match.",
     },
 
+    optionalFieldBehavior: {
+      type: 'string',
+      enum: ['optional', 'nullable', 'nullish'],
+      default: 'nullish',
+      description:
+        'How schema-optional fields are wrapped in pure model schemas: optional() (undefined), nullable() (null) or nullish() (both).',
+    },
+
+    decimalMode: {
+      type: 'string',
+      enum: ['number', 'string', 'decimal'],
+      default: 'decimal',
+      description:
+        "How Decimal fields are represented: 'decimal' validates Prisma.Decimal instances via helpers, 'number' uses z.number(), 'string' uses z.string().",
+    },
+
+    emit: {
+      type: 'object',
+      additionalProperties: false,
+      description:
+        'Per-artifact emission switches. Each defaults to the legacy gating for that artifact (see docs: Emission Controls).',
+      properties: {
+        enums: { type: 'boolean', description: 'Emit enum schemas (enums/). Default true.' },
+        objects: {
+          type: 'boolean',
+          description: 'Emit object/input schemas (objects/). Default true unless suppressed.',
+        },
+        crud: {
+          type: 'boolean',
+          description: 'Emit CRUD operation argument schemas. Default true unless suppressed.',
+        },
+        results: { type: 'boolean', description: 'Emit result schemas (results/).' },
+        pureModels: {
+          type: 'boolean',
+          description: 'Emit pure model schemas (models/). Mirrors pureModels when unspecified.',
+        },
+        variants: {
+          type: 'boolean',
+          description: 'Emit variant wrapper schemas (variants/). Default true if any variant is enabled.',
+        },
+      },
+    },
+
+    safety: {
+      type: 'object',
+      additionalProperties: false,
+      description:
+        'Output-path safety system that prevents the generator from deleting user code (see docs: Safety System).',
+      properties: {
+        level: {
+          type: 'string',
+          enum: ['strict', 'standard', 'permissive'],
+          default: 'standard',
+          description: 'Safety preset: strict blocks warned paths, permissive only warns.',
+        },
+        enabled: { type: 'boolean', default: true, description: 'Master switch for all safety checks.' },
+        allowDangerousPaths: {
+          type: 'boolean',
+          default: false,
+          description: 'Allow generating into directories with risky names (src, lib, ...).',
+        },
+        allowProjectRoots: {
+          type: 'boolean',
+          default: false,
+          description: 'Allow generating into a directory that looks like a project root.',
+        },
+        allowUserFiles: {
+          type: 'boolean',
+          default: false,
+          description: 'Allow cleanup when the output directory contains files that may be user code.',
+        },
+        skipManifest: {
+          type: 'boolean',
+          default: false,
+          description: 'Skip writing/reading the generation manifest (disables tracked cleanup).',
+        },
+        warningsOnly: {
+          type: 'boolean',
+          default: false,
+          description: 'Downgrade blocking safety errors to warnings.',
+        },
+        customDangerousPaths: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Additional directory names treated as dangerous.',
+        },
+        customProjectFiles: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Additional file names that mark a directory as a project root.',
+        },
+        maxUserFiles: {
+          type: 'number',
+          description: 'Maximum number of possible user files tolerated before blocking cleanup.',
+        },
+      },
+    },
+
     validateWhereUniqueAtLeastOne: {
       type: 'boolean',
       default: false,
