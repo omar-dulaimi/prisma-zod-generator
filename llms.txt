@@ -2402,12 +2402,19 @@ yourself. Passing one of them, or any unrecognised key, is reported on stdout
 rather than discarded silently.
 :::
 
-:::note Pluralization is literal
-The suffix is always a bare `s`, so irregular names come out awkward:
-`Category` becomes `/categorys`, `Person` becomes `/persons`. The same naming is
-used for the OpenAPI `paths`, so the spec and the mock server agree — if you need
-conventional plurals, rename the path in the emitted `openapi.json` and
-`mock-server.js` together.
+:::note Pluralization
+The default appends a bare `s`, so `Category` becomes `/categorys`. That stays the
+default because it is what existing consumers are built against — changing routes
+would break them. Set `pluralization: "english"` for conventional plurals
+(`/categories`, `/addresses`):
+
+```prisma
+apiDocs = "{ \"pluralization\": \"english\" }"
+```
+
+From **2.6.0+** the spec, the mock server, the examples and the README all use the
+same rule. Before that the spec appended a bare `s` while the examples applied
+English rules, so the two disagreed.
 :::
 
 ## Integration
@@ -2686,6 +2693,14 @@ const admin = userFactory.build({
   role: 'ADMIN'
 })
 ```
+
+### Typing
+
+Each model gets a `<Model>Shape` interface derived from your schema, and the factory
+is `Factory<<Model>Shape>` — so `build()` returns that shape and a typo in an
+override is a compile error. Before **2.6.0** every factory was `Factory<any>` with
+`Partial<any>` overrides, which meant nothing about a `build()` call was checked
+despite the "follows your Prisma schema exactly" promise.
 
 ### Persistence (Optional)
 
@@ -3897,6 +3912,16 @@ app.use(async (ctx, next) => {
   ctx.body = redactor.redact(ctx.body, 'logs')
 })
 ```
+
+:::note Redactor options
+`new <Model>Redactor({ context: 'logs' })` sets the default context for `redact()`
+calls that do not pass one — before **2.6.0** the config was stored and never read.
+`redactLogs` is superseded: a field marked `@pii` is redacted in every context.
+
+The `enableRLS` generator option is a no-op and is reported as such; row-level
+security is the [PostgreSQL RLS pack](./postgres-rls.md), enabled with
+`enablePostgresRLS`.
+:::
 
 :::note `redactPII()` is not implemented
 The policies index also exports `redactPII(data, config?)`, which cannot work: redaction is per model
