@@ -5,6 +5,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 // import { SchemaTestUtils } from '../schema-test-utils';
 import { MultiProviderTestRunner } from '../../prisma/utils/multi-provider-test-runner';
 import { getProviderConfig, ProviderConfig } from '../../prisma/utils/provider-config';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { prismaGenerateSync } from '../helpers/prisma-generate';
 
@@ -51,9 +52,19 @@ export class ProviderTestSuite {
     try {
       console.log(`Setting up ${this.config.name} provider...`);
 
-      // Generate schemas
-      const schemaPath = join(process.cwd(), this.config.schemaPath);
-      prismaGenerateSync(schemaPath, process.cwd());
+      // These fixtures are generated once in globalSetup, before any worker
+      // starts, and three other suites import from the same directories
+      // (typescript-inference-lazy-relations, comprehensive-schema-coverage,
+      // mongodb-schema-coverage). Regenerating here rewrote that shared tree
+      // mid-run: Prisma clears the output directory first, so a reader importing
+      // during the window failed on a module that momentarily did not exist.
+      // Only generate when the fixtures are genuinely absent, which is the case
+      // for a standalone run of this file.
+      const generatedPath = join(process.cwd(), this.config.generatedPath);
+      if (!existsSync(generatedPath)) {
+        const schemaPath = join(process.cwd(), this.config.schemaPath);
+        prismaGenerateSync(schemaPath, process.cwd());
+      }
 
       // Import generated schemas
       await this.importGeneratedSchemas();

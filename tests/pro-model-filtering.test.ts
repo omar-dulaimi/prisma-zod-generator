@@ -1,6 +1,6 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const PRO_BASE = join(__dirname, '..', 'src', 'pro', 'core', 'ProFeatureBase.ts');
 const proAvailable = existsSync(PRO_BASE);
@@ -29,6 +29,12 @@ describe.skipIf(!proAvailable)('Pro model filtering', () => {
       }
       public enabled(name: string) {
         return this.isModelEnabled(name);
+      }
+      public reportError(message: string) {
+        this.logError(message);
+      }
+      public reportWarning(message: string) {
+        this.logWarning(message);
       }
     }
 
@@ -86,5 +92,41 @@ describe.skipIf(!proAvailable)('Pro model filtering', () => {
     );
 
     expect(feature.models()).toEqual([]);
+  });
+
+  /**
+   * Prisma runs a generator as a child process over JSON-RPC and does not relay its
+   * stderr, so anything written there is invisible to the person running
+   * `prisma generate`. A diagnostic nobody can see is the same as no diagnostic.
+   */
+  describe('diagnostics reach the user', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    async function capture(emit: (feature: Awaited<ReturnType<typeof makeFeature>>) => void) {
+      const stdout: string[] = [];
+      const stderr: string[] = [];
+      vi.spyOn(console, 'log').mockImplementation((...args) => stdout.push(args.join(' ')));
+      vi.spyOn(console, 'error').mockImplementation((...args) => stderr.push(args.join(' ')));
+
+      emit(await makeFeature({}, ['Organization']));
+
+      return { stdout: stdout.join('\n'), stderr: stderr.join('\n') };
+    }
+
+    it('writes warnings where Prisma will show them', async () => {
+      const { stdout, stderr } = await capture((feature) => feature.reportWarning('heads up'));
+
+      expect(stdout).toContain('heads up');
+      expect(stderr).not.toContain('heads up');
+    });
+
+    it('writes errors where Prisma will show them', async () => {
+      const { stdout, stderr } = await capture((feature) => feature.reportError('it broke'));
+
+      expect(stdout).toContain('it broke');
+      expect(stderr).not.toContain('it broke');
+    });
   });
 });
