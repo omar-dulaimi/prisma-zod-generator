@@ -1279,6 +1279,10 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'pipe',
     'brand',
     'readonly',
+    // Schema metadata (issue #225/#371): describe works on v3 and v4;
+    // meta is v4-only and is version-mapped during emission.
+    'describe',
+    'meta',
   ];
 
   // Check if method is known
@@ -1628,12 +1632,47 @@ function resolveZodVersion(zodVersion: 'auto' | 'v3' | 'v4'): 'v3' | 'v4' {
  * @param zodVersion - Zod version target for version-specific handling
  * @returns Method mapping result
  */
+/**
+ * Map .meta({...}) parameters to a .describe(...) call for Zod v3, which has
+ * no .meta(). Returns null when no description key can be extracted.
+ */
+function metaParamsToDescribeCall(parameters: unknown[]): string | null {
+  const p = parameters[0];
+  if (!p || typeof p !== 'object') return null;
+  if ('__js_object_literal__' in (p as Record<string, unknown>)) {
+    const literal = (p as { __js_object_literal__: string }).__js_object_literal__;
+    const m = literal.match(/\bdescription\s*:\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/);
+    return m ? `.describe(${m[1]})` : null;
+  }
+  const description = (p as { description?: unknown }).description;
+  return typeof description === 'string' ? `.describe(${JSON.stringify(description)})` : null;
+}
+
 function mapAnnotationToZodMethod(
   annotation: ParsedZodAnnotation,
   context: FieldCommentContext,
   zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
 ): MethodMappingResult {
   const { method, parameters } = annotation;
+
+  // Schema metadata (issues #225/#371). describe exists on v3 and v4; meta is
+  // v4-only and downgrades to .describe(description) on v3.
+  if (method === 'describe') {
+    return { methodCall: `.describe(${formatParameters(parameters)})` };
+  }
+  if (method === 'meta') {
+    if (resolveZodVersion(zodVersion) === 'v4') {
+      return { methodCall: `.meta(${formatParameters(parameters)})` };
+    }
+    const describeCall = metaParamsToDescribeCall(parameters);
+    if (describeCall) {
+      return { methodCall: describeCall };
+    }
+    logger.warn(
+      `@zod.meta() requires Zod v4; dropped for ${context.modelName}.${context.fieldName} (no description key to map to .describe)`,
+    );
+    return { methodCall: '' };
+  }
 
   // Get method configuration. For list fields, validations like .min/.max/.length should
   // target the array wrapper rather than the element type, so treat the effective
@@ -3097,6 +3136,59 @@ function deduplicateImports(imports: CustomImport[]): CustomImport[] {
  * @param model - Prisma DMMF model
  * @returns Custom imports parsing result
  */
+/**
+ * Extract a bare model-level metadata chain (`/// @zod .meta({...})` or
+ * `.describe("...")` without an accompanying @zod.import). Only metadata
+ * methods are recognized here — behavioral chains (refine/transform) remain
+ * exclusive to the import-based path. meta is version-mapped: passthrough on
+ * v4, downgraded to .describe(description) or dropped on v3 (issue #225).
+ */
+function extractBareModelMetadataChain(modelComment: string): string | undefined {
+  const zodMatch = modelComment.match(/@zod\s*(?=\.\s*(?:meta|describe)\s*\()/);
+  if (!zodMatch || zodMatch.index === undefined) return undefined;
+
+  let zodVersion: 'auto' | 'v3' | 'v4' = 'auto';
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular import
+    const cfg = require('../transformer').default.getGeneratorConfig?.();
+    if (cfg?.zodImportTarget === 'v3' || cfg?.zodImportTarget === 'v4') {
+      zodVersion = cfg.zodImportTarget;
+    }
+  } catch {
+    /* ignore — resolveZodVersion handles 'auto' */
+  }
+  const isV4 = resolveZodVersion(zodVersion) === 'v4';
+
+  let rest = modelComment.slice(zodMatch.index + zodMatch[0].length);
+  const calls: string[] = [];
+
+  for (;;) {
+    const methodMatch = rest.match(/^\s*\.\s*(meta|describe)\s*\(/);
+    if (!methodMatch) break;
+    const argsStart = methodMatch[0].length;
+    const argsEnd = findBalancedParentheses(rest, argsStart);
+    if (argsEnd === -1) break;
+    const args = rest.slice(argsStart, argsEnd).trim();
+    const method = methodMatch[1];
+
+    if (method === 'describe') {
+      calls.push(`.describe(${args})`);
+    } else if (isV4) {
+      calls.push(`.meta(${args})`);
+    } else {
+      const m = args.match(/\bdescription\s*:\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/);
+      if (m) {
+        calls.push(`.describe(${m[1]})`);
+      } else {
+        logger.warn('@zod.meta() on a model requires Zod v4; annotation dropped');
+      }
+    }
+    rest = rest.slice(argsEnd + 1);
+  }
+
+  return calls.length > 0 ? calls.join('') : undefined;
+}
+
 export function extractModelCustomImports(model: DMMF.Model): CustomImportsParseResult {
   const modelComment = model.documentation || '';
 
@@ -3114,7 +3206,17 @@ export function extractModelCustomImports(model: DMMF.Model): CustomImportsParse
     comment: modelComment,
   };
 
-  return parseCustomImports(modelComment, context);
+  const result = parseCustomImports(modelComment, context);
+
+  // Bare metadata chains work without @zod.import (issue #225)
+  if (!result.customSchema) {
+    const metadataChain = extractBareModelMetadataChain(modelComment);
+    if (metadataChain) {
+      result.customSchema = metadataChain;
+    }
+  }
+
+  return result;
 }
 
 /**

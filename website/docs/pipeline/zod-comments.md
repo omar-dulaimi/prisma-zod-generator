@@ -510,6 +510,38 @@ metadata: z.union([JsonNullValueInputSchema, z.object({
 - **Nested Objects** → `z.object({...})`
 - **null** → `z.null()`
 
+## Schema Metadata (`.meta()` / `.describe()`)
+
+Attach [Zod metadata](https://zod.dev/metadata) to fields and whole models — useful for OpenAPI generators, LLM function-calling contexts, and any consumer reading schema registries:
+
+```prisma
+/// @zod .meta({ description: "This is a model description", deprecated: true })
+model Api {
+  id         Int      @id @default(autoincrement())
+  /// @zod.meta({ description: "The updated at date" })
+  updated_at DateTime @default(now())
+  /// @zod.describe("A described field")
+  note       String?
+}
+```
+
+Generates (Zod v4):
+
+```typescript
+export const ApiSchema = z.object({
+  id: z.number().int(),
+  updated_at: z.date().meta({ description: "The updated at date" }),
+  note: z.string().describe('A described field').nullish(),
+}).meta({ description: "This is a model description", deprecated: true });
+```
+
+Version behavior:
+
+- **Zod v4** (`zodImportTarget: "v4"` or auto-resolved): `.meta()` passes through at both field and model level.
+- **Zod v3**: `.meta()` is not available — the annotation downgrades to `.describe(description)` when a `description` key is present, and is dropped (with a generation-time warning) otherwise. `.describe()` works on both versions.
+
+Model-level metadata works standalone — no `@zod.import()` required. Field metadata applies to pure models and CRUD input/object schemas alike.
+
 ## Chaining Support
 
 All methods can be chained together:
