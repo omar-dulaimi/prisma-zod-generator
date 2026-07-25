@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import { isAbsolute, resolve } from 'path';
 import type { SafetyOptions } from '../types/safety';
 import { logger } from '../utils/logger';
+import { ConfigurationSchema } from './schema';
 
 /**
  * Configuration interface for the Prisma Zod Generator
@@ -49,7 +50,7 @@ export interface GeneratorConfig {
    * When true, apply a split strategy by default when no dateTimeStrategy is set:
    * - Inputs: coerce (z.coerce.date()) to accept ISO strings from JSON clients
    * - Pure models and result schemas: date (z.date())
-   * Default: false. Note: Explicit dateTimeStrategy overrides this behavior.
+   * Default: true. Note: Explicit dateTimeStrategy overrides this behavior.
    */
   dateTimeSplitStrategy?: boolean;
 
@@ -412,6 +413,8 @@ export function parseJsonConfig(content: string, filePath?: string): GeneratorCo
       throw new ConfigParseError('Configuration must be a JSON object', undefined, filePath);
     }
 
+    warnOnUnknownConfigKeys(parsed as Record<string, unknown>, filePath);
+
     // Transform legacy format to new format
     const transformedConfig = transformLegacyConfig(parsed);
 
@@ -437,6 +440,30 @@ type LegacyModelConfig = {
   variants?: { [K in 'pure' | 'input' | 'result']?: { excludeFields?: string[] } };
   [key: string]: unknown;
 };
+
+/**
+ * Warn about unrecognized top-level configuration keys.
+ *
+ * The generator does not validate user configuration, so a misspelled key used
+ * to be silently ignored — the classic "my setting did nothing" report. This
+ * only warns: generation continues, and unknown keys are still passed through,
+ * so it can never turn a working setup into a failing one.
+ */
+function warnOnUnknownConfigKeys(parsed: Record<string, unknown>, filePath?: string): void {
+  const known = new Set(Object.keys(ConfigurationSchema.properties ?? {}));
+  // Legacy aliases accepted by transformLegacyConfig
+  for (const legacy of ['isGenerateSelect', 'isGenerateInclude']) known.add(legacy);
+
+  const unrecognized = Object.keys(parsed).filter((key) => !known.has(key));
+  if (unrecognized.length === 0) return;
+
+  logger.warn(
+    `[prisma-zod-generator] Ignoring unknown configuration ${
+      unrecognized.length === 1 ? 'key' : 'keys'
+    } ${unrecognized.map((k) => `"${k}"`).join(', ')}${filePath ? ` in ${filePath}` : ''}. ` +
+      `Check the spelling against the configuration reference: https://omar-dulaimi.github.io/prisma-zod-generator/docs/reference/config-options`,
+  );
+}
 
 function transformLegacyConfig(config: unknown): GeneratorConfig {
   const base = (typeof config === 'object' && config !== null ? config : {}) as Record<

@@ -22,7 +22,12 @@ export const logger = {
     if (enabled) console.log(...args);
   },
   info: (...args: unknown[]) => console.info(...args),
-  warn: (...args: unknown[]) => console.warn(...args),
+  // Warnings go to stdout, not stderr: Prisma runs generators as child
+  // processes over JSON-RPC and does not surface their stderr, so a
+  // console.warn is invisible to the person running `prisma generate` —
+  // which would silently defeat every diagnostic we emit (skipped @zod
+  // annotations, unknown config keys, unsupported Prisma versions, ...).
+  warn: (...args: unknown[]) => console.log(...args),
   error: (...args: unknown[]) => console.error(...args),
   isDebugEnabled: () => enabled,
 };

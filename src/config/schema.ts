@@ -52,9 +52,9 @@ export const ConfigurationSchema: JSONSchema7 = {
     },
     placeArrayVariantsAtRoot: {
       type: 'boolean',
-      default: true,
+      default: false,
       description:
-        'When using array-based variants, place them at schemas root; if false, under variants/',
+        'When using array-based variants, place them at the schemas root. Default false: array variants are written under variants/ with a generated index.ts',
     },
     formatGeneratedSchemas: {
       type: 'boolean',
@@ -260,13 +260,15 @@ export const ConfigurationSchema: JSONSchema7 = {
     },
     addSelectType: {
       type: 'boolean',
-      default: false,
-      description: 'Legacy option: also generate Select type',
+      default: true,
+      description:
+        'Generate Select schemas. On by default; set false to omit them. Forced off in minimal mode. Generator-block equivalent: isGenerateSelect',
     },
     addIncludeType: {
       type: 'boolean',
-      default: false,
-      description: 'Legacy option: also generate Include type',
+      default: true,
+      description:
+        'Generate Include schemas. On by default; set false to omit them. Forced off in minimal mode. Generator-block equivalent: isGenerateInclude',
     },
 
     strictCreateInputs: {
@@ -539,7 +541,8 @@ export const ConfigurationSchema: JSONSchema7 = {
         enums: {
           type: 'boolean',
           default: true,
-          description: 'Apply strict mode to enum schemas',
+          description:
+            'No effect. Enum schemas are emitted as z.enum(...), which has no strict() to apply. Accepted for backward compatibility',
         },
       },
     },

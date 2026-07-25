@@ -126,6 +126,35 @@ export class ResultSchemaGenerator {
     return !!cfg?.jsonSchemaCompatible;
   }
 
+  /**
+   * Zod expression for a Decimal field in a result schema, honoring decimalMode.
+   *
+   * Result schemas validate what Prisma *returns*, and in the default 'decimal'
+   * mode that is a Prisma.Decimal instance — so a plain z.number() would reject
+   * real query results. The 'decimal' expression is deliberately import-free
+   * (structural check on the decimal.js shape) so result files stay
+   * dependency-free and keep working in single-file bundles; it also matches
+   * Decimal instances coming from a different runtime copy of the class.
+   *
+   * It remains a union with number and numeric string so that callers already
+   * parsing serialized results (which previously validated against z.number())
+   * keep working — the change only adds the Decimal shape that used to be
+   * rejected.
+   */
+  private decimalResultExpression(): string {
+    // JSON Schema compatibility mode targets plain JSON, where Decimal has no
+    // representation beyond a number.
+    if (this.isJsonSchemaModeEnabled()) return 'z.number()';
+
+    const mode = (this.config as unknown as { decimalMode?: string })?.decimalMode ?? 'decimal';
+    if (mode === 'number') return 'z.number()';
+    if (mode === 'string') return 'z.string()';
+    return (
+      'z.union([z.number(), z.string().regex(/^-?\\d+(\\.\\d+)?$/), ' +
+      "z.custom((v) => v !== null && typeof v === 'object' && 'd' in v && 'e' in v && 's' in v && typeof (v as { toFixed?: unknown }).toFixed === 'function', { message: 'Expected a Prisma.Decimal' })])"
+    );
+  }
+
   private getJsonSchemaOptions(): {
     dateTimeFormat?: 'isoString' | 'isoDate';
     bigIntFormat?: 'string' | 'number';
@@ -718,7 +747,7 @@ ${allFields.join(',\n')}
       DateTime: 'z.date()',
       Json: isJsonSchemaCompatible ? 'z.any()' : 'z.unknown()',
       Bytes: 'z.instanceof(Uint8Array)',
-      Decimal: 'z.number()', // or z.string() depending on configuration
+      Decimal: this.decimalResultExpression(),
       BigInt: 'z.bigint()',
     };
 
