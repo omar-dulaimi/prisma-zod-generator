@@ -343,6 +343,9 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
         features
           .generatePerformancePack(options.schemaPath, {
             outputPath: path.join(outputPath, 'performance'),
+            // These two parse the schema themselves, so exclusion cannot reach
+            // them through sharedGeneratorConfig.
+            models: config.models ?? {},
             ...(config.performance ?? {}),
           })
           .catch((error: unknown) =>
@@ -357,6 +360,9 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
         features
           .generateDataFactories(options.schemaPath, {
             outputPath: path.join(outputPath, 'factories'),
+            // These two parse the schema themselves, so exclusion cannot reach
+            // them through sharedGeneratorConfig.
+            models: config.models ?? {},
             ...(config.factories ?? {}),
           })
           .catch((error: unknown) => handleFeatureError('Data Factories generation failed', error)),

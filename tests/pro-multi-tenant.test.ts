@@ -173,4 +173,14 @@ describe.skipIf(!proAvailable)('Multi-Tenant Kit', () => {
       expect(source).not.toContain('globalsetting');
     });
   });
+
+  describe('enforceMode', () => {
+    it('bakes the configured mode into the middleware default', async () => {
+      const out = await generate('enforce-warn', 'tenantId', { enforceMode: 'warn' });
+      const source = normalized(join(out, 'tenant-middleware.ts'));
+
+      expect(source).toContain("enforceMode = 'warn'");
+      expect(source).toContain("enforceMode === 'strict'");
+    });
+  });
 });

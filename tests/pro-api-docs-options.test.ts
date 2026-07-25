@@ -213,4 +213,20 @@ model Category {
     },
     GENERATION_TIMEOUT,
   );
+
+  describe('the emitted client', () => {
+    it(
+      'attaches the credential according to authScheme',
+      async () => {
+        // It hardcoded a bearer header, so authScheme never reached the client —
+        // the SDK pack's equivalent option was honoured and these two disagreed.
+        const apikey = await generate('auth-apikey', { authScheme: 'apikey' });
+        expect(readFileSync(join(apikey, 'sdk.ts'), 'utf-8')).toContain("'X-API-Key'");
+
+        const bearer = await generate('auth-bearer', { authScheme: 'bearer' });
+        expect(readFileSync(join(bearer, 'sdk.ts'), 'utf-8')).toContain('Bearer ');
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });

@@ -90,6 +90,24 @@ describe.skipIf(!proAvailable)('Data Factories persistence', () => {
     expect(emitted).not.toContain('Organization');
   });
 
+  it('respects a model excluded in the generator config', async () => {
+    // Same gap as the Performance Pack: this pack parses the schema itself, so it
+    // bypassed the `models` exclusion the other packs honour.
+    const { generateDataFactories } = await import(
+      '../src/pro/features/data-factories/data-factories'
+    );
+    const outputPath = join(dir, 'excluded');
+
+    await generateDataFactories(join(dir, 'schema.prisma'), {
+      outputPath,
+      models: { Post: { enabled: false } },
+    });
+
+    const emitted = readFileSync(join(outputPath, 'factories.ts'), 'utf-8');
+    expect(emitted).toContain('AuthorFactory');
+    expect(emitted).not.toContain('PostFactory');
+  });
+
   it('refuses to pretend a create succeeded without a client', () => {
     // Returning `{ ...data, id: random }` made an unpersisted object look saved.
     expect(source).not.toMatch(/id:\s*Math\.floor\(Math\.random\(\)/);

@@ -156,6 +156,28 @@ describe.skipIf(!proAvailable)('Contract Testing pacts', () => {
   );
 
   it(
+    'writes pacts where the provider verification looks for them',
+    async () => {
+      // The consumer wrote `dir: './pacts'`, resolved against the process CWD,
+      // while the verifier looked in `<output>/pacts` relative to its own file. The
+      // two only agreed if the tests happened to run from the right directory, so
+      // verification found no pacts.
+      const out = await generate('pact-dir', {});
+      const consumer = firstPact(out);
+      const provider = readFileSync(
+        join(out, 'provider', readdirSync(join(out, 'provider'))[0]),
+        'utf-8',
+      );
+
+      // Both sides must anchor on their own location, not the CWD.
+      expect(consumer).toContain("path.resolve(__dirname, '..', 'pacts')");
+      expect(consumer).not.toContain("dir: './pacts'");
+      expect(provider).toContain("path.resolve(__dirname, '..', 'pacts')");
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
     'generates a provider verification test',
     async () => {
       // The pack promised both sides; only the consumer side existed.

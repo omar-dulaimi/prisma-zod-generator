@@ -1,5 +1,5 @@
 import { getDMMF } from '@prisma/internals';
-import { existsSync, mkdtempSync, rmSync } from 'fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -151,6 +151,58 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
     GENERATION_TIMEOUT,
   );
 
+  /**
+   * Only four of the eleven packs validated their options, so a mistyped key still
+   * vanished in silence in the other seven — the guarantee is only worth anything
+   * if it holds everywhere.
+   */
+  describe.each([
+    [
+      'server-actions',
+      '../src/pro/features/server-actions/server-actions',
+      'generateServerActionsFromDMMF',
+    ],
+    ['form-ux', '../src/pro/features/form-ux/form-ux', 'generateFormUXFromDMMF'],
+    [
+      'postgres-rls',
+      '../src/pro/features/postgres-rls/postgres-rls',
+      'generatePostgresRLSFromDMMF',
+    ],
+    [
+      'multi-tenant-kit',
+      '../src/pro/features/multi-tenant-kit/multi-tenant-kit',
+      'generateMultiTenantKitFromDMMF',
+    ],
+  ])('%s', (pack, modulePath, exportName) => {
+    it(
+      'reports an unrecognised option',
+      async () => {
+        const logged: string[] = [];
+        vi.spyOn(console, 'log').mockImplementation((...args) => {
+          logged.push(args.join(' '));
+        });
+
+        const mod = (await import(modulePath)) as Record<string, unknown>;
+        const generate = mod[exportName] as (...args: unknown[]) => Promise<void>;
+        const dmmf = await getDMMF({ datamodel: SCHEMA });
+
+        await generate(
+          dmmf,
+          {},
+          join(dir, 'schema.prisma'),
+          join(dir, `opts-${pack}`),
+          '@prisma/client',
+          'postgresql',
+          { deffinitelyNotAnOption: true, outputPath: join(dir, `opts-${pack}`) },
+          [],
+        );
+
+        expect(logged.join('\n')).toContain('deffinitelyNotAnOption');
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   it(
     'names the options it does support when it warns',
     async () => {
@@ -164,4 +216,46 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
     },
     GENERATION_TIMEOUT,
   );
+
+  /**
+   * These two packs are plain functions rather than ProFeatureBase subclasses, so
+   * they use the standalone reporter — the guarantee has to hold for all eleven,
+   * not just the nine that happen to be classes.
+   */
+  describe.each([
+    [
+      'data-factories',
+      '../src/pro/features/data-factories/data-factories',
+      'generateDataFactories',
+    ],
+    [
+      'performance-pack',
+      '../src/pro/features/performance-pack/performance-pack',
+      'generatePerformancePack',
+    ],
+  ])('%s', (pack, modulePath, exportName) => {
+    it(
+      'reports an unrecognised option',
+      async () => {
+        const logged: string[] = [];
+        vi.spyOn(console, 'log').mockImplementation((...args) => {
+          logged.push(args.join(' '));
+        });
+
+        const schemaPath = join(dir, 'schema.prisma');
+        writeFileSync(schemaPath, SCHEMA);
+
+        const mod = (await import(modulePath)) as Record<string, unknown>;
+        const generate = mod[exportName] as (path: string, config: unknown) => Promise<void>;
+
+        await generate(schemaPath, {
+          outputPath: join(dir, `fn-opts-${pack}`),
+          deffinitelyNotAnOption: true,
+        });
+
+        expect(logged.join('\n')).toContain('deffinitelyNotAnOption');
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });

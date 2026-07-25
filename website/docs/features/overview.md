@@ -166,13 +166,41 @@ and no trailing commas.
 ### What happens if a pack fails
 
 Packs are generated concurrently and each one's errors are caught individually. If a pack throws —
-a license tier it is not entitled to, a malformed option, an unwritable output directory — you get a
-warning on stderr, that pack emits nothing, and `prisma generate` still exits `0` while the other
-packs finish normally.
+a license tier it is not entitled to, a malformed option, an unwritable output directory — that pack
+emits nothing, and `prisma generate` still exits `0` while the other packs finish normally.
+
+Warnings and errors go to **stdout** from 2.4.2+, because Prisma does not relay a generator's stderr:
+before that, every diagnostic a pack emitted was invisible to whoever ran `prisma generate`.
 
 That matters in CI: a missing directory under `generated/pro/` is the signal that a pack failed, not
-a non-zero exit code. If a pack you enabled produced no output, re-read the generator's warnings and
+a non-zero exit code. If a pack you enabled produced no output, re-read the generator's output and
 confirm your plan includes it (see the Plan Comparison table above).
+
+### Options are never silently ignored
+
+Every pack reports, on stdout, any option key it does not recognise and any key it accepts but does
+not act on — with the list of what it does support. Four options are deliberately refused rather than
+half-implemented, each for a stated reason:
+
+| Option | Pack | Why it is refused |
+| --- | --- | --- |
+| `enableAutoPublish` | SDK Publisher | Would publish on every `prisma generate`; the emitted package carries a `publish` script for CI instead |
+| `startMockServer`, `mockServer` | API Docs | Would attach a long-running server to the generator; run the emitted `mock-server.js` yourself |
+| `includeChangelog` | API Docs | No meaningful source for a changelog at codegen time |
+| `enableRLS` | Policies | Duplicates the [PostgreSQL RLS pack](./postgres-rls.md) — use `enablePostgresRLS` |
+
+Drift Guard generates no files at all: comparing two schema revisions needs both revisions, which
+`prisma generate` does not have, so it runs from the `pzg-pro guard` CLI or `validateDrift()`.
+
+### Restricting which models a pack generates
+
+Point `configPath` at your generator config and disable the models you want left out — the same
+`models` block the core generator uses, honoured by every pack from 2.4.0+ (and by Data Factories and
+the Performance Pack, which parse the schema themselves, from 2.8.2+):
+
+```json
+{ "models": { "AuditLog": { "enabled": false }, "SessionToken": { "enabled": false } } }
+```
 
 ## Packs at a glance
 

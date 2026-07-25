@@ -109,6 +109,23 @@ describe.skipIf(!proAvailable)('Performance Pack module graph', () => {
   );
 
   it(
+    'respects a model excluded in the generator config',
+    async () => {
+      // This pack takes (schemaPath, options) and parses the schema itself, so it
+      // never passes through ProFeatureBase.getEnabledModels() — the `models`
+      // exclusion every other pack honours was silently ignored here.
+      const out = await generate('excluded', {
+        models: { Project: { enabled: false } },
+      });
+      const precompiled = readFileSync(join(out, 'precompiled.ts'), 'utf-8');
+
+      expect(precompiled).toContain('Member');
+      expect(precompiled).not.toContain('Project');
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
     'narrows to hotPaths when given',
     async () => {
       const out = await generate('hot', { hotPaths: ['Member'] });
@@ -169,6 +186,20 @@ describe.skipIf(!proAvailable)('Performance Pack module graph', () => {
       }
 
       expect(logged.join('\n')).toContain('enablePrecompilation');
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
+    'honours maxConcurrency instead of dispatching the whole chunk',
+    async () => {
+      // The option was accepted and decorative: Promise.all over the entire chunk
+      // meant in-flight work always equalled chunkSize.
+      const out = await generate('concurrency', {});
+      const streaming = readFileSync(join(out, 'streaming.ts'), 'utf-8');
+
+      expect(streaming).toContain('start += maxConcurrency');
+      expect(streaming).not.toMatch(/await Promise\.all\(chunkPromises\);/);
     },
     GENERATION_TIMEOUT,
   );
