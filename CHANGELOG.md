@@ -1,3 +1,9 @@
+## [2.4.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.4.1...v2.4.2) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **tests,core:** stop the shared fixture race, and surface generator errors ([13b33d7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/13b33d7b94c0d45d21a35537c80308006437eb71))
+
 ## [2.4.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.4.0...v2.4.1) (2026-07-25)
 
 ### 🐛 Bug Fixes
