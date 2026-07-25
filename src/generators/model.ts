@@ -1550,6 +1550,15 @@ export class PrismaTypeMapper {
           }
         }
 
+        if (field.type === 'Bytes' && typeof defaultValue === 'string') {
+          const bytesCfg = this.config.complexTypes?.bytes;
+          if (bytesCfg?.useBase64 === false) {
+            // Uint8Array base schema: decode the base64 default lazily and
+            // browser-safe (atob, not Buffer) so each parse gets a fresh array.
+            literalValue = `() => Uint8Array.from(atob(${JSON.stringify(defaultValue)}), (c) => c.charCodeAt(0))`;
+          }
+        }
+
         if (field.type === 'Json' && typeof defaultValue === 'string') {
           try {
             JSON.parse(defaultValue);
@@ -2911,6 +2920,19 @@ export class PrismaTypeMapper {
       const chain = dotValidations.join('');
       const chainHasOptionality = /\.(optional|nullish|nullable)\(/.test(chain);
 
+      // A trailing .default(...) in the base must end up AFTER the validation
+      // chain: validators like .regex()/.max() exist on the base type, not on
+      // ZodDefault, so `.default(...).regex(...)` throws at import time (#394).
+      let baseCore = base;
+      let defaultSuffix = '';
+      if (chain) {
+        const trailingDefault = baseCore.match(/\.default\((?:[^()]|\([^()]*\))*\)$/);
+        if (trailingDefault) {
+          defaultSuffix = trailingDefault[0];
+          baseCore = baseCore.slice(0, -trailingDefault[0].length);
+        }
+      }
+
       // Apply configured optional field behavior only for schema-optional fields.
       // Required fields (even with defaults/auto-gen) remain required in pure models.
       const treatAsOptional = field.isOptional;
@@ -2944,10 +2966,10 @@ export class PrismaTypeMapper {
         }
 
         lines.push(
-          `  get ${field.fieldName}(): ${returnType} { return ${base}${chain}${modifierSuffix}; },`,
+          `  get ${field.fieldName}(): ${returnType} { return ${baseCore}${chain}${defaultSuffix}${modifierSuffix}; },`,
         );
       } else {
-        lines.push(`  ${field.fieldName}: ${base}${chain}${modifierSuffix},`);
+        lines.push(`  ${field.fieldName}: ${baseCore}${chain}${defaultSuffix}${modifierSuffix},`);
       }
 
       if (!lean) {

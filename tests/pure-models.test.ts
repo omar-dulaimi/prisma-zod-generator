@@ -759,6 +759,63 @@ model Counter {
     );
 
     it(
+      'should append Bytes defaults after the validation chain (issue #394)',
+      async () => {
+        const testEnv = await TestEnvironment.createTestEnv('pure-models-394-bytes-default');
+
+        try {
+          const config = {
+            ...ConfigGenerator.createBasicConfig(),
+            pureModels: true,
+          };
+
+          const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model Doc {
+  id   Int   @id @default(autoincrement())
+  blob Bytes @default("SGVsbG8=")
+}
+`;
+
+          const configPath = join(testEnv.testDir, 'config.json');
+          writeFileSync(configPath, JSON.stringify(config, null, 2));
+          writeFileSync(testEnv.schemaPath, schema);
+
+          await testEnv.runGeneration();
+
+          const content = readFileSync(
+            join(testEnv.outputDir, 'schemas', 'models', 'Doc.schema.ts'),
+            'utf-8',
+          );
+
+          // Validators first, .default() last — the reverse throws at import
+          // time because ZodDefault has no .regex/.max.
+          expect(content).toMatch(
+            /blob:\s*z\.string\(\)\.regex\([\s\S]*?\)\.max\([^)]*\)\.default\("SGVsbG8="\)/,
+          );
+          expect(content).not.toMatch(/\.default\("SGVsbG8="\)\.regex/);
+        } finally {
+          await testEnv.cleanup();
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
       'should keep BigInt defaults as strings in jsonSchemaCompatible string mode (issue #373)',
       async () => {
         const testEnv = await TestEnvironment.createTestEnv('pure-models-373-jsoncompat');
