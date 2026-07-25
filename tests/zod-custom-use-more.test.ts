@@ -55,15 +55,23 @@ model CustomExamples {
         expect(existsSync(modelFile)).toBe(true);
         const content = readFileSync(modelFile, 'utf-8');
 
-        // settings: record override present with default
-        expect(content).toMatch(/settings: z\.record\(z\.string\(\)\)\.default\("\{\}"\)/);
+        // settings: the custom.use expression fully replaces the field schema.
+        // A Prisma @default on the same field is NOT re-appended — appending an
+        // arbitrary literal to an arbitrary custom expression would often be
+        // invalid TypeScript. Put the default inside the annotation instead:
+        // @zod.custom.use(z.record(z.string()).default({}))
+        expect(content).toMatch(/settings: z\.record\(z\.string\(\)\)/);
+        expect(content).not.toMatch(/settings:[^,\n]*\.default\("\{\}"\)/);
         // payload2: union override plus .optional()
         expect(content).toMatch(
           /payload2: z\.union\(\[z\.string\(\), z\.number\(\), z\.boolean\(\)\]\)\.optional\(\)/,
         );
         // items: array of object override with default
+        // The nested `.optional()` inside the custom expression must survive
+        // (only generator-applied trailing optionality is stripped), and the
+        // Prisma @default is not re-appended — see the note above.
         expect(content).toMatch(
-          /items: z\.array\(z\.object\(\{ a: z\.string\(\), b: z\.number\(\)\.optional\(\) \}\)\)\.default\("\[\]"\)/,
+          /items: z\.array\(z\.object\(\{ a: z\.string\(\), b: z\.number\(\)\.optional\(\) \}\)\)/,
         );
         // tupleVal: tuple override
         expect(content).toMatch(/tupleVal: z\.tuple\(\[z\.string\(\), z\.number\(\)\]\)/);

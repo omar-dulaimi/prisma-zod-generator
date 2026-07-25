@@ -16,7 +16,10 @@ interface SchemaInfo {
 
 class ComprehensiveSchemaTest {
   private discoveredSchemas: SchemaInfo[] = [];
-  private basePath = 'prisma/generated/schemas';
+  // Per-provider fixtures live under tests/multi-provider/schemas/<provider>/generated/schemas.
+  // (This previously pointed at prisma/generated/schemas, a path the project no
+  // longer generates, so discovery always came back empty.)
+  private basePath = 'tests/multi-provider/schemas';
 
   /**
    * Discover all schema files across all providers

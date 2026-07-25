@@ -110,3 +110,10 @@ scripts/branding/.venv/bin/pip3.12
 scripts/branding/.venv/bin/python
 scripts/branding/.venv/bin/python3
 scripts/branding/.venv/bin/python3.12
+
+# Test-generated Prisma config in multi-provider fixtures
+tests/multi-provider/schemas/*/prisma.config.mjs
+
+# Test artifacts (writeConfig emits a config next to the schema under test)
+prisma.config.mjs
+temp-schema-*.prisma

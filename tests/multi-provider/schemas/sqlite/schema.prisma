@@ -4,11 +4,11 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./test.db"
+
 }
 
 generator zod {
-  provider = "node /home/omar/Desktop/NewFolder/libs/prisma-zod-generator/lib/generator.js"
+  provider = "node ./lib/generator.js"
   output   = "./generated"
 }
 

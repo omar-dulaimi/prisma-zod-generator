@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 
 // Import schemas that demonstrate the TypeScript inference fix
 // These schemas have required relations that use z.lazy() and should benefit from the fix
-import { PostgreSQLProfileCreateInputObjectSchema } from '../multi-provider/schemas/postgresql/generated/schemas/objects/PostgreSQLProfileCreateInput.schema';
-import { PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema } from '../multi-provider/schemas/postgresql/generated/schemas/objects/PostgreSQLUserCreateNestedOneWithoutProfileInput.schema';
+import { PostgreSQLProfileCreateInputObjectSchema } from './multi-provider/schemas/postgresql/generated/schemas/objects/PostgreSQLProfileCreateInput.schema';
+import { PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema } from './multi-provider/schemas/postgresql/generated/schemas/objects/PostgreSQLUserCreateNestedOneWithoutProfileInput.schema';
 
 describe('TypeScript Inference Fix for z.lazy() Relations', () => {
   describe('Schema Generation Fix', () => {
@@ -42,11 +42,8 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
       const minimalValidData = {
         user: {
           create: {
-            id: 'test-user-id',
             email: 'test@example.com',
-            username: 'testuser',
-            firstName: 'Test',
-            lastName: 'User',
+            name: 'Test User',
           },
         },
       };
@@ -75,11 +72,8 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
     it('should validate nested user creation', () => {
       const nestedCreateData = {
         create: {
-          id: 'new-user-id',
           email: 'new@example.com',
-          username: 'newuser',
-          firstName: 'New',
-          lastName: 'User',
+          name: 'New User',
         },
       };
 
@@ -95,11 +89,8 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
       const validData = {
         user: {
           create: {
-            id: 'user-id',
             email: 'user@example.com',
-            username: 'username',
-            firstName: 'First',
-            lastName: 'Last',
+            name: 'User',
           },
         },
       };
@@ -128,11 +119,8 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
       const testData = {
         user: {
           create: {
-            id: 'test-id',
             email: 'test@example.com',
-            username: 'test',
-            firstName: 'Test',
-            lastName: 'User',
+            name: 'Test User',
           },
         },
       };
@@ -144,11 +132,8 @@ describe('TypeScript Inference Fix for z.lazy() Relations', () => {
       expect(() => {
         PostgreSQLUserCreateNestedOneWithoutProfileInputObjectSchema.safeParse({
           create: {
-            id: 'test-id',
             email: 'test@example.com',
-            username: 'test',
-            firstName: 'Test',
-            lastName: 'User',
+            name: 'Test User',
           },
         });
       }).not.toThrow();

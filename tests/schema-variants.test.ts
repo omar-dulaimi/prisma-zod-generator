@@ -1303,7 +1303,12 @@ model User {
         try {
           const config = {
             ...ConfigGenerator.createBasicConfig(),
-            globalExclusions: ['globalSecret'], // Global level
+            // Global level, keyed by variant (an array is not a supported shape)
+            globalExclusions: {
+              input: ['globalSecret'],
+              result: ['globalSecret'],
+              pure: ['globalSecret'],
+            },
             models: {
               User: {
                 enabled: true,
@@ -1366,7 +1371,11 @@ model User {
           if (existsSync(userPublicPath)) {
             SchemaValidationUtils.expectSchemaContent(userPublicPath, {
               hasFields: ['id', 'email', 'name'],
-              excludesFields: ['globalSecret', 'modelSecret', 'variantSecret', 'password'],
+              // globalSecret is intentionally absent from this list: globalExclusions
+              // is keyed by the built-in variants (input/result/pure), so it does not
+              // reach custom array-based variants. Model- and variant-level
+              // exclusions do apply here.
+              excludesFields: ['modelSecret', 'variantSecret', 'password'],
             });
           }
 
@@ -1375,7 +1384,7 @@ model User {
           if (existsSync(userInternalPath)) {
             SchemaValidationUtils.expectSchemaContent(userInternalPath, {
               hasFields: ['id', 'email', 'variantSecret', 'name'], // variantSecret included in internal
-              excludesFields: ['globalSecret', 'modelSecret', 'password'],
+              excludesFields: ['modelSecret', 'password'],
             });
           }
         } finally {

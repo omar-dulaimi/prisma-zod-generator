@@ -10,7 +10,7 @@ const execAsync = promisify(exec);
 describe('Issue #118: Output Directory Structure', () => {
   const testOutputDir = path.join(__dirname, '..', 'test-output-issue-118');
   const schemasSubdir = path.join(testOutputDir, 'schemas');
-  const tempSchemaPath = path.join(__dirname, '..', 'temp-schema-118.prisma');
+  const tempSchemaPath = path.join(testOutputDir, 'temp-schema-118.prisma');
 
   beforeAll(async () => {
     // Clean up any existing test output
@@ -52,6 +52,7 @@ model TestPost {
 }
 `;
 
+    await fs.mkdir(testOutputDir, { recursive: true });
     await fs.writeFile(tempSchemaPath, testSchema);
   });
 
@@ -156,7 +157,8 @@ model TestUser {
 }
 `;
 
-    const tempSchemaPath2 = path.join(__dirname, '..', 'temp-schema-118-regular.prisma');
+    const tempSchemaPath2 = path.join(testOutputDir, 'temp-schema-118-regular.prisma');
+    await fs.mkdir(testOutputDir, { recursive: true });
     await fs.writeFile(tempSchemaPath2, testSchema);
 
     try {

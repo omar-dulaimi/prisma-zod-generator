@@ -736,7 +736,11 @@ export async function generate(options: GeneratorOptions) {
 
     maybeShowSponsorMessage();
   } catch (error) {
+    // Log for context, then rethrow: swallowing here made `prisma generate`
+    // exit 0 after a failed generation, so a broken setup looked like success
+    // and simply produced no schemas.
     console.error(error);
+    throw error;
   }
 }
 

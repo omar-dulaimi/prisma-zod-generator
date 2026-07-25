@@ -109,8 +109,13 @@ jobs:
         run: pnpm run lint || echo "Linting failed but continuing for now"
         continue-on-error: true
 
-      - name: Run basic tests
-        run: pnpm run test:basic
+      # Runs every file matched by the vitest include glob, not a hand-maintained
+      # list, so a new test file can never be silently left out of CI. No
+      # database services are required: the provider suites only run
+      # `prisma generate`, they never connect.
+      - name: Run full test suite
+        run: pnpm run test:all
+        timeout-minutes: 45
 
   package-test:
     runs-on: ubuntu-latest

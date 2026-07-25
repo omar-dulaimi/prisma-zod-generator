@@ -116,7 +116,9 @@
     "docs:dev": "cd website && pnpm run dev",
     "docs:build": "cd website && pnpm run build",
     "docs:serve": "cd website && pnpm run serve",
-    "postrelease": "echo 'Changelog is maintained on GitHub; no docs sync needed.'"
+    "postrelease": "echo 'Changelog is maintained on GitHub; no docs sync needed.'",
+    "test:all": "VITEST_MAX_WORKERS=16 vitest --config vitest.config.mjs run --reporter=default",
+    "test:all:sequential": "VITEST_MAX_WORKERS=1 vitest --config vitest.config.mjs run --reporter=default"
   },
   "author": {
     "name": "Omar Dulaimi",

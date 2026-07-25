@@ -775,7 +775,10 @@ model Profile {
         try {
           const config = {
             ...ConfigGenerator.createBasicConfig(),
-            globalExclusions: ['password'],
+            // globalExclusions is keyed by variant; an array is not a supported
+            // shape and made generation fail (silently, before the generator
+            // started propagating errors).
+            globalExclusions: { input: ['password'], result: ['password'], pure: ['password'] },
             models: {
               User: {
                 enabled: true,

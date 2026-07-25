@@ -20,7 +20,15 @@ function sanitizeSchema(schemaPath: string): string {
   const providerMatch = raw.match(/datasource\s+\w+\s*{[^}]*provider\s*=\s*"([^"]+)"/);
   const provider = providerMatch?.[1] ?? 'postgresql';
 
-  const withoutUrl = raw.replace(/^\s*url\s*=.*$/gm, '');
+  // Rewrite absolute generator provider paths to the repo-relative form.
+  // Fixture schemas have carried a machine-specific absolute path before, which
+  // makes generation fail everywhere except the machine that wrote it.
+  const withRelativeProvider = raw.replace(
+    /provider\s*=\s*"node\s+[^"\r\n]*lib[\\/]+generator\.js"/g,
+    'provider = "node ./lib/generator.js"',
+  );
+
+  const withoutUrl = withRelativeProvider.replace(/^\s*url\s*=.*$/gm, '');
   const cleaned = withoutUrl.replace(
     /^\s*previewFeatures\s*=\s*\[([^\]]*)\]\s*$/gm,
     (_match, features) => {
@@ -40,7 +48,11 @@ function sanitizeSchema(schemaPath: string): string {
 function writeConfig(schemaPath: string, provider: string): string {
   const configPath = path.join(path.dirname(schemaPath), 'prisma.config.mjs');
   const datasourceUrl = DEFAULT_DATASOURCE_URLS[provider] ?? DEFAULT_DATASOURCE_URLS.postgresql;
-  const normalizedSchemaPath = schemaPath.replace(/\\/g, '/');
+  // Prisma resolves `schema` relative to the config file, and this config is
+  // written next to the schema rather than at the cwd the caller used. A
+  // caller-relative path therefore resolved twice ("<env>/<env>/schema.prisma");
+  // embed an absolute path so any caller convention works.
+  const normalizedSchemaPath = path.resolve(schemaPath).replace(/\\/g, '/');
 
   const configContents = `import { defineConfig } from 'prisma/config';
 

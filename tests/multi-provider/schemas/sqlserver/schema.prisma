@@ -4,11 +4,11 @@ generator client {
 
 datasource db {
   provider = "sqlserver"
-  url      = "sqlserver://localhost:1433;database=test;user=sa;password=password;encrypt=true;trustServerCertificate=true"
+
 }
 
 generator zod {
-  provider = "node /home/omar/Desktop/NewFolder/libs/prisma-zod-generator/lib/generator.js"
+  provider = "node ./lib/generator.js"
   output   = "./generated"
 }
 

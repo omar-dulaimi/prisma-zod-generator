@@ -1,11 +1,7 @@
-import { exec } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { promisify } from 'util';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { prismaGenerate } from './helpers/prisma-generate';
-
-const execAsync = promisify(exec);
 
 // Verifies that when the Prisma generator block omits an output attribute,
 // but the JSON config file defines one, the JSON output path is used.
@@ -28,18 +24,33 @@ describe('JSON config output precedence (no output in generator block)', () => {
     };
     await fs.writeFile(jsonConfigPath, JSON.stringify(jsonConfig, null, 2));
 
+    // Prisma requires newline-separated statements: single-line blocks with
+    // semicolons are rejected by schema validation (P1012).
     const schema = `
-    generator client { provider = "prisma-client-js" }
-    datasource db { provider = "sqlite"; url = "file:./dev.db" }
-    generator zod { provider = "node ../../lib/generator.js" config = "./zod-generator.config.json" }
-    model Foo { id Int @id @default(autoincrement()) name String }
-    `;
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  config   = "./zod-generator.config.json"
+}
+
+model Foo {
+  id   Int    @id @default(autoincrement())
+  name String
+}
+`;
     await fs.writeFile(schemaPath, schema);
 
-    // Build once
-    await execAsync('tsc', { cwd: path.join(__dirname, '..') });
-
-    // Run generate (no output attribute in block)
+    // lib/ is built once by the vitest globalSetup; rebuilding here would race
+    // other workers spawning the generator from the same directory.
+    // Run generate (no output attribute in the generator block)
     await prismaGenerate(schemaPath, path.join(__dirname, '..'));
   });
 

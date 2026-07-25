@@ -1,12 +1,37 @@
-import { describe, it } from 'vitest';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 import { SchemaTestUtils } from './schema-test-utils';
+import {
+  createUserPostObjectsFixture,
+  type UserPostFixture,
+} from './helpers/user-post-objects-fixture';
 
-// Generated object schemas under prisma/generated
-import { PostCreateInputObjectSchema } from '../prisma/generated/schemas/objects/PostCreateInput.schema';
-import { UserCreateInputObjectSchema } from '../prisma/generated/schemas/objects/UserCreateInput.schema';
-import { UserCreateNestedOneWithoutPostsInputObjectSchema } from '../prisma/generated/schemas/objects/UserCreateNestedOneWithoutPostsInput.schema';
-import { UserWhereInputObjectSchema } from '../prisma/generated/schemas/objects/UserWhereInput.schema';
+// The object schemas under test are generated on demand: this file used to
+// import them from a committed prisma/generated fixture that the project no
+// longer produces.
+let PostCreateInputObjectSchema: z.ZodTypeAny;
+let UserCreateInputObjectSchema: z.ZodTypeAny;
+let UserCreateNestedOneWithoutPostsInputObjectSchema: z.ZodTypeAny;
+let UserWhereInputObjectSchema: z.ZodTypeAny;
+let fixture: UserPostFixture;
+
+beforeAll(async () => {
+  fixture = await createUserPostObjectsFixture('optional-nullable-behavior');
+  const load = async (base: string, exportName: string) =>
+    (await fixture.load<Record<string, z.ZodTypeAny>>(base))[exportName];
+
+  PostCreateInputObjectSchema = await load('PostCreateInput', 'PostCreateInputObjectSchema');
+  UserCreateInputObjectSchema = await load('UserCreateInput', 'UserCreateInputObjectSchema');
+  UserCreateNestedOneWithoutPostsInputObjectSchema = await load(
+    'UserCreateNestedOneWithoutPostsInput',
+    'UserCreateNestedOneWithoutPostsInputObjectSchema',
+  );
+  UserWhereInputObjectSchema = await load('UserWhereInput', 'UserWhereInputObjectSchema');
+}, 300000);
+
+afterAll(async () => {
+  await fixture?.cleanup();
+});
 
 describe('Optional vs Nullable behavior in object schemas', () => {
   describe('PostCreateInputObjectSchema', () => {
@@ -87,18 +112,28 @@ describe('Optional vs Nullable behavior in object schemas', () => {
     });
   });
 
-  describe('Where input tolerates null for optional non-relation unions', () => {
-    it('UserWhereInputObjectSchema: AND/OR/NOT/email/name/password/role accept null due to optional + nullable', () => {
-      // All of these became optional().nullable() for non-relation fields
-      SchemaTestUtils.testValidData(UserWhereInputObjectSchema, { AND: null });
-      SchemaTestUtils.testValidData(UserWhereInputObjectSchema, { OR: null });
-      SchemaTestUtils.testValidData(UserWhereInputObjectSchema, { NOT: null });
-      SchemaTestUtils.testValidData(UserWhereInputObjectSchema, { email: null });
+  describe('Where input null handling follows column nullability', () => {
+    it('accepts null only for filters on nullable columns', () => {
+      // name and role are nullable in the model, so `null` is a meaningful
+      // filter (IS NULL) and the union is optional().nullable().
       SchemaTestUtils.testValidData(UserWhereInputObjectSchema, { name: null });
-      SchemaTestUtils.testValidData(UserWhereInputObjectSchema, { password: null });
       SchemaTestUtils.testValidData(UserWhereInputObjectSchema, { role: null });
+    });
 
-      // posts is a relation filter and should remain optional-only (no nullable)
+    it('rejects null for filters on non-nullable columns', () => {
+      // email and password are required columns: they can never be null, so the
+      // filter union is optional() only. Accepting null here would let an
+      // impossible query type-check.
+      SchemaTestUtils.testInvalidData(UserWhereInputObjectSchema, { email: null }, ['email']);
+      SchemaTestUtils.testInvalidData(UserWhereInputObjectSchema, { password: null }, ['password']);
+    });
+
+    it('rejects null for the logical operators and relation filters', () => {
+      // AND/OR/NOT mirror Prisma's own types (WhereInput | WhereInput[]), which
+      // are not nullable, and relation filters stay optional-only.
+      SchemaTestUtils.testInvalidData(UserWhereInputObjectSchema, { AND: null }, ['AND']);
+      SchemaTestUtils.testInvalidData(UserWhereInputObjectSchema, { OR: null }, ['OR']);
+      SchemaTestUtils.testInvalidData(UserWhereInputObjectSchema, { NOT: null }, ['NOT']);
       SchemaTestUtils.testInvalidData(UserWhereInputObjectSchema, { posts: null }, ['posts']);
     });
   });

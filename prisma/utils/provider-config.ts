@@ -269,7 +269,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
   mongodb: {
     name: 'MongoDB',
     provider: 'mongodb',
-    schemaPath: 'prisma/schemas/mongodb/schema.prisma',
+    schemaPath: 'tests/multi-provider/schemas/mongodb/schema.prisma',
     generatedPath: 'prisma/schemas/mongodb/generated',
     connectionString: process.env.MONGODB_URL || 'mongodb://localhost:27017/test',
     features: {

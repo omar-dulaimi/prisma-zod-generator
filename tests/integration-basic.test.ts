@@ -131,16 +131,21 @@ describe('Basic Integration Tests', () => {
           expect(filteringConfig.models.User).toBeDefined();
           expect(filteringConfig.models.User.enabled).toBe(true);
 
-          // Test minimal config
+          // Test minimal config. The generator selects minimal generation via
+          // `mode`, not a legacy `minimal` boolean (that key is not a
+          // recognized option and would now be reported as unknown config).
           const minimalConfig = ConfigGenerator.createMinimalConfig();
-          expect(minimalConfig.minimal).toBe(true);
-          expect(minimalConfig.createInputTypes).toBe(false);
+          expect(minimalConfig.mode).toBe('minimal');
 
-          // Test variant config
+          // Test variant config. Variants use the object form keyed by variant
+          // name (pure/input/result); the array form is a separate, also
+          // supported shape that this helper does not produce.
           const variantConfig = ConfigGenerator.createVariantConfig();
           expect(variantConfig.variants).toBeDefined();
-          expect(Array.isArray(variantConfig.variants)).toBe(true);
-          expect(variantConfig.variants.length).toBeGreaterThan(0);
+          expect(Array.isArray(variantConfig.variants)).toBe(false);
+          expect(Object.keys(variantConfig.variants)).toEqual(
+            expect.arrayContaining(['pure', 'input', 'result']),
+          );
         } finally {
           await testEnv.cleanup();
         }

@@ -196,7 +196,10 @@ chore(deps): update Prisma to v6.18.0
 All PRs must include tests:
 
 ```bash
-# Run all tests
+# Run EVERY test file (the gate that must pass before opening a PR)
+pnpm test:all
+
+# Faster inner loop: the curated parallel subset
 pnpm test
 
 # Run specific test suite
@@ -215,7 +218,7 @@ pnpm lint
 ## Before Submitting PR
 
 ✅ **Checklist:**
-- [ ] Tests pass (`pnpm test`)
+- [ ] Every test file passes (`pnpm test:all`) — not just `pnpm test`, which runs a curated subset
 - [ ] Type check passes (`pnpm typecheck`)
 - [ ] Linting passes (`pnpm lint`)
 - [ ] Formatted code (`pnpm format`)

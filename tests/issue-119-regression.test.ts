@@ -1,13 +1,37 @@
-import { describe, it, expect } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { z } from 'zod';
 import { SchemaTestUtils } from './schema-test-utils';
+import {
+  createUserPostObjectsFixture,
+  type UserPostFixture,
+} from './helpers/user-post-objects-fixture';
 
-// Import schemas to test Issue #119 fixes
-import { SortOrderInputObjectSchema } from '../prisma/generated/schemas/objects/SortOrderInput.schema';
-import { UserArgsObjectSchema } from '../prisma/generated/schemas/objects/UserArgs.schema';
-import { PostArgsObjectSchema } from '../prisma/generated/schemas/objects/PostArgs.schema';
-import { PostCreateInputObjectSchema } from '../prisma/generated/schemas/objects/PostCreateInput.schema';
-import { UserSelectObjectSchema } from '../prisma/generated/schemas/objects/UserSelect.schema';
-import { PostSelectObjectSchema } from '../prisma/generated/schemas/objects/PostSelect.schema';
+// Schemas under test are generated on demand: this file used to import them
+// from a committed prisma/generated fixture the project no longer produces.
+let SortOrderInputObjectSchema: z.ZodTypeAny;
+let UserArgsObjectSchema: z.ZodTypeAny;
+let PostArgsObjectSchema: z.ZodTypeAny;
+let PostCreateInputObjectSchema: z.ZodTypeAny;
+let UserSelectObjectSchema: z.ZodTypeAny;
+let PostSelectObjectSchema: z.ZodTypeAny;
+let fixture: UserPostFixture;
+
+beforeAll(async () => {
+  fixture = await createUserPostObjectsFixture('issue-119-regression');
+  const load = async (base: string, exportName: string) =>
+    (await fixture.load<Record<string, z.ZodTypeAny>>(base))[exportName];
+
+  SortOrderInputObjectSchema = await load('SortOrderInput', 'SortOrderInputObjectSchema');
+  UserArgsObjectSchema = await load('UserArgs', 'UserArgsObjectSchema');
+  PostArgsObjectSchema = await load('PostArgs', 'PostArgsObjectSchema');
+  PostCreateInputObjectSchema = await load('PostCreateInput', 'PostCreateInputObjectSchema');
+  UserSelectObjectSchema = await load('UserSelect', 'UserSelectObjectSchema');
+  PostSelectObjectSchema = await load('PostSelect', 'PostSelectObjectSchema');
+}, 300000);
+
+afterAll(async () => {
+  await fixture?.cleanup();
+});
 
 describe('Issue #119 Regression Tests', () => {
   describe('SortOrderInput Schema', () => {

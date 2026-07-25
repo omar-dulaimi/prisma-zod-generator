@@ -866,7 +866,11 @@ model Notification {
             pureModels: true,
             generateJSDoc: true,
             // Complex filtering
-            globalExclusions: ['password', 'secretKey'],
+            globalExclusions: {
+              input: ['password', 'secretKey'],
+              result: ['password', 'secretKey'],
+              pure: ['password', 'secretKey'],
+            },
             models: {
               User: {
                 enabled: true,

@@ -26,15 +26,24 @@ describe('Custom Prisma Client output path integration', () => {
 
         await testEnv.runGeneration();
 
-        // Look at any generated object schema (UserWhereUniqueInput etc.)
+        // Assert on the files that actually reference the Prisma namespace.
+        // Picking an arbitrary User* file is order-dependent and unreliable:
+        // untyped objects (e.g. UserArgs) legitimately carry no Prisma import
+        // at all, since unused imports are no longer emitted.
         const objectsDir = join(testEnv.testDir, 'generated', 'schemas', 'objects');
         const files = await fs.readdir(objectsDir);
-        const target = files.find((f) => /User.*\.schema\.ts$/.test(f)) || files[0];
-        const content = await fs.readFile(join(objectsDir, target), 'utf8');
+        const withPrismaImport: string[] = [];
+        for (const file of files) {
+          const body = await fs.readFile(join(objectsDir, file), 'utf8');
+          expect(body).not.toContain("from '@prisma/client'");
+          if (/import\s+(?:type\s+)?\{\s*Prisma\s*\}/.test(body)) withPrismaImport.push(body);
+        }
 
-        expect(content).not.toContain("from '@prisma/client'");
+        expect(withPrismaImport.length).toBeGreaterThan(0);
         // Relative path from generated/schemas/objects -> prismaClient is ../../../prismaClient
-        expect(content).toMatch(/from '\.\.\/\.\.\/\.\.\/prismaClient'/);
+        for (const body of withPrismaImport) {
+          expect(body).toMatch(/from '\.\.\/\.\.\/\.\.\/prismaClient'/);
+        }
       } finally {
         await testEnv.cleanup();
       }
@@ -62,13 +71,19 @@ describe('Custom Prisma Client output path integration', () => {
 
         const objectsDir = join(testEnv.testDir, 'generated', 'schemas', 'objects');
         const files = await fs.readdir(objectsDir);
-        const target = files.find((f) => /User.*\.schema\.ts$/.test(f)) || files[0];
-        const content = await fs.readFile(join(objectsDir, target), 'utf8');
+        const withPrismaImport: string[] = [];
+        for (const file of files) {
+          const body = await fs.readFile(join(objectsDir, file), 'utf8');
+          expect(body).not.toContain("from '@prisma/client'");
+          if (/import\s+(?:type\s+)?\{\s*Prisma\s*\}/.test(body)) withPrismaImport.push(body);
+        }
 
-        expect(content).not.toContain("from '@prisma/client'");
-        // New generator: import must target the browser-safe entry, never the server entry
-        expect(content).toMatch(/from '\.\.\/\.\.\/\.\.\/prismaClient\/browser'/);
-        expect(content).not.toMatch(/prismaClient\/client'/);
+        expect(withPrismaImport.length).toBeGreaterThan(0);
+        // New generator: imports must target the browser-safe entry, never the server entry
+        for (const body of withPrismaImport) {
+          expect(body).toMatch(/from '\.\.\/\.\.\/\.\.\/prismaClient\/browser'/);
+          expect(body).not.toMatch(/prismaClient\/client'/);
+        }
       } finally {
         await testEnv.cleanup();
       }

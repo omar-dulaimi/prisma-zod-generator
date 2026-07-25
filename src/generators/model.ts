@@ -457,6 +457,64 @@ export interface JSDocMetadata {
 }
 
 /**
+ * Remove `.optional()` calls that sit at the top level of a Zod expression,
+ * leaving any nested inside parentheses untouched.
+ *
+ * The generator appends its own optionality to the chain (sometimes mid-chain,
+ * before a `.default(...)`), and pure-model emission re-applies optionality
+ * according to `optionalFieldBehavior`. A plain global replace also stripped
+ * `.optional()` from inside user-supplied expressions such as
+ * `@zod.custom.use(z.array(z.object({ b: z.number().optional() })))`, silently
+ * changing the user's schema.
+ */
+export function stripTopLevelOptional(expression: string): string {
+  const token = '.optional()';
+  let result = '';
+  let depth = 0;
+  let inString = false;
+  let quote = '';
+
+  for (let i = 0; i < expression.length; ) {
+    const char = expression[i];
+
+    if (inString) {
+      if (char === '\\') {
+        result += expression.slice(i, i + 2);
+        i += 2;
+        continue;
+      }
+      if (char === quote) {
+        inString = false;
+        quote = '';
+      }
+      result += char;
+      i++;
+      continue;
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      inString = true;
+      quote = char;
+      result += char;
+      i++;
+      continue;
+    }
+
+    if (char === '(') depth++;
+    else if (char === ')') depth--;
+    else if (depth === 0 && expression.startsWith(token, i)) {
+      i += token.length;
+      continue;
+    }
+
+    result += char;
+    i++;
+  }
+
+  return result;
+}
+
+/**
  * Prisma field type mapper
  */
 export class PrismaTypeMapper {
@@ -2932,7 +2990,13 @@ export class PrismaTypeMapper {
       const commentValidations = field.validations.filter((v) => v.trim().startsWith('//'));
 
       // Start from base without optional modifiers, but preserve nullable/nullish from @zod annotations
-      const base = field.zodSchema.replace(/\.optional\(\)/g, '').trimEnd();
+      // Strip the optionality the generator appended, which always sits at the
+      // top level of the chain (it can land mid-chain, e.g.
+      // `z.bigint().optional().default(...)`), while preserving `.optional()`
+      // nested inside a user expression — a global strip previously discarded
+      // the inner optional in
+      // @zod.custom.use(z.array(z.object({ b: z.number().optional() }))).
+      const base = stripTopLevelOptional(field.zodSchema).trimEnd();
       let modifierSuffix = '';
 
       // Compute if user-provided dot validations already specify optionality
