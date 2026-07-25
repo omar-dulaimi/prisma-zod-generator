@@ -95,7 +95,16 @@ const admin = userFactory.build({
 
 ### Persistence (Optional)
 
-When Prisma client is available:
+Hand the factory a Prisma client first. Without it, `create()` and `createMany()`
+log a warning and return built-but-unsaved objects with a placeholder id — they
+do not throw, so a seeder can appear to succeed while writing nothing:
+
+```ts
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+userFactory.setPrismaClient(prisma); // required for create()/createMany()
+```
 
 ```ts
 // Create in database

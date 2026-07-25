@@ -106,8 +106,8 @@ From there you can:
 ### Generated Endpoints
 
 The mock server generates standard REST endpoints aligned with your Prisma models. Routes are mounted
-at the root — there is no `/api` prefix — and the path segment is the lowercased, pluralized model
-name:
+at the root — there is no `/api` prefix — and the path segment is the model name lowercased with an
+`s` appended:
 
 ```bash
 # Users API (example)
@@ -124,6 +124,14 @@ POST /posts
 PUT /posts/:id
 DELETE /posts/:id
 ```
+
+:::note Pluralization is literal
+The suffix is always a bare `s`, so irregular names come out awkward:
+`Category` becomes `/categorys`, `Person` becomes `/persons`. The same naming is
+used for the OpenAPI `paths`, so the spec and the mock server agree — if you need
+conventional plurals, rename the path in the emitted `openapi.json` and
+`mock-server.js` together.
+:::
 
 ## Integration
 

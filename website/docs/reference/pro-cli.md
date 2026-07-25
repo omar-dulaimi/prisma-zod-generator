@@ -10,14 +10,13 @@ Complete API documentation for all PZG Pro features and CLI commands.
 ## 📋 Table of Contents
 
 - [CLI Commands](#cli-commands)
-- [Configuration API](#configuration-api)
 - [License API](#license-api)
 - [Policies API](#policies-api)
 - [Server Actions API](#server-actions-api)
 - [SDK Publisher API](#sdk-publisher-api)
 - [Drift Guard API](#drift-guard-api)
 
-## 🖥️ CLI Commands
+## 🖥️ CLI Commands {#cli-commands}
 
 ### Core Commands
 
@@ -75,7 +74,7 @@ npx pzg-pro guard --format json > drift-report.json
 npx pzg-pro guard --strict --allowed-break User.email:field_removed
 ```
 
-## 🔑 License API
+## 🔑 License API {#license-api}
 
 ### TypeScript API
 
@@ -104,7 +103,7 @@ const status = await getLicenseStatus();
 console.log('Valid:', status.valid);
 ```
 
-> Set both `PZG_LICENSE_KEY` and `PZG_LICENSE_PUBLIC_KEY` in your environment before invoking the CLI so offline verification succeeds.
+> Set `PZG_LICENSE_KEY` in your environment before invoking the CLI. `PZG_LICENSE_PUBLIC_KEY` is only needed if you were issued a non-default verification key — otherwise a built-in one is used. Verification is fully offline.
 
 ### License Object Schema
 
@@ -121,6 +120,9 @@ interface LicenseStatus {
   valid: boolean;
   plan?: string;
   cached?: boolean;
+  // Present when valid is false, so callers can show the right remedy.
+  reason?: 'missing_key' | 'invalid_key' | 'expired' | 'code_tampering_detected' | 'validation_failed';
+  detail?: string;
 }
 ```
 
@@ -143,168 +145,254 @@ const FEATURES = {
 };
 ```
 
-## 🛡️ Policies API
+## 🛡️ Policies API {#policies-api}
 
-### Generated Policy Classes
+### Generated files
 
-Each model generates a policy class with validation methods:
+A model carrying a `/// @policy` annotation gets a policy-aware CRUD wrapper; a
+model carrying `/// @pii` gets a redactor. Both get DTO schemas.
+
+```
+<output>/policies/
+├── safe-crud/<model>.ts    # one per model with @policy
+├── redaction/<model>.ts    # one per model with @pii
+├── dto/<model>.ts          # schemas + validate helpers
+└── index.ts                # barrel + create<Model>SafeOperations factories
+```
+
+### Policy-aware CRUD
+
+Instance methods on a per-model class — not static validators. Each method takes
+the calling context and applies the model's read policies to the `where` clause
+before delegating to Prisma.
 
 ```typescript
-// Generated: ./generated/pzg/policies/user.ts
-export class UserPolicies {
-  static validateRead(data: any, context: PolicyContext): PolicyResult;
-  static validateWrite(data: any, context: PolicyContext): PolicyResult;
-  static validateDelete(context: PolicyContext): PolicyResult;
-}
-
-interface PolicyContext {
+// Generated: <output>/policies/safe-crud/member.ts
+export interface PolicyContext {
   userId?: string;
   role?: string;
-  roles?: string[];
   tenantId?: string;
-  sessionId?: string;
   [key: string]: any;
 }
 
-interface PolicyResult {
-  allowed: boolean;
-  data?: any;          // Filtered/modified data
-  reason?: string;     // Reason for denial
+export class MemberSafeCRUD {
+  constructor(prisma: any, context?: PolicyContext);
+
+  findMany(context?: PolicyContext, args?: Prisma.MemberFindManyArgs): Promise<Member[]>;
+  findUnique(context: PolicyContext, args: Prisma.MemberFindUniqueArgs): Promise<Member | null>;
+  create(context: PolicyContext, args: Prisma.MemberCreateArgs): Promise<Member>;
+  update(context: PolicyContext, args: Prisma.MemberUpdateArgs): Promise<Member>;
+  delete(context: PolicyContext, args: Prisma.MemberDeleteArgs): Promise<Member>;
 }
 ```
 
+The context passed to a method is merged over the one given to the constructor,
+so you can set a tenant once and vary the user per call.
+
 ### Redaction API
 
+One class per model with `@pii` fields, plus an Express middleware factory.
+
 ```typescript
-// Generated: ./generated/pzg/redaction/index.ts
-export class PIIRedactor {
-  static redactForLogs(data: any, context?: PolicyContext): any;
-  static maskField(value: string, type: 'email' | 'phone' | 'partial'): string;
-  static hashField(value: string): string;
+// Generated: <output>/policies/redaction/member.ts
+export interface RedactionConfig {
+  context?: string;
+  preserveLength?: boolean;
 }
+
+export class MemberRedactor {
+  constructor(config?: RedactionConfig);
+  redact(data: Member | Member[], context?: string): any;
+}
+
+export function createMemberRedactionMiddleware(config?: RedactionConfig): RequestHandler;
+```
+
+### DTO schemas
+
+```typescript
+// Generated: <output>/policies/dto/member.ts
+export const MemberBaseSchema;
+export const MemberCreateInputSchema;   // Base minus generated columns
+export const MemberUpdateInputSchema;   // partial()
+export const MemberPublicSchema;        // Base minus @pii fields
+export const MemberUserSchema;
+export const MemberAdminSchema;
+
+export function validateMemberCreate(data: unknown): MemberCreateInput;
+export function validateMemberUpdate(data: unknown): MemberUpdateInput;
 ```
 
 ### Usage Example
 
 ```typescript
-import { UserPolicies } from '@/generated/pzg/policies';
-import { PIIRedactor } from '@/generated/pzg/redaction';
+import { createSafeMemberOperations, MemberRedactor } from './generated/pro/policies';
 
-// Policy enforcement
-const userData = { email: 'user@example.com', salary: 100000 };
-const context = { userId: 'current-user', roles: ['user'] };
+const members = createSafeMemberOperations(prisma, { tenantId: org.id });
 
-const readResult = UserPolicies.validateRead(userData, context);
-if (readResult.allowed) {
-  // Use readResult.data (salary may be filtered out)
-  const safeData = readResult.data;
-}
+// Read policies are folded into the where clause
+const visible = await members.findMany({ userId: user.id, role: user.role });
 
-// PII redaction for logging
-const logSafeData = PIIRedactor.redactForLogs(userData);
-console.log('User updated:', logSafeData); // { email: 'u***@example.com', salary: 100000 }
+// Redact @pii fields before logging
+const redactor = new MemberRedactor();
+console.log('member updated:', redactor.redact(member, 'logs'));
 ```
 
-## ⚡ Server Actions API
+:::note
+`redact()` masks the fields you marked `/// @pii`. The `redactPII()` helper
+exported from the barrel is a placeholder that returns its input unchanged —
+use the per-model redactor.
+:::
+
+## ⚡ Server Actions API {#server-actions-api}
+
+### Generated files
+
+```
+<output>/server-actions/
+├── actions/<model>.ts      # one module per model, five actions each
+├── hooks/use<Model>.ts     # React hooks wrapping those actions
+├── types/<model>.ts        # per-model input/result types
+├── types/common.ts         # ServerActionResult, UseServerActionOptions
+├── utils/validation.ts
+├── prisma-client.ts        # the shared client the actions import
+├── index.ts
+└── USAGE.md
+```
 
 ### Generated Server Actions
 
-Each model generates CRUD actions:
+Five actions per model, all returning a result envelope rather than throwing. The
+arguments are Prisma's own input types, so anything you can pass to the client
+you can pass here.
 
 ```typescript
-// Generated: ./src/server/actions/user/create.ts
-export async function createUser(input: CreateUserInput): Promise<User>;
-export async function updateUser(id: string, input: UpdateUserInput): Promise<User>;
-export async function deleteUser(id: string): Promise<void>;
-export async function findUsers(input?: FindUsersInput): Promise<User[]>;
+// Generated: <output>/server-actions/actions/member.ts
+export async function createMember(
+  data: Prisma.MemberCreateInput,
+): Promise<ServerActionResult<Member>>;
+
+export async function updateMember(
+  id: string,
+  data: Prisma.MemberUpdateInput,
+): Promise<ServerActionResult<Member>>;
+
+export async function deleteMember(id: string): Promise<ServerActionResult<Member>>;
+
+export async function findManyMembers(
+  args?: Prisma.MemberFindManyArgs,
+): Promise<ServerActionResult<Member[]>>;
+
+export async function findUniqueMember(id: string): Promise<ServerActionResult<Member | null>>;
+```
+
+```typescript
+// Generated: <output>/server-actions/types/common.ts
+export interface ServerActionResult<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+}
 ```
 
 ### Generated React Hooks
 
-```typescript
-// Generated: ./src/server/hooks/useUser.ts
-export function useCreateUser(): {
-  create: (data: CreateUserInput) => Promise<User>;
-  isPending: boolean;
-  error: Error | null;
-};
-
-export function useUpdateUser(): {
-  update: (id: string, data: UpdateUserInput) => Promise<User>;
-  isPending: boolean;
-  error: Error | null;
-};
-
-export function useUsers(input?: FindUsersInput): {
-  data: User[] | undefined;
-  isLoading: boolean;
-  error: Error | null;
-  refetch: () => void;
-};
-```
-
-### Schema Types
+One hook per action. Each exposes `execute` — the name does not vary by
+operation — plus `isPending` and a `string | null` error.
 
 ```typescript
-// Input schemas for validation
-type CreateUserInput = z.infer<typeof CreateUserSchema>;
-type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
-type FindUsersInput = z.infer<typeof FindUsersSchema>;
+// Generated: <output>/server-actions/hooks/useMember.ts
+export function useCreateMember(options?: UseServerActionOptions<Member>): {
+  execute: (data: Prisma.MemberCreateInput) => Promise<void>;
+  isPending: boolean;
+  error: string | null;
+  optimisticData: Member[];   // only when enableOptimistic is set
+};
+
+export function useUpdateMember(options?: UseServerActionOptions<Member>): { … };
+export function useDeleteMember(options?: UseServerActionOptions<void>): { … };
+export function useFindManyMembers(options?: UseServerActionOptions<Member[]>): { … , data };
+export function useFindUniqueMember(options?: UseServerActionOptions<Member>): { … , data };
+
+export interface UseServerActionOptions<T> {
+  onSuccess?: (data: T) => void;
+  onError?: (error: Error) => void;
+  redirect?: string;
+  enableOptimistic?: boolean;
+  optimisticData?: T[];
+}
 ```
 
-## 📦 SDK Publisher API
+:::note
+The emitted files carry no `'use server'` or `'use client'` directive — add them
+yourself: `'use server'` at the top of each `actions/<model>.ts`, `'use client'`
+at the top of each `hooks/use<Model>.ts`. Without the client directive the hooks
+fail a production Next.js build, and without the server directive an action
+imported from a Client Component pulls `prisma-client.ts` into the browser
+bundle.
+:::
+
+## 📦 SDK Publisher API {#sdk-publisher-api}
 
 ### Generated SDK Structure
 
+Two single-file clients — one per requested platform. There is no package
+scaffold: no `package.json`, no build step, nothing to `npm publish`. Copy the
+file into the consumer, or wrap it in a package of your own.
+
+```
+<output>/sdk/
+├── typescript/index.ts     # interfaces, enums and the APIClient class
+└── python/api_client.py    # requests-based equivalent
+```
+
+Methods live directly on the client and are named `<verb><Model>`, not grouped
+into per-model resource objects.
+
 ```typescript
-// Generated: ./packages/sdk/src/client.ts
+// Generated: <output>/sdk/typescript/index.ts
 export class APIClient {
-  constructor(config: ClientConfig);
+  constructor(baseUrl: string, apiKey?: string);
 
-  // Model methods
-  users: UserResource;
-  posts: PostResource;
-  // ... other models
-}
+  listOrganizations(): Promise<any>;
+  getOrganization(id: string): Promise<any>;
+  createOrganization(data: any): Promise<any>;
+  updateOrganization(id: string, data: any): Promise<any>;
+  deleteOrganization(id: string): Promise<any>;
 
-interface ClientConfig {
-  baseUrl: string;
-  authToken?: string;
-  timeout?: number;
-  retries?: number;
-}
-
-class UserResource {
-  create(data: CreateUserInput): Promise<User>;
-  update(id: string, data: UpdateUserInput): Promise<User>;
-  delete(id: string): Promise<void>;
-  findMany(query?: FindUsersInput): Promise<User[]>;
-  findUnique(id: string): Promise<User | null>;
+  // …the same five per model
 }
 ```
+
+`apiKey` is sent as `Authorization: Bearer <key>`. Model interfaces and enums are
+emitted alongside the client, but the CRUD methods take and return `any` — the
+interfaces are there for you to annotate call sites with.
 
 ### Error Handling
 
+A non-2xx response throws a plain `Error` whose message is the status code:
+
 ```typescript
-// Generated error classes
-export class APIError extends Error {
-  status: number;
-  code?: string;
-  details?: any;
+try {
+  await client.getOrganization(id);
+} catch (err) {
+  // err.message === 'HTTP 404'
 }
-
-export class ValidationError extends APIError {
-  field: string;
-  message: string;
-}
-
-export class AuthenticationError extends APIError {}
-export class AuthorizationError extends APIError {}
-export class NotFoundError extends APIError {}
-export class RateLimitError extends APIError {}
 ```
 
-## 🚨 Drift Guard API
+No typed error classes are generated. If you need to branch on status, parse the
+message or wrap `APIClient` in your own error layer.
+
+:::note
+The emitted TypeScript references `Decimal`, `JsonValue` and `Buffer` for
+`Decimal`, `Json` and `Bytes` columns without importing them. Add a prelude to
+the top of the file — or map those columns to `string` in your API — before
+adding it to a `tsc` program. Enums are emitted as numeric TypeScript enums, so
+compare against the enum member (`Role.ADMIN`), not the string a JSON payload
+carries.
+:::
+
+## 🚨 Drift Guard API {#drift-guard-api}
 
 :::note
 Drift Guard is driven through the `pzg-pro guard` CLI documented above. There is no supported programmatic entry point — integrate it by shelling out to the CLI and reading `--format json` from stdout.

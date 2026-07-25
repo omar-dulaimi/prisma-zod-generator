@@ -170,6 +170,27 @@ To ship the TypeScript client as its own npm package, copy `sdk/typescript/index
 you own and add your own `package.json` and build step. Otherwise, import it directly from your app
 like any other generated file.
 
+### Before adding it to a `tsc` program
+
+Two things to expect the first time you compile the emitted client:
+
+- **Add a prelude for scalar types.** `Decimal`, `Json` and `Bytes` columns are emitted as `Decimal`,
+  `JsonValue` and `Buffer`, but the file has no imports, so `tsc` reports `Cannot find name`. Either
+  declare them at the top of the file or expose those columns as `string` in your API:
+
+  ```typescript
+  import type { Decimal } from '@prisma/client/runtime/library';
+  type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
+  ```
+
+- **Enums are numeric.** `enum Role { OWNER, ADMIN, MEMBER }` is emitted without string values, so
+  `member.role === Role.ADMIN` compares a string from JSON against a number and is always false.
+  Compare against the string (`member.role === 'ADMIN'`) or convert with
+  `Role[member.role as keyof typeof Role]`.
+
+Keep `///` comments on model fields to a single line — a multi-line comment is appended after a `//`
+marker, which puts its continuation in code position and breaks the file.
+
 ## See Also
 
 - [API Docs Pack](./api-docs.md) - Generate OpenAPI specs and mock server

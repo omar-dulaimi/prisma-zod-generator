@@ -21,7 +21,7 @@ High-performance validation for large datasets with streaming validators, precom
 - **Streaming Validation**: Process data in chunks to avoid memory issues
 - **Non-Blocking**: Yields to the event loop between chunks so the process stays responsive
 - **Progress Tracking**: Real-time progress hooks for UX feedback
-- **Memory Efficient**: Constant memory usage regardless of dataset size
+- **Chunked**: Input is validated a chunk at a time, yielding to the event loop between chunks, so a large array never blocks the process
 
 ## Prerequisites
 
@@ -97,6 +97,22 @@ const result = await validateUserStream(users, {
 console.log(`Valid: ${result.valid.length}`)
 console.log(`Invalid: ${result.invalid.length}`)
 ```
+
+:::note Memory scales with the result, not the chunk size
+`chunkSize` bounds how much is validated per tick, not how much is retained:
+every valid record is accumulated into `result.valid` (and every failure into
+`result.invalid`), so peak memory still grows with the size of the input.
+
+For datasets too large to hold at once, validate in slices you control and
+consume each result before the next one:
+
+```ts
+for (let i = 0; i < users.length; i += 10_000) {
+  const { valid } = await validateUserStream(users.slice(i, i + 10_000))
+  await prisma.user.createMany({ data: valid })   // drop the batch before the next
+}
+```
+:::
 
 The generic form takes the schema name as its **first** argument:
 

@@ -89,8 +89,15 @@ every call.
 
 ### Prisma Middleware
 
-For blanket enforcement, install the generated middleware instead of validating call by call. It
-injects the tenant filter on reads and deletes, and validates results in `strict` mode:
+:::caution Requires Prisma 5 or earlier
+The generated middleware is installed with `prisma.$use()`, which Prisma removed
+in v6. On Prisma 6 or 7 — including the versions this generator targets — the
+call throws `prisma.$use is not a function`. Validate at the call site with
+`validateTenantAccess(...)` instead; that is the supported path today.
+:::
+
+On Prisma 5 and earlier, the middleware injects the tenant filter on reads and
+deletes and validates results in `strict` mode:
 
 ```ts
 import { createTenantMiddleware } from '@/generated/pro/multi-tenant/tenant-middleware'
@@ -110,9 +117,18 @@ generator pzgPro {
   enableMultiTenant = true
 
   // Optional advanced config (stringified JSON)
-  // multiTenant = "{ \"enforceMode\": \"warn\", \"tenantField\": \"orgId\" }"
+  // multiTenant = "{ \"enforceMode\": \"warn\" }"
 }
 ```
+
+:::important Name the column `tenantId`
+Tenant models are detected by looking for a field named exactly `tenantId`. A
+schema that scopes rows with `orgId`, `accountId` or `workspaceId` produces no
+validators at all, and `validateTenantAccess()` then throws
+`No tenant validator found for model: <Model>`. The `tenantField` option is
+accepted but not currently applied — add a `tenantId` column (or rename yours)
+until it is.
+:::
 
 - **strict**: Validates query results and throws on a cross-tenant record
 - **warn**: Logs a warning and continues

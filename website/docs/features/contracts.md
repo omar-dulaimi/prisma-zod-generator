@@ -25,7 +25,7 @@ Consumer/provider contract tests and JSON definitions to verify API compatibilit
 
 ```bash
 # Install Pact.js & Jest helpers
-pnpm add -D @pact-foundation/pact jest jest-pact @prisma/client
+pnpm add -D "@pact-foundation/pact@^15" jest jest-pact @prisma/client
 
 # PZG Pro license required
 ```
@@ -91,7 +91,17 @@ pnpm run test:contract
 ## Consumer Example
 
 The generated tests drive the `Pact` class from `@pact-foundation/pact` directly against the
-generated `client.ts`. The `jest-pact` wrapper below is optional sugar for tests you write yourself:
+generated `client.ts`.
+
+:::caution Pin the Pact major
+The generated tests target the V2/V3 DSL (`new Pact({...})` plus
+`InteractionObject`). From v16 onward `Pact` is an alias for the V4 DSL, which
+takes a different constructor and interaction shape — installing the current
+`@pact-foundation/pact` (17.x) makes the generated tests fail to compile. Pin
+`^15` as shown above, or port the tests to the V4 builder API yourself.
+:::
+
+The `jest-pact` wrapper below is optional sugar for tests you write yourself:
 
 ```ts
 // Consumer test expects specific API response format

@@ -128,6 +128,26 @@ npx prisma-zod-generator license-check
 DEBUG_PRISMA_ZOD=1 npx prisma-zod-generator license-check
 ```
 
+### "PZG Pro modules are not available in this repository"
+```
+PZG Pro modules are not available in this repository.
+To enable Pro features:
+  1. Purchase a PZG Pro license
+  2. Initialize the private submodule:
+       git submodule update --init --recursive
+```
+
+**On 2.3.7 and earlier this message is misleading.** The Pro generator answered *every* license failure with it, including the common case where Pro is installed correctly from npm and the only problem is that `PZG_LICENSE_KEY` is unset or expired. The `git submodule` step cannot help an npm consumer, and the real remedy went unmentioned.
+
+**If you installed from npm**, ignore the submodule advice and check your license instead:
+```bash
+echo $PZG_LICENSE_KEY                        # is it set in *this* shell?
+npx prisma-zod-generator license-check       # does it validate?
+```
+Environment variables set in your shell profile are not visible to editors or CI runners started before the change — Prisma reads the environment of the process that spawns it, so also confirm the key is present in `.env` or your CI secrets.
+
+**From 2.3.8+** the two cases are reported separately: a missing install still points at the submodule, while a licensing failure names the actual cause (unset key, expired subscription, or tampering) and points at `PZG_LICENSE_KEY` and `license-check`.
+
 ### Code Tampering Warning
 ```
 ❌ PZG Pro code tampering detected. Pro features have been modified.
@@ -246,42 +266,49 @@ pnpm exec prisma generate
 
 ## 📦 SDK Publisher
 
-### SDK Build Failures
-**Common Issues:**
-1. **Missing TypeScript**: SDK requires TypeScript in target project
-2. **Zod Version Mismatch**: Ensure compatible Zod versions
-3. **Module Resolution**: Check package.json module settings
+### Where the SDK actually lands
+The pack emits two standalone source files, one per requested platform — no
+package scaffold, no `package.json`, nothing to build or publish:
 
-**Debug Steps:**
 ```bash
-# Check generated SDK structure
-ls packages/sdk/
-cat packages/sdk/package.json
-
-# Build manually
-cd packages/sdk
-npm run build
-
-# Check for TypeScript errors
-npm run type-check
+ls prisma/generated/pro/sdk/typescript/index.ts
+ls prisma/generated/pro/sdk/python/api_client.py
 ```
 
-### SDK Import Errors
-**Symptom**: Cannot import generated SDK in client code
+Consume it by importing the file directly, or copy it into a package of your own.
 
-**Solutions:**
-```bash
-# Link for local development
-cd packages/sdk
-npm link
+### `Cannot find name 'Decimal' | 'JsonValue' | 'Buffer'`
+**Symptom**: `tsc` reports TS2304/TS2591 on the generated `index.ts`.
 
-# In your client project
-npm link @your-org/api-sdk
+**Cause**: `Decimal`, `Json` and `Bytes` columns are emitted as those type names,
+but the file contains no imports.
 
-# Or publish to registry
-cd packages/sdk
-npm publish
+**Fix**: add a prelude above the generated interfaces —
+
+```typescript
+import type { Decimal } from '@prisma/client/runtime/library';
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 ```
+
+— or expose those columns as `string` in your API and regenerate.
+
+### Enum comparisons never match
+**Symptom**: `if (member.role === Role.ADMIN)` is always false against a JSON
+response.
+
+**Cause**: enums are emitted as *numeric* TypeScript enums, so `Role.ADMIN` is a
+number while the payload carries the string `"ADMIN"`.
+
+**Fix**: compare against the string (`member.role === 'ADMIN'`), or convert with
+`Role[member.role as keyof typeof Role]`.
+
+### A field comment breaks the file
+**Symptom**: a syntax error part-way through the generated client.
+
+**Cause**: a multi-line `///` comment on a Prisma field is appended after a
+single-line `//` marker, so the second line lands in code position.
+
+**Fix**: keep `///` comments on model fields to a single line.
 
 ## 🚨 Drift Guard
 

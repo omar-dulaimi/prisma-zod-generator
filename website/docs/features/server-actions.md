@@ -14,14 +14,28 @@ Utilities and templates for type-safe Next.js Server Actions validated by Zod sc
 - Error handling inconsistent
 - No standard response format
 
-**Solution**: Generate validated Server Action stubs with automatic Zod validation and type-safe responses.
+**Solution**: Generate Server Action stubs and matching React hooks, typed against your Prisma models, with a consistent result envelope.
 
 ### Benefits
 
-- **Type-Safe**: End-to-end TypeScript
-- **Auto Validation**: Zod schemas applied automatically
-- **Consistent Errors**: Standard error response format
+- **Type-Safe**: End-to-end TypeScript, using Prisma's own input types
+- **Consistent Errors**: Standard `ServerActionResult<T>` envelope instead of throws
+- **Hooks Included**: A `use<Model>` hook per model wrapping every action
 - **Next.js Integration**: Works with `revalidatePath`, `redirect`, etc.
+
+:::note Finish the stubs before shipping
+These are stubs, and two steps are yours:
+
+1. **Add the framework directives.** No emitted file carries one. Put
+   `'use server'` at the top of each `actions/<model>.ts` and `'use client'` at
+   the top of each `hooks/use<Model>.ts`. A production `next build` fails without
+   the client directive, and an action imported from a Client Component without
+   the server directive pulls the Prisma client into your browser bundle.
+2. **Add validation.** The actions pass their input straight to Prisma and carry a
+   `// TODO: Add validation if needed` marker where a check belongs. Import the
+   matching schema from your generated Zod output and parse there — e.g.
+   `const parsed = MemberCreateInputSchema.parse(data)`.
+:::
 
 ## Prerequisites
 
@@ -36,6 +50,14 @@ pnpm add next
 ```
 
 > **Note**: The generator avoids direct Next.js imports to prevent dependency issues. Next.js features like `revalidatePath()` and `redirect()` are commented out in generated code - uncomment them if using Next.js.
+
+:::caution Multi-word model names
+A model whose name has more than one word — `ProjectVariant`, `OrderItem` — gets
+an all-lowercase delegate (`prisma.projectvariant`), but Prisma's client exposes
+`prisma.projectVariant`. The generated action then fails at runtime with
+*Cannot read properties of undefined*. Fix the delegate name in the emitted
+`actions/<model>.ts`, or keep model names single-word until this is corrected.
+:::
 
 ## Generate
 

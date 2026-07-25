@@ -62,7 +62,14 @@ Then run:
 prisma generate
 ```
 
-> **Note**: The generator supports multiple UI libraries. Use `barebones` for framework-agnostic forms, or specify `shadcn`, `mantine`, `chakra`, or `mui` for framework-specific components.
+> **Note**: `uiLibrary` accepts `barebones` and `shadcn`. Use `barebones` for
+> framework-agnostic forms built from plain elements, or `shadcn` for components
+> wired to shadcn/ui primitives (`Input`, `Textarea`, `Checkbox`, `Select`).
+>
+> `mantine`, `chakra` and `mui` are accepted but not yet implemented: they emit
+> the shadcn component shape without the corresponding imports, so the output
+> will not compile. To use those libraries today, generate `barebones` and swap
+> the elements for your own components.
 
 ### Generated Files
 

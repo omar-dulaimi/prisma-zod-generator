@@ -77,30 +77,53 @@ carries either.
 Annotate fields in your Prisma schema:
 
 ```prisma
+/// @policy read:where role in ["admin"]
 model User {
   id       Int     @id @default(autoincrement())
-  
+
   /// @pii email redact:logs
-  /// @policy read:role in ["admin"]
   email    String  @unique
-  
+
   /// @pii phone redact:logs
   phone    String?
-  
+
   /// @pii password redact:logs mask:full
   password String
-  
+
   name     String?
 }
 ```
 
-Two field annotations are recognized:
+Two annotations are recognized:
 
-- `@pii <kind> [redact:logs] [mask:partial|mask:full|mask:hash]` — marks the field for redaction.
-  `email`, `phone`, and `ssn` get kind-aware partial masks; any other kind falls back to a generic
-  partial mask. `mask:partial` is the default when no `mask:` option is given.
-- `@policy <read|write|deny|update|delete|create>:<where|fields|values|role> <condition>` (or the
-  short `@policy read:<condition>` form) — drives the generated safe-CRUD operations.
+- `@pii <kind> [redact:logs] [mask:partial|mask:full|mask:hash]` — on a **field**. Marks it for
+  redaction. `email`, `phone`, and `ssn` get kind-aware partial masks; any other kind falls back to a
+  generic partial mask. `mask:partial` is the default when no `mask:` option is given.
+- `@policy read:where <condition>` — on a **model**. Drives the `where` clause of the generated
+  safe-CRUD operations.
+
+### Conditions that are enforced
+
+The generated `combinePolicyCondition` recognizes exactly three condition shapes. Write them with the
+`read:where` prefix — the shorter `read:<condition>` form parses but loses the leading keyword, so
+`read:role in [...]` reaches the generated code as `in [...]` and matches nothing:
+
+| Condition | Effect on the query |
+| --- | --- |
+| `read:where userId == ctx.userId` | adds `where.userId = context.userId` |
+| `read:where tenantId == ctx.tenantId` | adds `where.tenantId = context.tenantId` |
+| `read:where role in ["admin", "owner"]` | if the role is not listed, adds an impossible `where.id` so nothing matches |
+
+Any other condition text is carried into the generated file and then ignored, leaving the query
+unfiltered. Verify each policy against a real query before relying on it.
+
+:::caution Two limits of the role check
+The role list is compared against the role given to the **constructor**
+(`createSafeUserOperations(prisma, { role })`), not the one passed per call — a role supplied only to
+`findMany(context)` is ignored for this check. And denial is expressed as `where.id = -1`, which
+assumes an integer primary key; on a `String @id` model Prisma rejects it with a type error instead of
+returning no rows.
+:::
 
 :::caution Only these two annotations are parsed
 Anything else — `@sensitive`, for example — is ignored silently. A field you meant to protect with an
@@ -184,6 +207,21 @@ app.get('/users/:id', createUserRedactionMiddleware({ redactLogs: true }), async
   res.json(UserPublicSchema.parse(user))
 })
 ```
+
+:::caution DTO schemas do not round-trip a raw Prisma row
+The generated DTO schemas describe an API payload, not a database row, so
+`parse()` on the result of a Prisma query can throw:
+
+- **Nullable columns** are emitted `.optional()` (accepting `undefined`) and never
+  `.nullable()`, but Prisma returns `null` — so a `String?` column with no value
+  fails with *expected string, received null*.
+- **`Decimal` columns** are emitted `z.number()`, which rejects the
+  `Prisma.Decimal` instance Prisma returns.
+
+Use `.strip()`-style shaping, or normalize first —
+`UserPublicSchema.parse({ ...user, name: user.name ?? undefined, amount: user.amount?.toNumber() })`
+— until the schemas emit `.nullable()`.
+:::
 
 ### Koa and NestJS
 

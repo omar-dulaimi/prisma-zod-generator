@@ -44,8 +44,18 @@ generator pzgPro {
   provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output = "./generated/pro"
   enablePostgresRLS = true
+
+  // Required: this pack does not inherit `output`
+  postgresRls = "{ \"outputPath\": \"./generated/pro/postgres-rls\" }"
 }
 ```
+
+:::important Set `outputPath` explicitly
+Unlike the other packs, PostgreSQL RLS does not read the generator's shared
+`output` directory. Left unset, it writes to `postgres/rls/` relative to the
+directory you ran `prisma generate` from, which is why the files can seem to be
+missing. Set `postgresRls.outputPath` as above.
+:::
 
 Then run:
 
@@ -62,33 +72,56 @@ generated/
       rls-helper.ts       # RLS context management
       migration.sql       # Database setup migration
       policies.sql        # Example RLS policies
+      README.md           # Applying the policies
 ```
 
 ## Basic Usage
+
+:::caution Set the context inside a transaction
+`migration.sql` sets its GUCs with `set_config(..., true)`, which is
+**transaction-local** — PostgreSQL discards the value when the surrounding
+transaction ends. Because `setContext()` issues that call as a standalone
+statement, Prisma wraps it in its own implicit transaction, so the context is
+gone before the next query runs and your policies evaluate against an empty
+`current_setting(...)`.
+
+Use an interactive transaction and run both the context call and your queries on
+the same transaction client:
 
 ```ts
 import { PrismaClient } from '@prisma/client'
 import { createRLSHelper } from '@/generated/pro/postgres-rls/rls-helper'
 
 const prisma = new PrismaClient()
-const rls = createRLSHelper(prisma)
 
-// Set context before queries
-await rls.withContext(
-  {
+await prisma.$transaction(async (tx) => {
+  const rls = createRLSHelper(tx)          // bind the helper to the transaction
+  await rls.setContext({
     userId: 'user-123',
     tenantId: 'tenant-456',
-    roles: ['admin']
-  },
-  async () => {
-    // All queries in this block automatically filtered by RLS
-    const posts = await prisma.post.findMany()
-    // Only returns posts where policies allow access
-  }
-)
+    roles: ['admin'],
+  })
+
+  // These queries run in the same transaction, so the context still applies
+  const posts = await tx.post.findMany()
+})
 ```
 
+Verify your wiring before relying on it — inside the transaction,
+`SELECT current_setting('app.current_tenant_id', true)` should return your tenant
+id, not an empty string.
+:::
+
+`withContext(context, fn)` is convenient but calls `setContext()` outside any
+transaction you control, so it carries the same caveat unless the helper is bound
+to a transaction client as above.
+
 ### Prisma Middleware
+
+:::caution Requires Prisma 5 or earlier
+`prisma.$use()` was removed in Prisma 6. On Prisma 6 or 7 this throws
+`prisma.$use is not a function` — set the context per transaction instead.
+:::
 
 ```ts
 prisma.$use(rls.createMiddleware())

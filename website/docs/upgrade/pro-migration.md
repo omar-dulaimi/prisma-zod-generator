@@ -193,27 +193,27 @@ ls prisma/generated/pro/policies/
 ### 4. Integrate in Application
 ```typescript
 // Example: API route with policy enforcement
-import { UserPolicies } from '@/generated/pzg/policies';
-import { PIIRedactor } from '@/generated/pzg/redaction';
+import { createSafeUserOperations, UserRedactor } from '@/generated/pro/policies';
 
 export async function GET(request: Request) {
-  const users = await prisma.user.findMany();
+  // Read policies are folded into the where clause — query through the wrapper
+  // rather than filtering rows after the fact.
+  const users = createSafeUserOperations(prisma, { tenantId: getTenantId() });
+  const visible = await users.findMany({
+    userId: getCurrentUserId(),
+    role: getUserRole(),
+  });
 
-  // Apply read policies
-  const filteredUsers = users.map(user => {
-    const result = UserPolicies.validateRead(user, {
-      userId: getCurrentUserId(),
-      roles: getUserRoles()
-    });
-    return result.allowed ? result.data : null;
-  }).filter(Boolean);
+  // Redact @pii fields for logs
+  const redactor = new UserRedactor();
+  console.log('Users fetched:', redactor.redact(visible, 'logs'));
 
-  // Redact for logs
-  console.log('Users fetched:', PIIRedactor.redactForLogs(filteredUsers));
-
-  return Response.json(filteredUsers);
+  return Response.json(visible);
 }
 ```
+
+`PolicyContext` carries `userId`, `role` and `tenantId` (plus anything else you
+add). Note it is `role`, singular — there is no `roles` array.
 
 ## ⚡ Adding Server Actions
 
@@ -229,9 +229,14 @@ ls prisma/generated/pro/server-actions/
 ### 2. Review Generated Code
 ```bash
 # Check generated server actions
-ls src/server/actions/
-ls src/server/hooks/
+ls prisma/generated/pro/server-actions/actions/
+ls prisma/generated/pro/server-actions/hooks/
 ```
+
+Add the framework directives before wiring anything up: `'use server'` at the top
+of each `actions/<model>.ts`, and `'use client'` at the top of each
+`hooks/use<Model>.ts`. The generator does not emit them, and a production
+`next build` needs both.
 
 ### 3. Update Your Components
 Replace manual API calls with generated hooks:
@@ -309,40 +314,46 @@ generator pzgPro {
   provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
   output   = "./generated/pro"
   enableSDK = true
-  sdk = "{ \"packageName\": \"@your-org/api-sdk\", \"version\": \"1.0.0\", \"outputPath\": \"./packages/sdk\", \"authHeader\": \"Authorization\", \"endpoints\": { \"baseUrl\": \"https://api.yourapp.com\", \"version\": \"v1\" } }"
+  sdk = "{ \"platforms\": [\"typescript\", \"python\"] }"
 }
 ```
+
+`platforms` selects which clients to emit; `outputPath` overrides where they go.
+The remaining `SDKConfig` keys (`packageName`, `version`, `publishRegistry`,
+`enableAutoPublish`, `includeDocumentation`, `authConfig`) are accepted but do not
+currently change the output.
 
 ### 2. Generate SDK
 ```bash
 pnpm exec prisma generate
-ls packages/sdk/
+ls prisma/generated/pro/sdk/typescript/index.ts
+ls prisma/generated/pro/sdk/python/api_client.py
 ```
 
-### 3. Publish SDK (Optional)
+### 3. Consume the client
+The pack emits standalone source files, not a publishable package — there is no
+`package.json` and no build step. Either import the file directly from your app,
+or copy it into a package you maintain:
+
 ```bash
-cd packages/sdk
-npm run build
-npm publish
+cp prisma/generated/pro/sdk/typescript/index.ts packages/api-sdk/src/client.ts
 ```
 
 ### 4. Use SDK in Client Applications
 ```typescript
-// Install in client projects
-npm install @your-org/api-sdk
+import { APIClient } from './generated/pro/sdk/typescript';
 
-// Use in application
-import { APIClient } from '@your-org/api-sdk';
+// Positional arguments: base URL, then an optional key sent as
+// `Authorization: Bearer <key>`.
+const client = new APIClient('https://api.yourapp.com', process.env.API_TOKEN);
 
-const client = new APIClient({
-  baseUrl: 'https://api.yourapp.com',
-  authToken: 'your-auth-token'
-});
-
-const users = await client.users.findMany();
-const newUser = await client.users.create({
+// Methods are flat and named `<verb><Model>` — there are no per-model resource
+// objects (`client.users.findMany()` does not exist).
+const orgs = await client.listOrganizations();
+const org = await client.getOrganization(id);
+const member = await client.createMember({
   email: 'user@example.com',
-  name: 'John Doe'
+  name: 'John Doe',
 });
 ```
 
@@ -403,7 +414,7 @@ Create tests to ensure your migration works:
 ```typescript
 // tests/migration.test.ts
 import { validateLicense } from 'prisma-zod-generator/lib/license';
-import { UserPolicies } from '@/generated/pzg/policies';
+import { createSafeUserOperations, UserRedactor } from '@/generated/pro/policies';
 
 describe('PZG Pro Migration', () => {
   test('license is valid', async () => {
@@ -413,12 +424,12 @@ describe('PZG Pro Migration', () => {
   });
 
   test('policies are generated', () => {
-    expect(UserPolicies.validateRead).toBeDefined();
-    expect(UserPolicies.validateWrite).toBeDefined();
+    expect(createSafeUserOperations).toBeDefined();
+    expect(new UserRedactor().redact).toBeDefined();
   });
 
   test('server actions exist', async () => {
-    const { createUser } = await import('@/server/actions/user/create');
+    const { createUser } = await import('@/generated/pro/server-actions/actions/user');
     expect(createUser).toBeDefined();
   });
 });
@@ -429,23 +440,22 @@ Test the full flow with real data:
 
 ```typescript
 // tests/integration.test.ts
-import { createUser } from '@/server/actions/user/create';
-import { UserPolicies } from '@/generated/pzg/policies';
+import { createSafeUserOperations } from '@/generated/pro/policies';
+import { validateUserCreate } from '@/generated/pro/policies/dto/user';
 
 describe('Pro Features Integration', () => {
-  test('server action with policies', async () => {
-    // Test that server actions respect policies
-    const userData = {
-      email: 'test@example.com',
-      name: 'Test User',
-      role: 'ADMIN' // Should be blocked by policy
-    };
+  test('read policies scope the query', async () => {
+    const users = createSafeUserOperations(prisma, { tenantId: 'tenant-a' });
 
-    const context = { userId: 'regular-user', roles: ['user'] };
-    const policyResult = UserPolicies.validateWrite(userData, context);
+    // The wrapper folds the model's @policy read rule into the where clause,
+    // so rows outside the caller's scope are never fetched.
+    const visible = await users.findMany({ userId: 'regular-user', role: 'user' });
 
-    expect(policyResult.allowed).toBe(false);
-    expect(policyResult.reason).toContain('role');
+    expect(visible.every((u) => u.tenantId === 'tenant-a')).toBe(true);
+  });
+
+  test('DTO validation rejects bad input', () => {
+    expect(() => validateUserCreate({ email: 'not-an-email' })).toThrow();
   });
 });
 ```
