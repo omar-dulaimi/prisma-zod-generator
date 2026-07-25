@@ -1,3 +1,9 @@
+## [2.3.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.6...v2.3.7) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **config:** stop array-form globalExclusions from aborting generation ([8126a48](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8126a48bcdff3df663c3e112cd555455f2ebfff0)), closes [#396](https://github.com/omar-dulaimi/prisma-zod-generator/issues/396) [#395](https://github.com/omar-dulaimi/prisma-zod-generator/issues/395) [#369](https://github.com/omar-dulaimi/prisma-zod-generator/issues/369)
+
 ## [2.3.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.5...v2.3.6) (2026-07-25)
 
 ### 🐛 Bug Fixes
