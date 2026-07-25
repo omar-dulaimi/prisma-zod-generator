@@ -1,3 +1,13 @@
+## [2.4.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.8...v2.4.0) (2026-07-25)
+
+### 🚀 Features
+
+* **pro:** let any pack exclude models, and close the dev licence bypass ([5816a13](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5816a13ea836bf9a7b2e7adc1aa242574783550a))
+
+### 📚 Documentation
+
+* **llms:** regenerate for the model-exclusion guidance ([fda9986](https://github.com/omar-dulaimi/prisma-zod-generator/commit/fda9986aa3cc0e4c00941285a2d6985879802212))
+
 ## [2.3.8](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.7...v2.3.8) (2026-07-25)
 
 ### 🐛 Bug Fixes
