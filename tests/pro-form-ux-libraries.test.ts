@@ -29,6 +29,7 @@ model Member {
   role     Role    @default(MEMBER)
   isActive Boolean @default(true)
   bio      String?
+  meta     Json?
 }
 `;
 
@@ -81,40 +82,124 @@ describe.skipIf(!proAvailable)('Form UX ui library selection', () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  const shadcnOnlyComponents = ['<FormField', '<FormItem', '<FormControl', '<FormMessage'];
+  // Distinctive to shadcn's form wrappers. `FormControl` is deliberately excluded:
+  // MUI and Chakra both export a component of that name, so its presence is
+  // legitimate there rather than a leak.
+  const shadcnOnlyComponents = ['<FormField', '<FormItem', '<FormMessage'];
 
-  describe.each(['mui', 'chakra', 'mantine'])('uiLibrary: %s', (library) => {
+  describe('an unrecognised uiLibrary', () => {
     it(
-      'emits components that reference only what they import',
-      async () => {
-        const out = await generate(`lib-${library}`, { uiLibrary: library });
-        const source = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
-
-        for (const component of shadcnOnlyComponents) {
-          if (source.includes(component)) {
-            // If a shadcn primitive is used, it must be imported.
-            expect(source, `${component} used without an import`).toMatch(
-              /from '@\/components\/ui\/form'/,
-            );
-          }
-        }
-      },
-      GENERATION_TIMEOUT,
-    );
-
-    it(
-      'warns that the library is not implemented and says what it produced',
+      'falls back to barebones and says so',
       async () => {
         const logged: string[] = [];
         vi.spyOn(console, 'log').mockImplementation((...args) => {
           logged.push(args.join(' '));
         });
 
-        await generate(`warn-${library}`, { uiLibrary: library });
+        const out = await generate('lib-bogus', { uiLibrary: 'bootstrap' });
+        const source = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
 
-        const output = logged.join('\n');
-        expect(output).toContain(library);
-        expect(output.toLowerCase()).toContain('barebones');
+        expect(logged.join('\n')).toContain('bootstrap');
+        expect(source).toContain('<input');
+        expect(source).not.toContain('@/components/ui/');
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
+  describe.each([
+    {
+      library: 'mui',
+      pkg: '@mui/material',
+      expected: ['TextField', 'Checkbox', 'Select', 'MenuItem', 'Button'],
+    },
+    {
+      library: 'chakra',
+      // Chakra v3: the v2 FormControl/FormLabel/FormErrorMessage trio was replaced
+      // by the Field namespace, and Select became compound (NativeSelect).
+      pkg: '@chakra-ui/react',
+      expected: ['Input', 'Checkbox', 'NativeSelect', 'Button', 'Field.Root'],
+    },
+    {
+      library: 'mantine',
+      pkg: '@mantine/core',
+      expected: ['TextInput', 'Checkbox', 'Select', 'Button', 'Textarea'],
+    },
+  ])('uiLibrary: $library, implemented', ({ library, pkg, expected }) => {
+    it(
+      'imports from the library it was asked for',
+      async () => {
+        const out = await generate(`impl-${library}`, { uiLibrary: library });
+        const source = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
+
+        expect(source).toContain(`from '${pkg}'`);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'renders that library’s components',
+      async () => {
+        const out = await generate(`impl-render-${library}`, { uiLibrary: library });
+        const source = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
+
+        for (const component of expected) {
+          expect(source, `${library} should use ${component}`).toContain(`<${component}`);
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'uses Controller, since these inputs are controlled',
+      async () => {
+        const out = await generate(`impl-ctrl-${library}`, { uiLibrary: library });
+        const source = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
+
+        expect(source).toContain("import { Controller, useForm } from 'react-hook-form'");
+        expect(source).toContain('<Controller');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'references nothing it has not imported',
+      async () => {
+        const out = await generate(`impl-clean-${library}`, { uiLibrary: library });
+        const source = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
+
+        // shadcn's wrappers were the original leak: emitted without any import.
+        for (const component of shadcnOnlyComponents) {
+          expect(source, `${component} leaked into ${library} output`).not.toContain(component);
+        }
+        expect(source).not.toContain('@/components/ui/');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'maps an enum column onto a select with its members',
+      async () => {
+        const out = await generate(`impl-enum-${library}`, { uiLibrary: library });
+        const source = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
+
+        expect(source).toContain('OWNER');
+        expect(source).toContain('MEMBER');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'no longer warns, because the library is implemented',
+      async () => {
+        const logged: string[] = [];
+        vi.spyOn(console, 'log').mockImplementation((...args) => {
+          logged.push(args.join(' '));
+        });
+
+        await generate(`impl-quiet-${library}`, { uiLibrary: library });
+
+        expect(logged.join('\n')).not.toMatch(/not implemented/i);
       },
       GENERATION_TIMEOUT,
     );
