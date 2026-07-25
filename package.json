@@ -118,7 +118,8 @@
     "docs:serve": "cd website && pnpm run serve",
     "postrelease": "echo 'Changelog is maintained on GitHub; no docs sync needed.'",
     "test:all": "VITEST_MAX_WORKERS=16 vitest --config vitest.config.mjs run --reporter=default",
-    "test:all:sequential": "VITEST_MAX_WORKERS=1 vitest --config vitest.config.mjs run --reporter=default"
+    "test:all:sequential": "VITEST_MAX_WORKERS=1 vitest --config vitest.config.mjs run --reporter=default",
+    "test:coverage:full": "NODE_OPTIONS=--max-old-space-size=8192 c8 --include='src/**/*.ts' --exclude='src/dsrc/**' --exclude='src/types/**' --exclude='src/types.ts' --exclude='**/*.d.ts' --exclude-after-remap --all --temp-directory=coverage/tmp --report-dir=coverage-full --reporter=text --reporter=json --reporter=html --check-coverage --statements=85 --branches=85 --functions=64 --lines=85 vitest --config vitest.config.mjs run"
   },
   "author": {
     "name": "Omar Dulaimi",
@@ -154,6 +155,7 @@
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^11.12.0",
+    "@prisma/adapter-pg": "^7.0.0",
     "@rollup/plugin-terser": "^0.4.4",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
@@ -170,6 +172,7 @@
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
     "@vitest/coverage-v8": "^4.0.12",
+    "c8": "^12.0.0",
     "conventional-changelog-conventionalcommits": "^9.1.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
@@ -179,7 +182,6 @@
     "gray-matter": "^4.0.3",
     "husky": "^9.1.7",
     "javascript-obfuscator": "^4.1.1",
-    "@prisma/adapter-pg": "^7.0.0",
     "pg": "^8.16.3",
     "prisma": "^7.0.0",
     "remark": "^15.0.1",

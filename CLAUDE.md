@@ -25,6 +25,27 @@ This is a Prisma Generator that automatically generates Zod schemas from Prisma 
 - `pnpm run check-uncommitted` - Check for uncommitted changes before publishing
 - `pnpm run package:publish` - Full publish process (update, check, package, publish)
 
+### Coverage
+
+Use `pnpm run test:coverage:full`. It is the only number that means anything here, and
+it is the one with a threshold gate.
+
+The reason is worth knowing before trusting any other figure: most of the suite
+exercises the generator by spawning `prisma generate`, which runs `node ./lib/generator.js`
+in a **child process**. In-process V8 coverage cannot see that, so `pnpm run test:coverage`
+(plain Vitest) reports the engine — transformer, generators/, prisma-generator — at
+close to zero while it is in fact the best-covered code in the repo. Measured that way
+the whole of `src/` looks like ~20%; measured properly it is ~87%.
+
+`test:coverage:full` runs the same suite under c8, which captures the child processes,
+and passes `--exclude-after-remap` so their `lib/*.js` coverage is attributed back to
+`src/*.ts` through the source maps. Without that flag c8's filters match the pre-map
+`lib/` paths, every child's data is dropped, and `--all` backfills the src files at 0% —
+which looks like a real result and is not.
+
+The report needs a raised heap (the script sets it): it merges well over a thousand raw
+V8 coverage files and OOMs on the default.
+
 ## Architecture
 
 ### Core Components

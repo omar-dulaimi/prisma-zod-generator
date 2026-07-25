@@ -117,3 +117,4 @@ tests/multi-provider/schemas/*/prisma.config.mjs
 # Test artifacts (writeConfig emits a config next to the schema under test)
 prisma.config.mjs
 temp-schema-*.prisma
+coverage-full
