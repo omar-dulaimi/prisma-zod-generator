@@ -228,4 +228,49 @@ describe.skipIf(!proAvailable)('Form UX ui library selection', () => {
     },
     GENERATION_TIMEOUT,
   );
+
+  /**
+   * `enableI18n` had no coverage. The keys file nested every entry under a
+   * lowercased model segment (`forms.member.email.label`) while every emitted
+   * component looks up `t('forms.email.label')` — so no translation the pack
+   * generated could ever resolve, and each label rendered as its raw key.
+   */
+  describe('i18n keys', () => {
+    it(
+      'emits keys at the paths the components look up',
+      async () => {
+        const out = await generate('i18n-default', { enableI18n: true });
+        const component = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
+        const keys = JSON.parse(readFileSync(join(out, 'i18n', 'member.json'), 'utf-8'));
+
+        // Read the paths out of the component rather than hardcoding them, so the
+        // two can never drift again.
+        const looked = [...component.matchAll(/t\('([^']+)'\)/g)].map((m) => m[1]);
+        expect(looked.length).toBeGreaterThan(0);
+
+        for (const path of looked) {
+          const value = path.split('.').reduce<unknown>((node, segment) => {
+            return node && typeof node === 'object'
+              ? (node as Record<string, unknown>)[segment]
+              : undefined;
+          }, keys);
+          expect(value, `no translation for ${path}`).toBeTypeOf('string');
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'honours a custom namespace',
+      async () => {
+        const out = await generate('i18n-ns', { enableI18n: true, i18nNamespace: 'admin' });
+        const component = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
+        const keys = JSON.parse(readFileSync(join(out, 'i18n', 'member.json'), 'utf-8'));
+
+        expect(component).toContain("t('admin.");
+        expect(Object.keys(keys)).toEqual(['admin']);
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 });

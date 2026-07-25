@@ -41,6 +41,15 @@ model Document {
   ${tenantField} String
 }
 
+// A multi-word tenant-scoped model. Every model in this fixture used to be a
+// single word, which is the only case where lowercasing a model name happens to
+// produce Prisma's delegate name.
+model ProjectVariant {
+  id       String @id @default(cuid())
+  label    String
+  ${tenantField} String
+}
+
 model GlobalSetting {
   id    String @id @default(cuid())
   key   String @unique
@@ -116,6 +125,17 @@ describe.skipIf(!proAvailable)('Multi-Tenant Kit', () => {
       expect(source).toContain('document: {');
       for (const operation of ['create', 'findMany', 'findFirst', 'findUnique', 'update', 'delete'])
         expect(source, operation).toContain(`async ${operation}({ args, query })`);
+    });
+
+    it('keys hooks by the Prisma delegate name, not the lowercased model name', () => {
+      const source = normalized(join(defaultOut, 'tenant-extensions.ts'));
+
+      // `Prisma.defineExtension` keys `query` by delegate name: `projectVariant`.
+      // `projectvariant` is not a member of the extension type, so TypeScript
+      // rejects the whole extension — and a JavaScript project gets no error and
+      // no tenant isolation at all for that model, which is the dangerous case.
+      expect(source).toContain('projectVariant: {');
+      expect(source).not.toContain('projectvariant: {');
     });
 
     it('injects the tenant filter into reads and the tenant id into creates', () => {
