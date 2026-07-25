@@ -3543,6 +3543,13 @@ console.log(`Valid: ${result.valid.length}`)
 console.log(`Invalid: ${result.invalid.length}`)
 ```
 
+:::note `enablePrecompilation: false` is not supported
+The streaming, batching, wrapper, utility and benchmark modules all import the precompiled validator
+map, so `precompiled.ts` is always generated. Passing `false` used to skip it while still emitting the
+five modules that import it, leaving a pack that could not compile; from **2.4.1+** the file is
+emitted regardless and the generator says so.
+:::
+
 :::note Memory scales with the result, not the chunk size
 `chunkSize` bounds how much is validated per tick, not how much is retained:
 every valid record is accumulated into `result.valid` (and every failure into
@@ -3852,10 +3859,18 @@ app.use(async (ctx, next) => {
 })
 ```
 
-:::caution `redactPII()` is a stub
-The policies index also exports a `redactPII(data, config?)` helper. In the current implementation it
-returns its input unchanged — it is a placeholder, not a redactor. Use the per-model
-`<Model>Redactor` class instead.
+:::note `redactPII()` is not implemented
+The policies index also exports `redactPII(data, config?)`, which cannot work: redaction is per model
+and it has no way to tell which model an arbitrary object came from. From **2.4.1+** it throws and
+points at the per-model `<Model>Redactor`. Before that it returned its input unchanged, so a caller
+received unredacted PII with no indication of it.
+:::
+
+:::note Redaction applies in every context (2.4.1+)
+A field marked `@pii` is masked whether you call `redact(row)`, `redact(row, 'logs')`, or let the
+generated Express middleware do it. Earlier versions only masked for the `logs` and `analytics`
+contexts while both the default call and the middleware used `api`, so the redactor returned its
+input untouched and the middleware was a no-op.
 :::
 
 ## Hashing and Browser Support
@@ -9674,9 +9689,10 @@ console.log('member updated:', redactor.redact(member, 'logs'));
 ```
 
 :::note
-`redact()` masks the fields you marked `/// @pii`. The `redactPII()` helper
-exported from the barrel is a placeholder that returns its input unchanged —
-use the per-model redactor.
+`redact()` masks the fields you marked `/// @pii`, in every context. The
+`redactPII()` helper exported from the barrel cannot infer a model and throws
+(2.4.1+; before that it silently returned its input unchanged) — use the
+per-model redactor.
 :::
 
 ## ⚡ Server Actions API {#server-actions-api}
@@ -9827,7 +9843,10 @@ always false.
 ## 🚨 Drift Guard API {#drift-guard-api}
 
 :::note
-Drift Guard is driven through the `pzg-pro guard` CLI documented above. There is no supported programmatic entry point — integrate it by shelling out to the CLI and reading `--format json` from stdout.
+Drift Guard is driven through the `pzg-pro guard` CLI documented above. For programmatic use,
+`validateDrift({ basePath, headPath, outputFormat, strictMode })` compares two schema files and
+returns `{ success, changes, output }` — available from **2.4.1+**, where it began reading the files
+it is given rather than returning a fixed sample.
 :::
 
 ### Configuration Type
