@@ -62,6 +62,16 @@ export interface AggregateConfig {
 }
 
 /**
+ * Reference to a pure model schema that a result schema depends on.
+ * `exportName` is the exported identifier (e.g. `TagSchema`) and `fileBase`
+ * is the model file name without its `.ts` extension (e.g. `Tag.schema`).
+ */
+export interface ResultModelSchemaRef {
+  exportName: string;
+  fileBase: string;
+}
+
+/**
  * Generated result schema information
  */
 export interface GeneratedResultSchema {
@@ -72,6 +82,12 @@ export interface GeneratedResultSchema {
   imports: Set<string>;
   exports: Set<string>;
   dependencies: string[];
+  /**
+   * Pure model schemas (by Prisma model name) referenced by relation fields in
+   * this result schema. The transformer turns these into `../models/*` imports.
+   * Separate from `dependencies` (which routes through `../objects`).
+   */
+  modelDependencies: string[];
   documentation: string;
   examples?: string[];
 }
@@ -95,6 +111,15 @@ export class ResultSchemaGenerator {
   private generatedSchemas: Map<string, GeneratedResultSchema> = new Map();
   private baseModelSchemas: Map<string, string> = new Map();
   private config: GeneratorConfig;
+  /**
+   * Pure model schemas that are known to be emitted and safe to reference from
+   * result schemas, keyed by Prisma model name. Populated by the transformer via
+   * {@link setAvailablePureModels}. When a relation's target model is present
+   * here, the relation field references its `<Model>Schema`; otherwise it falls
+   * back to `z.unknown()`. Empty in single-file mode (references cannot resolve
+   * across the inlined bundle) so relations degrade to the safe fallback.
+   */
+  private availablePureModels: Map<string, ResultModelSchemaRef> = new Map();
   // Safe accessors for JSON Schema compatibility flags/options to avoid strict type coupling
   private isJsonSchemaModeEnabled(): boolean {
     const cfg = this.config as unknown as { jsonSchemaCompatible?: boolean };
@@ -122,6 +147,19 @@ export class ResultSchemaGenerator {
 
   constructor(config?: GeneratorConfig) {
     this.config = config ?? getDefaultConfiguration();
+  }
+
+  /**
+   * Register the set of pure model schemas that are emitted and safe to
+   * reference from generated result schemas. Called by the transformer, which
+   * owns knowledge of model enablement, the pure-model emission predicate and
+   * the pure-model naming resolver. Passing an empty map (the single-file case)
+   * makes every relation field fall back to `z.unknown()`.
+   */
+  setAvailablePureModels(models: Map<string, ResultModelSchemaRef>): void {
+    this.availablePureModels = models;
+    // Cached schemas were built against the previous mapping; invalidate them.
+    this.generatedSchemas.clear();
   }
 
   /**
@@ -256,7 +294,8 @@ export class ResultSchemaGenerator {
   private generateSingleResultSchema(context: ResultGenerationContext): GeneratedResultSchema {
     const { options } = context;
     const schemaName = this.generateSchemaName(options);
-    const baseSchema = this.buildBaseResultSchema(context);
+    const modelDependencies = new Set<string>();
+    const baseSchema = this.buildBaseResultSchema(context, modelDependencies);
 
     let zodSchema: string;
     let typeDefinition: string;
@@ -280,6 +319,7 @@ export class ResultSchemaGenerator {
       imports: new Set(['z']),
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: this.extractDependencies(context),
+      modelDependencies: Array.from(modelDependencies),
       documentation,
       examples,
     };
@@ -291,7 +331,8 @@ export class ResultSchemaGenerator {
   private generateArrayResultSchema(context: ResultGenerationContext): GeneratedResultSchema {
     const { options } = context;
     const schemaName = this.generateSchemaName(options);
-    const baseSchema = this.buildBaseResultSchema(context);
+    const modelDependencies = new Set<string>();
+    const baseSchema = this.buildBaseResultSchema(context, modelDependencies);
 
     let zodSchema: string;
     let typeDefinition: string;
@@ -316,6 +357,7 @@ export class ResultSchemaGenerator {
       imports: new Set(['z']),
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: this.extractDependencies(context),
+      modelDependencies: Array.from(modelDependencies),
       documentation,
       examples,
     };
@@ -343,6 +385,7 @@ export class ResultSchemaGenerator {
       imports: new Set(['z']),
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
+      modelDependencies: [],
       documentation,
       examples,
     };
@@ -369,6 +412,7 @@ export class ResultSchemaGenerator {
       imports: new Set(['z']),
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
+      modelDependencies: [],
       documentation,
       examples,
     };
@@ -400,6 +444,7 @@ ${allFields.join(',\n')}
       imports: new Set(['z']),
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
+      modelDependencies: [],
       documentation,
       examples,
     };
@@ -426,6 +471,7 @@ ${allFields.join(',\n')}
       imports: new Set(['z']),
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
+      modelDependencies: [],
       documentation,
       examples,
     };
@@ -468,7 +514,10 @@ ${allFields.join(',\n')}
     ].includes(operationType);
   }
 
-  private buildBaseResultSchema(context: ResultGenerationContext): string {
+  private buildBaseResultSchema(
+    context: ResultGenerationContext,
+    modelDependencies: Set<string> = new Set<string>(),
+  ): string {
     const { model, options } = context;
 
     // Start with base model schema
@@ -478,6 +527,14 @@ ${allFields.join(',\n')}
     });
 
     const fieldSchemas = fields.map((field) => {
+      // Relation (object) fields cannot be expressed by the scalar type map.
+      // When the related model's pure schema is emitted we reference it directly
+      // (e.g. `z.array(TagSchema).optional()`); otherwise we fall back to
+      // `z.unknown()`. Relations are always optional because they only appear in
+      // a result when the query explicitly `include`s them.
+      if (field.kind === 'object') {
+        return `  ${field.name}: ${this.buildRelationFieldSchema(field, model, modelDependencies)}`;
+      }
       const zodType = this.mapPrismaTypeToZod(field);
       const optionalMarker = !field.isRequired ? '.optional()' : '';
       return `  ${field.name}: ${zodType}${optionalMarker}`;
@@ -496,6 +553,38 @@ ${allFields.join(',\n')}
 
     const baseSchemaStr = `z.object({\n${fieldSchemas.join(',\n')}\n})`;
     return baseSchemaStr;
+  }
+
+  /**
+   * Build the Zod expression for a relation (object) field in a record-shaped
+   * result schema. References the related model's pure schema when it is emitted
+   * and safe to import; otherwise falls back to `z.unknown()`. Always optional
+   * because relations are only present when the query `include`s them.
+   *
+   * Self-relations (target model === current model) use the fallback so the
+   * result file never has to import a schema for a cyclic/self reference,
+   * mirroring the existing guard in {@link extractDependencies}.
+   */
+  private buildRelationFieldSchema(
+    field: DMMF.Field,
+    model: DMMF.Model,
+    modelDependencies: Set<string>,
+  ): string {
+    const isSelfRelation = field.type === model.name;
+    const modelRef = isSelfRelation ? undefined : this.availablePureModels.get(field.type);
+
+    let inner: string;
+    if (modelRef) {
+      inner = modelRef.exportName;
+      modelDependencies.add(field.type);
+    } else {
+      // Fallback: related pure model schema is not generated, this is a
+      // self-relation, or we are in single-file mode.
+      inner = this.isJsonSchemaModeEnabled() ? 'z.any()' : 'z.unknown()';
+    }
+
+    const base = field.isList ? `z.array(${inner})` : inner;
+    return `${base}.optional()`;
   }
 
   private buildRelationSchema(field: DMMF.Field): string {

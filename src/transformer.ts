@@ -1,7 +1,7 @@
 import type { ConnectorType, DMMF as PrismaDMMF } from '@prisma/generator-helper';
 import path from 'path';
 import type { GeneratorConfig as ZodGeneratorConfig } from './config/parser';
-import { ResultSchemaGenerator } from './generators/results';
+import { ResultSchemaGenerator, type ResultModelSchemaRef } from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
 import { generateDecimalInputSchema, isDecimalJsAvailable } from './helpers/decimal-helpers';
 import {
@@ -13,12 +13,15 @@ import type { CustomImport } from './parsers/zod-comments';
 import { SchemaEnumWithValues, TransformerParams } from './types';
 import { logger } from './utils/logger';
 import {
+  applyPattern,
   generateExportName,
   generateFileName,
   resolveEnumNaming,
   resolveInputNaming,
+  resolvePureModelNaming,
   resolveSchemaNaming,
 } from './utils/naming-resolver';
+import { isSingleFileEnabled } from './utils/singleFileAggregator';
 import type { GeneratedManifest } from './utils/safeOutputManagement';
 import { createStrictModeResolver, type StrictModeResolver } from './utils/strict-mode-resolver';
 import { writeFileSafely } from './utils/writeFileSafely';
@@ -4377,6 +4380,50 @@ ${helperCode}
     }
     const resultGenerator = new ResultSchemaGenerator(generatorConfig);
 
+    // Determine which pure model schemas (schemas/models/<Model>.schema.ts) are
+    // emitted so relation fields in result schemas can reference them instead of
+    // falling back to z.unknown(). Reuse the exact pure-model emission predicate
+    // (see prisma-generator.ts) and the shared pure-model naming resolver.
+    //
+    // Single-file mode intentionally yields an empty map: the aggregator inlines
+    // every schema into one bundle and strips relative imports, and result
+    // schemas are emitted before pure models in that bundle, so a forward
+    // reference would not resolve. Relations therefore degrade to the safe
+    // z.unknown() fallback in single-file mode.
+    // Mirror BOTH gates that guard pure-model emission in prisma-generator.ts:
+    //  1) the emit gate:            emit.pureModels ?? !!pureModels   (call site)
+    //  2) generatePureModelSchemas: returns early unless pureModels is truthy
+    // so files exist only when the emit gate is on AND pureModels is truthy.
+    // Using both avoids referencing models/ files that were never written
+    // (e.g. emit.pureModels=true while pureModels is falsy).
+    const emitPureModelsGate = generatorConfig.emit?.pureModels ?? !!generatorConfig.pureModels;
+    const pureModelsEmitted = emitPureModelsGate && !!generatorConfig.pureModels;
+    const importExtension = Transformer.getImportFileExtension();
+    const availablePureModels = new Map<string, ResultModelSchemaRef>();
+    if (pureModelsEmitted && !isSingleFileEnabled()) {
+      const namingResolved = resolvePureModelNaming(generatorConfig);
+      for (const candidate of this.models) {
+        if (!Transformer.isModelEnabled(candidate.name)) continue;
+        const modelFileName = applyPattern(
+          namingResolved.filePattern,
+          candidate.name,
+          namingResolved.schemaSuffix,
+          namingResolved.typeSuffix,
+        );
+        const modelExportName = applyPattern(
+          namingResolved.exportNamePattern,
+          candidate.name,
+          namingResolved.schemaSuffix,
+          namingResolved.typeSuffix,
+        );
+        availablePureModels.set(candidate.name, {
+          exportName: modelExportName,
+          fileBase: modelFileName.replace(/\.ts$/, ''),
+        });
+      }
+    }
+    resultGenerator.setAvailablePureModels(availablePureModels);
+
     const opSuffix = (op: string): string => {
       switch (op) {
         case 'findUnique':
@@ -4459,13 +4506,28 @@ ${helperCode}
           });
         }
 
+        // Import pure model schemas referenced by relation fields from ../models.
+        // These are distinct from `dependencies` (which route through ../objects).
+        if (resultSchema.modelDependencies && resultSchema.modelDependencies.length > 0) {
+          const seenModelImports = new Set<string>();
+          for (const depModelName of resultSchema.modelDependencies) {
+            const info = availablePureModels.get(depModelName);
+            if (!info) continue; // safety: only import models known to be emitted
+            if (seenModelImports.has(info.exportName)) continue; // de-dupe
+            seenModelImports.add(info.exportName);
+            imports.push(
+              `import { ${info.exportName} } from '../models/${info.fileBase}${importExtension}';\n`,
+            );
+          }
+        }
+
         await writeFileSafely(filePath, `${imports.join('')}${resultSchema.zodSchema}`);
       }
     }
 
     // Generate consolidated index file for all result schemas
     const resultIndexPath = path.join(Transformer.getSchemasPath(), 'results', 'index.ts');
-    const importExtension = Transformer.getImportFileExtension();
+    // `importExtension` is already resolved above for this method.
     const allExports: string[] = [];
 
     // Collect all result schema exports for all processed models
