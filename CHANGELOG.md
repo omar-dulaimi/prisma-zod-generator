@@ -1,3 +1,9 @@
+## [2.3.4](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.3...v2.3.4) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **zod-comments:** handle arbitrarily-nested [@zod](https://github.com/zod).custom.use arguments ([8ea6a84](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8ea6a84e327c8cf4256f65ec30dfe2ce7f773a1d)), closes [#386](https://github.com/omar-dulaimi/prisma-zod-generator/issues/386) [#386](https://github.com/omar-dulaimi/prisma-zod-generator/issues/386)
+
 ## [2.3.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.2...v2.3.3) (2026-07-25)
 
 ### 🐛 Bug Fixes
