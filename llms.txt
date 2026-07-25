@@ -2753,7 +2753,7 @@ Schema-driven React forms with automatic validation. Generate fully-typed form c
 - **Zero Boilerplate**: Forms generated from schema
 - **Type Safety**: Full TypeScript from database to UI
 - **Auto Validation**: Zod schemas automatically applied
-- **Customizable UI**: Bring your own components (shadcn/ui, MUI, etc.)
+- **Five UI libraries**: barebones, shadcn/ui, MUI, Chakra v3 and Mantine, or swap in your own
 - **Nested Relations**: Handle complex data structures
 - **Form State**: Built-in loading, error, and success states
 
@@ -2797,10 +2797,33 @@ prisma generate
 > framework-agnostic forms built from plain elements, or `shadcn` for components
 > wired to shadcn/ui primitives (`Input`, `Textarea`, `Checkbox`, `Select`).
 >
-> `mantine`, `chakra` and `mui` are not implemented yet. Passing one generates
-> `barebones` forms and warns that it did, so you get working validation and plain
-> elements to swap your own components into. (Before 2.4.1 they emitted the shadcn
-> component shape without its imports — output that could not compile.)
+> All five values are implemented from **2.4.3+**: `barebones`, `shadcn`, `mui`,
+> `chakra` and `mantine`. An unrecognised value falls back to `barebones` and says
+> so. (Between 2.4.1 and 2.4.2 `mui`/`chakra`/`mantine` fell back to barebones;
+> before 2.4.1 they emitted shadcn markup with no imports, which could not compile.)
+>
+> Install the peer dependencies for whichever you choose:
+>
+> ```bash
+> # mui
+> pnpm add @mui/material @emotion/react @emotion/styled
+> # chakra (v3)
+> pnpm add @chakra-ui/react
+> # mantine
+> pnpm add @mantine/core
+> ```
+>
+> `mui`, `chakra` and `mantine` render through react-hook-form's `Controller`,
+> because their inputs are controlled — `register()` alone does not propagate a
+> Select or Checkbox change. Enum columns become a select populated with the enum's
+> members in every variant.
+
+:::note Chakra targets v3
+The emitted components use the v3 API — `Field.Root`/`Field.Label`/`Field.ErrorText`,
+`NativeSelect`, compound `Checkbox`, and `disabled` rather than `isDisabled`. They do
+not compile against Chakra v2, whose `FormControl`/`FormLabel`/`FormErrorMessage`
+were removed in v3.
+:::
 
 ### Generated Files
 
