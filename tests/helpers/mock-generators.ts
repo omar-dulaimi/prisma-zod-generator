@@ -556,10 +556,10 @@ export class TestEnvironment {
     mkdirSync(outputDir, { recursive: true });
     this.activeTestDirs.add(testDir);
 
-    // Function to run generation
+    // Function to run generation. lib/ is built once in globalSetup (see
+    // tests/helpers/global-setup.ts) — rebuilding here per call raced across
+    // parallel workers writing the shared lib/ while others spawned from it.
     const runGeneration = async () => {
-      // Always build the generator to ensure latest code is used
-      await execAsync('npx tsc', { cwd: process.cwd() });
       const { provider } = sanitizeSchemaFile(schemaPath);
       const configPath = writePrismaConfig(testDir, schemaPath, provider);
 
@@ -570,7 +570,6 @@ export class TestEnvironment {
 
     // Same as runGeneration, but returns stdout/stderr for assertions
     const runGenerationWithOutput = async (): Promise<{ stdout: string; stderr: string }> => {
-      await execAsync('npx tsc', { cwd: process.cwd() });
       const { provider } = sanitizeSchemaFile(schemaPath);
       const configPath = writePrismaConfig(testDir, schemaPath, provider);
 
@@ -624,10 +623,9 @@ export class TestEnvironment {
       writeFileSync(configPath, JSON.stringify(config, null, 2));
     }
 
-    // Function to run generation
+    // Function to run generation. lib/ is built once in globalSetup (see
+    // tests/helpers/global-setup.ts); rebuilding per call raced across workers.
     const runGeneration = async () => {
-      // Always build the generator to ensure latest code is used
-      await execAsync('npx tsc', { cwd: process.cwd() });
       const { provider } = sanitizeSchemaFile(env.schemaPath);
       const configPath = writePrismaConfig(env.testDir, env.schemaPath, provider);
 
@@ -637,7 +635,6 @@ export class TestEnvironment {
     };
 
     const runGenerationWithOutput = async (): Promise<{ stdout: string; stderr: string }> => {
-      await execAsync('npx tsc', { cwd: process.cwd() });
       const { provider } = sanitizeSchemaFile(env.schemaPath);
       const configPath = writePrismaConfig(env.testDir, env.schemaPath, provider);
 

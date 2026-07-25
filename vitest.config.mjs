@@ -5,6 +5,8 @@ export default defineConfig({
     watch: false,
     globals: true,
     environment: 'node',
+    // Build lib/ once before workers spawn; see tests/helpers/global-setup.ts.
+    globalSetup: ['./tests/helpers/global-setup.ts'],
     include: ['tests/**/*.{test,spec}.ts'],
     exclude: ['node_modules', 'dist', 'coverage', 'lib', 'package'],
     testTimeout: 300000,
