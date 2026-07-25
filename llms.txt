@@ -2389,6 +2389,14 @@ PUT /posts/:id
 DELETE /posts/:id
 ```
 
+:::note Options that are not implemented
+`startMockServer`, `includeDeprecated`, `responseFormats`, `mockServer`,
+`openApiVersion`, `includeExamples` and `includeChangelog` are accepted but do not
+change the output — the spec is always OpenAPI 3.0.3. From **2.4.1+** the
+generator names them on stdout when you pass one, along with any key it does not
+recognise, instead of discarding them silently.
+:::
+
 :::note Pluralization is literal
 The suffix is always a bare `s`, so irregular names come out awkward:
 `Category` becomes `/categorys`, `Person` becomes `/persons`. The same naming is
@@ -2666,8 +2674,9 @@ const admin = userFactory.build({
 ### Persistence (Optional)
 
 Hand the factory a Prisma client first. Without it, `create()` and `createMany()`
-log a warning and return built-but-unsaved objects with a placeholder id — they
-do not throw, so a seeder can appear to succeed while writing nothing:
+throw and tell you to call `setPrismaClient()` — use `build()`/`buildMany()` when
+you only want objects. (Before 2.4.1 they warned and returned unsaved objects with
+a placeholder id, so a seeder could appear to succeed while writing nothing.)
 
 ```ts
 import { PrismaClient } from '@prisma/client';
@@ -2788,10 +2797,10 @@ prisma generate
 > framework-agnostic forms built from plain elements, or `shadcn` for components
 > wired to shadcn/ui primitives (`Input`, `Textarea`, `Checkbox`, `Select`).
 >
-> `mantine`, `chakra` and `mui` are accepted but not yet implemented: they emit
-> the shadcn component shape without the corresponding imports, so the output
-> will not compile. To use those libraries today, generate `barebones` and swap
-> the elements for your own components.
+> `mantine`, `chakra` and `mui` are not implemented yet. Passing one generates
+> `barebones` forms and warns that it did, so you get working validation and plain
+> elements to swap your own components into. (Before 2.4.1 they emitted the shadcn
+> component shape without its imports — output that could not compile.)
 
 ### Generated Files
 
@@ -3136,17 +3145,18 @@ generator pzgPro {
   enableMultiTenant = true
 
   // Optional advanced config (stringified JSON)
-  // multiTenant = "{ \"enforceMode\": \"warn\" }"
+  // multiTenant = "{ \"enforceMode\": \"warn\", \"tenantField\": \"orgId\" }"
 }
 ```
 
-:::important Name the column `tenantId`
-Tenant models are detected by looking for a field named exactly `tenantId`. A
-schema that scopes rows with `orgId`, `accountId` or `workspaceId` produces no
-validators at all, and `validateTenantAccess()` then throws
-`No tenant validator found for model: <Model>`. The `tenantField` option is
-accepted but not currently applied — add a `tenantId` column (or rename yours)
-until it is.
+:::note Naming the tenant column
+Tenant models are detected from a set of common names (`tenantId`,
+`organizationId`, `workspaceId`, `companyId`, …). If yours is named something
+else — `orgId`, `accountId` — set `tenantField` and it will be used instead.
+
+Requires **2.4.1+**: earlier versions ignored `tenantField`, so a schema scoping
+rows by an unrecognised name produced no validators at all and
+`validateTenantAccess()` threw `No tenant validator found for model: <Model>`.
 :::
 
 - **strict**: Validates query results and throws on a cross-tenant record
@@ -3705,9 +3715,9 @@ Two annotations are recognized:
 
 ### Conditions that are enforced
 
-The generated `combinePolicyCondition` recognizes exactly three condition shapes. Write them with the
-`read:where` prefix — the shorter `read:<condition>` form parses but loses the leading keyword, so
-`read:role in [...]` reaches the generated code as `in [...]` and matches nothing:
+The generated `combinePolicyCondition` recognizes exactly three condition shapes. Both
+`read:role in [...]` and `read:where role in [...]` work (in **2.4.1+**; earlier versions dropped the
+`role` keyword while parsing, leaving the policy inert):
 
 | Condition                               | Effect on the query                                                         |
 | --------------------------------------- | --------------------------------------------------------------------------- |
@@ -3716,14 +3726,20 @@ The generated `combinePolicyCondition` recognizes exactly three condition shapes
 | `read:where role in ["admin", "owner"]` | if the role is not listed, adds an impossible `where.id` so nothing matches |
 
 Any other condition text is carried into the generated file and then ignored, leaving the query
-unfiltered. Verify each policy against a real query before relying on it.
+unfiltered — so verify each policy against a real query before relying on it.
 
-:::caution Two limits of the role check
-The role list is compared against the role given to the **constructor**
-(`createSafeUserOperations(prisma, { role })`), not the one passed per call — a role supplied only to
-`findMany(context)` is ignored for this check. And denial is expressed as `where.id = -1`, which
-assumes an integer primary key; on a `String @id` model Prisma rejects it with a type error instead of
-returning no rows.
+`@policy deny:<condition>` refuses a create or update whose condition matches; the same three shapes
+apply. (Before 2.4.1 the generated evaluator returned `false` unconditionally, so a `deny` rule never
+denied anything.)
+
+The role is read from the context you pass to the method, falling back to the one given to the
+constructor, so a wrapper built once per process can vary the caller per request. A caller whose role
+is not listed gets a query narrowed to match nothing.
+
+:::note Fixed in 2.4.1
+Before 2.4.1 the role check only consulted the constructor's context, so a role supplied per call was
+ignored; denial was also expressed as `where.id = -1`, which Prisma rejects outright on a
+`String @id` model rather than returning no rows.
 :::
 
 :::caution Only these two annotations are parsed
@@ -3809,19 +3825,15 @@ app.get('/users/:id', createUserRedactionMiddleware({ redactLogs: true }), async
 })
 ```
 
-:::caution DTO schemas do not round-trip a raw Prisma row
-The generated DTO schemas describe an API payload, not a database row, so
-`parse()` on the result of a Prisma query can throw:
+:::note DTO schemas accept what Prisma returns (2.4.1+)
+Nullable columns are emitted `.nullable()`, and `Decimal` columns coerce, so
+`parse()` accepts a row straight from a Prisma query. Enum members are inlined as string literals, so
+the module needs no import beyond zod.
 
-- **Nullable columns** are emitted `.optional()` (accepting `undefined`) and never
-  `.nullable()`, but Prisma returns `null` — so a `String?` column with no value
-  fails with *expected string, received null*.
-- **`Decimal` columns** are emitted `z.number()`, which rejects the
-  `Prisma.Decimal` instance Prisma returns.
-
-Use `.strip()`-style shaping, or normalize first —
-`UserPublicSchema.parse({ ...user, name: user.name ?? undefined, amount: user.amount?.toNumber() })`
-— until the schemas emit `.nullable()`.
+Before 2.4.1 nullable columns were `.optional()` only (rejecting the `null` Prisma returns), `Decimal`
+was `z.number()` (rejecting `Prisma.Decimal`), enum fields referenced an enum that was never imported
+(`ReferenceError` on import), and the omit masks were hardcoded, so any model without
+`id`/`createdAt`/`updatedAt` threw *Unrecognized key* on first use.
 :::
 
 ### Koa and NestJS
@@ -3939,44 +3951,36 @@ generated/
 
 ## Basic Usage
 
-:::caution Set the context inside a transaction
-`migration.sql` sets its GUCs with `set_config(..., true)`, which is
-**transaction-local** — PostgreSQL discards the value when the surrounding
-transaction ends. Because `setContext()` issues that call as a standalone
-statement, Prisma wraps it in its own implicit transaction, so the context is
-gone before the next query runs and your policies evaluate against an empty
-`current_setting(...)`.
-
-Use an interactive transaction and run both the context call and your queries on
-the same transaction client:
+:::important Use the client `withContext` gives you
+The context lives in transaction-local settings, so `withContext` opens one
+transaction, sets the context on it, and hands you that client. Queries issued on
+the outer `prisma` run in a different transaction and will not see the context.
 
 ```ts
 import { PrismaClient } from '@prisma/client'
 import { createRLSHelper } from '@/generated/pro/postgres-rls/rls-helper'
 
 const prisma = new PrismaClient()
+const rls = createRLSHelper(prisma)
 
-await prisma.$transaction(async (tx) => {
-  const rls = createRLSHelper(tx)          // bind the helper to the transaction
-  await rls.setContext({
-    userId: 'user-123',
-    tenantId: 'tenant-456',
-    roles: ['admin'],
-  })
-
-  // These queries run in the same transaction, so the context still applies
-  const posts = await tx.post.findMany()
-})
+const posts = await rls.withContext(
+  { userId: 'user-123', tenantId: 'tenant-456', roles: ['admin'] },
+  // Use `tx`, not `prisma`.
+  async (tx) => tx.post.findMany(),
+)
 ```
 
-Verify your wiring before relying on it — inside the transaction,
-`SELECT current_setting('app.current_tenant_id', true)` should return your tenant
-id, not an empty string.
-:::
+To check your wiring, run this inside the callback — it should return your tenant
+id, not an empty string:
 
-`withContext(context, fn)` is convenient but calls `setContext()` outside any
-transaction you control, so it carries the same caveat unless the helper is bound
-to a transaction client as above.
+```ts
+await tx.$queryRaw`SELECT current_setting('app.current_tenant_id', true)`
+```
+
+Requires **2.4.1+**. Earlier versions set the context in its own statement, which
+PostgreSQL discarded before the callback ran, so policies evaluated against an
+empty `current_setting()` and the callback took no argument.
+:::
 
 ### Prisma Middleware
 
@@ -4239,26 +4243,20 @@ To ship the TypeScript client as its own npm package, copy `sdk/typescript/index
 you own and add your own `package.json` and build step. Otherwise, import it directly from your app
 like any other generated file.
 
-### Before adding it to a `tsc` program
+### Types in the emitted client
 
-Two things to expect the first time you compile the emitted client:
+Scalars are typed as JSON carries them, not as Prisma models them: `Decimal` and
+`BigInt` are `string | number`, `Json` is `unknown`, and `Bytes` and `DateTime` are
+`string`. Enums carry string values, so `member.role === Role.ADMIN` compares
+correctly against a response body.
 
-- **Add a prelude for scalar types.** `Decimal`, `Json` and `Bytes` columns are emitted as `Decimal`,
-  `JsonValue` and `Buffer`, but the file has no imports, so `tsc` reports `Cannot find name`. Either
-  declare them at the top of the file or expose those columns as `string` in your API:
-
-  ```typescript
-  import type { Decimal } from '@prisma/client/runtime/library';
-  type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
-  ```
-
-- **Enums are numeric.** `enum Role { OWNER, ADMIN, MEMBER }` is emitted without string values, so
-  `member.role === Role.ADMIN` compares a string from JSON against a number and is always false.
-  Compare against the string (`member.role === 'ADMIN'`) or convert with
-  `Role[member.role as keyof typeof Role]`.
-
-Keep `///` comments on model fields to a single line — a multi-line comment is appended after a `//`
-marker, which puts its continuation in code position and breaks the file.
+:::note Requires 2.4.1+
+Earlier versions named Prisma's `Decimal`, `JsonValue` and `Buffer` in a client
+that has no Prisma dependency, so anything with one of those columns failed to
+compile (TS2304); enums were emitted without values, making them numeric, so those
+comparisons were silently always false; and a multi-line `///` field comment broke
+the file outright.
+:::
 
 ## See Also
 
@@ -4290,19 +4288,12 @@ Utilities and templates for type-safe Next.js Server Actions validated by Zod sc
 - **Hooks Included**: A `use<Model>` hook per model wrapping every action
 - **Next.js Integration**: Works with `revalidatePath`, `redirect`, etc.
 
-:::note Finish the stubs before shipping
-These are stubs, and two steps are yours:
-
-1. **Add the framework directives.** No emitted file carries one. Put
-   `'use server'` at the top of each `actions/<model>.ts` and `'use client'` at
-   the top of each `hooks/use<Model>.ts`. A production `next build` fails without
-   the client directive, and an action imported from a Client Component without
-   the server directive pulls the Prisma client into your browser bundle.
-2. **Add validation.** The actions pass their input straight to Prisma and carry a
-   `// TODO: Add validation if needed` marker where a check belongs. Import the
-   matching schema from your generated Zod output and parse there — e.g.
-   `const parsed = MemberCreateInputSchema.parse(data)`.
-   :::
+:::note Requires 2.4.1+
+Earlier versions emitted no `'use server'` or `'use client'` directive (so a production `next build`
+failed, and an action imported from a Client Component pulled the Prisma client into the browser
+bundle), left validation as a `// TODO` comment while passing raw input to Prisma, and lower-cased
+multi-word model names into a delegate that does not exist (`prisma.projectvariant`).
+:::
 
 ## Prerequisites
 
@@ -4317,14 +4308,6 @@ pnpm add next
 ```
 
 > **Note**: The generator avoids direct Next.js imports to prevent dependency issues. Next.js features like `revalidatePath()` and `redirect()` are commented out in generated code - uncomment them if using Next.js.
-
-:::caution Multi-word model names
-A model whose name has more than one word — `ProjectVariant`, `OrderItem` — gets
-an all-lowercase delegate (`prisma.projectvariant`), but Prisma's client exposes
-`prisma.projectVariant`. The generated action then fails at runtime with
-*Cannot read properties of undefined*. Fix the delegate name in the emitted
-`actions/<model>.ts`, or keep model names single-word until this is corrected.
-:::
 
 ## Generate
 
@@ -9776,12 +9759,9 @@ export interface UseServerActionOptions<T> {
 ```
 
 :::note
-The emitted files carry no `'use server'` or `'use client'` directive — add them
-yourself: `'use server'` at the top of each `actions/<model>.ts`, `'use client'`
-at the top of each `hooks/use<Model>.ts`. Without the client directive the hooks
-fail a production Next.js build, and without the server directive an action
-imported from a Client Component pulls `prisma-client.ts` into the browser
-bundle.
+Actions carry `'use server'` and hooks carry `'use client'`, and each model also
+gets a `schemas/<model>.ts` that the actions validate against. Both were missing
+before 2.4.1.
 :::
 
 ## 📦 SDK Publisher API {#sdk-publisher-api}
@@ -9836,12 +9816,12 @@ No typed error classes are generated. If you need to branch on status, parse the
 message or wrap `APIClient` in your own error layer.
 
 :::note
-The emitted TypeScript references `Decimal`, `JsonValue` and `Buffer` for
-`Decimal`, `Json` and `Bytes` columns without importing them. Add a prelude to
-the top of the file — or map those columns to `string` in your API — before
-adding it to a `tsc` program. Enums are emitted as numeric TypeScript enums, so
-compare against the enum member (`Role.ADMIN`), not the string a JSON payload
-carries.
+Scalars are typed as the wire carries them: `Decimal` and `BigInt` as
+`string | number`, `Json` as `unknown`, `Bytes` and `DateTime` as `string`. Enums
+carry string values, so `member.role === Role.ADMIN` compares correctly against a
+JSON payload. Before 2.4.1 the file named Prisma's `Decimal`/`JsonValue`/`Buffer`
+without importing them and emitted numeric enums, so those comparisons were
+always false.
 :::
 
 ## 🚨 Drift Guard API {#drift-guard-api}
@@ -10857,37 +10837,28 @@ Consume it by importing the file directly, or copy it into a package of your own
 
 **Symptom**: `tsc` reports TS2304/TS2591 on the generated `index.ts`.
 
-**Cause**: `Decimal`, `Json` and `Bytes` columns are emitted as those type names,
-but the file contains no imports.
+**Cause**: versions before 2.4.1 emitted Prisma's own type names into a client
+that has no Prisma dependency.
 
-**Fix**: add a prelude above the generated interfaces —
+**Fix**: upgrade to **2.4.1+**, where those columns are typed as the wire carries
+them (`string | number` for `Decimal`, `unknown` for `Json`, `string` for `Bytes`
+and `DateTime`). On an older version, add a prelude above the interfaces:
 
 ```typescript
 import type { Decimal } from '@prisma/client/runtime/library';
 type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 ```
 
-— or expose those columns as `string` in your API and regenerate.
-
 ### Enum comparisons never match
 
 **Symptom**: `if (member.role === Role.ADMIN)` is always false against a JSON
 response.
 
-**Cause**: enums are emitted as *numeric* TypeScript enums, so `Role.ADMIN` is a
-number while the payload carries the string `"ADMIN"`.
+**Cause**: before 2.4.1 enums were emitted without values, making them *numeric*,
+so `Role.ADMIN` was a number while the payload carried the string `"ADMIN"`.
 
-**Fix**: compare against the string (`member.role === 'ADMIN'`), or convert with
-`Role[member.role as keyof typeof Role]`.
-
-### A field comment breaks the file
-
-**Symptom**: a syntax error part-way through the generated client.
-
-**Cause**: a multi-line `///` comment on a Prisma field is appended after a
-single-line `//` marker, so the second line lands in code position.
-
-**Fix**: keep `///` comments on model fields to a single line.
+**Fix**: upgrade to **2.4.1+** for string-valued enums, or compare against the
+string (`member.role === 'ADMIN'`).
 
 ## 🚨 Drift Guard
 
