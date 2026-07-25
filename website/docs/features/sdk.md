@@ -162,13 +162,27 @@ under one.
 
 ## Using the generated SDK
 
-The generator emits **source files only** — `sdk/typescript/index.ts` and
-`sdk/python/api_client.py`. There is no `package.json`, build config, bundle, or `.d.ts` emit, so the
-directory is not a publishable package as generated.
+From **2.6.0+** the TypeScript output is a package: `index.ts`, a `package.json` built from
+`packageName`/`version` (plus `publishConfig.registry` when `publishRegistry` is set), and a
+`README.md` unless `includeDocumentation: false`. The Python output remains a single
+`api_client.py`.
 
-To ship the TypeScript client as its own npm package, copy `sdk/typescript/index.ts` into a package
-you own and add your own `package.json` and build step. Otherwise, import it directly from your app
-like any other generated file.
+The generator never publishes for you — that would fire on every `prisma generate`. The emitted
+`package.json` carries a `publish` script for CI to run.
+
+### Authentication
+
+`authConfig` selects how the credential is attached:
+
+| Config | Header sent |
+| --- | --- |
+| omitted, or `{ "type": "bearer" }` | `Authorization: Bearer <token>` |
+| `{ "type": "bearer", "tokenPrefix": "Token" }` | `Authorization: Token <token>` |
+| `{ "type": "apikey", "headerName": "X-Api-Key" }` | `X-Api-Key: <token>` |
+| `{ "type": "oauth2" }` | `Authorization: Bearer <token>` — obtaining the token is your app's concern |
+
+`headerName` overrides the header for any type. Before 2.6.0 this option was accepted and ignored, so
+every client sent a bearer `Authorization` header regardless.
 
 ### Types in the emitted client
 

@@ -125,12 +125,17 @@ PUT /posts/:id
 DELETE /posts/:id
 ```
 
-:::note Options that are not implemented
-`startMockServer`, `includeDeprecated`, `responseFormats`, `mockServer`,
-`openApiVersion`, `includeExamples` and `includeChangelog` are accepted but do not
-change the output — the spec is always OpenAPI 3.0.3. From **2.4.1+** the
-generator names them on stdout when you pass one, along with any key it does not
-recognise, instead of discarding them silently.
+:::note Options
+From **2.6.0+**: `openApiVersion` accepts `3.0.3` (default) or `3.1.0`;
+`responseFormats` offers each listed media type wherever the document describes a
+body; `includeExamples` is honoured as an alias for `generateExamples`; and a field
+whose `///` comment says `@deprecated` is marked `deprecated: true` in the spec.
+
+`startMockServer`, `mockServer` and `includeChangelog` are deliberately not
+implemented — starting a server during `prisma generate` would leave a
+long-running process attached to the generator. Run the emitted `mock-server.js`
+yourself. Passing one of them, or any unrecognised key, is reported on stdout
+rather than discarded silently.
 :::
 
 :::note Pluralization is literal

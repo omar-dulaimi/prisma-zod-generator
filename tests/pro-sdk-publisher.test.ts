@@ -126,6 +126,136 @@ describe.skipIf(!proAvailable)('SDK Publisher client', () => {
   });
 
   /**
+   * Six of the eight SDKConfig options were declared, defaulted and never read —
+   * including the whole authConfig union behind the pack's "Bearer, API Key,
+   * OAuth2" claim, and packageName/version, which is what makes something a
+   * publishable package rather than a loose file.
+   */
+  describe('configuration', () => {
+    async function generate(label: string, config: Record<string, unknown>) {
+      const { generateSDKFromDMMF } = await import(
+        '../src/pro/features/sdk-publisher/sdk-publisher'
+      );
+      const dmmf = await getDMMF({ datamodel: SCHEMA });
+      const out = join(dir, label);
+
+      await generateSDKFromDMMF(
+        dmmf,
+        {},
+        join(dir, 'schema.prisma'),
+        out,
+        '@prisma/client',
+        'postgresql',
+        { platforms: ['typescript'], ...config },
+        [],
+      );
+
+      return out;
+    }
+
+    it(
+      'emits a package.json using packageName and version',
+      async () => {
+        const out = await generate('pkg', { packageName: '@acme/billing-sdk', version: '2.1.0' });
+        const manifest = JSON.parse(readFileSync(join(out, 'typescript', 'package.json'), 'utf-8'));
+
+        expect(manifest.name).toBe('@acme/billing-sdk');
+        expect(manifest.version).toBe('2.1.0');
+        expect(manifest.types).toBeDefined();
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'points publishConfig at the configured registry',
+      async () => {
+        const out = await generate('registry', {
+          packageName: '@acme/sdk',
+          publishRegistry: 'https://npm.internal.acme.dev',
+        });
+        const manifest = JSON.parse(readFileSync(join(out, 'typescript', 'package.json'), 'utf-8'));
+
+        expect(manifest.publishConfig?.registry).toBe('https://npm.internal.acme.dev');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'writes a README when includeDocumentation is on, and not when it is off',
+      async () => {
+        const withDocs = await generate('docs-on', { includeDocumentation: true });
+        expect(existsSync(join(withDocs, 'typescript', 'README.md'))).toBe(true);
+
+        const withoutDocs = await generate('docs-off', { includeDocumentation: false });
+        expect(existsSync(join(withoutDocs, 'typescript', 'README.md'))).toBe(false);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'sends an API key in the configured header',
+      async () => {
+        const out = await generate('apikey', {
+          authConfig: { type: 'apikey', headerName: 'X-Api-Key' },
+        });
+        const client = readFileSync(join(out, 'typescript', 'index.ts'), 'utf-8');
+
+        expect(client).toContain("'X-Api-Key'");
+        expect(client).not.toContain('Bearer');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'uses a custom bearer prefix when asked',
+      async () => {
+        const out = await generate('bearer', {
+          authConfig: { type: 'bearer', tokenPrefix: 'Token' },
+        });
+        const client = readFileSync(join(out, 'typescript', 'index.ts'), 'utf-8');
+
+        expect(client).toContain('Token ${this.apiKey}');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'defaults to a bearer Authorization header',
+      async () => {
+        const out = await generate('default-auth', {});
+        const client = readFileSync(join(out, 'typescript', 'index.ts'), 'utf-8');
+
+        expect(client).toContain('Authorization');
+        expect(client).toContain('Bearer ${this.apiKey}');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'reports nothing as inert once the options are honoured',
+      async () => {
+        const logged: string[] = [];
+        const original = console.log;
+        console.log = (...args: unknown[]) => logged.push(args.join(' '));
+        try {
+          await generate('quiet', {
+            packageName: '@acme/sdk',
+            version: '1.0.0',
+            publishRegistry: 'https://registry.npmjs.org',
+            includeDocumentation: true,
+            authConfig: { type: 'bearer' },
+          });
+        } finally {
+          console.log = original;
+        }
+
+        expect(logged.join('\n')).not.toMatch(/no effect yet/);
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
+  /**
    * The API Docs pack emits its own standalone client from the same shared
    * interface helper, so it inherits the same constraints — including that a
    * referenced enum has to be declared in the file.

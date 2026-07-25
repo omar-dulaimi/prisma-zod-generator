@@ -87,12 +87,15 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
   it(
     'warns about an option it accepts but does not act on',
     async () => {
+      // enableAutoPublish is refused deliberately: publishing from a generator
+      // would fire on every `prisma generate`. authConfig, packageName, version,
+      // publishRegistry and includeDocumentation are all honoured as of 2.6.0.
       const output = await runSdk(
-        { platforms: ['typescript'], authConfig: { type: 'oauth2' } },
+        { platforms: ['typescript'], enableAutoPublish: true },
         'inert',
       );
 
-      expect(output).toContain('authConfig');
+      expect(output).toContain('enableAutoPublish');
       expect(output.toLowerCase()).toMatch(/no effect|not implemented|ignored/);
     },
     GENERATION_TIMEOUT,
@@ -136,15 +139,17 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
         join(dir, 'api-docs-opts'),
         '@prisma/client',
         'postgresql',
-        { openApiVersion: '3.1.0', title: 'Billing API' },
+        { startMockServer: true, title: 'Billing API' },
         [],
       );
 
       const output = logged.join('\n');
-      // openApiVersion cannot change the emitted spec, which is always 3.0.3.
-      expect(output).toContain('openApiVersion');
-      // A supported option must not be reported.
+      // startMockServer is refused: a server started during `prisma generate`
+      // would leave a long-running process attached to the generator.
+      expect(output).toContain('startMockServer');
+      // Options that are honoured must not be reported.
       expect(output).not.toMatch(/no effect yet:.*title/);
+      expect(output).not.toContain('openApiVersion');
     },
     GENERATION_TIMEOUT,
   );
