@@ -20,13 +20,18 @@ Use strict mode configuration to disable `.strict()` for operation schemas while
 ```json title="zod-generator.config.json"
 {
   "strictMode": {
-    "enabled": true,      // Keep strict by default
-    "operations": false,  // Allow extra fields in API operations
-    "objects": true,      // Keep strict for internal validation
-    "variants": true      // Keep strict for type variants
+    "enabled": true,
+    "operations": false,
+    "objects": true,
+    "variants": true
   }
 }
 ```
+
+- `enabled: true` keeps schemas strict by default.
+- `operations: false` allows extra fields in the CRUD operation schemas.
+- `objects: true` keeps the `objects/` input schemas strict for internal validation.
+- `variants: true` keeps the pure/input/result variant schemas strict.
 
 ## Result
 
@@ -34,12 +39,12 @@ Use strict mode configuration to disable `.strict()` for operation schemas while
 
 ```typescript
 // API operation schema - rejects extra fields
-export const CreateOneUserArgsSchema = z.object({
-  data: UserCreateInputSchema
+export const UserCreateOneSchema = z.object({
+  data: z.union([UserCreateInputObjectSchema, UserUncheckedCreateInputObjectSchema])
 }).strict(); // ← Rejects extra fields
 
 // Internal object schema - rejects extra fields
-export const UserCreateInputSchema = z.object({
+export const UserCreateInputObjectSchema = z.object({
   name: z.string(),
   email: z.string()
 }).strict(); // ← Rejects extra fields
@@ -49,12 +54,12 @@ export const UserCreateInputSchema = z.object({
 
 ```typescript
 // API operation schema - allows extra fields
-export const CreateOneUserArgsSchema = z.object({
-  data: UserCreateInputSchema
+export const UserCreateOneSchema = z.object({
+  data: z.union([UserCreateInputObjectSchema, UserUncheckedCreateInputObjectSchema])
 }); // ← No .strict() - allows extra fields
 
 // Internal object schema - still strict
-export const UserCreateInputSchema = z.object({
+export const UserCreateInputObjectSchema = z.object({
   name: z.string(),
   email: z.string()
 }).strict(); // ← Still strict for internal validation
@@ -64,6 +69,8 @@ export const UserCreateInputSchema = z.object({
 
 ### Client Request (Now Works)
 
+`operations: false` relaxes the outer operation schema, so the extra fields belong at the top level — the contents of `data` are still validated by the strict object schema:
+
 ```typescript
 // This request now succeeds even with extra fields
 const response = await fetch('/api/users', {
@@ -71,24 +78,28 @@ const response = await fetch('/api/users', {
   body: JSON.stringify({
     data: {
       name: 'John Doe',
-      email: 'john@example.com',
-      // Extra fields from frontend - now ignored instead of rejected
-      clientVersion: '1.2.3',
-      trackingId: 'abc123',
-      timestamp: Date.now()
-    }
+      email: 'john@example.com'
+    },
+    // Extra fields from frontend - ignored by the non-strict operation schema
+    clientVersion: '1.2.3',
+    trackingId: 'abc123',
+    timestamp: Date.now()
   })
 });
 ```
 
+:::caution
+Extra keys placed *inside* `data` are still rejected while `strictMode.objects` is `true`. Set `"objects": false` as well if your clients send unknown fields inside `data`.
+:::
+
 ### Server Validation
 
 ```typescript
-import { CreateOneUserArgsSchema } from './generated/schemas';
+import { UserCreateOneSchema } from './generated/schemas';
 
 export async function createUser(req: Request) {
   // Parse and validate - extra fields are ignored
-  const parsed = CreateOneUserArgsSchema.parse(req.body);
+  const parsed = UserCreateOneSchema.parse(req.body);
 
   // Only the defined fields are present
   console.log(parsed);
@@ -104,23 +115,23 @@ export async function createUser(req: Request) {
 
 ### Per-Model Flexibility
 
-Allow extra fields only for specific models:
+Allow extra fields only for specific models — `strictMode` is strict by default, and only `User` operations and every `PublicProfile` schema opt out:
 
 ```json title="zod-generator.config.json"
 {
   "strictMode": {
-    "enabled": true,      // Strict by default
-    "operations": true    // Operations strict by default
+    "enabled": true,
+    "operations": true
   },
   "models": {
     "User": {
       "strictMode": {
-        "operations": false  // Only User operations allow extra fields
+        "operations": false
       }
     },
     "PublicProfile": {
       "strictMode": {
-        "enabled": false     // All PublicProfile schemas allow extra fields
+        "enabled": false
       }
     }
   }
@@ -129,20 +140,25 @@ Allow extra fields only for specific models:
 
 ### Operation-Specific Control
 
-Allow extra fields only for specific operations:
+Narrow strict mode down to individual operations:
 
 ```json title="zod-generator.config.json"
 {
   "models": {
     "User": {
       "strictMode": {
-        "operations": ["create", "update"],  // Only create/update allow extras
-        "exclude": ["findMany"]              // findMany remains strict
+        "operations": ["create", "update"],
+        "exclude": ["findMany"]
       }
     }
   }
 }
 ```
+
+- `operations` as an array is an **allow-list for strict mode**: only `create` and `update` get `.strict()`. Every other `User` operation drops it and therefore accepts extra fields.
+- `exclude` removes operations **from** strict mode and wins over `operations`, so `findMany` accepts extra fields.
+
+Both short names (`create`, `update`) and full operation names (`createOne`, `updateOne`) are accepted.
 
 ## Environment-Based Configuration
 
@@ -151,32 +167,48 @@ Allow extra fields only for specific operations:
 ```json title="zod-generator.config.dev.json"
 {
   "strictMode": {
-    "enabled": false,     // Allow extra fields everywhere
-    "variants": true,     // Keep variants strict for type safety
-    "enums": true        // Keep enums strict
+    "enabled": false,
+    "variants": true
   }
 }
 ```
+
+`enabled: false` relaxes operation and object schemas, while `variants: true` keeps the pure/input/result variant schemas strict for type safety. Enum schemas are plain `z.enum([...])` and are not affected by `strictMode` at all.
 
 ### Production (Strict)
 
 ```json title="zod-generator.config.prod.json"
 {
   "strictMode": {
-    "enabled": true,      // Strict everywhere
-    "operations": false   // Except operations (for API flexibility)
+    "enabled": true,
+    "operations": false
   }
 }
 ```
 
-Use different configs based on environment:
+Strict everywhere except operations, for API flexibility.
+
+### Selecting a config per environment
+
+The Prisma schema language has no conditionals, so the `config` attribute cannot branch on an environment variable. Instead, omit `config` and let the generator auto-discover `zod-generator.config.json` next to your schema:
 
 ```prisma title="schema.prisma"
 generator zod {
   provider = "prisma-zod-generator"
   output   = "./generated/schemas"
-  config   = env("NODE_ENV") == "production" ? "./zod-generator.config.prod.json" : "./zod-generator.config.dev.json"
 }
+```
+
+Then put the right file in place before generating:
+
+```bash
+# development
+cp zod-generator.config.dev.json zod-generator.config.json
+npx prisma generate
+
+# production
+cp zod-generator.config.prod.json zod-generator.config.json
+npx prisma generate
 ```
 
 ## Best Practices
@@ -199,7 +231,7 @@ generator zod {
 
 If you're still getting strict validation errors:
 
-1. Check that you're using operation schemas (e.g., `CreateOneUserArgsSchema`) not object schemas
+1. Check that you're validating with an operation schema (e.g. `UserCreateOneSchema`), not an object schema (e.g. `UserCreateInputObjectSchema`) — `strictMode.operations` only affects the former
 2. Verify your configuration is properly loaded
 3. Ensure you've regenerated schemas after configuration changes
 

@@ -19,13 +19,18 @@ You can also define **array-based custom variants** with suffix, exclusions, and
 - `minimal` – lean subset: restricts operations, disables select/include, prunes complex nested inputs.
 - `custom` – you explicitly enable/disable.
 
-**Filtering Layers** (highest precedence first):
+**Filtering Layers**:
 
-1. `model.fields.include`
-2. model variant excludes (`models[Model].variants.variant.excludeFields`)
-3. legacy `model.fields.exclude`
-4. global variant excludes (`globalExclusions.variant`)
-5. global array excludes (legacy array form)
+`model.fields.include` wins outright — a field matching it is always kept, regardless of any exclusion.
+
+Every other layer is **additive**: a field is dropped if **any** of them match, and the order between them is irrelevant. A narrower exclude cannot re-admit a field that a broader layer already removed.
+
+- model variant excludes (`models[Model].variants.<variant>.excludeFields`)
+- legacy `model.fields.exclude`
+- global variant excludes (`globalExclusions.<variant>`)
+- global array excludes (legacy array form)
+
+All layers accept `*` wildcards, matched against the whole field name — `*At`, `internal*`, `*secret*`.
 
 **Emission Controls**: `emit.enums`, `emit.objects`, `emit.crud`, `emit.pureModels`, `emit.variants`, `emit.results`—each can short‑circuit generation to reduce output.
 

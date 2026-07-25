@@ -57,9 +57,11 @@ npx pzg-pro guard [options]
 - `--head <ref>`: Head git reference (default: `HEAD`)
 - `--format <github|json|text>`: Output format (default: `github`)
 - `--json`, `--text`, `--github`: Shortcuts for `--format`
-- `--strict`: Treat warnings as breaking changes
-- `--allowed-break <identifier>`: Whitelist a specific change (repeatable, see identifiers in the CLI output such as `model.User.field_removed`)
+- `--strict`: Fail the command when breaking changes remain. Without it the report is printed but the command always exits 0.
+- `--allowed-break <identifier>`: Whitelist a specific change (repeatable)
 - `--help`: Show usage
+
+**Change identifiers** for `--allowed-break` are built as `<Model>.<field>:<change>` for field-level changes and `<Model>:<change>` for model- and enum-level ones. The `<change>` token is one of `model_added`, `model_removed`, `field_added`, `field_removed`, `type_changed`, `optional_to_required`, `required_to_optional`, `list_changed`, `enum_added`, `enum_removed`, `enum_value_added`, `enum_value_removed`, or `comparison_error`.
 
 **Examples:**
 ```bash
@@ -69,8 +71,8 @@ npx pzg-pro guard --schema ./prisma/schema.prisma --base origin/main --format gi
 # Produce machine-readable JSON
 npx pzg-pro guard --format json > drift-report.json
 
-# Allow a known breaking change by identifier
-npx pzg-pro guard --allowed-break model.User.field_removed
+# Fail CI on breaking changes, but allow one known removal
+npx pzg-pro guard --strict --allowed-break User.email:field_removed
 ```
 
 ## 🔑 License API
@@ -304,50 +306,66 @@ export class RateLimitError extends APIError {}
 
 ## 🚨 Drift Guard API
 
-### Drift Detection Results
+:::note
+Drift Guard is driven through the `pzg-pro guard` CLI documented above. There is no supported programmatic entry point — integrate it by shelling out to the CLI and reading `--format json` from stdout.
+:::
+
+### Configuration Type
 
 ```typescript
-interface DriftReport {
-  summary: {
-    safeChanges: number;
-    breakingChanges: number;
-    recommendations: string[];
-  };
-  changes: SchemaChange[];
-  riskLevel: 'low' | 'medium' | 'high';
-}
-
-interface SchemaChange {
-  type: 'field_added' | 'field_removed' | 'field_modified' | 'enum_modified';
-  model: string;
-  field?: string;
-  before?: any;
-  after?: any;
-  breaking: boolean;
-  description: string;
+interface DriftGuardConfig {
+  baseBranch?: string;
+  headBranch?: string;
+  outputFormat?: 'github' | 'json' | 'text';
+  strictMode?: boolean;
+  allowedBreaks?: string[];
 }
 ```
 
-### Programmatic Usage
+The CLI maps `--format` → `outputFormat`, `--strict` → `strictMode`, and repeated `--allowed-break` → `allowedBreaks`. There is no field-exclusion or breaking-change-threshold setting.
+
+### Drift Detection Results
+
+`--format json` emits a summary plus the raw change list:
 
 ```typescript
-import { analyzeSchemaDrift } from 'prisma-zod-generator/lib/drift-guard';
+{
+  summary: {
+    total: number;
+    breaking: number;
+    nonBreaking: number;
+  };
+  changes: SchemaChange[];
+}
 
-const report = await analyzeSchemaDrift({
-  baseSchema: './prisma/schema.prisma',
-  headSchema: './prisma/schema-new.prisma',
-  config: {
-    excludeFields: ['createdAt', 'updatedAt'],
-    breakingThreshold: 'major'
-  }
-});
+interface SchemaChange {
+  type: 'breaking' | 'non-breaking';
+  category: 'field' | 'enum' | 'model' | 'type' | 'validation';
+  model: string;
+  field?: string;
+  change: string;          // e.g. 'field_removed'
+  description: string;
+  severity: 'error' | 'warning' | 'info';
+}
+```
 
-console.log(`${report.changes.length} changes detected`);
-report.changes.forEach(change => {
-  if (change.breaking) {
-    console.error(`Breaking: ${change.description}`);
+### Consuming the report
+
+```bash
+npx pzg-pro guard --format json --strict > drift-report.json
+```
+
+```typescript
+import { readFileSync } from 'node:fs';
+
+const report = JSON.parse(readFileSync('drift-report.json', 'utf8'));
+
+console.log(`${report.summary.total} changes detected`);
+for (const change of report.changes) {
+  if (change.type === 'breaking') {
+    console.error(`Breaking: ${change.model}.${change.field ?? ''} — ${change.description}`);
   }
-});
+}
 ```
 
 ## 📚 Type Definitions

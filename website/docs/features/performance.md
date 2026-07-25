@@ -12,14 +12,14 @@ High-performance validation for large datasets with streaming validators, precom
 - Blocking validation of 100k+ records freezes applications
 - Memory exhaustion when validating large arrays
 - No progress feedback for long-running validation
-- Single-threaded validation wastes CPU cores
+- A single synchronous pass starves everything else on the event loop
 
-**Solution**: Generate optimized streaming validators with chunking, concurrent processing, and progress hooks.
+**Solution**: Generate optimized streaming validators with chunking and progress hooks.
 
 ### Benefits
 
 - **Streaming Validation**: Process data in chunks to avoid memory issues
-- **Concurrent Processing**: Utilize multiple cores for parallel validation
+- **Non-Blocking**: Yields to the event loop between chunks so the process stays responsive
 - **Progress Tracking**: Real-time progress hooks for UX feedback
 - **Memory Efficient**: Constant memory usage regardless of dataset size
 
@@ -59,23 +59,33 @@ prisma generate
 generated/
   pro/
     performance/
+      precompiled.ts         # Precompiled validators + validator registry
       streaming.ts           # Streaming validators
-      precompiled.ts         # Precompiled schemas for speed
+      batch.ts               # Batch validation helpers
+      utils.ts               # Shared performance utilities
+      wrappers.ts            # Type-safe wrappers around the validators
+      benchmarks.ts          # Benchmark suite you can run yourself
+      README.md              # Performance tips
 ```
+
+`precompiled.ts`, `streaming.ts`, `batch.ts`, and `benchmarks.ts` are each gated behind an option
+(`enablePrecompilation`, `enableStreaming`, `enableBatching`, `generateBenchmarks`) — all default to
+`true`. `utils.ts`, `wrappers.ts`, and `README.md` are always emitted.
 
 ## Basic Usage
 
+Prefer the per-model wrapper — it binds the validator for you:
+
 ```ts
-import { validateStream } from '@/generated/performance/streaming'
+import { validateUserStream } from '@/generated/pro/performance/streaming'
 
 const users = Array.from({ length: 100_000 }, (_, i) => ({
   email: `user${i}@example.com`,
   name: `User ${i}`,
 }))
 
-const result = await validateStream(users, {
+const result = await validateUserStream(users, {
   chunkSize: 1000,         // Process 1000 records at a time
-  maxConcurrency: 4,       // Use 4 parallel workers
   onProgress: (processed, total) => {
     console.log(`Progress: ${processed}/${total}`)
   },
@@ -88,12 +98,26 @@ console.log(`Valid: ${result.valid.length}`)
 console.log(`Invalid: ${result.invalid.length}`)
 ```
 
+The generic form takes the schema name as its **first** argument:
+
+```ts
+import { validateStream } from '@/generated/pro/performance/streaming'
+
+const result = await validateStream('User', users, { chunkSize: 1000 })
+```
+
+:::note `maxConcurrency` is accepted but unused
+`StreamConfig` still declares `maxConcurrency`, but the current implementation validates each chunk
+with `Promise.all` on the main thread and never reads it. There are no worker threads — setting it
+changes nothing.
+:::
+
 ## Example: CSV Validation
 
 ```ts
 import fs from 'fs'
 import csv from 'csv-parser'
-import { validateStream } from '@/generated/performance/streaming'
+import { validateUserStream } from '@/generated/pro/performance/streaming'
 
 async function validateCSV(filePath: string) {
   const records: any[] = []
@@ -108,7 +132,7 @@ async function validateCSV(filePath: string) {
   })
 
   // Validate with streaming
-  const result = await validateStream(records, {
+  const result = await validateUserStream(records, {
     chunkSize: 1000,
     onProgress: (processed, total) => {
       console.log(`Validated ${processed}/${total} records`)

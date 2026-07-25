@@ -56,8 +56,22 @@ prisma generate
 generated/
   pro/
     factories/
-      factories.ts         # Factory functions for each model
+      factories.ts         # Factory builder per model + factory registry
+      seeders.ts           # Database seeders
+      providers.ts         # Fake-data providers
+      fixtures/            # Static fixtures, one file per model
+        user.ts
+        post.ts
+        index.ts
+      test-helpers.ts      # Test setup/teardown helpers
+      utils.ts             # Shared factory utilities
+      types.ts             # TypeScript types
+      USAGE.md             # Practical usage guide
+      README.md            # Reference documentation
 ```
+
+`factories.ts`, `fixtures/`, and `seeders.ts` are each gated behind an option
+(`generateFactories`, `generateFixtures`, `generateSeeders`). The rest is always emitted.
 
 ## Basic Usage
 

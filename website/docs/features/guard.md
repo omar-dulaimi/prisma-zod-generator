@@ -14,15 +14,15 @@ CI helper to catch breaking changes in generated outputs (schema/API drift).
 
 ## Prerequisites
 
-````bash
-# PZG Pro license required
-`````
+```bash
+# PZG Pro license required (PZG_LICENSE_KEY)
+```
 
 ## Generate & Run
 
 ```bash
-pzg-pro guard --schema=./prisma/schema.prisma --base=origin/main --head=HEAD --format=github
-````
+pnpm exec pzg-pro guard --schema=./prisma/schema.prisma --base=origin/main --head=HEAD --format=github
+```
 
 ### Command Options
 
@@ -35,6 +35,10 @@ pzg-pro guard --schema=./prisma/schema.prisma --base=origin/main --head=HEAD --f
 - `--allowed-break <identifier>` – Whitelist specific breaking change identifiers (repeatable).
 - `--help` – Show usage and exit.
 
+Identifiers are `<Model>.<field>:<change>` for field-level changes and `<Model>:<change>` for
+model- and enum-level ones — for example `User.email:field_removed`, `User.role:type_changed`, or
+`Session:model_removed`.
+
 The command runs entirely on the command line—no custom scripts required. Make sure you execute it inside a git repo (so the base ref can be resolved) and with a valid PZG Pro license available (`PZG_LICENSE_KEY`).
 
 Under the hood the CLI loads the DMMF for the base and head schemas, runs `validateDriftFromDMMF`, and prints a GitHub-friendly report. A non-zero exit code indicates breaking changes.
@@ -45,7 +49,9 @@ Fetch the full history (`fetch-depth: 0`) before running the command in CI so th
 
 ### Programmatic API
 
-Prefer to orchestrate things yourself? Import `validateDriftFromDMMF` from `prisma-zod-generator/pro` and feed it the base/head DMMF documents alongside your generator configuration. The CLI is thin sugar over that helper.
+Prefer to orchestrate things yourself? Import `validateDriftFromDMMF` from `prisma-zod-generator/lib/pro` and feed it the base/head DMMF documents alongside your generator configuration. The CLI is thin sugar over that helper.
+
+It resolves to `{ success, changes, output }`, so you can inspect `result.changes` to build the identifiers used by `--allowed-break`.
 
 ## GitHub Actions
 
@@ -57,13 +63,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with: { version: 9 }
       - run: pnpm i --frozen-lockfile
-      - run: pnpm tsx scripts/run-drift-guard.ts
+      - run: pnpm exec pzg-pro guard --base=origin/main --head=HEAD --format=github
+        env:
+          PZG_LICENSE_KEY: ${{ secrets.PZG_LICENSE_KEY }}
 ```
-
-In scripts you can check `result.changes` for the change identifiers used by `--allowed-break` (e.g., `model.User.field_removed`).
 
 
 ## See Also

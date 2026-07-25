@@ -107,7 +107,7 @@ await prisma.post.findMany({
 Apply the generated migration to set up RLS helper functions:
 
 ```sql
--- From generated/postgres/rls/migration.sql
+-- From generated/pro/postgres-rls/migration.sql
 -- Helper functions:
 -- - set_current_user_context(user_id, tenant_id, roles)
 -- - clear_user_context()

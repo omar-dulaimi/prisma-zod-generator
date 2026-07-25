@@ -32,10 +32,13 @@ const sidebars: SidebarsConfig = {
       label: 'Generation Pipeline',
       items: [
         'pipeline/objects-crud',
+        'pipeline/select-include',
+        'pipeline/result-schemas',
         'pipeline/pure-models',
         'pipeline/single-file',
         'pipeline/special-types',
         'pipeline/zod-comments',
+        'pipeline/mongodb',
       ],
     },
     {
@@ -74,8 +77,10 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Reference',
       items: [
+        'reference/config-options',
         'reference/safety-system',
         'reference/bytes-json',
+        'reference/default-values',
         'reference/where-unique-input',
         'reference/naming-preset-map',
         'reference/logging-debug',

@@ -6,13 +6,17 @@ Configure how Prisma `DateTime` fields are validated in your generated Zod schem
 
 The generator supports two complementary controls for DateTime behavior:
 - dateTimeSplitStrategy (boolean, default: true) controls the default behavior when no explicit dateTimeStrategy is set.
-- dateTimeStrategy ('date' | 'coerce' | 'isoString') forces a specific mapping across all variants.
+- dateTimeStrategy ('date' | 'coerce' | 'isoString', default: 'date') forces a specific mapping across all variants.
+
+Both can be set in the JSON config file or directly in the Prisma generator block.
 
 When dateTimeSplitStrategy is true and dateTimeStrategy is NOT set:
 - Input schemas default to z.coerce.date() (JSON-friendly — accepts ISO strings and coerces to Date)
 - Pure model and result schemas default to z.date()
 
-When dateTimeStrategy is set, it takes precedence and applies to all variants.
+When dateTimeStrategy is set to `coerce` or `isoString` it takes precedence and applies to all variants. Setting it to `"date"` has no effect on its own — `"date"` is also the internal default, so the split strategy still applies and input schemas keep `z.coerce.date()`. To get `z.date()` everywhere, set `"dateTimeSplitStrategy": false` (optionally alongside `"dateTimeStrategy": "date"`).
+
+[`jsonSchemaCompatible`](./json-schema-compatibility.md) overrides everything on this page. When it is enabled, every emitter checks it first and emits string schemas with no Date transform, regardless of `dateTimeStrategy` or `dateTimeSplitStrategy`.
 
 ## Split Strategy (Default)
 
@@ -25,15 +29,20 @@ Disable split by setting "dateTimeSplitStrategy": false to revert to a single gl
 
 ## Available Strategies
 
-### `date` (Default)
+### `date` (default for pure and result schemas)
 
 Generates strict `z.date()` validation that only accepts JavaScript Date objects.
 
-```jsonc
+```json
 {
-  "dateTimeStrategy": "date"
+  "dateTimeStrategy": "date",
+  "dateTimeSplitStrategy": false
 }
 ```
+
+:::note
+`dateTimeSplitStrategy` defaults to `true`, and `"date"` is the internal default for `dateTimeStrategy`. Without `"dateTimeSplitStrategy": false`, input and CRUD schemas still emit `z.coerce.date()` and accept ISO strings; only pure model and result schemas get `z.date()`.
+:::
 
 **Generated schema:**
 ```typescript
@@ -41,7 +50,7 @@ Generates strict `z.date()` validation that only accepts JavaScript Date objects
 createdAt: z.date()
 ```
 
-**Usage:**
+**Usage** (with `dateTimeSplitStrategy: false`, so this holds for input schemas too):
 ```typescript
 // ✅ Valid
 const data = { createdAt: new Date() };
@@ -54,7 +63,7 @@ const data = { createdAt: "2023-01-01T00:00:00Z" };
 
 Generates `z.coerce.date()` validation that automatically converts valid date strings to Date objects.
 
-```jsonc
+```json
 {
   "dateTimeStrategy": "coerce"
 }
@@ -77,7 +86,7 @@ const data2 = { createdAt: "2023-01-01T00:00:00Z" };
 
 Generates string validation with ISO 8601 regex pattern and transform to Date object.
 
-```jsonc
+```json
 {
   "dateTimeStrategy": "isoString"
 }
@@ -86,8 +95,15 @@ Generates string validation with ISO 8601 regex pattern and transform to Date ob
 **Generated schema:**
 ```typescript
 // For a createdAt: DateTime field
-createdAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/).transform(v => new Date(v))
+createdAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/, "Invalid ISO datetime").transform(v => new Date(v))
+
+// With zodImportTarget: "v4", the generator emits the modern form instead:
+createdAt: z.iso.datetime().transform(v => new Date(v))
 ```
+
+:::caution
+Milliseconds are **required** by the regex form: `"2023-01-01T00:00:00.000Z"` passes, `"2023-01-01T00:00:00Z"` does not.
+:::
 
 **Usage:**
 ```typescript
@@ -96,6 +112,9 @@ const data = { createdAt: "2023-01-01T00:00:00.000Z" };
 
 // ❌ Invalid - must be valid ISO string
 const data = { createdAt: "invalid-date" };
+
+// ❌ Invalid - milliseconds missing
+const data = { createdAt: "2023-01-01T00:00:00Z" };
 ```
 
 ## Configuration Examples
@@ -112,8 +131,7 @@ generator zod {
 
 ### JSON Configuration File
 
-```jsonc
-// zod-generator.config.json
+```json title="zod-generator.config.json"
 {
   "mode": "custom",
   "dateTimeStrategy": "coerce",
@@ -159,8 +177,12 @@ The `dateTimeStrategy` affects all DateTime fields across:
 
 - **Pure models** (when `pureModels: true`)
 - **Input variants** (create, update operations)
-- **Result variants** (query responses)
+- **Result variants** — `variants/result/<Model>.result.ts` (honored since v2.1.6; before that these files always emitted `z.date()`, see issue #368)
 - **CRUD operation schemas**
+
+:::caution
+The operation result schemas under `schemas/results/` (for example `UserFindManyResult.schema.ts`) currently always emit `z.date()` for DateTime fields and do not follow `dateTimeStrategy`.
+:::
 
 ### Example Model
 
@@ -196,10 +218,12 @@ export const PostModel = z.object({
 export const PostModel = z.object({
   id: z.string(),
   title: z.string(),
-  createdAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/).transform(v => new Date(v)),
-  updatedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/).transform(v => new Date(v)),
+  createdAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/, "Invalid ISO datetime").transform(v => new Date(v)),
+  updatedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/, "Invalid ISO datetime").transform(v => new Date(v)),
 });
 ```
+
+The exact regex text varies slightly between emitters — the pure-model emitter under `models/` writes an unanchored pattern, and `zodImportTarget: "v4"` swaps the regex for `z.iso.datetime()` in the `objects/`, CRUD and `variants/` files. The accepted format is the same in every case: a full ISO 8601 UTC timestamp with three-digit milliseconds.
 
 ## Migration Guide
 
@@ -219,6 +243,7 @@ When changing `dateTimeStrategy`, regenerate your schemas and update consuming c
 
 ## Related Configuration
 
+- [`jsonSchemaCompatible`](./json-schema-compatibility.md): Overrides `dateTimeStrategy` entirely and emits string schemas without a Date transform
 - [`pureModels`](./modes.md): When enabled, affects pure model DateTime fields
 - [`variants`](./variants.md): Controls which schema variants include DateTime strategy
 - [`optionalFieldBehavior`](./optional-fields.md): May affect nullable DateTime fields

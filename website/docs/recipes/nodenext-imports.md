@@ -53,7 +53,7 @@ generator client {
 node --experimental-strip-types main.ts   # or plain `node` on versions where type stripping is stable
 ```
 
-If you also typecheck this layout with `tsc`, enable `allowImportingTsExtensions` in your `tsconfig.json`.
+If you also typecheck this layout with `tsc`, enable `allowImportingTsExtensions` in your `tsconfig.json` (TypeScript only accepts it alongside `noEmit` or `emitDeclarationOnly`, which fits a type-stripping setup where Node runs the `.ts` sources directly).
 
 ## Notes
 

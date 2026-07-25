@@ -3,7 +3,7 @@ id: filtering
 title: Model / Operation / Field Filtering
 ---
 
-Model enable check: `isModelEnabled` (minimal mode defaults to disabled unless configured).
+Model enable check: `isModelEnabled` — every model is enabled unless you explicitly disable it with `models.<Model>.enabled: false`. This holds in minimal mode too: minimal mode does not disable models, it only narrows the allowed operations (`isOperationEnabled`) and the set of object schemas that get emitted (`isObjectSchemaEnabled`).
 
 Operation filtering: `isOperationEnabled` with alias mapping (createOne→create, etc.). Minimal mode reduces allowed ops unless overridden.
 
@@ -21,8 +21,19 @@ In minimal mode, entire schema types are filtered out to reduce complexity:
 **Always allowed:**
 - `*UncheckedCreateInput` (simple foreign key-based creation)
 - `*UpdateInput` and `*UncheckedUpdateInput` (update flexibility)
+- `*UpdateManyMutationInput` (updateMany payloads)
 - `*WhereInput` and `*WhereUniqueInput` (query filtering)
 - `*OrderByWithRelationInput` (sorting)
+
+Helper schemas are allowed unconditionally, before the minimal-mode allow-list is
+consulted at all, because the schemas above reference them:
+
+- Scalar and enum filters plus their nullable forms (`StringFilter`, `IntNullableFilter`, `EnumRoleFilter`, `EnumRoleNullableFilter`)
+- Nested filters (`NestedStringFilter`, `NestedIntNullableWithAggregatesFilter`, …)
+- `*WithAggregatesFilter` variants
+- `*FieldUpdateOperationsInput` and `Nullable*FieldUpdateOperationsInput`
+
+So minimal-mode output is larger than the "Always allowed" list alone suggests.
 
 ## Field-Level Filtering
 
@@ -46,8 +57,7 @@ By default, `WhereUniqueInput` schemas include only unique selector fields (sing
 
 If you want early failure when no selector is present (e.g., rejecting `{}` before reaching Prisma), enable this opt-in flag in your JSON config:
 
-```jsonc
-// zod-generator.config.json
+```json title="zod-generator.config.json"
 {
   "validateWhereUniqueAtLeastOne": true
 }

@@ -19,18 +19,10 @@ Detailed framework- and platform-specific guides (Next.js App Router, tRPC, Verc
 
 ---
 
-## 🚀 Getting Started
-
-1. **Choose Your Stack**: Select the frameworks and tools you're using
-2. **Follow Integration Guides**: Step-by-step setup instructions
-3. **Configure Features**: Enable the PZG Pro features you need
-4. **Test Integration**: Verify everything works correctly
-
 ## 📚 Need Help?
 
-- **Documentation**: Complete guides for each integration
+- **Documentation**: [Pro feature guides](../features/overview.md) and [recipes](../recipes/minimal-crud.md)
 - **Community Support**: [Open an issue or discussion](https://github.com/omar-dulaimi/prisma-zod-generator/issues)
-- **Examples Repository**: [See working examples](https://github.com/omar-dulaimi/pzg-examples)
 - **Support**: DM [@omardulaimidev on X](https://x.com/omardulaimidev) for licensing or escalations
 
 ---

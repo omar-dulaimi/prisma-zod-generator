@@ -29,9 +29,6 @@ PII-safe logging and response redaction driven by annotations in your Prisma sch
 # Core dependencies
 pnpm add @prisma/client zod
 
-# For error tracking integration (optional)
-pnpm add @sentry/node
-
 # PZG Pro license required
 ```
 
@@ -71,6 +68,10 @@ generated/
       index.ts             # Exports and factory functions
 ```
 
+Per-model files are emitted only where the annotations call for them: `safe-crud/` for models with
+`@policy` rules, `redaction/` for models with `@pii` fields. `dto/` is generated for every model that
+carries either.
+
 ## Schema Annotations
 
 Annotate fields in your Prisma schema:
@@ -86,12 +87,25 @@ model User {
   /// @pii phone redact:logs
   phone    String?
   
-  /// @sensitive redact:logs
+  /// @pii password redact:logs mask:full
   password String
   
   name     String?
 }
 ```
+
+Two field annotations are recognized:
+
+- `@pii <kind> [redact:logs] [mask:partial|mask:full|mask:hash]` — marks the field for redaction.
+  `email`, `phone`, and `ssn` get kind-aware partial masks; any other kind falls back to a generic
+  partial mask. `mask:partial` is the default when no `mask:` option is given.
+- `@policy <read|write|deny|update|delete|create>:<where|fields|values|role> <condition>` (or the
+  short `@policy read:<condition>` form) — drives the generated safe-CRUD operations.
+
+:::caution Only these two annotations are parsed
+Anything else — `@sensitive`, for example — is ignored silently. A field you meant to protect with an
+unrecognized annotation is emitted unredacted, so check that every sensitive field uses `@pii`.
+:::
 
 ## Basic Usage
 
@@ -120,55 +134,88 @@ const newUser = await userOps.create({}, {
 
 ### PII Redaction
 
+Redactors are generated **per model**, and only for models that carry at least one `@pii` field:
+
 ```ts
 import { UserRedactor } from '@/generated/pro/policies/redaction/user'
 
 const redactor = new UserRedactor({ redactLogs: true })
 
-// Redact sensitive fields
-const safeUser = redactor.redact(user, 'api')
-// Result: { email: 's***@example.com', phone: '***-***-1234' }
+// Redact sensitive fields before logging
+const safeUser = redactor.redact(user, 'logs')
+// Result: { email: 's***@example.com', phone: '********4567', ... }
+```
 
-// Express middleware
-import { createUserRedactionMiddleware } from '@/generated/pro/policies/redaction/user'
+:::caution `redact()` only acts on the `logs` and `analytics` contexts
+A field is redacted when it is annotated `redact:logs` **and** you pass `'logs'` or `'analytics'` as
+the context. `redactor.redact(user, 'api')` returns the record unchanged, so do not rely on the
+`'api'` context — or on the Express middleware below, which uses it — as your only barrier against
+leaking PII in responses. Use the `dto/` `*PublicSchema` (which omits PII fields outright) for
+response shaping.
+:::
 
-app.use(createUserRedactionMiddleware())
-const sentryTransport = createRedactedSentryTransport()
+The same applies to error trackers — redact explicitly before you capture:
+
+```ts
+Sentry.captureException(err, {
+  extra: new UserRedactor({ redactLogs: true }).redact(user, 'logs'),
+})
 ```
 
 ## Integration Examples
 
 ### Express API
 
+Middleware factories are generated per model, so mount them per route rather than globally:
+
 ```ts
 import express from 'express'
-import { redactionMiddleware } from '@/generated/pro/policies/redaction'
+import { createUserRedactionMiddleware } from '@/generated/pro/policies/redaction/user'
+import { UserPublicSchema } from '@/generated/pro/policies/dto/user'
 
 const app = express()
 
-// Apply redaction middleware
-app.use(redactionMiddleware())
-
-app.get('/users/:id', async (req, res) => {
+app.get('/users/:id', createUserRedactionMiddleware({ redactLogs: true }), async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: parseInt(req.params.id) }
   })
-  
-  // Response automatically redacts PII fields
-  res.json(user)
+
+  // Strip PII fields from the response payload
+  res.json(UserPublicSchema.parse(user))
 })
 ```
 
-### Next.js API Routes
+### Koa and NestJS
+
+Call the per-model redactor directly rather than looking for a framework adapter — none is generated:
 
 ```ts
-// Wrap ctx.body before send using redactPII(ctx.body) for Koa
-// Custom interceptor calling redactPII(data) in map() for NestJS
+import { UserRedactor } from '@/generated/pro/policies/redaction/user'
+
+const redactor = new UserRedactor({ redactLogs: true })
+
+// Koa: redact before send
+app.use(async (ctx, next) => {
+  await next()
+  ctx.body = redactor.redact(ctx.body, 'logs')
+})
 ```
 
-## Browser Note
+:::caution `redactPII()` is a stub
+The policies index also exports a `redactPII(data, config?)` helper. In the current implementation it
+returns its input unchanged — it is a placeholder, not a redactor. Use the per-model
+`<Model>Redactor` class instead.
+:::
 
-The generated helper uses Node `crypto`. In the browser, either polyfill (`crypto.subtle`) or use a minimal email-masking helper.
+## Hashing and Browser Support
+
+The generated redactors are dependency-free — plain string masking, no Node `crypto` import — so they
+run in the browser as-is.
+
+:::caution `mask:hash` is not cryptographic
+`hashValue()` uses a hand-rolled 32-bit string hash. It is a display-level obfuscation only; do not
+treat hashed output as anonymized or pseudonymized for compliance purposes.
+:::
 
 ## See Also
 

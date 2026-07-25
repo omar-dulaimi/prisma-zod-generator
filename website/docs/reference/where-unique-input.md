@@ -16,8 +16,7 @@ Optional early validation
 
 If you want to fail early when no selector is provided (reject `{}` at the Zod layer), enable the opt-in flag:
 
-```jsonc
-// zod-generator.config.json
+```json title="zod-generator.config.json"
 {
   "validateWhereUniqueAtLeastOne": true
 }

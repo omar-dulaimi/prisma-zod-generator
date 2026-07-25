@@ -55,15 +55,22 @@ Professional**, **PZG Business**, or **PZG Enterprise** when you need Pro featur
 
 1. DM [@omardulaimidev on X](https://x.com/omardulaimidev) with your GitHub username
 2. You'll receive your license key and setup instructions within 24 hours
-3. Run `prisma-zod-generator license-check` to verify activation
+3. Export the key as `PZG_LICENSE_KEY` so the generator can read it:
+
+   ```bash
+   export PZG_LICENSE_KEY="pzg_live_..."
+   ```
+
+   Any mechanism that puts the variable in the generator's environment works — a shell export, a `.env` file loaded by your tooling, or a CI secret. Every Pro pack resolves the license from `process.env.PZG_LICENSE_KEY`, so without it generation fails with `PZG Pro license required. Set PZG_LICENSE_KEY environment variable.`
+4. Run `prisma-zod-generator license-check` to verify activation
 
 ### Available Tiers
 
 | Tier | Annual Price | Features |
 |------|--------------|----------|
 | **Starter** | **$69/year** | Server Actions, Forms |
-| **Professional** | **$199/year** | + SDK, API Docs, Policies, Guard, RLS, Performance |
-| **Business** | **$599/year** | + Contracts, Factories, Priority response targets |
+| **Professional** | **$199/year** | + SDK, Policies, Guard, RLS, Performance |
+| **Business** | **$599/year** | + Contracts, API Docs, Factories, Priority response targets |
 | **Enterprise** | **Custom** | + Multi-Tenant, roadmap reviews, custom feature collaboration |
 
 ---
@@ -72,7 +79,7 @@ Professional**, **PZG Business**, or **PZG Enterprise** when you need Pro featur
 
 | Feature Pack | Core (MIT) | Starter (`starter`) | Professional (`professional`) | Business (`business`) | Enterprise (`enterprise`) |
 |--------------|------------|---------------------|-------------------------------|-----------------------|---------------------------|
-| Server Actions | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Server Actions | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Forms UX | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Policies & Redaction | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Drift Guard | ❌ | ❌ | ✅ | ✅ | ✅ |
@@ -95,16 +102,77 @@ Starter is perfect for solo builders shipping typed Server Actions and forms. Pr
 
 ## Generate in minutes
 
+Prisma allows only one generator per name, so enable every pack you need on a **single** `pzgPro`
+block — the generator reads all ten `enable*` flags off that one block and runs the enabled packs
+concurrently:
+
+```prisma
+generator pzgPro {
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
+  output   = "./generated/pro"
+
+  enableForms         = true
+  enableSDK           = true
+  enableApiDocs       = true
+  enableServerActions = true
+  // enablePolicies, enableContracts, enablePostgresRLS,
+  // enableMultiTenant, enablePerformance, enableFactories
+}
+```
+
+Every flag defaults to `false`. Then:
+
 ```bash
 # Check license
 prisma-zod-generator license-check
 
-# Enable the packs you need in schema.prisma
-# (e.g., enableForms/enableSDK/enableApiDocs)
-
 # Run Prisma generators
 pnpm exec prisma generate
 ```
+
+### Configuring packs
+
+Each pack takes options as a stringified JSON value on a key named after the pack (`forms`,
+`sdk`, `apiDocs`, `policies`, `contracts`, `postgresRls`, `multiTenant`, `performance`,
+`factories`, `serverActions`) — see each pack's page for its keys.
+
+When you are configuring several packs at once, point `configPath` at an external JSON file
+instead. The path is resolved relative to your schema directory and its contents are merged over
+the generator block's configuration:
+
+```prisma
+generator pzgPro {
+  provider   = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
+  output     = "./generated/pro"
+  configPath = "./pzg-pro.config.json"
+}
+```
+
+```json
+{
+  "enableForms": true,
+  "enableSDK": true,
+  "forms": { "uiLibrary": "shadcn", "enableI18n": true },
+  "sdk": { "platforms": ["typescript"] }
+}
+```
+
+:::caution The key is `configPath`
+Some older notes refer to this key as `config`. The generator only reads `configPath`; a key named
+`config` is ignored. The file must be strict JSON — it is read with `JSON.parse`, so no comments
+and no trailing commas.
+:::
+
+### What happens if a pack fails
+
+Packs are generated concurrently and each one's errors are caught individually. If a pack throws —
+a license tier it is not entitled to, a malformed option, an unwritable output directory — you get a
+warning on stderr, that pack emits nothing, and `prisma generate` still exits `0` while the other
+packs finish normally.
+
+That matters in CI: a missing directory under `generated/pro/` is the signal that a pack failed, not
+a non-zero exit code. If a pack you enabled produced no output, re-read the generator's warnings and
+confirm your plan includes it (see the Plan Comparison table above).
 
 ## Packs at a glance
 
@@ -117,7 +185,7 @@ pnpm exec prisma generate
   <Link className="feature-card" to="./sdk">
     <div className="feature-card__icon">🔌</div>
     <div className="feature-card__title">SDK Publisher</div>
-    <div className="feature-card__desc">Typed HTTP client (ESM/CJS) with retry/timeouts.</div>
+    <div className="feature-card__desc">Typed TypeScript + Python HTTP clients from your schema.</div>
   </Link>
   <Link className="feature-card" to="./api-docs">
     <div className="feature-card__icon">📚</div>
@@ -137,7 +205,7 @@ pnpm exec prisma generate
   <Link className="feature-card" to="./multi-tenant">
     <div className="feature-card__icon">🏷️</div>
     <div className="feature-card__title">Multi‑Tenant</div>
-    <div className="feature-card__desc">Tenant validation helpers for UI/API.</div>
+    <div className="feature-card__desc">Server-side tenant validation, middleware, and extensions.</div>
   </Link>
   <Link className="feature-card" to="./performance">
     <div className="feature-card__icon">🚄</div>
@@ -175,18 +243,18 @@ You can generate multiple packs side‑by‑side — e.g., SDK + API Docs + Form
 Validate then submit (Forms + SDK)
 
 ```tsx
-import { UserForm } from '../generated/forms'
-import APIClient from '@your-org/api-sdk'
+import { UserForm } from '@/generated/pro/forms'
+import { APIClient } from '@/generated/pro/sdk/typescript'
 
-const client = new APIClient({ baseUrl: 'http://127.0.0.1:3001' })
+const client = new APIClient('http://127.0.0.1:3001')
 
 export default function Page() {
   return (
     <UserForm
       defaultValues={{ email: 'test@example.com' }}
       onSubmit={async (data) => {
-        const res = await client.createUser(data)
-        if (!res.success) throw new Error(res.error)
+        // The generated client throws on non-2xx responses
+        await client.createUser(data)
       }}
     />
   )

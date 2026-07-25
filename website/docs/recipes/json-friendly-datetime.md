@@ -16,12 +16,12 @@ Why this matters
 
 Minimal configuration
 
-```jsonc
-// zod-generator.config.json
+`dateTimeSplitStrategy` is already `true` by default; it is spelled out below only for clarity.
+
+```json title="zod-generator.config.json"
 {
   "mode": "custom",
   "output": "./generated",
-  // enabled by default; shown here for clarity
   "dateTimeSplitStrategy": true,
   "variants": {
     "pure":   { "enabled": true, "suffix": ".model" },
@@ -67,18 +67,20 @@ Sample JSON payload accepted by Create/Update inputs
 
 Overrides (optional)
 
+Setting `dateTimeStrategy` explicitly takes precedence over the split default, in CRUD input objects and in variant files alike.
+
 - Force `coerce` across all variants:
-```jsonc
+```json title="zod-generator.config.json"
 { "dateTimeStrategy": "coerce" }
 ```
 
 - Force strict `date` across all variants:
-```jsonc
+```json title="zod-generator.config.json"
 { "dateTimeStrategy": "date" }
 ```
 
 - Force `isoString` across all variants:
-```jsonc
+```json title="zod-generator.config.json"
 { "dateTimeStrategy": "isoString" }
 ```
 

@@ -170,17 +170,17 @@ The generated form components are designed to work with your UI library of choic
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { UserCreateInputSchema } from '@/generated/pro/forms/schemas'
+import { UserSchema } from '@/generated/pro/forms/zod'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 
-type UserFormValues = z.infer<typeof UserCreateInputSchema>
+type UserFormValues = z.infer<typeof UserSchema>
 
 export function UserForm({ defaultValues, onSubmit }: UserFormProps) {
   const form = useForm<UserFormValues>({
-    resolver: zodResolver(UserCreateInputSchema),
+    resolver: zodResolver(UserSchema),
     defaultValues,
   })
 

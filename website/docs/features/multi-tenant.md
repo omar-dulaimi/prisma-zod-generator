@@ -4,30 +4,30 @@ title: Multi-Tenant Kit
 
 > **Available in:** Enterprise tier
 
-Zod helpers to validate tenant context at API/UI boundaries for SaaS applications.
+Server-side Zod helpers, Prisma middleware, and client extensions that validate tenant context on every data operation in a SaaS application.
 
 ## Why Use Multi-Tenant Kit
 
 **Problem**: Multi-tenant applications need strict data isolation:
 - Tenant data must never leak across tenants
 - Every request needs tenant validation
-- UI needs tenant-aware components
 - Manual tenant checks are error-prone
+- One missed `where` clause is a cross-tenant leak
 
-**Solution**: Generate Zod helpers that enforce tenant context validation at every API and UI boundary.
+**Solution**: Generate tenant-aware validators plus Prisma middleware and client extensions that inject and enforce the tenant filter for you.
 
 ### Benefits
 
 - **Strict Isolation**: Validate tenant access before data operations
 - **Type-Safe**: Full TypeScript validation
 - **Configurable Modes**: Strict, warn, or log violations
-- **UI Integration**: React context provider for tenant state
+- **Prisma-Level Enforcement**: Middleware and client extensions that scope every query
 
 ## Prerequisites
 
 ```bash
 # Core dependencies
-pnpm add zod react @prisma/client
+pnpm add zod @prisma/client
 
 # PZG Pro license required
 ```
@@ -56,63 +56,78 @@ prisma generate
 generated/
   pro/
     multi-tenant/
-      schemas/
-        tenant-schemas.ts     # Tenant-aware Zod schemas
-      middleware/
-        prisma-middleware.ts  # Prisma middleware for tenant filtering
-      extensions/
-        prisma-extension.ts   # Prisma client extensions
-      utils/
-        validation.ts         # Validation utilities
-        context.ts            # Tenant context helpers
-      types/
-        tenant-types.ts       # TypeScript types
-      README.md               # Usage documentation
+      tenant-schemas.ts      # Tenant-aware Zod schemas
+      tenant-middleware.ts   # Prisma middleware for tenant filtering
+      tenant-extensions.ts   # Prisma client extension
+      tenant-validation.ts   # validateTenantAccess + per-model validators
+      tenant-context.ts      # Tenant context helpers
+      tenant-types.ts        # TypeScript types
+      README.md              # Usage documentation
 ```
+
+The kit only covers models that carry a tenant field. A field counts as one if it uses a
+conventional name (`tenantId`, `tenant_id`, `organizationId`, …) or is annotated `/// @tenant`.
+Models without one are skipped.
 
 ## Basic Usage
 
+`validateTenantAccess` is async, takes the model name and operation first, and **returns the
+validated payload** (or throws) rather than a boolean:
+
 ```ts
-import { validateTenantAccess } from '@/generated/pro/multi-tenant/utils/validation'
+import { validateTenantAccess } from '@/generated/pro/multi-tenant/tenant-validation'
 
-// Modes: 'strict' | 'warn' | 'log'
-const isValid = validateTenantAccess(
-  { tenantId: 't1' },  // Request context
-  't1',                 // Expected tenant
-  'strict'              // Mode
-)
+// Throws if the payload does not belong to the tenant; returns the validated data
+const data = await validateTenantAccess('Post', 'create', input, 't1')
 
-if (!isValid) {
-  throw new Error('Tenant mismatch')
+await prisma.post.create({ data })
+```
+
+Operations are `'create' | 'update' | 'find'`. The same file exports a `TenantValidators` registry
+keyed by model name, if you'd rather hold a validator instance than go through the string lookup on
+every call.
+
+### Prisma Middleware
+
+For blanket enforcement, install the generated middleware instead of validating call by call. It
+injects the tenant filter on reads and deletes, and validates results in `strict` mode:
+
+```ts
+import { createTenantMiddleware } from '@/generated/pro/multi-tenant/tenant-middleware'
+
+prisma.$use(createTenantMiddleware({ tenantId: 't1' }))
+```
+
+### Enforce Modes
+
+`enforceMode` is a generator-level option, not an argument to `validateTenantAccess`. Set it on the
+`pzgPro` block; it defaults to `strict`:
+
+```prisma
+generator pzgPro {
+  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"
+  output = "./generated/pro"
+  enableMultiTenant = true
+
+  // Optional advanced config (stringified JSON)
+  // multiTenant = "{ \"enforceMode\": \"warn\", \"tenantField\": \"orgId\" }"
 }
 ```
 
-### Validation Modes
+- **strict**: Validates query results and throws on a cross-tenant record
+- **warn**: Logs a warning and continues
+- **log**: Logs for debugging and continues
 
-- **strict**: Throws error on mismatch
-- **warn**: Logs warning but continues
-- **log**: Logs info for debugging
+The value you configure becomes the middleware's default; individual call sites can override it by
+passing `enforceMode` on the `TenantContext` given to `createTenantMiddleware`.
 
-## UI Pattern
+## Where the tenant id comes from
 
-Provide a `TenantProvider` with the current tenant and refine schemas based on it:
+The kit is server-side only — it generates no React code. Hold the current tenant id in your own
+session, request context, or React context, then pass it into `validateTenantAccess(...)` or into the
+generated middleware/extension at the point where you build your Prisma client.
 
-```tsx
-// Example tenant provider pattern
-import { TenantProvider } from '@/generated/pro/multi-tenant/schemas/tenant-schemas'
-
-export default function App() {
-  const tenant = getCurrentTenant() // From auth/session
-
-  return (
-    <TenantProvider value={{ tenantId: tenant.id }}>
-      <YourApp />
-    </TenantProvider>
-  )
-}
-```
-
-See generated comments in the file for more integration patterns.
+See the generated `README.md` in the pack for more integration patterns.
 
 ## See Also
 

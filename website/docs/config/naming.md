@@ -71,8 +71,10 @@ Input object naming resolved by `resolveInputNaming`:
 - `filePattern`: `{InputType}.schema.ts`
 - `exportNamePattern`: `{Model}{InputType}ObjectSchema`
 
+`filePattern` is resolved **relative to the generated `objects/` directory**, so a pattern containing directory segments nests inside it: `inputs/{InputType}.schema.ts` writes to `objects/inputs/UserWhereInput.schema.ts`, not `inputs/UserWhereInput.schema.ts`.
+
 ### Examples:
-- `UserWhereInput.schema.ts` with export `UserWhereInputObjectSchema`
+- `UserWhereInput.schema.ts` with export `UserWhereInputObjectSchema` (written to `objects/UserWhereInput.schema.ts`)
 - `PostCreateInput.schema.ts` with export `PostCreateInputObjectSchema`
 
 ### Overrides via `naming.input`:
@@ -97,13 +99,15 @@ Input object naming resolved by `resolveInputNaming`:
 
 **File Pattern Must Include Unique Identifiers**: Your `filePattern` must include tokens that make each input type unique. Without proper uniqueness, multiple input types for the same model will generate identical filenames and overwrite each other.
 
-**Recommended Patterns**:
+**Recommended Patterns** (paths shown relative to the generated `objects/` directory):
 - ✅ `{kebab}-{InputType}-input.ts` → `book-BookCreateInput-input.ts`
 - ✅ `{InputType}.schema.ts` → `BookCreateInput.schema.ts`
-- ✅ `inputs/{Model}/{InputType}.ts` → `inputs/Book/BookCreateInput.ts`
+- ✅ `inputs/{Model}/{InputType}.ts` → `inputs/Book/CreateInput.ts` (nested under `objects/`; the duplicate `Book` prefix is stripped — see the note below)
 - ❌ `{kebab}-input.ts` → `book-input.ts` (all Book inputs collide!)
 
-**Pattern Collision Detection**: The generator will detect filename collisions and report errors during generation. If you see errors about duplicate filenames, ensure your pattern includes sufficient tokens to uniquely identify each input type.
+:::caution
+**No collision detection for input objects.** Unlike CRUD operation schemas, input object filenames are **not** checked for collisions. Colliding files are silently overwritten and you simply end up missing schemas — no error is raised. Make sure your pattern is unique per input type (keep `{InputType}` in it).
+:::
 
 **Note**: When your pattern includes a model token (`{Model}` or `{model}`) together with `{InputType}`, duplicate model prefixes are automatically stripped for both export names and file names to avoid results like `UserUserWhereInput*`.
 
@@ -115,8 +119,10 @@ Enum naming resolved by `resolveEnumNaming`:
 - `filePattern`: `{Enum}.schema.ts`
 - `exportNamePattern`: `{Enum}Schema`
 
+`filePattern` is resolved **relative to the generated `enums/` directory** — do not prefix it with `enums/`. A pattern of `enums/{Enum}.enum.ts` produces `enums/enums/Role.enum.ts` (with imports pointing at the doubled path), which is almost never what you want.
+
 ### Examples:
-- `Role.schema.ts` with export `RoleSchema`
+- `Role.schema.ts` with export `RoleSchema` (written to `enums/Role.schema.ts`)
 - `UserStatus.schema.ts` with export `UserStatusSchema`
 
 ### Overrides via `naming.enum`:
@@ -134,7 +140,7 @@ Enum naming resolved by `resolveEnumNaming`:
 ### Available Tokens:
 - `{Enum}`: PascalCase enum name (e.g., `Role`, `UserStatus`)
 - `{enum}`: camelCase enum name (e.g., `role`, `userStatus`)
-- `{camel}`: camelCase alias (same as `{enum}` for enums)
+- `{camel}`: camelCase alias for `{enum}` — **in `filePattern` only**. Export-name patterns do not substitute `{camel}`, so it would survive literally in `exportNamePattern`; use `{enum}` there.
 
 ## Complete Configuration Example
 
@@ -155,7 +161,7 @@ Enum naming resolved by `resolveEnumNaming`:
       "exportNamePattern": "{InputType}Schema"
     },
     "enum": {
-      "filePattern": "enums/{Enum}.enum.ts",
+      "filePattern": "{Enum}.enum.ts",
       "exportNamePattern": "{Enum}EnumSchema"
     }
   }
@@ -163,7 +169,9 @@ Enum naming resolved by `resolveEnumNaming`:
 ```
 
 This would generate:
-- Pure models: `User.model.ts` → `UserModel`
+- Pure models: `models/User.model.ts` → `UserModel`
 - Schemas: `findMany-user.schema.ts` → `UserFindManyValidationSchema`
-- Inputs: `inputs/UserWhereInput.schema.ts` → `UserWhereInputSchema`
+- Inputs: `objects/inputs/UserWhereInput.schema.ts` → `UserWhereInputSchema`
 - Enums: `enums/Role.enum.ts` → `RoleEnumSchema`
+
+Remember that `input.filePattern` is relative to `objects/` and `enum.filePattern` is relative to `enums/` — the extra `inputs/` segment above is deliberate, whereas an `enums/` prefix would be doubled.

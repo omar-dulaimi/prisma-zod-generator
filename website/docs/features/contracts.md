@@ -54,20 +54,28 @@ prisma generate
 generated/
   pro/
     contracts/
-      consumer/           # Consumer tests
-      provider/           # Provider tests
-      definitions/        # JSON contract definitions
+      pact/
+        WebApp-UserAPI.test.ts    # One Pact test per consumer/provider pair
+      wiremock/
+        mappings/
+          mapping-1.json          # WireMock stub mappings
+      mock-server.ts              # Express stub server for the interactions
+      validation-helpers.ts       # Contract validation helpers
+      client.ts                   # API client the Pact tests drive
+      README.md                   # Usage documentation
 ```
+
+Each Pact test file covers both sides of one consumer/provider pair — there is no separate
+`consumer/` and `provider/` split.
 
 ## Run Tests
 
-Add these scripts to your `package.json`:
+Add this script to your `package.json`:
 
 ```json
 {
   "scripts": {
-    "test:contract:consumer": "jest generated/pro/contracts/consumer",
-    "test:contract:provider": "jest generated/pro/contracts/provider"
+    "test:contract": "jest generated/pro/contracts/pact"
   }
 }
 ```
@@ -75,16 +83,15 @@ Add these scripts to your `package.json`:
 Then run:
 
 ```bash
-# Run consumer tests
-pnpm run test:contract:consumer
-
-# Run provider tests
-pnpm run test:contract:provider
+pnpm run test:contract
 ```
 
-> **Note**: The generator creates test files but you need to manually add the npm scripts above to your package.json.
+> **Note**: The generator creates test files but you need to manually add the npm script above to your package.json.
 
 ## Consumer Example
+
+The generated tests drive the `Pact` class from `@pact-foundation/pact` directly against the
+generated `client.ts`. The `jest-pact` wrapper below is optional sugar for tests you write yourself:
 
 ```ts
 // Consumer test expects specific API response format

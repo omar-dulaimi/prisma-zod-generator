@@ -3,15 +3,15 @@ id: minimal-crud
 title: Minimal CRUD
 ---
 
-```jsonc
+```json title="zod-generator.config.json"
 {
   "mode": "minimal",
   "pureModels": true,
   "variants": {
     "pure": { "enabled": true },
     "input": { "enabled": true },
-    "result": { "enabled": false },
-  },
+    "result": { "enabled": false }
+  }
 }
 ```
 

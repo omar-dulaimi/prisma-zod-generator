@@ -20,7 +20,7 @@ Typed one locks inference to Prisma.\*; Zod one supports all refinements/extensi
 
 ## Enabling / Disabling
 
-Generator block flags (not JSON config):
+These four flags can be set either in the Prisma generator block or in the JSON config file. Precedence is: generator block → JSON config → default.
 
 ```prisma
 generator zod {
@@ -31,6 +31,21 @@ generator zod {
   zodSchemaSuffix    = "ZodSchema" // default
 }
 ```
+
+The equivalent JSON config form:
+
+```json title="zod-generator.config.json"
+{
+  "exportTypedSchemas": true,
+  "exportZodSchemas": true,
+  "typedSchemaSuffix": "Schema",
+  "zodSchemaSuffix": "ZodSchema"
+}
+```
+
+:::note
+These four keys are not yet listed in the bundled JSON Schema (`lib/config/schema.json`), so an editor validating your config against it may flag them as unknown properties. They are read normally at generate time.
+:::
 
 Disable one side to shrink surface:
 
@@ -47,7 +62,9 @@ typedSchemaSuffix = "Args"
 zodSchemaSuffix   = "Validator"
 ```
 
-Produces `PostFindManyArgs` and `PostFindManyValidator`.
+Produces `PostFindManyArgs` and `PostFindManyValidator` for CRUD operation schemas.
+
+Scope note: input object schemas under `objects/` keep a hardcoded `ObjectSchema` suffix on the typed side (`PostCreateInputObjectSchema`) regardless of `typedSchemaSuffix`. `zodSchemaSuffix` does apply there, producing `PostCreateInputObject<Suffix>`.
 
 ## Single File Mode
 
@@ -61,7 +78,7 @@ Both exports inlined; tree-shakers can drop unused variant if imported selective
 ## Interactions
 
 - No effect on pure model schemas (they are single export each).
-- Result schemas follow same pattern.
+- Result schemas do **not** follow this pattern. `schemas/results/<Model><Op>Result.schema.ts` emits a single untyped `export const <Model><Op>ResultSchema = …` plus a `<Model><Op>ResultSchemaType` type alias, and ignores `exportTypedSchemas`, `exportZodSchemas` and both suffix options.
 
 ## Troubleshooting
 

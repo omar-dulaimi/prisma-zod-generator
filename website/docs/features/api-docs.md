@@ -2,7 +2,7 @@
 title: API Docs Pack
 ---
 
-> **Available in:** Professional, Business, Enterprise tiers
+> **Available in:** Business, Enterprise tiers
 
 Auto-generate OpenAPI v3 specifications and a fully-functional mock server from your Prisma schema. Perfect for frontend development, testing, and API documentation.
 
@@ -26,10 +26,9 @@ Auto-generate OpenAPI v3 specifications and a fully-functional mock server from 
 ## Prerequisites
 
 ```bash
-# Install Express for mock server
-pnpm add express @prisma/client
-pnpm add -D @types/express
-pnpm add -D tsx  # Required to run TypeScript mock server/tests
+# Install Express + CORS for the mock server
+pnpm add express cors @prisma/client
+pnpm add -D @types/express @types/cors
 
 # PZG Pro license required
 ```
@@ -80,31 +79,50 @@ node mock-server.js
 # Server starts at http://localhost:3001
 ```
 
+:::note ESM syntax
+The generated `mock-server.js` uses ESM `import` syntax. Run it from a package whose `package.json`
+has `"type": "module"`, or rename it to `mock-server.mjs`.
+:::
+
+The mock server seeds three sample records per model on startup, and exposes `GET /health` plus a
+`GET /` endpoint that lists the available routes.
+
 ### Accessing Swagger UI
 
-Open http://localhost:3001/docs in your browser to:
+The Swagger UI lives in the generated `index.html` at the pack root — it is a static file, not a
+route on the mock server. Open it directly, or serve the pack directory:
+
+```bash
+cd generated/pro/api-docs
+npx serve . -p 8080
+# then open http://localhost:8080
+```
+
+From there you can:
 - Interactively explore your API
 - Try out endpoints
 - View request/response schemas
 
 ### Generated Endpoints
 
-The mock server generates standard REST endpoints aligned with your Prisma models:
+The mock server generates standard REST endpoints aligned with your Prisma models. Routes are mounted
+at the root — there is no `/api` prefix — and the path segment is the lowercased, pluralized model
+name:
 
 ```bash
 # Users API (example)
-GET /api/users         # List users
-GET /api/users/:id     # Get single user
-POST /api/users        # Create user
-PUT /api/users/:id     # Update user
-DELETE /api/users/:id  # Delete user
+GET /users         # List users
+GET /users/:id     # Get single user
+POST /users        # Create user
+PUT /users/:id     # Update user
+DELETE /users/:id  # Delete user
 
 # Posts API (example)
-GET /api/posts
-GET /api/posts/:id
-POST /api/posts
-PUT /api/posts/:id
-DELETE /api/posts/:id
+GET /posts
+GET /posts/:id
+POST /posts
+PUT /posts/:id
+DELETE /posts/:id
 ```
 
 ## Integration
@@ -115,7 +133,7 @@ DELETE /api/posts/:id
 // Point to mock server during development
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
-const users = await fetch(`${API_URL}/api/users`).then(r => r.json())
+const users = await fetch(`${API_URL}/users`).then(r => r.json())
 ```
 
 ### Testing
@@ -124,12 +142,12 @@ const users = await fetch(`${API_URL}/api/users`).then(r => r.json())
 // Use mock server in integration tests
 beforeAll(async () => {
   // Start mock server
-  mockServer = spawn('npx', ['tsx', 'generated/api-docs/mock-server.ts'])
+  mockServer = spawn('node', ['generated/pro/api-docs/mock-server.js'])
   await new Promise(resolve => setTimeout(resolve, 2000))
 })
 
 test('fetches users', async () => {
-  const response = await fetch('http://localhost:3001/api/users')
+  const response = await fetch('http://localhost:3001/users')
   const users = await response.json()
   expect(Array.isArray(users)).toBe(true)
 })

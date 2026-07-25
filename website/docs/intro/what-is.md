@@ -16,10 +16,11 @@ Generate production-ready Zod validation schemas from your Prisma models with fu
 - **Field filtering**: Include/exclude specific fields with wildcard patterns
 - **Custom naming**: Configure naming patterns for all schema types
 - **Output layouts**: Single-file or multi-file organization
+- **Custom Zod import**: point the generated `z` import at `zod/v3`, `zod/v4`, or your own configured Zod instance via [`zodImportTarget` / `zodImportPath`](../recipes/zod-import-targets.md) — useful for i18n error maps
 
 ### Advanced Validation
-- **@zod annotations**: Add inline validation rules in Prisma comments
-- **Type coercion**: Handle Bytes, Decimal, DateTime, JSON types
+- **@zod annotations**: Inline validation rules in Prisma comments, plus [`@zod.meta({...})` / `@zod.describe("...")`](../pipeline/zod-comments.md) metadata on fields and models
+- **Special types**: Bytes, Decimal, BigInt, DateTime, and [fully typed `Json` fields](../pipeline/zod-comments.md) via `@zod.import([...]).custom.use(...)`
 - **Relation handling**: Smart defaults for nested objects
 - **Aggregate support**: Count, min, max, avg, sum operations
 - **Optional fields**: Configurable `.nullish()`, `.optional()`, or `.nullable()`
@@ -62,17 +63,25 @@ Upgrade to Pro for production-ready feature packs that save weeks of development
 
 ## Getting Started
 
-```bash
-# Install generator
-pnpm add -D prisma-zod-generator
+Install the generator and the Prisma CLI as dev dependencies, plus the runtime packages:
 
-# Configure in schema.prisma
+```bash
+pnpm add -D prisma prisma-zod-generator
+pnpm add zod @prisma/client
+```
+
+Add the generator to `schema.prisma`. A `prisma-client` or `prisma-client-js` generator must already be present — prisma-zod-generator reads the client configuration and errors out without one:
+
+```prisma
 generator zod {
   provider = "prisma-zod-generator"
-  output   = "./generated/zod"
+  output   = "./generated/zod"   // relative to the schema file
 }
+```
 
-# Generate schemas
+Then generate:
+
+```bash
 pnpm prisma generate
 ```
 

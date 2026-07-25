@@ -44,9 +44,12 @@ generator zod {
 generator zod {
   provider                   = "prisma-zod-generator"
   output                     = "./src"
-  safetyAllowDangerousPaths = true  # Temporary workaround
+  safetyAllowDangerousPaths = true  // Temporary workaround
+  safetyAllowUserFiles      = true  // What actually unblocks an existing src/
 }
 ```
+
+`safetyAllowDangerousPaths` alone will not get you there: the directory-name check only ever warns. A populated `./src` is blocked by the count of files that look like user code, so you need `safetyAllowUserFiles = true` (or `safetyMaxUserFiles` raised above that count), plus `safetyAllowProjectRoots = true` if `./src` happens to contain a `tsconfig.json`, `README.md` or `.gitignore`.
 
 :::warning
 Option C is a temporary solution. Plan to migrate to Option A or B.
@@ -92,11 +95,13 @@ find src/ -name "*WhereInput.ts"
 generator zod {
   provider = "prisma-zod-generator"
   output   = "./src/generated"
-  
-  # Allow the dangerous src path temporarily during migration
+
+  // Report rather than block while hand-written files are still mixed in
   safetyLevel = "permissive"
 }
 ```
+
+`./src/generated` needs no dangerous-path allowance — only the final path segment is checked, and `generated` is not on the list. `permissive` is here to stop the user-file count from blocking while you are still moving hand-written files out of the new output directory; drop it once the directory holds nothing but generated schemas.
 
 ## Migration Strategies
 
@@ -111,10 +116,23 @@ Move everything at once:
 5. **Clean Up**: Delete old files
 6. **Test**: Verify everything works
 
+Commit before running this.
+
 ```bash title="Find and replace imports"
-# Example: Update imports from src/ to generated/
-find . -name "*.ts" -exec sed -i 's|from "\.\/.*\.schema"|from "../generated/&"|g' {} \;
+# 1. Dry run: see which files would change (never recurse into node_modules)
+grep -rln --include='*.ts' --exclude-dir=node_modules 'from "\./[A-Za-z0-9_]*\.schema"' src/
+
+# 2. Rewrite, capturing the module name instead of re-inserting the whole match
+find src -name '*.ts' -not -path '*/node_modules/*' \
+  -exec sed -i.bak -E 's|from "\./([A-Za-z0-9_]+\.schema)"|from "../generated/\1"|g' {} +
+
+# 3. Review `git diff`, then delete the .bak files
+find src -name '*.ts.bak' -delete
 ```
+
+:::caution
+In a `sed` replacement, `&` inserts the entire match, so a naive `from "../generated/&"` produces nested, invalid import statements. Scope the `find` to `src` as well — a bare `find .` walks into `node_modules` and `sed -i` rewrites in place with no backup.
+:::
 
 ### Strategy 2: Gradual Migration
 
@@ -134,19 +152,29 @@ Use safety system to guide migration:
 3. **Create Migration Plan**: Based on warning analysis
 4. **Execute Plan**: Make changes guided by safety feedback
 
+:::note Turn on debug logging first
+Safety messages are debug-level, so `warningsOnly: true` on its own produces a completely silent run and it is easy to conclude there are no issues. Run `DEBUG_PRISMA_ZOD=1 npx prisma generate` (or `DEBUG=prisma-zod npx prisma generate`) for every step of this strategy.
+:::
+
 ## Safety Configuration for Migration
 
 ### Phase 1: Assessment
+
+`strict` reports the largest set of issues (`maxUserFiles: 0`, so a single file that looks like user code is flagged) while `warningsOnly` keeps generation from aborting. Run it with `DEBUG_PRISMA_ZOD=1` — otherwise nothing is printed. If the directory already holds a `.prisma-zod-generator-manifest.json` from an earlier run, the user-file check is skipped entirely; delete the manifest first to get a full picture.
+
 ```json title="zod-generator.config.json"
 {
   "safety": {
     "level": "strict",
-    "warningsOnly": true  // See all issues without blocking
+    "warningsOnly": true
   }
 }
 ```
 
 ### Phase 2: Active Migration
+
+`permissive` already implies `allowDangerousPaths: true`, `allowUserFiles: true` and `warningsOnly: true`; the two explicit lines below are there to document the intent, not to change behaviour.
+
 ```json title="zod-generator.config.json"  
 {
   "safety": {
@@ -158,20 +186,28 @@ Use safety system to guide migration:
 ```
 
 ### Phase 3: Post-Migration
+
+Back to normal safety.
+
 ```json title="zod-generator.config.json"
 {
   "safety": {
-    "level": "standard"  // Return to normal safety
+    "level": "standard"
   }
 }
 ```
 
 ## Handling Specific Error Messages
 
+:::note
+The messages below are debug-log lines, not console output. Run `DEBUG_PRISMA_ZOD=1 npx prisma generate` (or `DEBUG=prisma-zod`) to see them. A blocking error is additionally printed to stderr — but it does not change the exit code, so `prisma generate` reports success while writing no schemas.
+:::
+
 ### Error: "Output directory contains project file"
 
-```
-❌ Output directory contains project file "package.json"
+```text
+Output directory contains project file "package.json". This suggests it's a project root
+directory that should not be cleaned automatically.
 ```
 
 **Solutions**:
@@ -181,8 +217,9 @@ Use safety system to guide migration:
 
 ### Error: "Too many potentially user-generated files"
 
-```
-❌ Too many potentially user-generated files (15) found. Maximum allowed: 5.
+```text
+Too many potentially user-generated files (15) found. Maximum allowed: 5. For safety,
+automatic cleanup is disabled. Please use a dedicated directory for generated schemas.
 ```
 
 **Solutions**:
@@ -193,14 +230,15 @@ Use safety system to guide migration:
 
 ### Warning: "Common source code directory name"
 
-```  
-⚠️ Output directory "src" is a common source code directory name
+```text
+Output directory "src" is a common source code directory name. Consider using a dedicated
+subdirectory like "src/generated" instead.
 ```
 
 **Solutions**:
-1. **Use Subdirectory**: Change to `./src/generated`
-2. **Allow Dangerous**: Set `allowDangerousPaths: true`
-3. **Accept Warning**: Warnings don't block generation
+1. **Use Subdirectory**: Change to `./src/generated` — only the last path segment is checked, so this silences the message outright
+2. **Allow Dangerous**: Set `allowDangerousPaths: true`, which appends "(Allowed by configuration)" to the message
+3. **Accept Warning**: This check never blocks generation in either state, so ignoring it is safe
 
 ## Import Update Strategies
 

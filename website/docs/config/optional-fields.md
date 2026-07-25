@@ -5,6 +5,10 @@ title: Optional Field Behavior
 
 The `optionalFieldBehavior` configuration option controls how optional Prisma fields (marked with `?`) are mapped to Zod validation schemas.
 
+:::note
+**Scope.** `optionalFieldBehavior` applies to **pure model schemas** — the `models/` output produced with `pureModels: true`. CRUD input object schemas under `objects/` follow the fixed policy described in [Object Schemas: Optional vs Nullable](#object-schemas-optional-vs-nullable-behavior-note), and variant schemas under `variants/` use their own fixed policy. Neither reads this setting.
+:::
+
 ## Configuration Options
 
 | Value               | Zod Output    | TypeScript Type          | Description                                            |
@@ -38,7 +42,7 @@ Or in your `zod-generator.config.json`:
 
 ## Examples
 
-Given this Prisma model:
+The snippets below show the generated **pure model** schema (`generated/schemas/models/User.schema.ts`). Given this Prisma model:
 
 ```prisma
 model User {
@@ -52,8 +56,8 @@ model User {
 ### Nullish Behavior (Default)
 
 ```typescript
-// Generated schema
-const UserCreateInputSchema = z.object({
+// generated/schemas/models/User.schema.ts
+export const UserSchema = z.object({
   email: z.string(),
   name: z.string().nullish(),
   bio: z.string().nullish()
@@ -68,8 +72,8 @@ const UserCreateInputSchema = z.object({
 ### Optional Behavior
 
 ```typescript
-// Generated schema
-const UserCreateInputSchema = z.object({
+// generated/schemas/models/User.schema.ts
+export const UserSchema = z.object({
   email: z.string(),
   name: z.string().optional(),
   bio: z.string().optional()
@@ -87,8 +91,8 @@ const UserCreateInputSchema = z.object({
 ### Nullable Behavior
 
 ```typescript
-// Generated schema
-const UserCreateInputSchema = z.object({
+// generated/schemas/models/User.schema.ts
+export const UserSchema = z.object({
   email: z.string(),
   name: z.string().nullable(),
   bio: z.string().nullable()
@@ -104,19 +108,19 @@ const UserCreateInputSchema = z.object({
 
 ## Type Compatibility
 
-All three behaviors maintain full compatibility with Prisma's generated TypeScript types:
+All three behaviors produce types assignable to Prisma's generated input types, but they are **not** interchangeable at runtime: only `nullish` and `nullable` accept an explicit `null`.
 
 ```typescript
-import { User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
-// All generated schemas are compatible with Prisma types
 const prismaUser: Prisma.UserCreateInput = {
   email: 'test@example.com',
   name: null, // Prisma allows null for optional fields
 };
 
-// Works with any optionalFieldBehavior setting
-UserCreateInputSchema.parse(prismaUser); // ✅ Always valid
+// Valid under `nullish` (default) and `nullable`.
+// Rejected under `optional`, which does not accept an explicit null.
+UserSchema.parse(prismaUser);
 ```
 
 ## Use Cases
@@ -171,7 +175,12 @@ Additionally, in filter/where inputs, optional non-relation unions (e.g., `AND`,
 Rationale:
 - Prisma optional fields often map to nullable columns; allowing `null` and omission improves ergonomics for JSON clients while keeping relation operations explicit and unambiguous.
 
-This policy applies to object input schemas irrespective of `optionalFieldBehavior` (which continues to control pure model and variant schema generation).
+This policy applies to object input schemas irrespective of `optionalFieldBehavior`, which affects **pure model schemas only** (the `models/` output produced with `pureModels: true`).
+
+Variant schemas under `variants/` also ignore `optionalFieldBehavior` and use their own fixed policy for optional fields:
+
+- `input` variant → `.optional().nullable()`
+- `pure` and `result` variants → `.nullable()`
 
 ## Migration
 
@@ -181,4 +190,4 @@ When changing `optionalFieldBehavior`, regenerate your schemas:
 npx prisma generate
 ```
 
-All behaviors are functionally equivalent for validation - the choice depends on your API design preferences.
+The three behaviors differ in what they accept at runtime — `optional` rejects explicit `null`, `nullable` rejects omission — so switching between them can invalidate payloads that used to parse. Pick the one that matches your API contract.

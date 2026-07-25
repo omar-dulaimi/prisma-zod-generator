@@ -28,14 +28,22 @@ Use the `pureModelsExcludeCircularRelations` option to intelligently exclude pro
   "pureModelsIncludeRelations": true,
   "pureModelsExcludeCircularRelations": true,
   "variants": {
-    "pure": { "enabled": true }
+    "pure": { "enabled": true, "suffix": ".model" },
+    "input": { "enabled": false },
+    "result": { "enabled": false }
   },
   "emit": {
     "objects": false,
-    "crud": false
+    "crud": false,
+    "variants": false
+  },
+  "naming": {
+    "pureModel": { "filePattern": "{Model}.model.ts" }
   }
 }
 ```
+
+The `naming.pureModel.filePattern` override is what produces the `<Model>.model.ts` file names used in the snippets below; the default is `{Model}.schema.ts`. Either way the files live under `generated/schemas/models/`.
 
 ## Schema Example
 
@@ -45,7 +53,7 @@ model Deal {
   name        String?
   status      String  @default("DRAFT")
 
-  // This back-reference will be excluded
+  // Kept: this side wins the tiebreak
   opportunity Opportunity?
 }
 
@@ -53,7 +61,7 @@ model Opportunity {
   id     String @id @default(uuid())
   name   String
 
-  // Foreign key preserved, relation preserved
+  // dealId is always kept; the `deal` relation field is the one excluded
   dealId String? @unique
   deal   Deal?   @relation(fields: [dealId], references: [id])
 }
@@ -61,12 +69,14 @@ model Opportunity {
 
 ## What gets excluded
 
-The feature uses smart heuristics to determine which relations to exclude:
+For each bidirectional pair, the exclusion choice is made in this order:
 
-1. **Preserves required relations** over optional ones
-2. **Preserves single relations** over list relations
-3. **Preserves FK-side relations** over back-references
-4. **Handles self-references** by excluding one of multiple self-referencing fields
+1. **Keeps required relations** over optional ones.
+2. **Keeps single relations** over list relations.
+3. **If both sides tie**, keeps the relation on the alphabetically-earlier model and excludes the other. This is a deterministic tiebreak, not a foreign-key-aware one — for `Deal` ↔ `Opportunity` (both optional, both single) it excludes `Opportunity.deal`.
+4. **Self-references**: when a model has more than one relation field pointing at itself, the first is kept and the rest are excluded.
+
+Foreign key scalar fields such as `dealId` are never excluded — only relation object fields are.
 
 ## Generated Output
 
@@ -105,19 +115,26 @@ export const OpportunitySchema = z.object({
 
 ## Configuration Methods
 
+The flag only has an effect while relations are being emitted into pure models, so it needs `pureModels` and `pureModelsIncludeRelations` alongside it.
+
 ### Via JSON Config
 
 ```json title="zod-generator.config.json"
 {
+  "pureModels": true,
+  "pureModelsIncludeRelations": true,
   "pureModelsExcludeCircularRelations": true
 }
 ```
 
 ### Via Generator Block
 
+`pureModelsExcludeCircularRelations` and `pureModelsIncludeRelations` are also generator-block options (booleans are passed as strings). `pureModels` itself has no generator-block flag, so keep it in the JSON config:
+
 ```prisma title="schema.prisma"
 generator zod {
   provider = "prisma-zod-generator"
+  pureModelsIncludeRelations = "true"
   pureModelsExcludeCircularRelations = "true"
 }
 ```

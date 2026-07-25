@@ -3,7 +3,9 @@ id: strict-mode
 title: Strict Mode Configuration
 ---
 
-The strict mode feature provides granular control over when `.strict()` is applied to generated Zod schemas. By default, all schemas include `.strict()` for backward compatibility, but you can now configure this behavior globally, per-model, per-operation, or per-variant.
+The strict mode feature provides granular control over when `.strict()` is applied to generated Zod schemas. By default, all schemas include `.strict()` for backward compatibility, but you can configure this behavior globally, per-model, per-operation, or per-variant.
+
+**How strictness is rendered.** With the default `zodImportTarget` (`auto` or `v3`), strict schemas are emitted as `z.object({ ... }).strict()`. With `zodImportTarget: "v4"`, operation and object schemas are emitted as `z.strictObject({ ... })` instead — identical strictness semantics, but the shape stays lazy so getter-based recursion and circular references don't break at import time. Variant schemas keep the `.strict()` suffix under both targets. The examples on this page use the `.strict()` form; read them as `z.strictObject(...)` if you target v4.
 
 ## Overview
 
@@ -20,13 +22,19 @@ Configure strict mode globally for all schemas:
 ```json
 {
   "strictMode": {
-    "enabled": true,        // Global default for all schemas
-    "operations": true,     // CRUD operation schemas (findMany, create, etc.)
-    "objects": true,        // Input object schemas (WhereInput, CreateInput, etc.)
-    "variants": true        // Variant schemas (pure, input, result)
+    "enabled": true,
+    "operations": true,
+    "objects": true,
+    "variants": true
   }
 }
 ```
+
+:::note
+Annotated snippets on this page are tagged `jsonc` and use `//` comments purely to explain each key. Your actual config file is read with `JSON.parse`, so strip the comments before saving it — the un-annotated `json` blocks below are safe to copy as-is.
+:::
+
+There is also a `strictMode.enums` key. It is accepted by the config schema (and offered by editor IntelliSense) but it is **inert**: the strict-mode resolver only recognises the `operation`, `object`, and `variant` schema types, so nothing reads `enums`. Enum schemas are inherently strict — `z.enum([...])` has no `.strict()` to apply. Setting the key changes nothing either way.
 
 ### Default Behavior
 
@@ -68,9 +76,9 @@ Control strict mode for specific schema types:
 {
   "strictMode": {
     "enabled": true,
-    "operations": true,    // findMany, create, update operations
-    "objects": false,      // WhereInput, CreateInput objects
-    "variants": true       // Pure, input, result variants
+    "operations": true,
+    "objects": false,
+    "variants": true
   }
 }
 ```
@@ -112,14 +120,14 @@ Override strict mode settings for specific models:
   "models": {
     "User": {
       "strictMode": {
-        "enabled": true,      // Enable for User model
-        "operations": true,   // Override: User operations get .strict()
-        "objects": true      // Override: User objects get .strict()
+        "enabled": true,
+        "operations": true,
+        "objects": true
       }
     },
     "Post": {
       "strictMode": {
-        "enabled": false     // Disable all strict mode for Post
+        "enabled": false
       }
     }
   }
@@ -140,8 +148,8 @@ Control strict mode for specific operations within a model:
   "models": {
     "User": {
       "strictMode": {
-        "operations": ["findMany", "create"],  // Only these operations get .strict()
-        "exclude": ["update"]                  // Exclude update operations
+        "operations": ["findMany", "create"],
+        "exclude": ["update"]
       }
     }
   }
@@ -183,20 +191,20 @@ Configure strict mode for specific variants:
 ```json
 {
   "strictMode": {
-    "variants": false  // Disable for all variants globally
+    "variants": false
   },
   "variants": {
     "pure": {
       "enabled": true,
-      "strictMode": true    // Override: pure variants get .strict()
+      "strictMode": true
     },
     "input": {
       "enabled": true,
-      "strictMode": false   // Explicit: input variants don't get .strict()
+      "strictMode": false
     },
     "result": {
       "enabled": true
-      // Uses global variants setting (false)
+
     }
   }
 }
@@ -210,9 +218,9 @@ Configure strict mode for specific variants:
     "User": {
       "strictMode": {
         "variants": {
-          "pure": true,     // User pure variant gets .strict()
-          "input": false,   // User input variant doesn't get .strict()
-          "result": null    // Uses global/parent setting
+          "pure": true,
+          "input": false,
+          "result": null
         }
       }
     }
@@ -222,26 +230,34 @@ Configure strict mode for specific variants:
 
 ## Configuration Hierarchy
 
-Strict mode settings follow a hierarchy (most specific wins):
+Strict mode is resolved from the following keys, highest priority first:
 
-1. **Operation-level** (`models.ModelName.strictMode.operations` array)
-2. **Model-level** (`models.ModelName.strictMode.*`)
-3. **Global schema type** (`strictMode.operations`, `strictMode.objects`, etc.)
-4. **Global default** (`strictMode.enabled`)
+1. **Model + variant** (`models.ModelName.variants.<variant>.strictMode`) — variant schemas only
+2. **Global variant** (`variants.<variant>.strictMode`) — variant schemas only
+3. **Operation-level** (`models.ModelName.strictMode.operations` / `.exclude`) — operation schemas only
+4. **Model-level** (`models.ModelName.strictMode.*`, including `strictMode.variants.<variant>`)
+5. **Global schema type** (`strictMode.operations`, `strictMode.objects`, `strictMode.variants`)
+6. **Global default** (`strictMode.enabled`)
+
+:::caution
+**Ordering quirk for variants.** This is not a pure "most specific wins" chain. The resolver applies the model-level settings first and *then* the variant settings, so `variants.<variant>.strictMode` overrides `models.<Model>.strictMode.variants.<variant>` — the less specific key wins.
+
+If you need a per-model variant override, either leave `variants.<variant>.strictMode` unset (or set it to `null`) so the model-level value survives, or use `models.<Model>.variants.<variant>.strictMode`, which does take priority.
+:::
 
 ### Example Hierarchy
 
 ```json
 {
   "strictMode": {
-    "enabled": false,      // 4. Global default: disabled
-    "operations": true     // 3. Global operations: enabled
+    "enabled": false,
+    "operations": true
   },
   "models": {
     "User": {
       "strictMode": {
-        "enabled": true,         // 2. Model-level: enabled
-        "operations": ["findMany"] // 1. Operation-level: only findMany
+        "enabled": true,
+        "operations": ["findMany"]
       }
     }
   }
@@ -263,8 +279,8 @@ Disable strict mode for operations but keep it for internal schemas:
 {
   "strictMode": {
     "enabled": true,
-    "operations": false,  // Allow extra fields in API requests
-    "objects": true,      // Keep strict for internal validation
+    "operations": false,
+    "objects": true,
     "variants": true
   }
 }
@@ -280,7 +296,7 @@ Development configuration (more permissive):
     "enabled": false,
     "operations": false,
     "objects": false,
-    "variants": true     // Keep variants strict for type safety
+    "variants": true
   }
 }
 ```
@@ -305,12 +321,12 @@ Start with loose validation and gradually enable strict mode:
 ```json
 {
   "strictMode": {
-    "enabled": false  // Start permissive
+    "enabled": false
   },
   "models": {
     "User": {
       "strictMode": {
-        "enabled": true  // Migrate User model first
+        "enabled": true
       }
     }
   }
@@ -417,8 +433,8 @@ To allow extra fields in API requests:
 ```json
 {
   "strictMode": {
-    "operations": false,  // Allow extra fields in operation inputs
-    "objects": true       // Keep strict for internal objects
+    "operations": false,
+    "objects": true
   }
 }
 ```
@@ -430,12 +446,12 @@ Migrate models gradually:
 ```json
 {
   "strictMode": {
-    "enabled": true  // Keep existing strict behavior
+    "enabled": true
   },
   "models": {
     "NewModel": {
       "strictMode": {
-        "operations": false  // New model allows extra fields
+        "operations": false
       }
     }
   }
@@ -454,22 +470,24 @@ Migrate models gradually:
 
 ### Schemas Still Have .strict()
 
-Check the configuration hierarchy. More specific settings override general ones:
+Check the [configuration hierarchy](#configuration-hierarchy) — a model-level setting overrides the global one:
 
 ```json
 {
   "strictMode": {
-    "enabled": false  // This might be overridden
+    "enabled": false
   },
   "models": {
     "User": {
       "strictMode": {
-        "enabled": true  // This overrides the global setting
+        "enabled": true
       }
     }
   }
 }
 ```
+
+For variant schemas, also check the reverse case: a global `variants.<variant>.strictMode` overrides your per-model `models.<Model>.strictMode.variants.<variant>`.
 
 ### Configuration Not Applied
 

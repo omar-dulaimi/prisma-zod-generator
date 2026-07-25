@@ -6,6 +6,14 @@ This recipe demonstrates how to create custom safety configurations tailored to 
 
 The safety system offers granular control over different types of protections. You can mix and match settings to create a configuration that works for your project structure.
 
+:::note Safety messages are debug-level
+Every warning the safety system produces — and the resolved configuration itself — is written through the debug logger. A normal `prisma generate` prints nothing at all about safety. To see any of the output described on this page, run:
+
+```bash
+DEBUG_PRISMA_ZOD=1 npx prisma generate
+```
+:::
+
 ## Complete Configuration Example
 
 ```json title="zod-generator.config.json"
@@ -28,79 +36,88 @@ The safety system offers granular control over different types of protections. Y
 
 ### Safety Levels (Presets)
 
-Choose a base level, then override specific settings:
+Choose a base level (`strict`, `standard`, `permissive` or `disabled`), then override individual settings on top of it. Here `strict` supplies the base and `allowUserFiles` overrides one of its values:
 
-```json
+```json title="zod-generator.config.json"
 {
   "safety": {
-    "level": "strict",        // strict | standard | permissive | disabled
-    "allowUserFiles": true    // Override the preset
+    "level": "strict",
+    "allowUserFiles": true
   }
 }
 ```
 
-**Available levels**:
-- `strict` - Maximum protection, blocks even small numbers of user files
-- `standard` - Balanced protection (default)
-- `permissive` - Warnings-heavy, minimal blocking
-- `disabled` - No safety checks
+**Available levels**, with the values each one carries:
+
+- `strict` - `maxUserFiles: 0`, so a single file that looks like user code blocks generation
+- `standard` (default) - `maxUserFiles: 5`; project roots and excess user files block
+- `permissive` - never blocks, because it implies `warningsOnly: true`; also sets `allowDangerousPaths: true`, `allowUserFiles: true` and `maxUserFiles: 50`
+- `disabled` - no safety checks at all; also forces `skipManifest: true`, so no manifest is written and no cleanup runs
+
+`maxUserFiles` is the number that actually decides whether generation is blocked, so it is worth setting explicitly rather than inheriting it from a preset. It is only consulted when the output directory has no manifest from a previous run — once a manifest exists, the count is skipped entirely.
 
 ### Individual Controls
 
 #### allowDangerousPaths
-Controls whether common source directory names are allowed:
+Acknowledges a common source directory name. The directory-name check is warn-only in both states, so this flag does not unblock anything on its own — it only appends "(Allowed by configuration)" to the message:
 
-```json
+```json title="zod-generator.config.json"
 {
   "safety": {
-    "allowDangerousPaths": true  // Allow src, lib, components, etc.
+    "allowDangerousPaths": true
   }
 }
 ```
 
 **Default dangerous paths**: `src`, `lib`, `components`, `pages`, `app`, `utils`, `hooks`, `services`, `api`
 
-#### allowProjectRoots
-Controls whether directories containing project files are allowed:
+What actually blocks generation into a directory like `./src` is the project-file check and the user-file count — see `allowProjectRoots` and `allowUserFiles` below.
 
-```json
+#### allowProjectRoots
+Controls whether a directory containing project files is allowed. This check does block by default:
+
+```json title="zod-generator.config.json"
 {
   "safety": {
-    "allowProjectRoots": true  // Allow dirs with package.json, tsconfig.json, etc.
+    "allowProjectRoots": true
   }
 }
 ```
 
-#### allowUserFiles
-Controls whether directories with user files are allowed:
+**Default project files**: `package.json`, `tsconfig.json`, `next.config.js`, `vite.config.js`, `webpack.config.js`, `rollup.config.js`, `.gitignore`, `README.md`
 
-```json
+#### allowUserFiles
+Controls whether a directory holding files that look like user code is allowed. `maxUserFiles` is only consulted when `allowUserFiles` is `false`, and the whole check only runs when the directory has no manifest from a previous run:
+
+```json title="zod-generator.config.json"
 {
   "safety": {
     "allowUserFiles": true,
-    "maxUserFiles": 20  // Only relevant when allowUserFiles is false
+    "maxUserFiles": 20
   }
 }
 ```
 
 #### skipManifest
-Disables manifest tracking and smart cleanup:
+Disables manifest tracking **and** cleanup entirely — both manifest-based and smart cleanup are skipped, and no manifest is written:
 
-```json
+```json title="zod-generator.config.json"
 {
   "safety": {
-    "skipManifest": true  // No manifest file, no selective cleanup
+    "skipManifest": true
   }
 }
 ```
 
-#### warningsOnly
-Converts all safety errors to warnings:
+Because nothing in the output directory is ever deleted, schemas for models you later remove or rename stay behind forever. That suits ephemeral CI checkouts, but for local development the accumulating stale files usually cost more than the saved manifest.
 
-```json
+#### warningsOnly
+Downgrades every blocking safety error to a warning, so generation is never aborted:
+
+```json title="zod-generator.config.json"
 {
   "safety": {
-    "warningsOnly": true  // Never block generation, only warn
+    "warningsOnly": true
   }
 }
 ```
@@ -190,12 +207,18 @@ Automated environments with controlled paths:
 {
   "safety": {
     "level": "standard",
-    "skipManifest": true,      // No state between runs
+    "skipManifest": true,
     "allowDangerousPaths": false,
-    "warningsOnly": true       // Don't fail builds on warnings
+    "warningsOnly": true
   }
 }
 ```
+
+`skipManifest` keeps no state between runs, which is what you want on a fresh checkout, and `warningsOnly` makes sure a safety error never aborts generation.
+
+:::caution A blocked run does not fail the build
+Neither warnings nor blocking errors change the exit code. A blocking safety error is printed to stderr, but `prisma generate` still exits `0` — it simply writes no schemas. In CI, assert that the expected schema files exist rather than relying on the exit code.
+:::
 
 ## Multiple Configuration Sources
 
@@ -245,7 +268,7 @@ generator zod {
 Create a test directory structure to verify your safety configuration:
 
 ```bash
-mkdir -p test-safety/{src,components,package.json}
+mkdir -p test-safety/src test-safety/components
 echo '{"name":"test"}' > test-safety/package.json
 echo 'const x = 1;' > test-safety/src/test.ts
 ```
@@ -266,41 +289,48 @@ model User {
 
 ## Configuration Validation
 
-The system validates your configuration and provides helpful error messages:
+:::caution Safety options are not validated
+A misspelled `level` raises no error. It resolves to a configuration with no preset applied, which leaves `enabled` unset — and an unset `enabled` switches the entire safety system off silently. A typo therefore gives you *less* protection, not an error message.
 
-```json title="Invalid configuration"
-{
-  "safety": {
-    "level": "invalid-level",     // ❌ Error: Invalid safety level
-    "maxUserFiles": -5            // ❌ Error: Must be non-negative
-  }
-}
-```
+Check spelling against `strict`, `standard`, `permissive` and `disabled`, and confirm what was actually resolved using the debug output below.
+:::
 
 ## Debugging Safety Issues
 
 Enable debug logging to understand safety decisions:
 
 ```bash
-DEBUG=prisma-zod-generator* npx prisma generate
+DEBUG_PRISMA_ZOD=1 npx prisma generate
+# or
+DEBUG=prisma-zod npx prisma generate
 ```
+
+Look for the `resolvedSafetyConfig = { … }` line to see exactly which safety settings were resolved, followed by any `WARNING:` lines from the output-path check.
 
 Or check the generated manifest file:
 
 ```json title=".prisma-zod-generator-manifest.json"
 {
   "version": "1.0",
-  "generatedAt": "2024-01-15T10:30:00.000Z",
-  "files": ["User.schema.ts", "Post.schema.ts"],
-  "directories": ["enums"]
+  "generatorVersion": "unknown",
+  "generatedAt": "2026-01-15T10:30:00.000Z",
+  "outputPath": "/abs/path/to/generated",
+  "files": [
+    "schemas/objects/UserWhereInput.schema.ts",
+    "schemas/enums/Role.schema.ts"
+  ],
+  "directories": ["schemas/objects", "schemas/enums"],
+  "singleFileMode": false
 }
 ```
+
+Entries in `files` and `directories` are paths relative to the resolved output directory, not bare filenames. On the next run, only the files listed here are deleted. `generatorVersion` is read from `npm_package_version` when the generator runs under a package script and is `"unknown"` otherwise, so treat it as a hint rather than a guarantee.
 
 ## Best Practices
 
 1. **Start Strict**: Begin with `"level": "strict"` and relax as needed
 2. **Test Configurations**: Use a copy of your project to test safety settings
-3. **Document Choices**: Comment your configuration choices for team members
+3. **Document Choices**: Record why each setting was chosen — `zod-generator.config.json` is read with `JSON.parse`, so it cannot hold comments; put the rationale in your repo docs or alongside the generator block in `schema.prisma`, which does support `//` comments
 4. **Review Regularly**: Periodically review if you can tighten safety settings
 5. **Use Version Control**: Always commit before changing safety configurations
 

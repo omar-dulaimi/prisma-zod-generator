@@ -16,17 +16,22 @@ model User {
 Result:
 
 ```ts
-export const UserSchema = z
-  .object({
-    email: z.string().email().min(5),
-    // ...
-  })
-  .strict();
+// pure model schema (Zod v4 auto-detected)
+export const UserSchema = z.object({
+  email: z.email().min(5),
+  // ...
+});
 ```
+
+On Zod v3 the same annotation emits `z.string().email().min(5)`. Pure model schemas are never `.strict()` — strict mode applies to object, operation and variant schemas, where it appears as `z.strictObject({ ... })` under `zodImportTarget: "v4"` and as `}).strict()` on v3.
 
 Annotations are concatenated after base type; unsafe expressions are not executed (string append model). Keep rules pure.
 
 ## Complete Feature Reference
+
+:::note
+The `Generated schema` blocks below are simplified for readability — they show the field expression each annotation produces. In the real output, CRUD object schemas are wrapped in a `const makeSchema = () => z.strictObject({ ... })` factory and exported as `<Model><Operation>InputObjectSchema` (typed) alongside `<Model><Operation>InputObjectZodSchema`.
+:::
 
 ### String Validations
 
@@ -408,24 +413,24 @@ model User {
 }
 ```
 
-Generated schema (Pure Variant excerpt):
+Generated schema (pure model excerpt):
 
 ```ts
 import { isEmail } from '../validators/email';
 
-export const UserSchema = z
-  .object({
-    email: z.string().refine((val) => isEmail(val), {
-      message: 'Invalid email',
-    }),
-    // ...
-  })
-  .strict();
+export const UserSchema = z.object({
+  email: z.string().refine((val) => isEmail(val), { message: 'Invalid email' }),
+  // ...
+});
 ```
+
+:::caution
+Field-level `@zod.import(...).custom.use(...)` is honored in pure model schemas (`models/*.schema.ts`) and in CRUD object schemas. It is **not** applied in variant files (`variants/pure`, `variants/input`, `variants/result`), which only pick up regular `@zod.*` validation chains — a field annotated this way comes out as its plain base type there. Model-level `@zod.import([...]).refine(...)` *is* applied to pure and result variants.
+:::
 
 ### Import Features
 - Provide one or more complete import statements inside the array
-- Relative paths are kept intact and rewritten per output directory
+- Import statements are emitted **verbatim** — relative paths are never rewritten. The same statement is copied into every generated file that needs it (`objects/`, `models/`, variant directories) and hoisted into the single-file bundle header, so a relative path has to resolve from each of those locations. Prefer a package specifier or a path alias if you generate into more than one directory depth
 - Imports must produce runtime values. Type-only specifiers are detected and omitted
 - Field-level imports are merged with model-level imports
 - Duplicate statements are emitted once
@@ -461,10 +466,12 @@ messages: z.array(
     role: z.enum(['user', 'assistant', 'system']),
     parts: z.array(z.object({ type: z.enum(['text', 'image']), text: z.string() })),
   }),
-).default('[]');
+).default([]),
 ```
 
 This short-circuits other annotations for that field.
+
+Note the default: a `Json` literal default whose text parses as JSON is inlined raw (`.default([])`, not `.default('[]')`) so it validates against the schema it is attached to. `.default(...)` also lands after the whole validation chain. `.default(...)` is only emitted in pure model schemas — CRUD inputs make defaulted fields `.optional()` instead. See [Literal Defaults](./special-types.md#literal-defaults) for the per-type rules.
 
 ### Typed JSON fields with a referenced schema
 
@@ -507,24 +514,31 @@ model User {
 }
 ```
 
-Result:
+Result — in a CRUD object schema, the custom object replaces **every** arm of the field's union, including the Json-null arm:
 
 ```ts
-// Creates type-safe object schemas
-profile: z.union([JsonNullValueInputSchema, z.object({
-  title: z.string(),
-  description: z.string(),
-  isActive: z.boolean()
-})]).optional(),
+profile: z.union([
+  z.object({ "title": z.string(), "description": z.string(), "isActive": z.boolean() }),
+  z.object({ "title": z.string(), "description": z.string(), "isActive": z.boolean() })
+]),
 
-metadata: z.union([JsonNullValueInputSchema, z.object({
-  settings: z.object({
-    theme: z.string(),
-    notifications: z.boolean()
-  }),
-  preferences: z.array(z.string())
-})]).optional()
+metadata: z.union([
+  z.object({ "settings": z.object({ "theme": z.string(), "notifications": z.boolean() }), "preferences": z.array(z.string()) }),
+  z.object({ "settings": z.object({ "theme": z.string(), "notifications": z.boolean() }), "preferences": z.array(z.string()) })
+]),
 ```
+
+And in the pure model schema:
+
+```ts
+profile: z.object({ "title": z.string(), "description": z.string(), "isActive": z.boolean() }),
+```
+
+Keys are emitted quoted. There is no `.optional()` here because `profile` and `metadata` are required; only a nullable `Json?` field picks up an optional modifier.
+
+:::note
+If you want to keep the Json-null arm and reference a schema you defined yourself, use `@zod.import([...]).custom.use(...)` instead — that form substitutes only the Json arm, leaving `z.union([JsonNullValueInputSchema, <your schema>])`.
+:::
 
 ### Supported Value Types in @zod.custom()
 
@@ -832,3 +846,39 @@ The generator preserves all JavaScript parameter types:
 - **RegExp**: `@zod.regex(/pattern/)` → `z.regex(/pattern/)`
 - **Function calls**: `@zod.custom(Date.now())` → `z.custom(Date.now())`
 - **Nested expressions**: `@zod.custom(new RegExp('.'))` → `z.custom(new RegExp('.'))`
+
+### Error Messages
+
+Both error-message shapes Zod supports are accepted: the string shorthand and the Zod v4 params object (`{ message: ... }` or `{ error: ... }`).
+
+```prisma
+model Post {
+  id    String @id @default(cuid())
+  /// @zod.min(1, "Title is required")
+  title String
+  /// @zod.min(10, { message: "Body is too short" })
+  body  String
+  /// @zod.max(280, { error: "Too long" })
+  blurb String
+}
+```
+
+This applies to `min`, `max`, `length`, `multipleOf` / `step`, `positive`, `negative`, `int`, `finite`, and the string format methods.
+
+### Leading Base-Type Tokens Are Ignored
+
+A bare base-type token at the start of a chain is dropped as a no-op rather than invalidating the whole comment, so `@zod.string().min(1)` and `@zod.number().gte(0)` behave exactly like `@zod.min(1)` and `@zod.gte(0)`. This covers `string`, `number`, `boolean` and `bigint`. `date` is deliberately excluded, because `@zod.date()` is a real format method.
+
+## When Annotations Are Skipped
+
+Invalid annotations are not dropped silently. When a field's `@zod` comment cannot be parsed or validated, generation continues with the plain base type and logs a warning:
+
+```text
+[prisma-zod-generator] Skipping @zod annotations for field "title": <reason>
+```
+
+If only part of a chain fails, the valid annotations are kept and you get `Some @zod annotations were invalid and filtered out` instead, listing the rejected ones.
+
+:::caution
+Either warning means the validation you wrote is **not** present in the generated schema. Treat it as an error in the annotation rather than as noise.
+:::

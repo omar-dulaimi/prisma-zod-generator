@@ -51,30 +51,36 @@ With safety disabled:
 
 - ✅ All output paths are allowed, including dangerous ones
 - ✅ No warnings or errors about path safety
-- ✅ No manifest tracking or cleanup protection
-- ❌ **Your files can be deleted without warning**
+- ✅ No manifest tracking — `enabled: false` also forces `skipManifest`, so no cleanup runs at all and schemas for models you later remove are left behind
+- ❌ **Your files can be overwritten without warning** — generated files are written straight over anything of the same name, and in single-file mode the post-flush pass still empties the bundle's directory regardless of safety settings
 
 ## Example Output
 
-```bash
-# Before (with safety enabled)
-❌ ERROR: Unsafe output path detected: Output directory contains project file "package.json"
+```text
+# Before (with safety enabled) — printed to stderr; prisma generate still exits 0, but no schemas are written
+Error: Unsafe output path detected: Output directory contains project file "package.json". This
+suggests it's a project root directory that should not be cleaned automatically.
 
-# After (with safety disabled)  
-✅ Generation completed successfully
+To resolve this issue:
+1. Use a dedicated directory for generated schemas (e.g., "./generated" or "./src/generated")
+...
+
+# After (with safety disabled) — no safety output at all; schemas are written
 ```
 
 ## Alternative: Use Permissive Mode
 
-Instead of completely disabling safety, consider using permissive mode which still provides some protection:
+Instead of completely disabling safety, consider using permissive mode. It keeps the manifest and cleanup working — which `enabled: false` does not — and still reports every problem it finds, though it blocks nothing:
 
 ```json title="zod-generator.config.json"
 {
   "safety": {
-    "level": "permissive"  // Warns but doesn't block
+    "level": "permissive"
   }
 }
 ```
+
+If you want some checks to keep blocking, stay on `level: "standard"` and relax only what you need: `allowDangerousPaths: true` leaves both the project-root and user-file blocks intact, and `allowUserFiles: true` drops the user-file block while project roots still hard-block.
 
 ## Safety Recommendations
 
@@ -93,12 +99,12 @@ To re-enable safety later:
 {
   "safety": {
     "enabled": true,
-    "level": "standard"  // or "strict" for maximum protection
+    "level": "standard"
   }
 }
 ```
 
-Or remove the configuration entirely to use defaults.
+Use `"strict"` instead of `"standard"` for maximum protection, or remove the configuration entirely to use defaults.
 
 ---
 
