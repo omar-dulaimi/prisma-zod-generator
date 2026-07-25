@@ -1,3 +1,9 @@
+## [2.3.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.2...v2.3.3) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **single-file:** hoist [@zod](https://github.com/zod).import custom imports into the bundle ([6fcabc5](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6fcabc59c7ee2387536b4f563469fa37bf0eab50)), closes [#335](https://github.com/omar-dulaimi/prisma-zod-generator/issues/335)
+
 ## [2.3.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.1...v2.3.2) (2026-07-25)
 
 ### 🐛 Bug Fixes
