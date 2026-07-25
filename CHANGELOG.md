@@ -1,3 +1,9 @@
+## [2.3.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.2.0...v2.3.0) (2026-07-25)
+
+### 🚀 Features
+
+* **config:** add zodImportPath to point z at a custom module ([7d3811a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7d3811afbe3a665991994f6a64d520fe4c35f1ca)), closes [#370](https://github.com/omar-dulaimi/prisma-zod-generator/issues/370)
+
 ## [2.2.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.7...v2.2.0) (2026-07-25)
 
 ### 🚀 Features
