@@ -117,17 +117,18 @@ generator pzgPro {
   enableMultiTenant = true
 
   // Optional advanced config (stringified JSON)
-  // multiTenant = "{ \"enforceMode\": \"warn\" }"
+  // multiTenant = "{ \"enforceMode\": \"warn\", \"tenantField\": \"orgId\" }"
 }
 ```
 
-:::important Name the column `tenantId`
-Tenant models are detected by looking for a field named exactly `tenantId`. A
-schema that scopes rows with `orgId`, `accountId` or `workspaceId` produces no
-validators at all, and `validateTenantAccess()` then throws
-`No tenant validator found for model: <Model>`. The `tenantField` option is
-accepted but not currently applied — add a `tenantId` column (or rename yours)
-until it is.
+:::note Naming the tenant column
+Tenant models are detected from a set of common names (`tenantId`,
+`organizationId`, `workspaceId`, `companyId`, …). If yours is named something
+else — `orgId`, `accountId` — set `tenantField` and it will be used instead.
+
+Requires **2.4.1+**: earlier versions ignored `tenantField`, so a schema scoping
+rows by an unrecognised name produced no validators at all and
+`validateTenantAccess()` threw `No tenant validator found for model: <Model>`.
 :::
 
 - **strict**: Validates query results and throws on a cross-tenant record

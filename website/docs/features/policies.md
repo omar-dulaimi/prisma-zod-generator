@@ -104,9 +104,9 @@ Two annotations are recognized:
 
 ### Conditions that are enforced
 
-The generated `combinePolicyCondition` recognizes exactly three condition shapes. Write them with the
-`read:where` prefix — the shorter `read:<condition>` form parses but loses the leading keyword, so
-`read:role in [...]` reaches the generated code as `in [...]` and matches nothing:
+The generated `combinePolicyCondition` recognizes exactly three condition shapes. Both
+`read:role in [...]` and `read:where role in [...]` work (in **2.4.1+**; earlier versions dropped the
+`role` keyword while parsing, leaving the policy inert):
 
 | Condition | Effect on the query |
 | --- | --- |
@@ -115,14 +115,20 @@ The generated `combinePolicyCondition` recognizes exactly three condition shapes
 | `read:where role in ["admin", "owner"]` | if the role is not listed, adds an impossible `where.id` so nothing matches |
 
 Any other condition text is carried into the generated file and then ignored, leaving the query
-unfiltered. Verify each policy against a real query before relying on it.
+unfiltered — so verify each policy against a real query before relying on it.
 
-:::caution Two limits of the role check
-The role list is compared against the role given to the **constructor**
-(`createSafeUserOperations(prisma, { role })`), not the one passed per call — a role supplied only to
-`findMany(context)` is ignored for this check. And denial is expressed as `where.id = -1`, which
-assumes an integer primary key; on a `String @id` model Prisma rejects it with a type error instead of
-returning no rows.
+`@policy deny:<condition>` refuses a create or update whose condition matches; the same three shapes
+apply. (Before 2.4.1 the generated evaluator returned `false` unconditionally, so a `deny` rule never
+denied anything.)
+
+The role is read from the context you pass to the method, falling back to the one given to the
+constructor, so a wrapper built once per process can vary the caller per request. A caller whose role
+is not listed gets a query narrowed to match nothing.
+
+:::note Fixed in 2.4.1
+Before 2.4.1 the role check only consulted the constructor's context, so a role supplied per call was
+ignored; denial was also expressed as `where.id = -1`, which Prisma rejects outright on a
+`String @id` model rather than returning no rows.
 :::
 
 :::caution Only these two annotations are parsed
@@ -208,19 +214,15 @@ app.get('/users/:id', createUserRedactionMiddleware({ redactLogs: true }), async
 })
 ```
 
-:::caution DTO schemas do not round-trip a raw Prisma row
-The generated DTO schemas describe an API payload, not a database row, so
-`parse()` on the result of a Prisma query can throw:
+:::note DTO schemas accept what Prisma returns (2.4.1+)
+Nullable columns are emitted `.nullable()`, and `Decimal` columns coerce, so
+`parse()` accepts a row straight from a Prisma query. Enum members are inlined as string literals, so
+the module needs no import beyond zod.
 
-- **Nullable columns** are emitted `.optional()` (accepting `undefined`) and never
-  `.nullable()`, but Prisma returns `null` — so a `String?` column with no value
-  fails with *expected string, received null*.
-- **`Decimal` columns** are emitted `z.number()`, which rejects the
-  `Prisma.Decimal` instance Prisma returns.
-
-Use `.strip()`-style shaping, or normalize first —
-`UserPublicSchema.parse({ ...user, name: user.name ?? undefined, amount: user.amount?.toNumber() })`
-— until the schemas emit `.nullable()`.
+Before 2.4.1 nullable columns were `.optional()` only (rejecting the `null` Prisma returns), `Decimal`
+was `z.number()` (rejecting `Prisma.Decimal`), enum fields referenced an enum that was never imported
+(`ReferenceError` on import), and the omit masks were hardcoded, so any model without
+`id`/`createdAt`/`updatedAt` threw *Unrecognized key* on first use.
 :::
 
 ### Koa and NestJS

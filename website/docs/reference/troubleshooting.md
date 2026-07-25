@@ -280,35 +280,27 @@ Consume it by importing the file directly, or copy it into a package of your own
 ### `Cannot find name 'Decimal' | 'JsonValue' | 'Buffer'`
 **Symptom**: `tsc` reports TS2304/TS2591 on the generated `index.ts`.
 
-**Cause**: `Decimal`, `Json` and `Bytes` columns are emitted as those type names,
-but the file contains no imports.
+**Cause**: versions before 2.4.1 emitted Prisma's own type names into a client
+that has no Prisma dependency.
 
-**Fix**: add a prelude above the generated interfaces —
+**Fix**: upgrade to **2.4.1+**, where those columns are typed as the wire carries
+them (`string | number` for `Decimal`, `unknown` for `Json`, `string` for `Bytes`
+and `DateTime`). On an older version, add a prelude above the interfaces:
 
 ```typescript
 import type { Decimal } from '@prisma/client/runtime/library';
 type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 ```
 
-— or expose those columns as `string` in your API and regenerate.
-
 ### Enum comparisons never match
 **Symptom**: `if (member.role === Role.ADMIN)` is always false against a JSON
 response.
 
-**Cause**: enums are emitted as *numeric* TypeScript enums, so `Role.ADMIN` is a
-number while the payload carries the string `"ADMIN"`.
+**Cause**: before 2.4.1 enums were emitted without values, making them *numeric*,
+so `Role.ADMIN` was a number while the payload carried the string `"ADMIN"`.
 
-**Fix**: compare against the string (`member.role === 'ADMIN'`), or convert with
-`Role[member.role as keyof typeof Role]`.
-
-### A field comment breaks the file
-**Symptom**: a syntax error part-way through the generated client.
-
-**Cause**: a multi-line `///` comment on a Prisma field is appended after a
-single-line `//` marker, so the second line lands in code position.
-
-**Fix**: keep `///` comments on model fields to a single line.
+**Fix**: upgrade to **2.4.1+** for string-valued enums, or compare against the
+string (`member.role === 'ADMIN'`).
 
 ## 🚨 Drift Guard
 

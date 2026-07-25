@@ -66,10 +66,10 @@ prisma generate
 > framework-agnostic forms built from plain elements, or `shadcn` for components
 > wired to shadcn/ui primitives (`Input`, `Textarea`, `Checkbox`, `Select`).
 >
-> `mantine`, `chakra` and `mui` are accepted but not yet implemented: they emit
-> the shadcn component shape without the corresponding imports, so the output
-> will not compile. To use those libraries today, generate `barebones` and swap
-> the elements for your own components.
+> `mantine`, `chakra` and `mui` are not implemented yet. Passing one generates
+> `barebones` forms and warns that it did, so you get working validation and plain
+> elements to swap your own components into. (Before 2.4.1 they emitted the shadcn
+> component shape without its imports — output that could not compile.)
 
 ### Generated Files
 

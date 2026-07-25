@@ -23,18 +23,11 @@ Utilities and templates for type-safe Next.js Server Actions validated by Zod sc
 - **Hooks Included**: A `use<Model>` hook per model wrapping every action
 - **Next.js Integration**: Works with `revalidatePath`, `redirect`, etc.
 
-:::note Finish the stubs before shipping
-These are stubs, and two steps are yours:
-
-1. **Add the framework directives.** No emitted file carries one. Put
-   `'use server'` at the top of each `actions/<model>.ts` and `'use client'` at
-   the top of each `hooks/use<Model>.ts`. A production `next build` fails without
-   the client directive, and an action imported from a Client Component without
-   the server directive pulls the Prisma client into your browser bundle.
-2. **Add validation.** The actions pass their input straight to Prisma and carry a
-   `// TODO: Add validation if needed` marker where a check belongs. Import the
-   matching schema from your generated Zod output and parse there — e.g.
-   `const parsed = MemberCreateInputSchema.parse(data)`.
+:::note Requires 2.4.1+
+Earlier versions emitted no `'use server'` or `'use client'` directive (so a production `next build`
+failed, and an action imported from a Client Component pulled the Prisma client into the browser
+bundle), left validation as a `// TODO` comment while passing raw input to Prisma, and lower-cased
+multi-word model names into a delegate that does not exist (`prisma.projectvariant`).
 :::
 
 ## Prerequisites
@@ -50,14 +43,6 @@ pnpm add next
 ```
 
 > **Note**: The generator avoids direct Next.js imports to prevent dependency issues. Next.js features like `revalidatePath()` and `redirect()` are commented out in generated code - uncomment them if using Next.js.
-
-:::caution Multi-word model names
-A model whose name has more than one word — `ProjectVariant`, `OrderItem` — gets
-an all-lowercase delegate (`prisma.projectvariant`), but Prisma's client exposes
-`prisma.projectVariant`. The generated action then fails at runtime with
-*Cannot read properties of undefined*. Fix the delegate name in the emitted
-`actions/<model>.ts`, or keep model names single-word until this is corrected.
-:::
 
 ## Generate
 

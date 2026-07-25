@@ -77,44 +77,36 @@ generated/
 
 ## Basic Usage
 
-:::caution Set the context inside a transaction
-`migration.sql` sets its GUCs with `set_config(..., true)`, which is
-**transaction-local** — PostgreSQL discards the value when the surrounding
-transaction ends. Because `setContext()` issues that call as a standalone
-statement, Prisma wraps it in its own implicit transaction, so the context is
-gone before the next query runs and your policies evaluate against an empty
-`current_setting(...)`.
-
-Use an interactive transaction and run both the context call and your queries on
-the same transaction client:
+:::important Use the client `withContext` gives you
+The context lives in transaction-local settings, so `withContext` opens one
+transaction, sets the context on it, and hands you that client. Queries issued on
+the outer `prisma` run in a different transaction and will not see the context.
 
 ```ts
 import { PrismaClient } from '@prisma/client'
 import { createRLSHelper } from '@/generated/pro/postgres-rls/rls-helper'
 
 const prisma = new PrismaClient()
+const rls = createRLSHelper(prisma)
 
-await prisma.$transaction(async (tx) => {
-  const rls = createRLSHelper(tx)          // bind the helper to the transaction
-  await rls.setContext({
-    userId: 'user-123',
-    tenantId: 'tenant-456',
-    roles: ['admin'],
-  })
-
-  // These queries run in the same transaction, so the context still applies
-  const posts = await tx.post.findMany()
-})
+const posts = await rls.withContext(
+  { userId: 'user-123', tenantId: 'tenant-456', roles: ['admin'] },
+  // Use `tx`, not `prisma`.
+  async (tx) => tx.post.findMany(),
+)
 ```
 
-Verify your wiring before relying on it — inside the transaction,
-`SELECT current_setting('app.current_tenant_id', true)` should return your tenant
-id, not an empty string.
-:::
+To check your wiring, run this inside the callback — it should return your tenant
+id, not an empty string:
 
-`withContext(context, fn)` is convenient but calls `setContext()` outside any
-transaction you control, so it carries the same caveat unless the helper is bound
-to a transaction client as above.
+```ts
+await tx.$queryRaw`SELECT current_setting('app.current_tenant_id', true)`
+```
+
+Requires **2.4.1+**. Earlier versions set the context in its own statement, which
+PostgreSQL discarded before the callback ran, so policies evaluated against an
+empty `current_setting()` and the callback took no argument.
+:::
 
 ### Prisma Middleware
 

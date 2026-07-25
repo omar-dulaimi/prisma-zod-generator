@@ -170,26 +170,20 @@ To ship the TypeScript client as its own npm package, copy `sdk/typescript/index
 you own and add your own `package.json` and build step. Otherwise, import it directly from your app
 like any other generated file.
 
-### Before adding it to a `tsc` program
+### Types in the emitted client
 
-Two things to expect the first time you compile the emitted client:
+Scalars are typed as JSON carries them, not as Prisma models them: `Decimal` and
+`BigInt` are `string | number`, `Json` is `unknown`, and `Bytes` and `DateTime` are
+`string`. Enums carry string values, so `member.role === Role.ADMIN` compares
+correctly against a response body.
 
-- **Add a prelude for scalar types.** `Decimal`, `Json` and `Bytes` columns are emitted as `Decimal`,
-  `JsonValue` and `Buffer`, but the file has no imports, so `tsc` reports `Cannot find name`. Either
-  declare them at the top of the file or expose those columns as `string` in your API:
-
-  ```typescript
-  import type { Decimal } from '@prisma/client/runtime/library';
-  type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
-  ```
-
-- **Enums are numeric.** `enum Role { OWNER, ADMIN, MEMBER }` is emitted without string values, so
-  `member.role === Role.ADMIN` compares a string from JSON against a number and is always false.
-  Compare against the string (`member.role === 'ADMIN'`) or convert with
-  `Role[member.role as keyof typeof Role]`.
-
-Keep `///` comments on model fields to a single line — a multi-line comment is appended after a `//`
-marker, which puts its continuation in code position and breaks the file.
+:::note Requires 2.4.1+
+Earlier versions named Prisma's `Decimal`, `JsonValue` and `Buffer` in a client
+that has no Prisma dependency, so anything with one of those columns failed to
+compile (TS2304); enums were emitted without values, making them numeric, so those
+comparisons were silently always false; and a multi-line `///` field comment broke
+the file outright.
+:::
 
 ## See Also
 

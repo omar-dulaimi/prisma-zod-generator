@@ -324,12 +324,9 @@ export interface UseServerActionOptions<T> {
 ```
 
 :::note
-The emitted files carry no `'use server'` or `'use client'` directive — add them
-yourself: `'use server'` at the top of each `actions/<model>.ts`, `'use client'`
-at the top of each `hooks/use<Model>.ts`. Without the client directive the hooks
-fail a production Next.js build, and without the server directive an action
-imported from a Client Component pulls `prisma-client.ts` into the browser
-bundle.
+Actions carry `'use server'` and hooks carry `'use client'`, and each model also
+gets a `schemas/<model>.ts` that the actions validate against. Both were missing
+before 2.4.1.
 :::
 
 ## 📦 SDK Publisher API {#sdk-publisher-api}
@@ -384,12 +381,12 @@ No typed error classes are generated. If you need to branch on status, parse the
 message or wrap `APIClient` in your own error layer.
 
 :::note
-The emitted TypeScript references `Decimal`, `JsonValue` and `Buffer` for
-`Decimal`, `Json` and `Bytes` columns without importing them. Add a prelude to
-the top of the file — or map those columns to `string` in your API — before
-adding it to a `tsc` program. Enums are emitted as numeric TypeScript enums, so
-compare against the enum member (`Role.ADMIN`), not the string a JSON payload
-carries.
+Scalars are typed as the wire carries them: `Decimal` and `BigInt` as
+`string | number`, `Json` as `unknown`, `Bytes` and `DateTime` as `string`. Enums
+carry string values, so `member.role === Role.ADMIN` compares correctly against a
+JSON payload. Before 2.4.1 the file named Prisma's `Decimal`/`JsonValue`/`Buffer`
+without importing them and emitted numeric enums, so those comparisons were
+always false.
 :::
 
 ## 🚨 Drift Guard API {#drift-guard-api}

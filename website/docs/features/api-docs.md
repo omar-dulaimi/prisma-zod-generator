@@ -125,6 +125,14 @@ PUT /posts/:id
 DELETE /posts/:id
 ```
 
+:::note Options that are not implemented
+`startMockServer`, `includeDeprecated`, `responseFormats`, `mockServer`,
+`openApiVersion`, `includeExamples` and `includeChangelog` are accepted but do not
+change the output — the spec is always OpenAPI 3.0.3. From **2.4.1+** the
+generator names them on stdout when you pass one, along with any key it does not
+recognise, instead of discarding them silently.
+:::
+
 :::note Pluralization is literal
 The suffix is always a bare `s`, so irregular names come out awkward:
 `Category` becomes `/categorys`, `Person` becomes `/persons`. The same naming is
