@@ -195,6 +195,15 @@ export interface GeneratorConfig {
    */
   zodImportTarget?: 'auto' | 'v3' | 'v4';
 
+  /**
+   * Custom module path to import `z` from instead of 'zod' (issue #370).
+   * Lets users point `z` at their own re-export configured with an i18n error
+   * map, etc. The binding style still follows {@link zodImportTarget}, so the
+   * custom module must export `z` to match ('import * as z' for auto/v4,
+   * 'import { z }' for v3).
+   */
+  zodImportPath?: string;
+
   /** Global strict mode configuration for generated Zod schemas */
   strictMode?: {
     /** Global default for strict mode on all schemas (backward compatibility). Default: true */

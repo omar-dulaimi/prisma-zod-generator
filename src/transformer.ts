@@ -1254,15 +1254,29 @@ export default class Transformer {
     // Determine import target based on configuration
     const config = Transformer.getGeneratorConfig();
     const target = (config?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
-    switch (target) {
-      case 'v4':
-        return "import * as z from 'zod/v4';\n";
-      case 'v3':
-        return "import { z } from 'zod/v3';\n";
-      case 'auto':
-      default:
-        return "import * as z from 'zod';\n";
+
+    // v3 binds a named export (import { z }); auto/v4 bind the namespace.
+    const useNamedBinding = target === 'v3';
+    const defaultPath = target === 'v4' ? 'zod/v4' : target === 'v3' ? 'zod/v3' : 'zod';
+
+    // A custom module path (issue #370) lets users point z at their own
+    // re-export configured with an i18n error map, etc. The binding style still
+    // follows zodImportTarget, so the custom module must export z accordingly.
+    let path = defaultPath;
+    const custom = typeof config?.zodImportPath === 'string' ? config.zodImportPath.trim() : '';
+    if (custom) {
+      // Guard the generated string literal: a real module specifier never
+      // contains quotes/whitespace. Reject anything else and warn.
+      if (/^[a-zA-Z0-9_@./-]+$/.test(custom)) {
+        path = custom;
+      } else {
+        logger.warn(
+          `[prisma-zod-generator] Ignoring invalid zodImportPath "${custom}"; falling back to '${defaultPath}'`,
+        );
+      }
     }
+
+    return useNamedBinding ? `import { z } from '${path}';\n` : `import * as z from '${path}';\n`;
   }
 
   /**

@@ -56,9 +56,12 @@ function transformContentForSingleFile(filePath: string, source: string): string
   let inJsonSkip = false;
   let inInlineJsonSchemaSkip = false;
   const relImportRe = /^\s*import\s+[^'";]+from\s+['"](\.\.?\/)[^'"]+['"];?\s*$/;
-  // Detect Zod import variant (zod or zod/v4) importing z
-  const zodImportRe =
-    /^\s*import\s+(?:\{\s*z\s*\}|\*\s+as\s+z)\s+from\s+['"](?:zod(?:\/v4)?)['"];?\s*$/;
+  // Detect the Zod import by its `z` binding regardless of source path. The
+  // generator only ever binds `z` for the zod import, so matching the binding
+  // (not a hardcoded 'zod'/'zod/v4' path) correctly catches zod/v3 and custom
+  // zodImportPath modules (issue #370) — otherwise they fall through to the
+  // generic relative-import stripper and the hoisted import is lost.
+  const zodImportRe = /^\s*import\s+(?:\{\s*z\s*\}|\*\s+as\s+z)\s+from\s+['"][^'"]+['"];?\s*$/;
   const escapedPrismaImport = escapeRegExp(prismaImportBase);
   const prismaTypeImportRe = new RegExp(
     `^\\s*import\\s+type\\s+\\{\\s*Prisma\\s*\\}\\s+from\\s+['\"]${escapedPrismaImport}['\"];?\\s*$`,

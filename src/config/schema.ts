@@ -394,6 +394,12 @@ export const ConfigurationSchema: JSONSchema7 = {
         "How to import Zod in generated code: 'auto' uses import * as z from 'zod'; 'v3' uses import { z } from 'zod'; 'v4' uses import * as z from 'zod/v4'",
     },
 
+    zodImportPath: {
+      type: 'string',
+      description:
+        "Custom module path to import z from instead of 'zod' (e.g. './lib/zod' re-exporting a configured Zod instance with an i18n error map). The binding style still follows zodImportTarget, so the module must export z to match.",
+    },
+
     validateWhereUniqueAtLeastOne: {
       type: 'boolean',
       default: false,
