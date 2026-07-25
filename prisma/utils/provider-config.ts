@@ -270,7 +270,11 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     name: 'MongoDB',
     provider: 'mongodb',
     schemaPath: 'tests/multi-provider/schemas/mongodb/schema.prisma',
-    generatedPath: 'prisma/schemas/mongodb/generated',
+    // Sibling of schemaPath, as for every other provider. This pointed at
+    // prisma/schemas/mongodb/generated, which does not exist, so the multi-provider
+    // runner found no schemas here and failed 7 of MongoDB's 12 cases with "No schemas
+    // generated" on every run.
+    generatedPath: 'tests/multi-provider/schemas/mongodb/generated/schemas',
     connectionString: process.env.MONGODB_URL || 'mongodb://localhost:27017/test',
     features: {
       nativeTypes: ['ObjectId'],

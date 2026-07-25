@@ -209,6 +209,23 @@ describe('Multi-Provider Integration Tests', () => {
       // Coverage should be reasonable
       expect(report.overallSummary.coverage).toBeGreaterThan(50);
 
+      // Every provider has to pass, not just the average across them. These two
+      // assertions alone tolerated one provider being almost entirely broken: MongoDB
+      // scored 4/12 for however long, because its configured `generatedPath` pointed at
+      // a directory that does not exist, and the overall average across five providers
+      // still cleared 50%. The runner printed "❌ mongodb: 4/12" and "Some tests
+      // failed" to stdout on every run while the suite reported green.
+      const failing = report.testSuites
+        .filter((suite) => suite.summary.passedTests < suite.summary.totalTests)
+        .map((suite) => {
+          const cases = suite.results
+            .filter((r) => r.status !== 'passed')
+            .map((r) => `${r.testCase}: ${r.errors.join('; ')}`);
+          return `${suite.name} ${suite.summary.passedTests}/${suite.summary.totalTests} — ${cases.join(' | ')}`;
+        });
+
+      expect(failing, `providers with failing cases:\n${failing.join('\n')}`).toEqual([]);
+
       // Performance metrics should exist
       expect(Object.keys(report.performanceMetrics.generationTime).length).toBeGreaterThan(0);
     });
