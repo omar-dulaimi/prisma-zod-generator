@@ -90,10 +90,7 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
       // enableAutoPublish is refused deliberately: publishing from a generator
       // would fire on every `prisma generate`. authConfig, packageName, version,
       // publishRegistry and includeDocumentation are all honoured as of 2.6.0.
-      const output = await runSdk(
-        { platforms: ['typescript'], enableAutoPublish: true },
-        'inert',
-      );
+      const output = await runSdk({ platforms: ['typescript'], enableAutoPublish: true }, 'inert');
 
       expect(output).toContain('enableAutoPublish');
       expect(output.toLowerCase()).toMatch(/no effect|not implemented|ignored/);

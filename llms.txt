@@ -2389,12 +2389,17 @@ PUT /posts/:id
 DELETE /posts/:id
 ```
 
-:::note Options that are not implemented
-`startMockServer`, `includeDeprecated`, `responseFormats`, `mockServer`,
-`openApiVersion`, `includeExamples` and `includeChangelog` are accepted but do not
-change the output — the spec is always OpenAPI 3.0.3. From **2.4.1+** the
-generator names them on stdout when you pass one, along with any key it does not
-recognise, instead of discarding them silently.
+:::note Options
+From **2.6.0+**: `openApiVersion` accepts `3.0.3` (default) or `3.1.0`;
+`responseFormats` offers each listed media type wherever the document describes a
+body; `includeExamples` is honoured as an alias for `generateExamples`; and a field
+whose `///` comment says `@deprecated` is marked `deprecated: true` in the spec.
+
+`startMockServer`, `mockServer` and `includeChangelog` are deliberately not
+implemented — starting a server during `prisma generate` would leave a
+long-running process attached to the generator. Run the emitted `mock-server.js`
+yourself. Passing one of them, or any unrecognised key, is reported on stdout
+rather than discarded silently.
 :::
 
 :::note Pluralization is literal
@@ -4273,13 +4278,27 @@ under one.
 
 ## Using the generated SDK
 
-The generator emits **source files only** — `sdk/typescript/index.ts` and
-`sdk/python/api_client.py`. There is no `package.json`, build config, bundle, or `.d.ts` emit, so the
-directory is not a publishable package as generated.
+From **2.6.0+** the TypeScript output is a package: `index.ts`, a `package.json` built from
+`packageName`/`version` (plus `publishConfig.registry` when `publishRegistry` is set), and a
+`README.md` unless `includeDocumentation: false`. The Python output remains a single
+`api_client.py`.
 
-To ship the TypeScript client as its own npm package, copy `sdk/typescript/index.ts` into a package
-you own and add your own `package.json` and build step. Otherwise, import it directly from your app
-like any other generated file.
+The generator never publishes for you — that would fire on every `prisma generate`. The emitted
+`package.json` carries a `publish` script for CI to run.
+
+### Authentication
+
+`authConfig` selects how the credential is attached:
+
+| Config                                            | Header sent                                                                 |
+| ------------------------------------------------- | --------------------------------------------------------------------------- |
+| omitted, or `{ "type": "bearer" }`                | `Authorization: Bearer <token>`                                             |
+| `{ "type": "bearer", "tokenPrefix": "Token" }`    | `Authorization: Token <token>`                                              |
+| `{ "type": "apikey", "headerName": "X-Api-Key" }` | `X-Api-Key: <token>`                                                        |
+| `{ "type": "oauth2" }`                            | `Authorization: Bearer <token>` — obtaining the token is your app's concern |
+
+`headerName` overrides the header for any type. Before 2.6.0 this option was accepted and ignored, so
+every client sent a bearer `Authorization` header regardless.
 
 ### Types in the emitted client
 
