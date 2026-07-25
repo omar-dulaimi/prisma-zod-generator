@@ -3011,6 +3011,11 @@ CI helper to catch breaking changes in generated outputs (schema/API drift).
 
 ## What It Does
 
+:::note Drift Guard generates no files
+It compares two schema revisions, which `prisma generate` cannot supply, so it runs from the
+`pzg-pro guard` CLI or `validateDrift()`. There is no `enableDriftGuard` generator flag.
+:::
+
 - Compares generated output between `--base` and `--head` branches
 - Detects breaking changes in schemas, types, and APIs
 - Produces GitHub-formatted reports for PR comments
@@ -3609,16 +3614,19 @@ emitted regardless and the generator says so.
 every valid record is accumulated into `result.valid` (and every failure into
 `result.invalid`), so peak memory still grows with the size of the input.
 
-For datasets too large to hold at once, validate in slices you control and
-consume each result before the next one:
+From **2.7.0+**, pass `onValid` with `collectResults: false` and nothing is
+retained — peak memory stays flat regardless of dataset size:
 
 ```ts
-for (let i = 0; i < users.length; i += 10_000) {
-  const { valid } = await validateUserStream(users.slice(i, i + 10_000))
-  await prisma.user.createMany({ data: valid })   // drop the batch before the next
-}
+await validateUserStream(users, {
+  chunkSize: 1000,
+  collectResults: false,
+  onValid: (user) => queue.push(user),   // consume as you go
+})
 ```
 
+`result.valid` is empty in that mode, by design. Leave both unset for the previous
+behaviour, where every valid record is collected.
 :::
 
 The generic form takes the schema name as its **first** argument:
@@ -4333,8 +4341,13 @@ The generator never publishes for you — that would fire on every `prisma gener
 | `{ "type": "apikey", "headerName": "X-Api-Key" }` | `X-Api-Key: <token>`                                                        |
 | `{ "type": "oauth2" }`                            | `Authorization: Bearer <token>` — obtaining the token is your app's concern |
 
-`headerName` overrides the header for any type. Before 2.6.0 this option was accepted and ignored, so
-every client sent a bearer `Authorization` header regardless.
+`headerName` overrides the header for any type, and both the TypeScript and Python clients honour it
+(the Python client only from **2.7.0+** — before that `authConfig` was TypeScript-only). Before 2.6.0
+the option was ignored entirely and every client sent a bearer `Authorization` header.
+
+The Python output also carries a `pyproject.toml` and `README.md` from **2.7.0+**, so it is
+installable the way the TypeScript package is. `platforms` accepts `typescript` and `python`; the type
+previously listed five more languages that only produced a runtime warning.
 
 ### Types in the emitted client
 
