@@ -84,4 +84,54 @@ model Workflow {
     },
     GENERATION_TIMEOUT,
   );
+
+  it(
+    'preserves a deeply-nested inline custom.use schema without truncating parentheses',
+    async () => {
+      const testEnv = await TestEnvironment.createTestEnv('issue-386-nested-inline');
+      const config = { ...ConfigGenerator.createBasicConfig(), pureModels: true };
+      const schema = `
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model Workflow {
+  id   Int  @id @default(autoincrement())
+  /// @zod.custom.use(z.object({ items: z.array(z.object({ id: z.string() })) }))
+  data Json
+}
+`;
+      writeFileSync(join(testEnv.testDir, 'config.json'), JSON.stringify(config, null, 2));
+      writeFileSync(testEnv.schemaPath, schema);
+      await testEnv.runGeneration();
+
+      const content = readFileSync(
+        join(testEnv.outputDir, 'schemas', 'models', 'Workflow.schema.ts'),
+        'utf-8',
+      );
+
+      // The full 3-level-nested expression survives intact (previously the
+      // fixed-depth regex dropped a closing paren, emitting invalid TS).
+      expect(content).toContain('data: z.object({ items: z.array(z.object({ id: z.string() })) })');
+      // Balanced parentheses on the data field line
+      const dataLine = content.split('\n').find((l) => l.trimStart().startsWith('data:')) ?? '';
+      const opens = (dataLine.match(/\(/g) ?? []).length;
+      const closes = (dataLine.match(/\)/g) ?? []).length;
+      expect(opens).toBe(closes);
+
+      await testEnv.cleanup();
+    },
+    GENERATION_TIMEOUT,
+  );
 });

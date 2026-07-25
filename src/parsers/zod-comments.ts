@@ -3068,7 +3068,7 @@ function parseImportStatement(
  * @param startPos - Starting position (after opening parenthesis)
  * @returns End position of balanced parentheses or -1 if not found
  */
-function findBalancedParentheses(text: string, startPos: number): number {
+export function findBalancedParentheses(text: string, startPos: number): number {
   let depth = 1;
   let pos = startPos;
   let inString = false;

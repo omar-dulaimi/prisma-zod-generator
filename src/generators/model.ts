@@ -10,6 +10,7 @@ import path from 'path';
 import {
   extractFieldComment,
   extractFieldCustomImports,
+  findBalancedParentheses,
   mapAnnotationsToZodSchema,
   parseZodAnnotations,
   extractModelCustomImports,
@@ -513,23 +514,36 @@ export class PrismaTypeMapper {
         // Json field references an imported schema, e.g. z.array(WorkflowNodeSchema)
         // (issue #386). The @zod.import(...) portion is emitted separately via
         // extractFieldCustomImports.
-        const customUseMatch = /@zod\b/.test(field.documentation)
-          ? field.documentation.match(/\.custom\.use\(((?:[^()]|\([^)]*\))*)\)(.*)$/m)
-          : null;
-        if (customUseMatch) {
-          const baseExpression = customUseMatch[1].trim();
-          const chainedMethods = customUseMatch[2].trim();
+        //
+        // Use balanced-paren extraction (not a regex): the argument can nest
+        // parentheses arbitrarily deep, e.g. an inline
+        // `z.object({ items: z.array(z.object({ id: z.string() })) })`, which a
+        // fixed-depth regex truncates into invalid TypeScript.
+        const customUseMarker = /@zod\b/.test(field.documentation)
+          ? field.documentation.search(/\.custom\.use\s*\(/)
+          : -1;
+        if (customUseMarker !== -1) {
+          const openParen = field.documentation.indexOf('(', customUseMarker);
+          const closeParen =
+            openParen !== -1 ? findBalancedParentheses(field.documentation, openParen + 1) : -1;
+          if (closeParen !== -1) {
+            const baseExpression = field.documentation.slice(openParen + 1, closeParen).trim();
+            // Chained methods = remainder of the same line after the closing paren
+            // (e.g. `.describe("…")`), matching the previous `(.*)$` behavior.
+            const chainedMethods = (
+              field.documentation.slice(closeParen + 1).match(/^[^\r\n]*/)?.[0] ?? ''
+            ).trim();
 
-          if (baseExpression) {
-            let fullExpression = baseExpression;
-            if (chainedMethods) {
-              fullExpression += chainedMethods;
+            if (baseExpression) {
+              const fullExpression = chainedMethods
+                ? `${baseExpression}${chainedMethods}`
+                : baseExpression;
+
+              result.zodSchema = fullExpression;
+              result.additionalValidations.push('// Replaced base schema via @zod.custom.use');
+              result.requiresSpecialHandling = true;
+              return result; // Skip all other processing
             }
-
-            result.zodSchema = fullExpression;
-            result.additionalValidations.push('// Replaced base schema via @zod.custom.use');
-            result.requiresSpecialHandling = true;
-            return result; // Skip all other processing
           }
         }
 
