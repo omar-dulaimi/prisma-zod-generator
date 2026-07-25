@@ -1,11 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { prismaGenerate } from './helpers/prisma-generate';
-
-const execAsync = promisify(exec);
 
 describe('Issue #118: Output Directory Structure', () => {
   const testOutputDir = path.join(__dirname, '..', 'test-output-issue-118');
@@ -67,8 +63,10 @@ model TestPost {
   });
 
   it('should generate schemas directly in the specified output directory, not in a nested schemas/ folder', async () => {
-    // Build the generator first
-    await execAsync('tsc', { cwd: path.join(__dirname, '..') });
+    // lib/ is built once by the vitest globalSetup. Rebuilding it here rewrote
+    // the shared lib/ while other workers were spawning the generator from it,
+    // which surfaced as unrelated suites failing with
+    // "resolveAddMissingInputObjectTypeOptions is not a function" or empty output.
 
     // Run prisma generate with our test schema
     await prismaGenerate(tempSchemaPath, path.join(__dirname, '..'));
