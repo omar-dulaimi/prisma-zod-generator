@@ -14,6 +14,36 @@ import { LicenseError, logError, safeFileOperation } from './utils/errorHandling
 
 type PlanSlug = 'starter' | 'professional' | 'business' | 'enterprise';
 
+/**
+ * True only in a working copy of this repository that has the private `src/pro`
+ * submodule checked out.
+ *
+ * The obfuscated Pro build ships to every installer, so an env-var-only dev
+ * bypass would let anyone run paid features for free. A submodule checkout is
+ * something an npm consumer never has: `src/pro/.git` exists in a contributor's
+ * clone and in CI with the deploy key, and nowhere inside `node_modules`.
+ *
+ * Resolves the same from `src/` (tsx, vitest) and from `lib/` (published build).
+ */
+function isLocalProCheckout(): boolean {
+  try {
+    return existsSync(join(__dirname, '..', 'src', 'pro', '.git'));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether to skip licence enforcement for local Pro development.
+ *
+ * Requires BOTH an explicit opt-in and a submodule checkout. `NODE_ENV` is
+ * deliberately not consulted: `NODE_ENV=development` is set by countless dev
+ * setups and must never be enough to unlock paid features.
+ */
+export function isProDevBypassEnabled(): boolean {
+  return process.env.PZG_DEV_MODE === 'true' && isLocalProCheckout();
+}
+
 export function describePlan(plan: PlanSlug): string {
   switch (plan) {
     case 'starter':
@@ -90,8 +120,9 @@ function verifyLicenseSignature(encodedData: string, signature: string): boolean
  */
 function detectTampering(): boolean {
   try {
-    // Skip tampering detection in development mode
-    if (process.env.NODE_ENV === 'development' || process.env.PZG_DEV_MODE === 'true') {
+    // A local submodule checkout builds `lib/pro` from source, so it is not
+    // obfuscated and would always look tampered with.
+    if (isProDevBypassEnabled()) {
       return false;
     }
 
@@ -506,8 +537,9 @@ export async function requireFeature(
   feature: string,
   context?: { userId?: string; sessionId?: string },
 ): Promise<LicenseInfo> {
-  // Development bypass for local testing
-  if (process.env.NODE_ENV === 'development' || process.env.PZG_DEV_MODE === 'true') {
+  // Local development bypass: PZG_DEV_MODE=true in a checkout of this repo with
+  // the private submodule present. Never available from an npm install.
+  if (isProDevBypassEnabled()) {
     return {
       key: 'dev-bypass',
       plan: 'enterprise',

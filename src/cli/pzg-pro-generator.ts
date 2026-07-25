@@ -9,6 +9,7 @@ import type { GeneratorOptions } from '@prisma/generator-helper';
 import { getDMMF, parseEnvValue } from '@prisma/internals';
 import { promises as fs } from 'fs';
 import path from 'path';
+import type { GeneratorConfig } from '../config/parser';
 import { describePlan, getLicenseStatus, type LicenseFailureReason } from '../license';
 
 export const PRO_HELP_MESSAGE = [
@@ -103,6 +104,13 @@ interface ProFeaturesConfig {
 
   outputPath?: string;
   configPath?: string;
+
+  /**
+   * Per-model settings, merged in from `configPath`. Only `enabled` is consulted
+   * by the Pro packs; it uses the same shape as the core generator's config so a
+   * single file governs both.
+   */
+  models?: Record<string, { enabled?: boolean }>;
 }
 
 export async function generateProFeatures(options: GeneratorOptions): Promise<void> {
@@ -167,13 +175,25 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
     const enabledFeatures: string[] = [];
     const featurePromises: Promise<void>[] = [];
 
+    // Every pack filters its model loop through ProFeatureBase.getEnabledModels(),
+    // which reads this. Passing an empty object here meant `models` was never
+    // honoured and each pack generated for every model in the schema.
+    const sharedGeneratorConfig = { models: config.models ?? {} } as GeneratorConfig;
+
+    const excludedModels = Object.entries(config.models ?? {})
+      .filter(([, modelConfig]) => modelConfig?.enabled === false)
+      .map(([name]) => name);
+    if (excludedModels.length > 0) {
+      console.log(`🚫 Excluded models: ${excludedModels.join(', ')}`);
+    }
+
     if (config.enablePolicies) {
       enabledFeatures.push('Policies & Redaction');
       featurePromises.push(
         features
           .generatePoliciesFromDMMF(
             dmmf,
-            {},
+            sharedGeneratorConfig,
             options.schemaPath,
             path.join(outputPath, 'policies'),
             prismaClientPath,
@@ -191,7 +211,7 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
         features
           .generateServerActionsFromDMMF(
             dmmf,
-            {},
+            sharedGeneratorConfig,
             options.schemaPath,
             path.join(outputPath, 'server-actions'),
             prismaClientPath,
@@ -209,7 +229,7 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
         features
           .generateSDKFromDMMF(
             dmmf,
-            {},
+            sharedGeneratorConfig,
             options.schemaPath,
             path.join(outputPath, 'sdk'),
             prismaClientPath,
@@ -227,7 +247,7 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
         features
           .generateContractTestsFromDMMF(
             dmmf,
-            {},
+            sharedGeneratorConfig,
             options.schemaPath,
             path.join(outputPath, 'contracts'),
             prismaClientPath,
@@ -247,7 +267,7 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
         features
           .generatePostgresRLSFromDMMF(
             dmmf,
-            {},
+            sharedGeneratorConfig,
             options.schemaPath,
             path.join(outputPath, 'postgres-rls'),
             prismaClientPath,
@@ -265,7 +285,7 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
         features
           .generateFormUXFromDMMF(
             dmmf,
-            {},
+            sharedGeneratorConfig,
             options.schemaPath,
             path.join(outputPath, 'forms'),
             prismaClientPath,
@@ -283,7 +303,7 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
         features
           .generateAPIDocsFromDMMF(
             dmmf,
-            {},
+            sharedGeneratorConfig,
             options.schemaPath,
             path.join(outputPath, 'api-docs'),
             prismaClientPath,
@@ -303,7 +323,7 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
         features
           .generateMultiTenantKitFromDMMF(
             dmmf,
-            {},
+            sharedGeneratorConfig,
             options.schemaPath,
             path.join(outputPath, 'multi-tenant'),
             prismaClientPath,
