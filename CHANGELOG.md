@@ -1,3 +1,9 @@
+## [2.2.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.7...v2.2.0) (2026-07-25)
+
+### 🚀 Features
+
+* **zod-comments:** support .meta() and .describe() schema metadata annotations ([c80d90a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c80d90a095d98bfcafb153f7e88533883e46e7ae)), closes [#363](https://github.com/omar-dulaimi/prisma-zod-generator/issues/363) [#225](https://github.com/omar-dulaimi/prisma-zod-generator/issues/225) [#371](https://github.com/omar-dulaimi/prisma-zod-generator/issues/371)
+
 ## [2.1.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.6...v2.1.7) (2026-07-25)
 
 ### 🐛 Bug Fixes
