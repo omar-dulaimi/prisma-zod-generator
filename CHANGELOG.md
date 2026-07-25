@@ -1,3 +1,15 @@
+## [2.4.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.4.0...v2.4.1) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **pro:** close the remaining silent failures in policies, drift guard, performance ([7cbed1f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7cbed1ff9a28681d484bb10fd9d49fdceb0ee4aa))
+* **pro:** repair the ten highest-impact defects across the Pro packs ([cd26a86](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cd26a86a6c48a254c95ab8d47d9272fe01fe00b1))
+
+### 📚 Documentation
+
+* **llms:** regenerate for the follow-up Pro fixes ([e10c807](https://github.com/omar-dulaimi/prisma-zod-generator/commit/e10c80709df590089e7eaca7e530dd9322e86a17))
+* **llms:** regenerate for the Pro pack fixes ([ed33386](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ed33386af26250765d3fb0c8b7cc6371952dbf1d))
+
 ## [2.4.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.8...v2.4.0) (2026-07-25)
 
 ### 🚀 Features
