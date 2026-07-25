@@ -1,3 +1,9 @@
+## [2.3.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.1...v2.3.2) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **results:** reference related model schema for relation fields in result schemas ([9428010](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9428010e1ee6a73d6b25145e1afacb15a053fa37)), closes [#376](https://github.com/omar-dulaimi/prisma-zod-generator/issues/376)
+
 ## [2.3.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.0...v2.3.1) (2026-07-25)
 
 ### 🐛 Bug Fixes
