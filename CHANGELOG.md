@@ -1,3 +1,10 @@
+## [2.3.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.5...v2.3.6) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **config:** reconcile declared defaults, honor decimalMode in results, surface warnings ([c8c1000](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c8c1000b777abd21241e2af750c8c01f7cc5776d)), closes [#395](https://github.com/omar-dulaimi/prisma-zod-generator/issues/395)
+* **transformer:** default to the client entrypoint when the browser entry is not observable ([d445fcb](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d445fcbbaa424c67b605df3dc63f9ba95eb81c0c))
+
 ## [2.3.5](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.3.4...v2.3.5) (2026-07-25)
 
 ### 🐛 Bug Fixes
