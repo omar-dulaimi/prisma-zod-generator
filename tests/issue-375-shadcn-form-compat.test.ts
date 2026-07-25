@@ -1,8 +1,31 @@
 import type { DMMF } from '@prisma/generator-helper';
-import { describe, expect, it } from 'vitest';
+import { existsSync } from 'fs';
+import path from 'path';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import type { ProGeneratorContext } from '../src/pro/core/ProGeneratorContext';
-import { type FormSchema, FormUXGenerator } from '../src/pro/features/form-ux/FormUXGenerator';
+import type { FormSchema } from '../src/pro/features/form-ux/FormUXGenerator';
+
+// The Pro feature set lives in a private submodule. It is present for the
+// maintainer and in the release workflow (which checks it out with a deploy
+// key), but not in ordinary CI runs or in forks, where a static import would
+// fail to resolve and take the whole file down. Import it lazily and skip
+// instead.
+const PRO_FORM_UX = path.join(
+  __dirname,
+  '..',
+  'src',
+  'pro',
+  'features',
+  'form-ux',
+  'FormUXGenerator.ts',
+);
+const proAvailable = existsSync(PRO_FORM_UX);
+
+let FormUXGenerator: new (
+  context: ProGeneratorContext,
+  options: { uiLibrary: 'shadcn' | 'barebones'; enableI18n: boolean },
+) => unknown;
 
 const fakeDmmf = {
   datamodel: { models: [], enums: [], types: [] },
@@ -52,7 +75,11 @@ function renderForm(uiLibrary: 'shadcn' | 'barebones'): string {
   ).generateReactHookForm(sampleSchema);
 }
 
-describe('issue #375: shadcn form generation compatibility', () => {
+describe.skipIf(!proAvailable)('issue #375: shadcn form generation compatibility', () => {
+  beforeAll(async () => {
+    ({ FormUXGenerator } = await import('../src/pro/features/form-ux/FormUXGenerator'));
+  });
+
   it('does not generate deprecated shadcn form imports/components', () => {
     const output = renderForm('shadcn');
     expect(output).not.toContain('@/components/ui/form');
