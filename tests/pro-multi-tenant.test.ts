@@ -135,6 +135,17 @@ describe.skipIf(!proAvailable)('Multi-Tenant Kit', () => {
     });
   });
 
+  describe('tenant-aware schemas', () => {
+    it('validates the model fields rather than an unknown blob', () => {
+      // `data: z.unknown()` accepted anything, so the tenant-aware schemas checked
+      // only the tenant key and waved the payload through.
+      const source = normalized(join(defaultOut, 'tenant-schemas.ts'));
+
+      expect(source).not.toContain('z.unknown()');
+      expect(source).toContain('title:');
+    });
+  });
+
   describe('the tenantField option', () => {
     it('detects a tenant column named something other than tenantId', async () => {
       const out = await generate('org-scoped', 'orgId', { tenantField: 'orgId' });

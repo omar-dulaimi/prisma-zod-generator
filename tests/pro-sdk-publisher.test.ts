@@ -232,6 +232,58 @@ describe.skipIf(!proAvailable)('SDK Publisher client', () => {
     );
 
     it(
+      'honours authConfig in the Python client too',
+      async () => {
+        // authConfig was implemented for TypeScript only, so the same option
+        // produced different behaviour depending on the platform.
+        const out = await generate('py-auth', {
+          platforms: ['python'],
+          authConfig: { type: 'apikey', headerName: 'X-Api-Key' },
+        });
+        const client = readFileSync(join(out, 'python', 'api_client.py'), 'utf-8');
+
+        expect(client).toContain("'X-Api-Key'");
+        expect(client).not.toContain('Bearer');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'gives the Python client a package manifest',
+      async () => {
+        // The TypeScript output is installable; Python was a loose module, in a
+        // pack called SDK Publisher.
+        const out = await generate('py-pkg', {
+          platforms: ['python'],
+          packageName: 'acme-billing-sdk',
+          version: '2.1.0',
+        });
+
+        const manifest = readFileSync(join(out, 'python', 'pyproject.toml'), 'utf-8');
+        expect(manifest).toContain('acme-billing-sdk');
+        expect(manifest).toContain('2.1.0');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'refuses a platform it cannot generate instead of silently skipping it',
+      async () => {
+        const logged: string[] = [];
+        const original = console.log;
+        console.log = (...args: unknown[]) => logged.push(args.join(' '));
+        try {
+          await generate('py-unsupported', { platforms: ['typescript', 'go'] });
+        } finally {
+          console.log = original;
+        }
+
+        expect(logged.join('\n')).toContain('go');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
       'reports nothing as inert once the options are honoured',
       async () => {
         const logged: string[] = [];

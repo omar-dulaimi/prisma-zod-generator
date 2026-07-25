@@ -8,6 +8,12 @@ CI helper to catch breaking changes in generated outputs (schema/API drift).
 
 ## What It Does
 
+:::note Drift Guard generates no files
+It compares two schema revisions, which `prisma generate` cannot supply, so it runs from the
+`pzg-pro guard` CLI or `validateDrift()`. There is no `enableDriftGuard` generator flag.
+:::
+
+
 - Compares generated output between `--base` and `--head` branches
 - Detects breaking changes in schemas, types, and APIs
 - Produces GitHub-formatted reports for PR comments

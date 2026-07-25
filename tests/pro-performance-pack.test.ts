@@ -28,6 +28,11 @@ model Member {
   id    String @id @default(cuid())
   email String @unique
 }
+
+model Project {
+  id    String @id @default(cuid())
+  title String
+}
 `;
 
 /**
@@ -86,6 +91,36 @@ describe.skipIf(!proAvailable)('Performance Pack module graph', () => {
   });
 
   it(
+    'validates the models in the schema, not a hardcoded sample',
+    async () => {
+      // analyzeSchemas took its path in an underscore-prefixed parameter and
+      // returned a fixed User/Post/Comment/Organization sample, so the pack
+      // generated validators for models the customer does not have — the same
+      // defect Data Factories had.
+      const out = await generate('real-models', {});
+      const precompiled = readFileSync(join(out, 'precompiled.ts'), 'utf-8');
+
+      expect(precompiled).toContain('Member');
+      expect(precompiled).toContain('Project');
+      expect(precompiled).not.toContain('Comment');
+      expect(precompiled).not.toContain('Organization');
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
+    'narrows to hotPaths when given',
+    async () => {
+      const out = await generate('hot', { hotPaths: ['Member'] });
+      const precompiled = readFileSync(join(out, 'precompiled.ts'), 'utf-8');
+
+      expect(precompiled).toContain('Member');
+      expect(precompiled).not.toContain('Project');
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
     'emits every module it imports, by default',
     async () => {
       const out = await generate('default', {});
@@ -99,6 +134,22 @@ describe.skipIf(!proAvailable)('Performance Pack module graph', () => {
     async () => {
       const out = await generate('no-precompile', { enablePrecompilation: false });
       expect(unresolvedImports(out)).toEqual([]);
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
+    'offers a streaming API that does not accumulate results',
+    async () => {
+      // The pack claimed "constant memory usage regardless of dataset size" while
+      // every valid record was retained in result.valid, so peak memory grew with
+      // the input. A callback-per-record form makes the claim true for callers who
+      // consume as they go.
+      const out = await generate('constant-memory', {});
+      const streaming = readFileSync(join(out, 'streaming.ts'), 'utf-8');
+
+      expect(streaming).toContain('onValid');
+      expect(streaming).toMatch(/collectResults/);
     },
     GENERATION_TIMEOUT,
   );

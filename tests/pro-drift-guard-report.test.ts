@@ -246,6 +246,26 @@ describe.skipIf(!proAvailable)('Drift Guard report formatting', () => {
   });
 
   it(
+    'distinguishes whitelisted breaks in the summary',
+    async () => {
+      // `Summary: 5 total changes (3 breaking)` with exit 0 reads like a failure in
+      // a CI log when every break was explicitly allowed.
+      const { generator, changes } = await detectChanges({
+        outputFormat: 'text',
+        strictMode: true,
+        allowedBreaks: [
+          'Post:model_removed',
+          'User.nickname:optional_to_required',
+          'Role.MEMBER:enum_value_removed',
+        ],
+      });
+
+      expect(generator.formatOutput(changes)).toMatch(/whitelisted/i);
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
     'honours allowedBreaks when deciding whether CI should fail',
     async () => {
       const { generator, changes } = await detectChanges({ strictMode: true });

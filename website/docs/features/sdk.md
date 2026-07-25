@@ -181,8 +181,13 @@ The generator never publishes for you — that would fire on every `prisma gener
 | `{ "type": "apikey", "headerName": "X-Api-Key" }` | `X-Api-Key: <token>` |
 | `{ "type": "oauth2" }` | `Authorization: Bearer <token>` — obtaining the token is your app's concern |
 
-`headerName` overrides the header for any type. Before 2.6.0 this option was accepted and ignored, so
-every client sent a bearer `Authorization` header regardless.
+`headerName` overrides the header for any type, and both the TypeScript and Python clients honour it
+(the Python client only from **2.7.0+** — before that `authConfig` was TypeScript-only). Before 2.6.0
+the option was ignored entirely and every client sent a bearer `Authorization` header.
+
+The Python output also carries a `pyproject.toml` and `README.md` from **2.7.0+**, so it is
+installable the way the TypeScript package is. `platforms` accepts `typescript` and `python`; the type
+previously listed five more languages that only produced a runtime warning.
 
 ### Types in the emitted client
 

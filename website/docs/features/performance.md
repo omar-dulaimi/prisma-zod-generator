@@ -110,15 +110,19 @@ emitted regardless and the generator says so.
 every valid record is accumulated into `result.valid` (and every failure into
 `result.invalid`), so peak memory still grows with the size of the input.
 
-For datasets too large to hold at once, validate in slices you control and
-consume each result before the next one:
+From **2.7.0+**, pass `onValid` with `collectResults: false` and nothing is
+retained — peak memory stays flat regardless of dataset size:
 
 ```ts
-for (let i = 0; i < users.length; i += 10_000) {
-  const { valid } = await validateUserStream(users.slice(i, i + 10_000))
-  await prisma.user.createMany({ data: valid })   // drop the batch before the next
-}
+await validateUserStream(users, {
+  chunkSize: 1000,
+  collectResults: false,
+  onValid: (user) => queue.push(user),   // consume as you go
+})
 ```
+
+`result.valid` is empty in that mode, by design. Leave both unset for the previous
+behaviour, where every valid record is collected.
 :::
 
 The generic form takes the schema name as its **first** argument:
