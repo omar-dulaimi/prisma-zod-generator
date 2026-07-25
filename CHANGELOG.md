@@ -1,3 +1,13 @@
+## [2.8.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.7.0...v2.8.0) (2026-07-25)
+
+### 🚀 Features
+
+* **pro:** typed factories, configs that are read, opt-in pluralisation ([83a7605](https://github.com/omar-dulaimi/prisma-zod-generator/commit/83a7605d05f4b4846c467256468485372db0439a))
+
+### 📚 Documentation
+
+* **llms:** regenerate for the factories, policies and pluralisation work ([5360aee](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5360aee3643170593bebeb639280cc37f014877b))
+
 ## [2.7.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.6.0...v2.7.0) (2026-07-25)
 
 ### 🚀 Features
