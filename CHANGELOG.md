@@ -1,3 +1,13 @@
+## [2.8.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.8.0...v2.8.1) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **pro:** stop three more packs shipping demo data, and close the option gaps ([76e3f13](https://github.com/omar-dulaimi/prisma-zod-generator/commit/76e3f1346bfebb026be28d3e164f592826ea7829))
+
+### 📚 Documentation
+
+* **llms:** regenerate ([1757b0b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1757b0befe49f1b7fe4bd0282b3de5f8eb3ed960))
+
 ## [2.8.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.7.0...v2.8.0) (2026-07-25)
 
 ### 🚀 Features
