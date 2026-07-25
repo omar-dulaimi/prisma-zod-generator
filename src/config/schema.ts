@@ -438,7 +438,8 @@ export const ConfigurationSchema: JSONSchema7 = {
         },
         variants: {
           type: 'boolean',
-          description: 'Emit variant wrapper schemas (variants/). Default true if any variant is enabled.',
+          description:
+            'Emit variant wrapper schemas (variants/). Default true if any variant is enabled.',
         },
       },
     },
@@ -455,7 +456,11 @@ export const ConfigurationSchema: JSONSchema7 = {
           default: 'standard',
           description: 'Safety preset: strict blocks warned paths, permissive only warns.',
         },
-        enabled: { type: 'boolean', default: true, description: 'Master switch for all safety checks.' },
+        enabled: {
+          type: 'boolean',
+          default: true,
+          description: 'Master switch for all safety checks.',
+        },
         allowDangerousPaths: {
           type: 'boolean',
           default: false,
@@ -469,7 +474,8 @@ export const ConfigurationSchema: JSONSchema7 = {
         allowUserFiles: {
           type: 'boolean',
           default: false,
-          description: 'Allow cleanup when the output directory contains files that may be user code.',
+          description:
+            'Allow cleanup when the output directory contains files that may be user code.',
         },
         skipManifest: {
           type: 'boolean',
