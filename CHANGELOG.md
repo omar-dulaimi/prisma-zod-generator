@@ -1,3 +1,9 @@
+## [2.1.7](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.6...v2.1.7) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **pure-models:** append Bytes defaults after the validation chain ([1d2f64d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1d2f64d81eb9c37b39c046494ada0655b839aded)), closes [#394](https://github.com/omar-dulaimi/prisma-zod-generator/issues/394)
+
 ## [2.1.6](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.1.5...v2.1.6) (2026-07-24)
 
 ### 🐛 Bug Fixes
