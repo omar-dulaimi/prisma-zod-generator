@@ -8,7 +8,7 @@ Please report security issues **privately** via GitHub's private vulnerability r
 
 Do not open public issues for undisclosed vulnerabilities. If private reporting is not an option for you, contact the maintainer through the email listed on their GitHub profile.
 
-You can expect an acknowledgement as soon as possible. This project is currently in [maintenance mode](https://github.com/omar-dulaimi/prisma-zod-generator/issues/380), so response times are best-effort — but security reports are treated with the highest priority among incoming work.
+Security reports are treated with the highest priority among incoming work, and you can expect an acknowledgement as soon as possible.
 
 ## Supported Versions
 
