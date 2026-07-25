@@ -16,6 +16,10 @@ let sawPrismaAlias = false; // whether __PrismaAlias was referenced
 let prismaImportBase = '@prisma/client';
 let needsJsonHelpers = false; // whether to inject json helpers block
 const exportedTypeNames = new Set<string>(); // track exported type identifiers to prevent collisions
+// External imports declared via @zod.import (e.g. custom validator modules).
+// Unlike internal schema imports, these point outside the generated tree and
+// must be hoisted into the bundle rather than stripped (issue #335).
+const customImportLines = new Set<string>();
 
 export function setSingleFilePrismaImportPath(importPath: string, extension?: string) {
   let finalPath = (importPath || '@prisma/client').replace(/\\/g, '/');
@@ -36,6 +40,7 @@ export function initSingleFile(bundleFullPath: string) {
   sawPrismaAlias = false;
   needsJsonHelpers = false;
   exportedTypeNames.clear();
+  customImportLines.clear();
 }
 
 export function isSingleFileEnabled() {
@@ -63,9 +68,11 @@ function transformContentForSingleFile(filePath: string, source: string): string
   // generic relative-import stripper and the hoisted import is lost.
   const zodImportRe = /^\s*import\s+(?:\{\s*z\s*\}|\*\s+as\s+z)\s+from\s+['"][^'"]+['"];?\s*$/;
   const escapedPrismaImport = escapeRegExp(prismaImportBase);
-  const prismaTypeImportRe = new RegExp(
-    `^\\s*import\\s+type\\s+\\{\\s*Prisma\\s*\\}\\s+from\\s+['\"]${escapedPrismaImport}['\"];?\\s*$`,
-  );
+  // Match the Prisma type import by its `{ Prisma }` binding regardless of path:
+  // generated files at different directory depths import it via different
+  // relative paths (../client vs ../../client), and a path-specific regex missed
+  // the non-canonical depths, leaking them into the custom-import hoist (#335).
+  const prismaTypeImportRe = /^\s*import\s+type\s+\{\s*Prisma\s*\}\s+from\s+['"][^'"]+['"];?\s*$/;
   const prismaValueImportRe = new RegExp(
     `^\\s*import\\s+\\{\\s*([^}]+)\\s*\\}\\s+from\\s+['\"]${escapedPrismaImport}['\"];?\\s*$`,
   );
@@ -143,6 +150,20 @@ function transformContentForSingleFile(filePath: string, source: string): string
       continue;
     }
     if (relImportRe.test(line)) {
+      // Internal generated-schema imports are stripped (everything is inlined),
+      // but external imports declared via @zod.import point outside the
+      // generated tree and must be hoisted into the bundle instead (issue #335).
+      const relPath = line.match(/from\s+['"]([^'"]+)['"]/)?.[1] ?? '';
+      const bindingPortion = line.slice(0, Math.max(0, line.indexOf(' from ')));
+      const isInternalSchemaImport =
+        /(^|\/)(objects|enums|models|results|helpers)\//.test(relPath) ||
+        /\.schema(\.[jt]s)?$/.test(relPath) ||
+        // Prisma client output (any depth), handled by the canonical Prisma import
+        /(^|\/)client(\/|$)/.test(relPath) ||
+        /\bPrisma\b/.test(bindingPortion);
+      if (!isInternalSchemaImport) {
+        customImportLines.add(line.trim());
+      }
       continue;
     }
     if (relExportStarRe.test(line)) {
@@ -343,6 +364,16 @@ export async function flushSingleFile(): Promise<void> {
       header.push(`import { ${valueImports.join(', ')} } from '${prismaImportBase}';`);
     }
   }
+
+  // Hoist external @zod.import custom imports (deduped) so references like
+  // `customTypes.userMetadata` resolve in the bundle (issue #335). Sorted for
+  // deterministic output. Paths are kept verbatim — they are relative to the
+  // bundle location, as the user declared them in @zod.import.
+  if (customImportLines.size > 0) {
+    Array.from(customImportLines)
+      .sort()
+      .forEach((line) => header.push(line));
+  }
   if (needsJsonHelpers) {
     header.push(`// JSON helper schemas (hoisted)`);
     header.push(`const literalSchema = z.union([z.string(), z.number(), z.boolean()]);`);
@@ -378,4 +409,5 @@ export async function flushSingleFile(): Promise<void> {
   sawPrismaAlias = false;
   needsJsonHelpers = false;
   exportedTypeNames.clear();
+  customImportLines.clear();
 }
