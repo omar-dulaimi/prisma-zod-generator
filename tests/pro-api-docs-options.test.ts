@@ -123,6 +123,75 @@ describe.skipIf(!proAvailable)('API Docs options', () => {
     GENERATION_TIMEOUT,
   );
 
+  /**
+   * Paths were always `modelName.toLowerCase() + 's'`, giving `/categorys`.
+   * Correcting that unconditionally would rewrite published routes for anyone
+   * already built against them, so English pluralisation is opt-in and the literal
+   * rule stays the default.
+   */
+  describe('pluralization', () => {
+    it(
+      'keeps the literal rule by default',
+      async () => {
+        const paths = Object.keys(spec(await generate('plural-default', {})).paths);
+        expect(paths).toContain('/invoices');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'applies English rules when asked',
+      async () => {
+        const out = await generate('plural-english', { pluralization: 'english' });
+        const paths = Object.keys(spec(out).paths);
+
+        // Invoice pluralises the same either way; the point is the option is read.
+        expect(paths).toContain('/invoices');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'pluralises an irregular noun correctly under the english rule',
+      async () => {
+        const { generateAPIDocsFromDMMF } = await import('../src/pro/features/api-docs/api-docs');
+        const dmmf = await getDMMF({
+          datamodel: `
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Category {
+  id   String @id @default(cuid())
+  name String
+}
+`,
+        });
+        const out = join(dir, 'plural-irregular');
+
+        await generateAPIDocsFromDMMF(
+          dmmf,
+          {},
+          join(dir, 'schema.prisma'),
+          out,
+          '@prisma/client',
+          'postgresql',
+          { pluralization: 'english' },
+          [],
+        );
+
+        const paths = Object.keys(spec(out).paths);
+        expect(paths).toContain('/categories');
+        expect(paths).not.toContain('/categorys');
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   it(
     'reports only genuinely unimplemented options as inert',
     async () => {

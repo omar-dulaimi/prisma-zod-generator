@@ -296,6 +296,18 @@ describe.skipIf(!proAvailable)('Policies enforcement', () => {
       expect(() => redactPII({ email: 'someone@example.com' })).toThrow(/Redactor/);
     });
 
+    it('uses the configured context as the default', async () => {
+      // RedactionConfig was stored on the instance and never read, so `context`
+      // did nothing at all.
+      const { MemberRedactor } = await import(join(dir, 'policies', 'redaction', 'member.ts'));
+      const source = read('redaction', 'member.ts');
+
+      expect(source).toContain('this.config.context');
+      expect(new MemberRedactor({ context: 'logs' }).redact({ email: 'a@b.co' }).email).not.toBe(
+        'a@b.co',
+      );
+    });
+
     it('redacts the body the Express middleware passes through', async () => {
       const { createMemberRedactionMiddleware } = await import(
         join(dir, 'policies', 'redaction', 'member.ts')

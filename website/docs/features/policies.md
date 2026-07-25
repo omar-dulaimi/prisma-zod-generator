@@ -241,6 +241,16 @@ app.use(async (ctx, next) => {
 })
 ```
 
+:::note Redactor options
+`new <Model>Redactor({ context: 'logs' })` sets the default context for `redact()`
+calls that do not pass one — before **2.6.0** the config was stored and never read.
+`redactLogs` is superseded: a field marked `@pii` is redacted in every context.
+
+The `enableRLS` generator option is a no-op and is reported as such; row-level
+security is the [PostgreSQL RLS pack](./postgres-rls.md), enabled with
+`enablePostgresRLS`.
+:::
+
 :::note `redactPII()` is not implemented
 The policies index also exports `redactPII(data, config?)`, which cannot work: redaction is per model
 and it has no way to tell which model an arbitrary object came from. From **2.4.1+** it throws and

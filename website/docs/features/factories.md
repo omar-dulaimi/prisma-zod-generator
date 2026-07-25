@@ -93,6 +93,14 @@ const admin = userFactory.build({
 })
 ```
 
+### Typing
+
+Each model gets a `<Model>Shape` interface derived from your schema, and the factory
+is `Factory<<Model>Shape>` — so `build()` returns that shape and a typo in an
+override is a compile error. Before **2.6.0** every factory was `Factory<any>` with
+`Partial<any>` overrides, which meant nothing about a `build()` call was checked
+despite the "follows your Prisma schema exactly" promise.
+
 ### Persistence (Optional)
 
 Hand the factory a Prisma client first. Without it, `create()` and `createMany()`

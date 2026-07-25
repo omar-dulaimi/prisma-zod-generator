@@ -105,4 +105,37 @@ describe.skipIf(!proAvailable)('Data Factories persistence', () => {
   it('documents that a client is required for persistence', () => {
     expect(source).toMatch(/setPrismaClient/);
   });
+
+  /**
+   * The pack advertises "Type-Safe: follows your Prisma schema exactly", but every
+   * factory was `implements Factory<any>` with `Partial<any>` overrides and
+   * `Promise<any>` results — so nothing about a build() call was checked, and a
+   * typo in an override compiled happily.
+   */
+  describe('typing', () => {
+    it('declares a shape type per model', () => {
+      expect(source).toMatch(/export interface AuthorShape\b/);
+      expect(source).toMatch(/export interface PostShape\b/);
+    });
+
+    it('parameterises the factory on that shape rather than any', () => {
+      expect(source).toContain('implements Factory<AuthorShape>');
+      expect(source).not.toContain('implements Factory<any>');
+    });
+
+    it('types build and its overrides', () => {
+      expect(source).toMatch(/build\(overrides: Partial<AuthorShape> = \{\}\): AuthorShape/);
+      expect(source).not.toContain('overrides: Partial<any>');
+    });
+
+    it('gives the shape a field for each scalar column', () => {
+      const block = source.slice(
+        source.indexOf('export interface AuthorShape'),
+        source.indexOf('}', source.indexOf('export interface AuthorShape')),
+      );
+
+      expect(block).toContain('id');
+      expect(block).toContain('name');
+    });
+  });
 });
