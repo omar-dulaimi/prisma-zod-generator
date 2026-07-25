@@ -1,3 +1,13 @@
+## [2.7.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.6.0...v2.7.0) (2026-07-25)
+
+### 🚀 Features
+
+* **contract-testing:** matcher-based pacts, independent flags, provider verification ([91a199b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/91a199b04eaeea5dab77bd3e3582af201130ceeb))
+
+### 📚 Documentation
+
+* **llms:** regenerate for the contract testing work ([afab3c7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/afab3c79e85d16d1e2158bcd291f434c35a86078))
+
 ## [2.6.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.5.0...v2.6.0) (2026-07-25)
 
 ### 🚀 Features
