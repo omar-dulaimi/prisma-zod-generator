@@ -2535,7 +2535,18 @@ pnpm run test:contract
 ## Consumer Example
 
 The generated tests drive the `Pact` class from `@pact-foundation/pact` directly against the
-generated `client.ts`.
+generated `client.ts`, and both sides are emitted from **2.6.0+**:
+
+- `pact/<consumer>-<provider>.test.ts` — the consumer side, recording the pacts
+- `provider/<provider>.verify.test.ts` — replays those pacts against a running provider with Pact's
+  `Verifier`. Point `PACT_PROVIDER_BASE_URL` at your provider and fill in the `stateHandlers` entry
+  for `'default state'` with whatever seeding each interaction needs.
+
+Bodies are asserted with matchers (`like`, `eachLike`) rather than literal values, so a contract test
+passes on a differing id instead of failing on the fixture. `includeRequestValidation` and
+`includeResponseValidation` control the request and response bodies independently; with both off you
+still get the interactions, pinning methods, paths and status codes. Before 2.6.0 the two flags were
+OR'd into a single gate deciding whether any test was written, and every body was a literal.
 
 :::caution Pin the Pact major
 The generated tests target the V2/V3 DSL (`new Pact({...})` plus
