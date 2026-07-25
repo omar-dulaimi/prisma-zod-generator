@@ -50,7 +50,7 @@ This is a Prisma Generator that automatically generates Zod schemas from Prisma 
 - `writeFileSafely.ts` - Safe file writing with directory creation
 - `formatFile.ts` - Code formatting using Prettier
 - `writeIndexFile.ts` - Index file generation
-- `removeDir.ts` - Directory cleanup
+- `naming-resolver.ts` - Naming patterns for models, enums and exports
 
 ### Generated Output Structure
 
