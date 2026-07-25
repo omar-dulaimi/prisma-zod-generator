@@ -220,7 +220,12 @@ async function buildDocsAggregate() {
 
   const parts = [];
   let totalBytes = 0;
-  const softCap = 300 * 1024;
+  // Pages are embedded in path order and the walk stops at this ceiling, so a
+  // cap that the docs have already outgrown silently drops whatever sorts last.
+  // Keep this comfortably above the current total; the omitted pages are named
+  // below so shrinking coverage cannot pass unnoticed.
+  const softCap = 768 * 1024;
+  const omitted = [];
 
   for (const file of unique) {
     if (shouldSkipDoc(file)) continue;
@@ -229,9 +234,20 @@ async function buildDocsAggregate() {
     const title = res.title ?? path.basename(file);
     const pageText = `# ${title}\n\n${res.text}`.trim();
     const nextBytes = Buffer.byteLength(pageText, 'utf8') + 2;
-    if (totalBytes + nextBytes > softCap) break;
+    if (totalBytes + nextBytes > softCap) {
+      omitted.push(path.relative(ROOT, file));
+      continue;
+    }
     parts.push(pageText);
     totalBytes += nextBytes;
+  }
+
+  if (omitted.length) {
+    console.warn(
+      `⚠️  llms.txt: ${omitted.length} page(s) omitted — the ${Math.round(softCap / 1024)}KB ` +
+        `aggregate cap was reached. Raise softCap in scripts/generate-llms-txt.mjs to include them:`,
+    );
+    for (const file of omitted) console.warn(`     ${file}`);
   }
 
   if (!parts.length) return null;
