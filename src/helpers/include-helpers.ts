@@ -56,6 +56,7 @@ function generateModelIncludeInputObjectTypes(models: DMMF.Model[], isGenerateSe
           : `${type}Args`;
 
       const field: DMMF.SchemaArg = {
+        isParameterizable: false,
         name: modelFieldName,
         isRequired: false,
         isNullable: false,
@@ -104,6 +105,7 @@ function generateModelIncludeInputObjectTypes(models: DMMF.Model[], isGenerateSe
         });
       }
       const _countField: DMMF.SchemaArg = {
+        isParameterizable: false,
         name: '_count',
         isRequired: false,
         isNullable: false,

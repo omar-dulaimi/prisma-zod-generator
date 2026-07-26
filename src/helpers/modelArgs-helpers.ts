@@ -29,6 +29,7 @@ function generateModelArgsInputObjectTypes(
 
     if (isGenerateSelect) {
       const selectField: DMMF.SchemaArg = {
+        isParameterizable: false,
         name: 'select',
         isRequired: false,
         isNullable: false,
@@ -48,6 +49,7 @@ function generateModelArgsInputObjectTypes(
 
     if (isGenerateInclude && hasRelationToAnotherModel) {
       const includeField: DMMF.SchemaArg = {
+        isParameterizable: false,
         name: 'include',
         isRequired: false,
         isNullable: false,

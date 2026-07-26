@@ -1569,6 +1569,7 @@ export default class Transformer {
 
         // Create a synthetic 'where' field that references the model's ScalarWhereInput type
         const syntheticWhereField: PrismaDMMF.SchemaArg = {
+          isParameterizable: false,
           name: 'where',
           isNullable: false,
           isRequired: true,

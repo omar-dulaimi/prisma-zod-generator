@@ -53,6 +53,9 @@ function resolveMongoDbRawQueryInputObjectTypes(outputObjectTypes: DMMF.OutputTy
       name: arg.name,
       isRequired: arg.isRequired,
       isNullable: arg.isNullable,
+      // Required on SchemaArg since Prisma 7.x. These describe MongoDB raw-operation arguments
+      // rebuilt from the output types, none of which is parameterizable.
+      isParameterizable: false,
       inputTypes: arg.inputTypes,
     })),
   }));

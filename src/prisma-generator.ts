@@ -90,7 +90,6 @@ export async function generate(options: GeneratorOptions) {
       options.dmmf ??
       (await getDMMF({
         datamodel: options.datamodel,
-        previewFeatures: prismaClientGeneratorConfig?.previewFeatures,
       }));
 
     // Load and process configuration with proper precedence hierarchy:
@@ -839,7 +838,6 @@ function normalizeSchemaEnum(enumType: {
 
   return {
     name: enumType.name,
-    data,
     values,
   };
 }

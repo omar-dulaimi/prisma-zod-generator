@@ -54,6 +54,7 @@ export function addMissingInputObjectTypesForAggregate(
           name: field.name,
           isNullable: false,
           isRequired: false,
+          isParameterizable: false,
           inputTypes: [
             {
               isList: false,

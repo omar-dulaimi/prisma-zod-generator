@@ -101,6 +101,7 @@ function generateModelCountOutputTypeSelectInputObjectTypes(
           name,
           isRequired: false,
           isNullable: false,
+          isParameterizable: false,
           inputTypes,
         };
       }),
@@ -129,6 +130,7 @@ function generateModelCountOutputTypeArgsInputObjectTypes(
       },
       fields: [
         {
+          isParameterizable: false,
           name: 'select',
           isRequired: false,
           isNullable: false,
@@ -166,6 +168,7 @@ function generateModelCountOutputTypeArgsInputObjectTypes(
         },
         fields: [
           {
+            isParameterizable: false,
             name: 'where',
             isRequired: false,
             isNullable: false,
@@ -208,6 +211,7 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
       const isRelationField = checkIsModelRelationField(modelField);
 
       const field: DMMF.SchemaArg = {
+        isParameterizable: false,
         name: modelFieldName,
         isRequired: false,
         isNullable: false,
@@ -242,6 +246,7 @@ function generateModelSelectInputObjectTypes(models: DMMF.Model[]) {
     const shouldAddCountField = hasEnabledManyRelationToAnotherModel;
     if (shouldAddCountField) {
       const _countField: DMMF.SchemaArg = {
+        isParameterizable: false,
         name: '_count',
         isRequired: false,
         isNullable: false,

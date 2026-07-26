@@ -149,7 +149,6 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
       options.dmmf ??
       (await getDMMF({
         datamodel: options.datamodel,
-        previewFeatures: prismaClientGeneratorConfig.previewFeatures,
       }));
 
     console.log(
