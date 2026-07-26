@@ -29,10 +29,12 @@ makes every model type look missing.
 Emitted output goes to `.out/` here, so the libraries resolve by ordinary upward `node_modules`
 lookup rather than through tsconfig path mapping.
 
-## Why Pact is pinned to v15
+## Which Pact major this pins
 
-The Contract Testing pack emits the Pact v15 API. v16 and v17 alias the `Pact` export to
-`PactV4`, which changes the constructor and the `addInteraction` shape, so the emitted tests do
-not type-check against them. Pinning here keeps this check honest about what the pack targets
-rather than quietly passing against a version it does not support. The forward-compatibility gap
-is recorded in the Pro backlog.
+The current major, 17. The Contract Testing pack emits `PactV3`, which every version from 15 to 17
+exports from the package root with the same fluent shape, so the emitted tests compile against all
+of them — verified against 15 and 17 before this pin was moved forward.
+
+It used to pin 15 because the pack emitted the root `Pact` export, which means the V2 server API in
+15 and is an alias for V4 from 16 onward. Code written against it compiles on exactly one major, so
+a customer installing current Pact got tests that would not build.

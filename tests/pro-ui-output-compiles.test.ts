@@ -1,6 +1,6 @@
 import { getDMMF } from '@prisma/internals';
 import { execFileSync } from 'child_process';
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { prismaGenerate } from './helpers/prisma-generate';
@@ -235,6 +235,20 @@ describe.skipIf(!proAvailable || !fixturesInstalled)('emitted Pro UI output comp
 
       expectEmitted(out);
       expect(compile(out)).toBe('');
+
+      // Only one Pact major can be installed here, so compiling proves compatibility with that
+      // one. This is what keeps the output portable across the others: `PactV3` has the same
+      // shape in 15, 16 and 17, while the root `Pact` export means the V2 server API in 15 and
+      // aliases V4 from 16 — so anything using it compiles on exactly one major.
+      const test = readFileSync(
+        join(out, 'pact', readdirSync(join(out, 'pact')).find((f) => f.endsWith('.test.ts'))!),
+        'utf-8',
+      );
+
+      expect(test).toMatch(/\bPactV3\b/);
+      expect(test).not.toMatch(/import \{[^}]*\bPact\b[^}]*\} from '@pact-foundation\/pact'/);
+      // The deep '/src/dsl/' imports the old template used reached into the package's source tree.
+      expect(test).not.toContain('@pact-foundation/pact/src/');
     },
     COMPILE_TIMEOUT,
   );

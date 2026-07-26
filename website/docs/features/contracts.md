@@ -25,7 +25,7 @@ Consumer/provider contract tests and JSON definitions to verify API compatibilit
 
 ```bash
 # Install Pact.js & Jest helpers
-pnpm add -D "@pact-foundation/pact@^15" jest jest-pact @prisma/client
+pnpm add -D @pact-foundation/pact jest jest-pact @prisma/client
 
 # PZG Pro license required
 ```
@@ -90,26 +90,28 @@ pnpm run test:contract
 
 ## Consumer Example
 
-The generated tests drive the `Pact` class from `@pact-foundation/pact` directly against the
-generated `client.ts`, and both sides are emitted from **2.6.0+**:
+The generated tests drive `PactV3` from `@pact-foundation/pact` directly against the generated
+`client.ts`, and both sides are emitted from **2.6.0+**:
 
 - `pact/<consumer>-<provider>.test.ts` — the consumer side, recording the pacts
 - `provider/<provider>.verify.test.ts` — replays those pacts against a running provider with Pact's
   `Verifier`. Point `PACT_PROVIDER_BASE_URL` at your provider and fill in the `stateHandlers` entry
   for `'default state'` with whatever seeding each interaction needs.
 
-Bodies are asserted with matchers (`like`, `eachLike`) rather than literal values, so a contract test
+Bodies are asserted with matchers (`MatchersV3.like`, `MatchersV3.eachLike`) rather than literal values, so a contract test
 passes on a differing id instead of failing on the fixture. `includeRequestValidation` and
 `includeResponseValidation` control the request and response bodies independently; with both off you
 still get the interactions, pinning methods, paths and status codes. Before 2.6.0 the two flags were
 OR'd into a single gate deciding whether any test was written, and every body was a literal.
 
-:::caution Pin the Pact major
-The generated tests target the V2/V3 DSL (`new Pact({...})` plus
-`InteractionObject`). From v16 onward `Pact` is an alias for the V4 DSL, which
-takes a different constructor and interaction shape — installing the current
-`@pact-foundation/pact` (17.x) makes the generated tests fail to compile. Pin
-`^15` as shown above, or port the tests to the V4 builder API yourself.
+:::note Any current Pact major works
+The generated tests use `PactV3`, which every version from 15 to 17 exports from the package root
+with the same shape, so no version pin is needed. Compilation against both 15 and 17 is checked on
+every run of the emitted-output type checks.
+
+The root `Pact` export is deliberately avoided: it means the V2 server API in 15 and is an alias for
+V4 from 16 onward, so anything written against it compiles on exactly one major. Before 2.9.0 these
+tests did use it, which is why `^15` had to be pinned.
 :::
 
 The `jest-pact` wrapper below is optional sugar for tests you write yourself:

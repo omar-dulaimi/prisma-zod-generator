@@ -14,7 +14,7 @@
     "@mantine/core": "^9.4.2",
     "@mantine/hooks": "^9.4.2",
     "@mui/material": "^9.2.0",
-    "@pact-foundation/pact": "^15.0.1",
+    "@pact-foundation/pact": "^17.0.1",
     "@types/jest": "^30.0.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
