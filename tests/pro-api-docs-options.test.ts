@@ -144,6 +144,36 @@ describe.skipIf(!proAvailable)('API Docs options', () => {
    * already built against them, so English pluralisation is opt-in and the literal
    * rule stays the default.
    */
+  describe('Decimal and BigInt over the wire', () => {
+    /**
+     * Both were described as JSON numbers. Measured against a real Prisma 7 client and PostgreSQL 16:
+     * `JSON.stringify` turns a Decimal column into the string "1234.5678", and throws outright on a
+     * BigInt — so an app must serialise it, and a string is the usual choice. A spec saying
+     * `type: number` therefore misdescribes what the API returns, and a client validating against it
+     * rejects the real response.
+     */
+    let spec: {
+      components?: {
+        schemas?: Record<
+          string,
+          { properties?: Record<string, { type?: string; example?: unknown }> }
+        >;
+      };
+    };
+
+    beforeAll(async () => {
+      const out = await generate('wire-types', {});
+      spec = JSON.parse(readFileSync(join(out, 'openapi.json'), 'utf-8'));
+    }, GENERATION_TIMEOUT);
+
+    it('declares a Decimal column as a string', () => {
+      const amount = spec.components?.schemas?.Invoice?.properties?.amount;
+
+      expect(amount?.type).toBe('string');
+      expect(typeof amount?.example).toBe('string');
+    });
+  });
+
   describe('the generated mock server', () => {
     /**
      * Three problems, all discoverable only by reading what it prints against what it registers.

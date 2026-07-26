@@ -178,6 +178,55 @@ describe.skipIf(!proAvailable)('Form UX ui library selection', () => {
     });
   });
 
+  describe('a DateTime column with a default', () => {
+    /**
+     * `@default(now())` baked `new Date().toISOString()` into the component's defaultValues, which is
+     * two defects in one: every `prisma generate` rewrites the component files, and a full ISO
+     * datetime is not a valid value for the `<input type="date">` the same generator emits — so the
+     * field renders empty, validation fails, and the form cannot submit.
+     *
+     * This was on the audit's Minor list and I closed it wrongly: the fixture's DateTime column was
+     * named `createdAt`, which line 346 excludes from forms as a system field, so the baked timestamp
+     * could not appear. `joinedAt` is not excluded. Found by actually running the emitted tests, where
+     * "submits form with valid data" failed because of it.
+     */
+    it('does not bake the generation moment into the component', async () => {
+      const out = await generate('datetime-default', { uiLibrary: 'barebones' });
+      const component = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
+      const today = new Date().toISOString().split('T')[0];
+
+      expect(component, 'the component carries the generation timestamp').not.toContain(today);
+      expect(component).not.toMatch(/joinedAt: '\d{4}-\d{2}-\d{2}T/);
+    });
+
+    it('does not prefill a date input with a value it cannot display', async () => {
+      // <input type="date"> takes YYYY-MM-DD. Anything else renders blank, and the form then fails
+      // its own required-field validation with nothing visible to fix.
+      const out = await generate('datetime-input', { uiLibrary: 'barebones' });
+      const component = readFileSync(join(out, 'components', 'MemberForm.tsx'), 'utf-8');
+      const prefill = component.match(/joinedAt: '([^']*)'/)?.[1];
+
+      // Empty is the right answer: the control renders blank, the required-field rule applies, and
+      // the person picks a date. Anything present must at least be a value the input can display.
+      if (prefill) expect(prefill).toMatch(/^(\d{4}-\d{2}-\d{2})?$/);
+    });
+  });
+
+  describe('validation messages', () => {
+    /**
+     * The emitted tests assert `getByText(/.*email.*(required|must)/i)`, and the schema produced
+     * Zod's default "Invalid input" — no field name — so the pack's own generated tests failed
+     * against its own components. Naming the field is also simply better for the person filling the
+     * form in.
+     */
+    it('names the field in a required-field message', async () => {
+      const out = await generate('messages', { uiLibrary: 'barebones' });
+      const schema = readFileSync(join(out, 'zod.ts'), 'utf-8');
+
+      expect(schema).toMatch(/email[\s\S]{0,80}(is required|must)/i);
+    });
+  });
+
   describe('a DateTime column', () => {
     /**
      * It was emitted as a bare `z.string()`, so the form accepted "banana" for a date. The `<input

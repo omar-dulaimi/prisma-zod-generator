@@ -144,6 +144,64 @@ describe.skipIf(!proAvailable)('SDK Publisher client', () => {
    * OAuth2" claim, and packageName/version, which is what makes something a
    * publishable package rather than a loose file.
    */
+  describe('the Python client', () => {
+    /**
+     * Its methods were emitted inside the TypedDict, not inside APIClient. Python has no braces, so
+     * indented `def`s attach to whichever class precedes them — and the template put the TypedDicts
+     * after the class. The result: `APIClient` had `__init__` and `_request` and nothing else, so
+     * `client.list_invoices()` raised AttributeError, and mypy reported five
+     * "Invalid statement in TypedDict definition".
+     *
+     * Verified with mypy 2.3 in a python:3.12-slim container, which is the check the audit could not
+     * run for want of an installed mypy.
+     */
+    let client: string;
+
+    beforeAll(async () => {
+      const { generateSDKFromDMMF } = await import(
+        '../src/pro/features/sdk-publisher/sdk-publisher'
+      );
+      const dmmf = await getDMMF({ datamodel: SCHEMA });
+      const out = join(dir, 'python-shape');
+      await generateSDKFromDMMF(
+        dmmf,
+        {},
+        join(dir, 'schema.prisma'),
+        out,
+        '@prisma/client',
+        'postgresql',
+        { platforms: ['python'] },
+        [],
+      );
+      client = readFileSync(join(out, 'python', 'api_client.py'), 'utf-8');
+    }, GENERATION_TIMEOUT);
+
+    it('defines the TypedDicts before the client that returns them', () => {
+      expect(client.indexOf('class Invoice(TypedDict):')).toBeLessThan(
+        client.indexOf('class APIClient:'),
+      );
+    });
+
+    it('puts the methods on APIClient, not on a TypedDict', () => {
+      const clientBody = client.slice(client.indexOf('class APIClient:'));
+      expect(clientBody).toContain('def list_invoices');
+      expect(clientBody).toContain('def create_invoice');
+
+      // Nothing may follow a TypedDict's fields except more fields.
+      const typedDict = client.slice(
+        client.indexOf('class Invoice(TypedDict):'),
+        client.indexOf('class APIClient:'),
+      );
+      expect(typedDict).not.toContain('def ');
+      expect(typedDict).not.toContain('self._request');
+    });
+
+    it('returns the model type rather than a bare dict', () => {
+      expect(client).toMatch(/def list_invoices\(self\)[^\n]*-> List\[Invoice\]/);
+      expect(client).toMatch(/def get_invoice\([^)]*\)[^\n]*-> Invoice/);
+    });
+  });
+
   describe('the TypeScript client’s typing', () => {
     /**
      * Measured against the client API Docs emits from the same schema, this one was the weaker of the

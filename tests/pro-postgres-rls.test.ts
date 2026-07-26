@@ -97,6 +97,78 @@ describe.skipIf(!proAvailable)('PostgreSQL RLS context', () => {
     rmSync(root, { recursive: true, force: true });
   });
 
+  describe('a provider that has no row-level security', () => {
+    /**
+     * The pack generated its full output for a MongoDB schema without a word: `policies.sql` carried
+     * `ALTER TABLE "Account" ENABLE ROW LEVEL SECURITY`, which MongoDB can never apply, and
+     * `rls-helper.ts` called `$executeRaw`/`$queryRaw` — three TS2339s, because a MongoDB client has
+     * neither. So a customer on MongoDB who set `enablePostgresRLS = true` received files that look
+     * like security policies, cannot compile, and would never have run.
+     *
+     * Row-level security is PostgreSQL's (and CockroachDB's). Anything else is refused.
+     */
+    async function generateFor(provider: string, dirName: string) {
+      const logged: string[] = [];
+      const origLog = console.log;
+      console.log = (...args: unknown[]) => {
+        logged.push(args.map(String).join(' '));
+      };
+      const outputPath = join(root, dirName);
+      try {
+        const { generatePostgresRLSFromDMMF } = await import(
+          '../src/pro/features/postgres-rls/postgres-rls'
+        );
+        const dmmf = await getDMMF({ datamodel: SCHEMA });
+        await generatePostgresRLSFromDMMF(
+          dmmf,
+          {},
+          join(root, 'schema.prisma'),
+          outputPath,
+          '@prisma/client',
+          provider,
+          {},
+          [],
+        );
+      } finally {
+        console.log = origLog;
+      }
+      return { output: logged.join('\n'), outputPath };
+    }
+
+    it(
+      'refuses a provider without RLS, and says which',
+      async () => {
+        const { output, outputPath } = await generateFor('mongodb', 'provider-mongodb');
+
+        expect(output).toMatch(/mongodb/i);
+        expect(output.toLowerCase()).toMatch(/row.level security|postgresql/);
+        // Nothing should be written: the SQL is inapplicable and the helper does not compile there.
+        expect(existsSync(join(outputPath, 'policies.sql'))).toBe(false);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'still generates for postgresql',
+      async () => {
+        const { outputPath } = await generateFor('postgresql', 'provider-postgres');
+
+        expect(existsSync(join(outputPath, 'policies.sql'))).toBe(true);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'generates for cockroachdb, which has RLS too',
+      async () => {
+        const { outputPath } = await generateFor('cockroachdb', 'provider-cockroach');
+
+        expect(existsSync(join(outputPath, 'policies.sql'))).toBe(true);
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   describe('the emitted SQL', () => {
     // The pack's whole output is this file. It was generated with only the helper functions in it —
     // no ENABLE ROW LEVEL SECURITY, no CREATE POLICY — while the run logged "Generated RLS policies

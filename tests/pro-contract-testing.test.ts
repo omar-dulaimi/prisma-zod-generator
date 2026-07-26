@@ -34,7 +34,7 @@ enum Role {
 model Invoice {
   id     String @id @default(cuid())
   title  String
-  amount Int
+  amount Decimal
   // The fixture had no enum, so the contract example for one could not be observed here.
   role   Role   @default(MEMBER)
 }
@@ -107,6 +107,60 @@ describe.skipIf(!proAvailable)('Contract Testing pacts', () => {
       expect(source).not.toMatch(/example_/);
       // The fixture's enum members are the only acceptable values.
       expect(source).toMatch(/'(OWNER|ADMIN|MEMBER)'/);
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  describe('the WireMock mappings are loadable', () => {
+    /**
+     * They were not. WireMock refuses to start on them — exit 1, so the whole mock server fails:
+     *
+     *   MappingFileException: Error loading file .../mapping-8.json:
+     *   "application/json" is not a valid match operation
+     *
+     * Request headers were emitted as bare strings. WireMock matches a request header with a match
+     * operation object — `{ "equalTo": "application/json" }` — and treats a string as an unknown
+     * operator. Verified by running wiremock/wiremock:3.9.1 against the generated directory, which is
+     * the check the audit could not run for want of a JVM.
+     *
+     * Response headers are a different shape and are correct as literals.
+     */
+    it(
+      'expresses a request header as a match operation',
+      async () => {
+        const out = await generate('wiremock-loadable', { wiremockConfig: {} });
+        const dir = join(out, 'wiremock', 'mappings');
+
+        const files = readdirSync(dir).filter((name) => name.endsWith('.json'));
+        expect(files.length).toBeGreaterThan(0);
+
+        for (const name of files) {
+          const mapping = JSON.parse(readFileSync(join(dir, name), 'utf-8')) as {
+            request?: { headers?: Record<string, unknown> };
+          };
+          for (const [header, value] of Object.entries(mapping.request?.headers ?? {})) {
+            expect(
+              typeof value === 'object' && value !== null,
+              `${name}: request header ${header} must be a match operation, not ${JSON.stringify(value)}`,
+            ).toBe(true);
+            expect(Object.keys(value as object)).toContain('equalTo');
+          }
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
+  it(
+    'uses a string for a Decimal column, as the wire format does',
+    async () => {
+      // Measured: JSON.stringify turns Prisma's Decimal into "1234.5678". MatchersV3.like compares
+      // types, so an example of 3.14 makes the contract demand a number and a real provider fails it.
+      const out = await generate('decimal-example', {});
+      const source = firstPact(out);
+
+      expect(source).toMatch(/amount:\s*'[\d.]+'/);
+      expect(source).not.toMatch(/amount:\s*3\.14/);
     },
     GENERATION_TIMEOUT,
   );
