@@ -1,3 +1,9 @@
+## [2.8.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.8.2...v2.8.3) (2026-07-26)
+
+### 🐛 Bug Fixes
+
+* **ci:** exclude generated schemas from coverage, which made the gate fail ([b6462f6](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b6462f60ea51c257d8a4f870de92dbaf7f7e730f))
+
 ## [2.8.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.8.1...v2.8.2) (2026-07-26)
 
 ### 🐛 Bug Fixes
