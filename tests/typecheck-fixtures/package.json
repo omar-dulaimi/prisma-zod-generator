@@ -1,0 +1,25 @@
+{
+  "name": "pzg-typecheck-fixtures",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Opt-in dependencies for type-checking emitted Pro output that imports third-party UI libraries or Pact. Not part of the root install: see README.md.",
+  "scripts": {
+    "postinstall": "node -e \"console.log('typecheck fixtures installed; run pnpm run test:typecheck-fixtures from the repo root')\""
+  },
+  "devDependencies": {
+    "@chakra-ui/react": "^3.36.1",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@hookform/resolvers": "^5.5.3",
+    "@mantine/core": "^9.4.2",
+    "@mantine/hooks": "^9.4.2",
+    "@mui/material": "^9.2.0",
+    "@pact-foundation/pact": "^15.0.1",
+    "@types/jest": "^30.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-hook-form": "^7.83.0"
+  }
+}

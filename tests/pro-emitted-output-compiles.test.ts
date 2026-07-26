@@ -1,6 +1,6 @@
 import { getDMMF } from '@prisma/internals';
 import { execFileSync } from 'child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -58,10 +58,14 @@ model ProjectVariant {
  * regression the next day — and emitted code that does not compile is the single
  * most common defect these packs have had. Six separate ones shipped that way.
  *
- * This makes the check standing rather than anecdotal. It only covers packs whose
- * emitted code depends on what this repo already installs (Prisma client, zod);
- * the Form UX, SDK and Contract Testing outputs need MUI/Chakra/Mantine and Pact,
- * which are verified out-of-band rather than added as devDependencies here.
+ * This makes the check standing rather than anecdotal. It covers every pack whose emitted
+ * code compiles against what this repo already installs — Prisma client, zod, and for the
+ * SDK nothing at all, since its TypeScript target is fetch-based and imports only its own
+ * package.
+ *
+ * Form UX and Contract Testing are still out: their output imports MUI, Chakra, Mantine and
+ * Pact, so covering them means adding those to this repo's devDependencies. See
+ * tests/README-typecheck-fixtures.md for how that is handled instead.
  *
  * Skipped when the private submodule is absent (plain CI and forks).
  */
@@ -197,6 +201,26 @@ describe.skipIf(!proAvailable)('emitted Pro output compiles', () => {
       const out = join(root, 'factories');
       await generateDataFactories(join(root, 'schema.prisma'), { outputPath: out });
       expect(compile(out)).toBe('');
+    },
+    COMPILE_TIMEOUT,
+  );
+
+  it(
+    'sdk-publisher (TypeScript target)',
+    async () => {
+      // The emitted TypeScript SDK is fetch-based and imports nothing but its own package,
+      // so unlike the Form UX and Contract Testing output it can be compiled here without
+      // pulling MUI, Chakra, Mantine or Pact into this repo's devDependencies.
+      const out = await generate('sdk-publisher', 'generateSDKFromDMMF', {
+        platforms: ['typescript'],
+        packageName: '@acme/api-sdk',
+      });
+
+      // Compiling an empty directory passes, so prove there was something to compile.
+      const emitted = readdirSync(join(out, 'typescript'), { recursive: true }) as string[];
+      expect(emitted.filter((f) => f.endsWith('.ts')).length).toBeGreaterThan(0);
+
+      expect(compile(join(out, 'typescript'))).toBe('');
     },
     COMPILE_TIMEOUT,
   );
