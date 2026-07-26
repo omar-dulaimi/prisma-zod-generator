@@ -74,6 +74,7 @@
 - Usage Patterns: https://omar-dulaimi.github.io/prisma-zod-generator/docs/usage-patterns
 - Performance & Build Tips: https://omar-dulaimi.github.io/prisma-zod-generator/docs/performance
 - Upgrade Guide: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade-guide
+- Upgrading to 3.0: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade/v3-breaking-changes
 - Upgrade from Free to Pro: https://omar-dulaimi.github.io/prisma-zod-generator/docs/upgrade/pro-migration
 - Contributing: https://omar-dulaimi.github.io/prisma-zod-generator/docs/contributing
 - Changelog: https://omar-dulaimi.github.io/prisma-zod-generator/docs/changelog
@@ -3176,23 +3177,29 @@ Operations are `'create' | 'update' | 'find'`. The same file exports a `TenantVa
 keyed by model name, if you'd rather hold a validator instance than go through the string lookup on
 every call.
 
-### Prisma Middleware
+### Scoping a client
 
-:::caution Requires Prisma 5 or earlier
-The generated middleware is installed with `prisma.$use()`, which Prisma removed
-in v6. On Prisma 6 or 7 — including the versions this generator targets — the
-call throws `prisma.$use is not a function`. Validate at the call site with
-`validateTenantAccess(...)` instead; that is the supported path today.
-:::
-
-On Prisma 5 and earlier, the middleware injects the tenant filter on reads and
-deletes and validates results in `strict` mode:
+`prisma.$use()` does not exist on Prisma 7 — verified against a generated v7 client, where the call is
+a type error and the property is `undefined` at runtime. Client extensions replaced it, so scope a
+client with `createTenantPrismaClient`:
 
 ```ts
-import { createTenantMiddleware } from '@/generated/pro/multi-tenant/tenant-middleware'
+import { createTenantPrismaClient } from '@/generated/pro/multi-tenant/tenant-middleware'
 
-prisma.$use(createTenantMiddleware({ tenantId: 't1' }))
+const scoped = createTenantPrismaClient(prisma, { tenantId: 't1' })
+
+// Reads through `scoped` carry the tenant filter.
+const rows = await scoped.invoice.findMany()
 ```
+
+It returns `prisma.$extends(withEnhancedTenantGuard(context))`, so you can use the guard directly if
+you prefer to compose extensions yourself. `validateTenantAccess(...)` remains available for validating
+at the call site.
+
+:::note The middleware factory
+`createTenantMiddleware` is still exported for projects on Prisma 4, which is the last version with
+`$use`. There is nothing to register it on in a current client.
+:::
 
 ### Enforce Modes
 
@@ -3820,14 +3827,20 @@ The generated `combinePolicyCondition` recognizes exactly three condition shapes
 `read:role in [...]` and `read:where role in [...]` work (in **2.4.1+**; earlier versions dropped the
 `role` keyword while parsing, leaving the policy inert):
 
-| Condition                               | Effect on the query                                                         |
-| --------------------------------------- | --------------------------------------------------------------------------- |
-| `read:where userId == ctx.userId`       | adds `where.userId = context.userId`                                        |
-| `read:where tenantId == ctx.tenantId`   | adds `where.tenantId = context.tenantId`                                    |
-| `read:where role in ["admin", "owner"]` | if the role is not listed, adds an impossible `where.id` so nothing matches |
+| Condition                               | Effect on the query                                                                                            |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `read:where userId == ctx.userId`       | adds `where.userId = context.userId`; if the context has no `userId`, narrows the query to match nothing       |
+| `read:where tenantId == ctx.tenantId`   | adds `where.tenantId = context.tenantId`; if the context has no `tenantId`, narrows the query to match nothing |
+| `read:where role in ["admin", "owner"]` | if the role is not listed, adds an impossible `where.id` so nothing matches                                    |
 
-Any other condition text is carried into the generated file and then ignored, leaving the query
-unfiltered — so verify each policy against a real query before relying on it.
+A missing context value denies rather than widens. Prisma strips `undefined` from a `where` clause,
+so in earlier versions a `findMany()` with no context — or one whose `tenantId` had not been
+populated — dropped the filter and read every tenant's rows while the call site still read as scoped.
+
+Any other condition text is refused: the generator warns at build time, naming the model and the
+condition, and the generated code throws rather than running an unscoped query. Earlier versions
+carried such a condition into the generated file and ignored it, leaving the query unfiltered.
+`read:fields` and `read:values` parse but are not implemented, and are reported the same way.
 
 `@policy deny:<condition>` refuses a create or update whose condition matches; the same three shapes
 apply. (Before 2.4.1 the generated evaluator returned `false` unconditionally, so a `deny` rule never
@@ -4103,9 +4116,11 @@ empty `current_setting()` and the callback took no argument.
 
 ### Prisma Middleware
 
-:::caution Requires Prisma 5 or earlier
-`prisma.$use()` was removed in Prisma 6. On Prisma 6 or 7 this throws
-`prisma.$use is not a function` — set the context per transaction instead.
+:::caution Prisma 4 only
+`prisma.$use()` does not exist on Prisma 7 — verified against a generated v7 client, where the property
+is `undefined`. Use `rls.withContext(...)`, which sets the context and runs your queries inside one
+interactive transaction; `set_config(..., true)` is transaction-scoped, so the context has to be
+established and used in the same transaction.
 :::
 
 ```ts
@@ -4961,10 +4976,10 @@ generator zod {
 
 datasource db {
   provider = "mongodb"
-  // Newer Prisma 7 releases reject `url` here (verified on 7.9): move the
-  // connection string to prisma.config.ts, or pass an adapter to the
-  // PrismaClient constructor. On Prisma 7.0 and earlier it is still accepted as
-  // `url = env("DATABASE_URL")`.
+  // Prisma 7 rejects `url` here — verified on 7.0.0, which fails validation with
+  // P1012, "The datasource property `url` is no longer supported in schema
+  // files". Put the connection string in prisma.config.ts, and pass an `adapter`
+  // to the PrismaClient constructor.
 }
 
 model Post {
@@ -11450,37 +11465,42 @@ Review your Prisma schema for:
 
 Update your Prisma schema with policy annotations:
 
+Read policies go on the **model** — they narrow the `where` clause of every generated read. `@pii`
+goes on the **field**:
+
 ```prisma
+/// @policy read:where tenantId == ctx.tenantId
+/// @policy deny:role in ["guest"]
 model User {
   id        String   @id @default(cuid())
+  tenantId  String
 
   /// @pii email redact:logs mask:partial
   email     String   @unique
 
-  /// @policy read:role in ["admin"]
-  /// @pii sensitive hash:sha256
-  salary    Int?
+  /// @policy deny:role in ["admin"]
+  salary    Int?     // present in UserAdminSchema, omitted from the other role schemas
 
-  /// @policy write:role in ["admin"]
   role      Role     @default(USER)
-
   createdAt DateTime @default(now())
 }
 
+/// @policy read:where userId == ctx.userId
 model Post {
   id        String   @id @default(cuid())
-
-  /// @policy write:userId eq context.userId
   title     String
-
-  /// @policy read:published eq true OR role in ["admin"]
   content   String
-
   published Boolean  @default(false)
   userId    String
   user      User     @relation(fields: [userId], references: [id])
 }
 ```
+
+Three condition forms are implemented: `role in ["a", "b"]`, `userId == ctx.userId` and
+`tenantId == ctx.tenantId`. Anything else — an arbitrary field comparison like `published eq true`,
+or a boolean combination with `OR` — is reported at generation time and refused at runtime rather
+than silently leaving the query unscoped. Use one annotation per condition. `write:` is not
+implemented; use `deny:`, `create:`, `update:` or `delete:`.
 
 ### 3. Generate Policies
 
@@ -12037,6 +12057,121 @@ Congratulations on successfully migrating to PZG Pro! You now have access to:
 4. Consider upgrading as your team grows
 
 Happy coding with PZG Pro! 🚀
+
+# Upgrading to 3.0
+
+# Upgrading to 3.0
+
+Four changes alter behaviour you may depend on. Everything else in this release is a fix to output
+that did not compile, did not run, or reported something untrue — those need no action.
+
+Two of the four are security fixes that change what a query returns. Read those first even if you do
+not use the packs in the API section.
+
+## Queries that used to return every row now return none
+
+**Affects:** the Policies pack, any model with `/// @policy read:where tenantId == ctx.tenantId` or
+the `userId` equivalent.
+
+The generated `SafeCRUD` wrapper folded the context value into the `where` clause unconditionally.
+Prisma strips `undefined` from a `where` clause, so a call with no context — or with one whose
+`tenantId` had not been populated — dropped the filter and read **every tenant's rows**. Nothing at
+the call site suggested it: the query still looked scoped.
+
+A missing context value now matches nothing.
+
+```typescript
+const documents = new DocumentSafeCRUD(prisma, {});
+
+await documents.findMany(); // before: every row in the table
+                            // now:    no rows
+```
+
+If your application was relying on that behaviour without knowing it, you will see empty results where
+you previously saw data. That is the fix working. Populate the context:
+
+```typescript
+const documents = new DocumentSafeCRUD(prisma, { tenantId: currentTenantId });
+```
+
+## A policy the generator cannot enforce now fails loudly
+
+**Affects:** the Policies pack, any `/// @policy` whose condition is not one of the three implemented
+forms — `role in ["a", "b"]`, `userId == ctx.userId`, `tenantId == ctx.tenantId`.
+
+Anything else — an arbitrary comparison like `status == "PUBLISHED"`, or a boolean combination with
+`OR` — was parsed, emitted, iterated over at query time and then ignored, leaving the query completely
+unscoped. It now throws, and `prisma generate` warns at build time naming the model and the condition.
+
+If a query starts throwing `Policy on X cannot be enforced`, that policy was never doing anything.
+Rewrite it using a supported form, one condition per annotation.
+
+## The Performance Pack's validators follow Zod's contract
+
+**Affects:** the Performance Pack, `<Model>Performance` and `createAdaptiveValidator()`.
+
+`parse` returned a result object and never threw, which is not what `parse` means anywhere else.
+
+```typescript
+// Before
+const result = UserPerformance.parse(input);
+if (result.success) use(result.data);
+
+// Now
+const row = UserPerformance.parse(input);        // returns the row, throws ValidationError
+// or
+const result = UserPerformance.safeParse(input); // { success, data } | { success, error, field }
+if (result.success) use(result.data);
+```
+
+`parse` also accepted an array, silently switching to the streaming path and returning a Promise from
+a method typed as synchronous. Arrays now have their own asynchronous methods:
+
+```typescript
+const rows = await UserPerformance.parseMany(inputs);      // throws on the first failure
+const result = await UserPerformance.safeParseMany(inputs); // { success, data } | { success, errors }
+```
+
+`ValidationError` carries `field` where the validator identified one, and `index` for the array forms.
+
+## Server Actions take the Prisma client instead of constructing one
+
+**Affects:** the Server Actions pack, `prisma-client.ts`.
+
+It did `new PrismaClient()` with no arguments. Prisma 7 does not allow that — `url` was removed from
+the datasource block, and the constructor needs an `adapter` (or `accelerateUrl`) — so on Prisma 7
+every generated action failed at import with an internal `TypeError`. On Prisma 6 and earlier it
+worked, which is why this is a breaking change rather than only a fix.
+
+The pack cannot choose your adapter, so it now takes the client. Wire it up once at startup:
+
+```typescript
+import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { setPrismaClient } from './generated/pro/server-actions/prisma-client';
+
+setPrismaClient(
+  new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) }),
+);
+```
+
+The `prisma` export is unchanged, so your action bodies need no edits. Calling one before
+`setPrismaClient` throws a message saying so.
+
+## Smaller behaviour changes
+
+None of these should need action, but they can turn previously-passing input into a validation
+failure:
+
+- **Form UX types an enum column as `z.enum([...])`** instead of `z.string()`, so a form no longer
+  accepts an arbitrary string for a column the database constrains.
+- **Form UX requires a DateTime field to parse as a date.** It was a bare `z.string()`, which accepted
+  `"banana"`.
+- **`defaultValues: false` is honoured.** It was accepted and ignored, so the schema's defaults were
+  baked in either way.
+- **Several options now warn instead of doing nothing**, among them `validation: 'yup'`,
+  `migrationFormat: 'prisma'`, `enableAuditLogging`, `enableErrorBoundaries`, and a `platforms` value
+  that is not an array. Each names what it will do instead.
 
 # Usage Patterns
 
