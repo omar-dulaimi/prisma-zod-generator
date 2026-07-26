@@ -2452,12 +2452,17 @@ async function generatePureModelSchemas(
     // Import the model generator and circular dependency detector
     const { PrismaTypeMapper } = await import('./generators/model');
     const { detectCircularDependencies } = await import('./utils/circular-dependency-detector');
-    const provider =
-      (
-        Transformer as unknown as {
-          config?: { provider?: 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'mongodb' };
-        }
-      ).config?.provider || 'postgresql';
+    // `Transformer.provider`, set from the datasource in getGeneratedSchemas(). This read used
+    // to be `(Transformer as unknown as { config?: ... }).config?.provider` — a property that
+    // does not exist on Transformer, so it was always undefined and every project fell back to
+    // 'postgresql'. The cast hid it from the compiler.
+    //
+    // The effect was cosmetic: the provider only reaches comment text in non-lean pure models
+    // and a `databaseSpecific.optimizations` array nothing reads. But it meant a MySQL or
+    // MongoDB project got PostgreSQL's notes, and the provider-specific rules that exist for
+    // them never ran at all.
+    const provider = (Transformer.provider ||
+      'postgresql') as 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'mongodb';
     const typeMapper = new PrismaTypeMapper({
       provider,
       zodImportTarget: config.zodImportTarget,
