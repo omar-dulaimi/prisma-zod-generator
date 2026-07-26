@@ -159,8 +159,9 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
     );
 
     const config = await parseProConfig(options);
-    const outputPath =
-      config.outputPath || path.join(path.dirname(options.schemaPath), 'generated', 'pro');
+    // Resolved by parseProConfig, which owns the precedence between the generator block's `output`,
+    // an explicit `outputPath`, and the default beside the schema.
+    const outputPath = config.outputPath!;
     await fs.mkdir(outputPath, { recursive: true });
 
     const dataSource = options.datasources?.[0];
@@ -583,6 +584,19 @@ export async function parseProConfig(options: GeneratorOptions): Promise<ProFeat
   // `config = "./zod-generator.config.json"`, so anyone who set that up writes the same key here —
   // and this used to read nothing, apply no flags, and report "No features enabled" while printing an
   // example whose flags happen to sit inline, so nothing pointed at the mismatch.
+  // Where the output goes, in order of specificity.
+  //
+  // `output` on the generator block was ignored entirely: this read only the `outputPath` key and
+  // otherwise defaulted to `<schemaDir>/generated/pro`, while Prisma printed "Generated PZG Pro
+  // Generator to <block output>" — a directory that stayed empty. Anyone who set `output` got their
+  // files somewhere else and a success message pointing at the wrong place. The core generator has
+  // always read `options.generator.output`; this now does too.
+  const blockOutput = (options.generator.output as { value?: string } | undefined)?.value;
+  const explicitOutputPath = generatorConfig.outputPath;
+  config.outputPath = explicitOutputPath
+    ? String(explicitOutputPath)
+    : (blockOutput ?? path.join(path.dirname(options.schemaPath), 'generated', 'pro'));
+
   const configPathValue = generatorConfig.configPath ?? generatorConfig.config;
 
   if (configPathValue) {
