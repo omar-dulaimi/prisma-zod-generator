@@ -41,17 +41,17 @@ export default defineConfig({
         ? 1
         : undefined,
     minWorkers: process.env.VITEST_MIN_WORKERS ? Number(process.env.VITEST_MIN_WORKERS) : undefined,
-    // Coverage of the generator itself. This used to point at the *generated
-    // schemas* (`tests/multi-provider/schemas/*/generated`, `prisma/generated`)
-    // with every threshold at 0, so it measured the output rather than the code
-    // that produces it and could not fail — `src/` had never been measured at all.
+    // Nothing in package.json uses this block — `test:coverage` and `test:coverage:ci` both
+    // run under c8. It exists so that a bare `vitest --coverage`, typed by hand, at least
+    // measures `src/` rather than the *generated schemas* it used to point at
+    // (`tests/multi-provider/schemas/*/generated`, `prisma/generated`) with every threshold
+    // at 0 — a configuration that measured the output instead of the code producing it and
+    // could not fail.
     //
-    // Note what this number can and cannot see: most of the suite exercises the
-    // generator by spawning `prisma generate`, which runs `node ./lib/generator.js`
-    // in a child process, and in-process V8 coverage does not observe that. So the
-    // engine (transformer, generators/, prisma-generator) reads far lower here than
-    // it is actually tested. `pnpm run test:coverage:full` runs the same suite under
-    // c8, which does capture the child processes; that is the honest figure.
+    // Do not trust the number it produces. Most of the suite exercises the generator by
+    // spawning `prisma generate`, which runs `node ./lib/generator.js` in a child process,
+    // and in-process V8 coverage cannot observe that — so the engine reads at a fraction of
+    // how well it is actually tested. Use the scripts; see CLAUDE.md.
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

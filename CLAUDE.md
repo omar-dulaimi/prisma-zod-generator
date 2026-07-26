@@ -27,24 +27,27 @@ This is a Prisma Generator that automatically generates Zod schemas from Prisma 
 
 ### Coverage
 
-Use `pnpm run test:coverage:full`. It is the only number that means anything here, and
-it is the one with a threshold gate.
+`pnpm run test:coverage` locally, `test:coverage:ci` in CI. Both run under c8; there is no
+in-process coverage script left, and that is deliberate.
 
-The reason is worth knowing before trusting any other figure: most of the suite
-exercises the generator by spawning `prisma generate`, which runs `node ./lib/generator.js`
-in a **child process**. In-process V8 coverage cannot see that, so `pnpm run test:coverage`
-(plain Vitest) reports the engine — transformer, generators/, prisma-generator — at
-close to zero while it is in fact the best-covered code in the repo. Measured that way
-the whole of `src/` looks like ~20%; measured properly it is ~87%.
+The reason is worth knowing before trusting any coverage figure here. Most of the suite exercises
+the generator by spawning `prisma generate`, which runs `node ./lib/generator.js` in a **child
+process**, and in-process V8 coverage cannot see that at all. Measured with plain Vitest the
+engine — transformer, generators/, prisma-generator — reads close to zero while being the
+best-covered code in the repo, and the whole of `src/` looks like ~20% against a real ~89%. Nine
+scripts used to report that number, including the `test:coverage` the contributing guide points
+at; they are gone or repointed.
 
-`test:coverage:full` runs the same suite under c8, which captures the child processes,
-and passes `--exclude-after-remap` so their `lib/*.js` coverage is attributed back to
-`src/*.ts` through the source maps. Without that flag c8's filters match the pre-map
-`lib/` paths, every child's data is dropped, and `--all` backfills the src files at 0% —
-which looks like a real result and is not.
+Both scripts pass `--exclude-after-remap`, which is the part that makes it work: without it c8
+matches its filters against the pre-map `lib/` paths, drops every child's data, and `--all`
+backfills the src files at 0% — a result that looks real and is not.
 
-The report needs a raised heap (the script sets it): it merges well over a thousand raw
-V8 coverage files and OOMs on the default.
+`test:coverage:ci` differs only in its thresholds, calibrated for a checkout without the private
+`src/pro` submodule, where 18 files skip. Both sets of thresholds sit below the figure measured in
+*both* conditions, so either script passes either way.
+
+The report needs a raised heap (the scripts set it): it merges well over a thousand raw V8
+coverage files and OOMs on the default.
 
 ## Architecture
 
