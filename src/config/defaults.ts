@@ -427,129 +427,6 @@ export class DefaultConfigurationManager {
     return result;
   }
 
-  /**
-   * Create configuration preset for common use cases
-   */
-  static createPreset(presetName: ConfigurationPreset): GeneratorConfig {
-    switch (presetName) {
-      case 'minimal':
-        return this.getMinimalConfiguration();
-
-      case 'trpc':
-        return {
-          mode: 'custom',
-          output: './generated/zod',
-          globalExclusions: {
-            input: ['id', 'createdAt', 'updatedAt'],
-            result: [],
-            pure: ['password', 'hashedPassword'],
-          },
-          variants: {
-            pure: {
-              enabled: true,
-              suffix: '.model',
-              excludeFields: [],
-            },
-            input: {
-              enabled: true,
-              suffix: '.input',
-              excludeFields: [],
-            },
-            result: {
-              enabled: true,
-              suffix: '.output',
-              excludeFields: [],
-            },
-          },
-          models: {},
-        };
-
-      case 'api-validation':
-        return {
-          mode: 'custom',
-          output: './src/schemas',
-          globalExclusions: {
-            input: ['id', 'createdAt', 'updatedAt'],
-            result: [],
-            pure: [],
-          },
-          variants: {
-            pure: {
-              enabled: false,
-              suffix: '.model',
-              excludeFields: [],
-            },
-            input: {
-              enabled: true,
-              suffix: '.request',
-              excludeFields: [],
-            },
-            result: {
-              enabled: true,
-              suffix: '.response',
-              excludeFields: [],
-            },
-          },
-          models: {},
-        };
-
-      case 'full-featured':
-        return {
-          mode: 'full',
-          output: './generated/zod-schemas',
-          globalExclusions: {},
-          variants: {
-            pure: {
-              enabled: true,
-              suffix: '.model',
-              excludeFields: [],
-            },
-            input: {
-              enabled: true,
-              suffix: '.input',
-              excludeFields: ['id', 'createdAt', 'updatedAt'],
-            },
-            result: {
-              enabled: true,
-              suffix: '.result',
-              excludeFields: [],
-            },
-          },
-          models: {},
-        };
-
-      default:
-        return this.getDefaultConfiguration();
-    }
-  }
-
-  /**
-   * Get available configuration presets
-   */
-  static getAvailablePresets(): ConfigurationPresetInfo[] {
-    return [
-      {
-        name: 'minimal',
-        description: 'Basic CRUD operations only, minimal file output',
-        useCase: 'Simple applications that only need basic database operations',
-      },
-      {
-        name: 'trpc',
-        description: 'Optimized for tRPC usage with input/output variants',
-        useCase: 'Full-stack applications using tRPC for type-safe APIs',
-      },
-      {
-        name: 'api-validation',
-        description: 'Request/response validation for REST APIs',
-        useCase: 'REST API applications needing request/response validation',
-      },
-      {
-        name: 'full-featured',
-        description: 'Complete schema generation with all features enabled',
-        useCase: 'Complex applications needing comprehensive schema coverage',
-      },
-    ];
-  }
 }
 
 /**
@@ -575,13 +452,6 @@ export interface ConfigurationPresetInfo {
  */
 export function getDefaultConfiguration(): GeneratorConfig {
   return DefaultConfigurationManager.getDefaultConfiguration();
-}
-
-/**
- * Get minimal configuration
- */
-export function getMinimalConfiguration(): GeneratorConfig {
-  return DefaultConfigurationManager.getMinimalConfiguration();
 }
 
 /**
@@ -611,20 +481,6 @@ export function fillMissingModelConfigs(
  */
 export function normalizeConfiguration(config: GeneratorConfig): GeneratorConfig {
   return DefaultConfigurationManager.normalizeConfiguration(config);
-}
-
-/**
- * Create preset configuration
- */
-export function createPreset(presetName: ConfigurationPreset): GeneratorConfig {
-  return DefaultConfigurationManager.createPreset(presetName);
-}
-
-/**
- * Get available presets
- */
-export function getAvailablePresets(): ConfigurationPresetInfo[] {
-  return DefaultConfigurationManager.getAvailablePresets();
 }
 
 /**

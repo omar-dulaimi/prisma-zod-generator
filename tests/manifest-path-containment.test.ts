@@ -1,4 +1,4 @@
-import { join } from 'path';
+import { join, sep } from 'path';
 import { describe, expect, it, vi } from 'vitest';
 import {
   addDirectoryToManifest,
@@ -31,7 +31,8 @@ describe('manifest path containment', () => {
     const m = manifest();
     addFileToManifest(m, join(outputPath, 'schemas', 'objects', 'UserCreateInput.schema.ts'), outputPath);
 
-    expect(m.files).toEqual(['schemas/objects/UserCreateInput.schema.ts'.split('/').join(require('path').sep)]);
+    // Joined with the platform separator, since that is what path.relative returns.
+    expect(m.files).toEqual([['schemas', 'objects', 'UserCreateInput.schema.ts'].join(sep)]);
   });
 
   it('refuses a file path that escapes the output directory', () => {

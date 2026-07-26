@@ -873,21 +873,6 @@ export default class Transformer {
   }
 
   /**
-   * Filter relation fields to only include those pointing to enabled models
-   */
-  static filterRelationFields(fields: PrismaDMMF.Field[]): PrismaDMMF.Field[] {
-    return fields.filter((field) => {
-      // Include non-relation fields
-      if (field.kind !== 'object' || !field.relationName) {
-        return true;
-      }
-
-      // Only include relation fields if the related model is enabled
-      return this.isEnabledRelationField(field);
-    });
-  }
-
-  /**
    * Get list of enabled related models for a given model
    */
   static getEnabledRelatedModels(model: PrismaDMMF.Model): string[] {
@@ -1532,10 +1517,6 @@ export default class Transformer {
     // Previous logic attempted to rewrite relative paths heuristically. This is prone to
     // breaking user-supplied paths, so we now trust the provided statement as-is.
     return importStatement;
-  }
-
-  generateExportSchemaStatement(name: string, schema: string) {
-    return `export const ${name}Schema = ${schema}`;
   }
 
   async generateObjectSchema() {
@@ -2802,10 +2783,6 @@ const isValidDecimalInput = (
   }
 
   // Legacy method retained for backward compatibility; now returns empty string.
-  generateJsonSchemaImplementation() {
-    return '';
-  }
-
   private static ensureJsonHelpersFile() {
     if (this.jsonHelpersWritten) return;
     this.jsonHelpersWritten = true;
@@ -3332,17 +3309,6 @@ ${helperCode}
       return `z.strictObject({ ${body} })`;
     }
     return `z.object({ ${body} })${strictSuffix}`;
-  }
-
-  resolveObjectSchemaName() {
-    const name = this.name;
-    let exportName = this.name;
-    // Only remap when the lookup succeeds so a miss can never crash generation
-    const mapped = Transformer.rawOpsMap[name];
-    if (mapped) {
-      exportName = mapped.replace('Args', '');
-    }
-    return exportName;
   }
 
   async generateModelSchemas() {
@@ -4639,18 +4605,6 @@ ${helperCode}
   }
 
   /**
-   * Generate smart import statement that checks if target exists
-   */
-  generateSmartImportStatement(
-    importName: string,
-    importPath: string,
-    relatedModel?: string,
-  ): string {
-    // Use the static validated version
-    return Transformer.generateValidatedImportStatement(importName, importPath, relatedModel);
-  }
-
-  /**
    * Log import management information
    */
   static logImportManagement(
@@ -5031,18 +4985,6 @@ ${helperCode}
     // This prevents circular imports by keeping select definitions local
     // Use z.lazy() only for relation fields within the inlined schema
     return true; // Always inline - aggressive inlining like community generator
-  }
-
-  /**
-   * Generates inline select schema definition code within the FindMany file.
-   * This prevents circular imports by defining the schema locally.
-   * Follows community generator pattern with aggressive inlining.
-   */
-  generateInlineSelectSchema(model: PrismaDMMF.Model): string {
-    const modelName = model.name;
-    // Wrap the shared definition so this helper cannot diverge from
-    // generateInlineSelectSchemaDefinition (used by the dual export path).
-    return `export const ${modelName}SelectSchema: z.ZodType<Prisma.${this.getPrismaTypeName(modelName)}Select> = ${this.generateInlineSelectSchemaDefinition(model)}`;
   }
 
   /**

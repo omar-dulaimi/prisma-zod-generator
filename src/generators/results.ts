@@ -799,26 +799,6 @@ ${allFields.join(',\n')}
    * Public utility methods
    */
 
-  /**
-   * Clear generated schema cache
-   */
-  clearCache(): void {
-    this.generatedSchemas.clear();
-  }
-
-  /**
-   * Get all generated schemas
-   */
-  getAllGeneratedSchemas(): GeneratedResultSchema[] {
-    return Array.from(this.generatedSchemas.values());
-  }
-
-  /**
-   * Register base model schema
-   */
-  registerBaseModelSchema(modelName: string, schema: string): void {
-    this.baseModelSchemas.set(modelName, schema);
-  }
 }
 
 export default ResultSchemaGenerator;

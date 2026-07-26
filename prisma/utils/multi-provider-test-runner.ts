@@ -181,21 +181,22 @@ export class MultiProviderTestRunner {
       throw new Error(`Schema file not found: ${schemaPath}`);
     }
 
-    // Check if schemas are already generated and up-to-date
+    // Trust what is on disk. tests/helpers/global-setup.ts generates all five providers before
+    // any worker starts, and these fixture directories are shared: several suites import from
+    // them directly.
+    //
+    // The check here used to require an entry in `this.schemaCache`, which is per-instance. A
+    // runner is constructed fresh in multi-provider.test.ts, provider-test-suite.ts and
+    // run-all-tests.ts, so each one found an empty cache and re-ran `prisma generate` into the
+    // shared directory — rewriting files while other workers were importing them. That surfaced
+    // as comprehensive-schema-coverage importing 212 of 246 postgresql schemas, or a missing
+    // `PostgreSQLUserCreateNestedOneWithoutProfileInput`, in a run where every suite passes on
+    // its own. Regenerating mid-run is never what this suite wants; globalSetup owns it.
     const cacheKey = config.provider;
-    const cached = this.schemaCache.get(cacheKey);
-    const schemaModTime = this.getFileModTime(schemaPath);
 
-    if (
-      cached &&
-      cached.generated &&
-      existsSync(generatedPath) &&
-      cached.timestamp >= schemaModTime
-    ) {
-      console.log(
-        `  ♻️  Using cached schemas for ${config.name} (${cached.timestamp - schemaModTime}ms newer)`,
-      );
-      this.performanceMetrics.generationTime[config.provider] = 0; // Cached
+    if (existsSync(generatedPath) && this.hasGeneratedFiles(generatedPath)) {
+      this.schemaCache.set(cacheKey, { generated: true, timestamp: Date.now() });
+      this.performanceMetrics.generationTime[config.provider] = 0;
       return;
     }
 
@@ -767,6 +768,15 @@ export class MultiProviderTestRunner {
   /**
    * Get file modification time safely
    */
+  /** Whether a generated directory actually holds schema files, not just an empty tree. */
+  private hasGeneratedFiles(dir: string): boolean {
+    try {
+      return this.getAllFiles(dir, '.ts').length > 0;
+    } catch {
+      return false;
+    }
+  }
+
   private getFileModTime(filePath: string): number {
     try {
       return statSync(filePath).mtime.getTime();
