@@ -1,3 +1,28 @@
+## [2.8.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.8.1...v2.8.2) (2026-07-26)
+
+### 🐛 Bug Fixes
+
+* **config:** declare every option the generator reads in the JSON Schema ([869bf8f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/869bf8fe5e3e5943d8ba73cd9641904cdb9c4217))
+* give the pure-model type mapper the real datasource provider ([47143fd](https://github.com/omar-dulaimi/prisma-zod-generator/commit/47143fd253e818c2f57dd958eb82f768ed83a634))
+* hoist the Decimal helpers into single-file bundles ([7a9377d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7a9377dc965f5828d403dad7877ce962199ede09))
+* never track a generated path outside the output directory ([cf6230c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cf6230cd3dea7f2195629ad389c254e36cbfc5de))
+* **pro:** validate options in every pack, and close two regressions ([0465360](https://github.com/omar-dulaimi/prisma-zod-generator/commit/0465360b2f5df145c1c91b165d2c8d7729449eca))
+* **tests:** point MongoDB's multi-provider path at its actual output ([ffea188](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ffea188afaecca7ad21c166dd65209ccc7b6cca8))
+* **tests:** stop collecting third-party suites from the fixture install ([81569be](https://github.com/omar-dulaimi/prisma-zod-generator/commit/81569be01265f09136b056a224237a9755bd9a03))
+* **tests:** stop the multi-provider runner regenerating shared fixtures mid-run ([7eae2bb](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7eae2bb09cfabae5cc9533ffd1ac404481e8e274))
+
+### ♻️ Code Refactoring
+
+* one source for the emitted JSON helpers ([47c1428](https://github.com/omar-dulaimi/prisma-zod-generator/commit/47c14288a77f8093399bc733283cda457c9b1f95))
+* reduce businessSecurity to the licence gate it actually is ([1228380](https://github.com/omar-dulaimi/prisma-zod-generator/commit/122838075e02bf20fcead03d91812d19f2922f1e))
+* reduce errorHandling to what is reachable, and log where users can see it ([51f430c](https://github.com/omar-dulaimi/prisma-zod-generator/commit/51f430c5a65cb24f85981aae5ce582e0095b94d3))
+* remove modules no caller can reach ([c6fb5e2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c6fb5e24fb2f1eb798bff81cbf0850a5a360c8b0))
+* remove the last three unreachable exports ([744e39a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/744e39a12a323e66ef58ee4e0b8b3a53c0a2b58b))
+
+### 📚 Documentation
+
+* regenerate llms.txt ([62de085](https://github.com/omar-dulaimi/prisma-zod-generator/commit/62de0859af3094f00130e451eaa8a0b079618727))
+
 ## [2.8.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.8.0...v2.8.1) (2026-07-25)
 
 ### 🐛 Bug Fixes
