@@ -8,7 +8,11 @@ export default defineConfig({
     // Build lib/ once before workers spawn; see tests/helpers/global-setup.ts.
     globalSetup: ['./tests/helpers/global-setup.ts'],
     include: ['tests/**/*.{test,spec}.ts'],
-    exclude: ['node_modules', 'dist', 'coverage', 'lib', 'package'],
+    // '**/node_modules/**' rather than 'node_modules': the bare form only matches the
+    // top-level directory, so once tests/typecheck-fixtures had its own install, vitest
+    // collected third-party test files out of it — pino's and @jest/pattern's — and ran them
+    // as part of this suite.
+    exclude: ['**/node_modules/**', 'dist', 'coverage', 'lib', 'package'],
     testTimeout: 300000,
     hookTimeout: 60000,
     teardownTimeout: 60000,
