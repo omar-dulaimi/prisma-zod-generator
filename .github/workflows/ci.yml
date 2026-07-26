@@ -203,6 +203,16 @@ jobs:
           cd package
           npm pack --dry-run
 
+      # `npm pack --dry-run` above lists what would be shipped without installing any of it, so
+      # nothing here verified that the tarball installs, that its bin entries resolve, or that
+      # `provider = "prisma-zod-generator"` works — the form every doc and every user writes, and
+      # which no test in the suite uses (they all run `node ./lib/generator.js`). This installs the
+      # package into a throwaway project, generates through it, type-checks the output and parses a
+      # payload through an emitted schema.
+      - name: Verify the packaged generator from a consumer project
+        run: pnpm run test:package-consumer
+        timeout-minutes: 15
+
       # The only job with the private submodule, so the only place these can run. They generate
       # the Form UX and Contract Testing packs and type-check the result against the real MUI,
       # Chakra, Mantine and Pact packages, which live in tests/typecheck-fixtures rather than the
