@@ -119,9 +119,9 @@
     "postrelease": "echo 'Changelog is maintained on GitHub; no docs sync needed.'",
     "test:all": "VITEST_MAX_WORKERS=16 vitest --config vitest.config.mjs run --reporter=default",
     "test:all:sequential": "VITEST_MAX_WORKERS=1 vitest --config vitest.config.mjs run --reporter=default",
-    "test:coverage:full": "NODE_OPTIONS=--max-old-space-size=8192 c8 --include='src/**/*.ts' --exclude='src/dsrc/**' --exclude='src/types/**' --exclude='src/types.ts' --exclude='**/*.d.ts' --exclude-after-remap --all --temp-directory=coverage/tmp --report-dir=coverage-full --reporter=text --reporter=json --reporter=html --check-coverage --statements=89 --branches=87 --functions=67 --lines=89 vitest --config vitest.config.mjs run",
+    "test:coverage:full": "NODE_OPTIONS=--max-old-space-size=8192 c8 --include='src/**/*.ts' --exclude='src/dsrc/**' --exclude='src/types/**' --exclude='src/types.ts' --exclude='**/*.d.ts' --exclude-after-remap --all --temp-directory=coverage/tmp --report-dir=coverage-full --reporter=text --reporter=json --reporter=html --check-coverage --statements=89 --branches=87 --functions=70 --lines=89 vitest --config vitest.config.mjs run",
     "test:typecheck-fixtures": "pnpm --dir tests/typecheck-fixtures install && vitest --config vitest.config.mjs run tests/pro-ui-output-compiles.test.ts",
-    "test:coverage:ci": "NODE_OPTIONS=--max-old-space-size=8192 c8 --include='src/**/*.ts' --exclude='src/dsrc/**' --exclude='src/types/**' --exclude='src/types.ts' --exclude='**/*.d.ts' --exclude-after-remap --all --temp-directory=coverage/tmp --report-dir=coverage-full --reporter=text --reporter=json --check-coverage --statements=86 --branches=86 --functions=67 --lines=86 vitest --config vitest.config.mjs run"
+    "test:coverage:ci": "NODE_OPTIONS=--max-old-space-size=8192 c8 --include='src/**/*.ts' --exclude='src/dsrc/**' --exclude='src/types/**' --exclude='src/types.ts' --exclude='**/*.d.ts' --exclude-after-remap --all --temp-directory=coverage/tmp --report-dir=coverage-full --reporter=text --reporter=json --check-coverage --statements=87 --branches=86 --functions=69 --lines=87 vitest --config vitest.config.mjs run"
   },
   "author": {
     "name": "Omar Dulaimi",

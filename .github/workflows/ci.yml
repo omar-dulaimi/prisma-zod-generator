@@ -122,10 +122,11 @@ jobs:
 
       # The coverage ratchet, run once rather than on all three Node versions. Thresholds are
       # calibrated for a checkout without the private Pro submodule — what this job and every
-      # fork has — where 18 files skip and the figure is 87.6% statements / 88.6% branches /
-      # 69.1% functions. They sit below the lower of that and the with-submodule figure
-      # (89.0/87.6/68.2) so the same script passes either way. Without this step the gate only
-      # ever ran when someone remembered to run it locally.
+      # fork has — where 18 files skip and the figure is 87.9% statements / 88.5% branches /
+      # 70.4% functions. They sit below the lower of that and the with-submodule figure
+      # (89.5/87.7/70.6) so the same script passes either way; both were measured before these
+      # numbers were set. Without this step the gate only ever ran when someone remembered to run
+      # it locally.
       #
       # It re-runs the suite under c8 rather than reusing the run above, because c8 has to own
       # the process tree: most of these tests spawn `prisma generate`, and in-process coverage
