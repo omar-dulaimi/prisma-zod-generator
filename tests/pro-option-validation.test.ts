@@ -1,5 +1,5 @@
 import { getDMMF } from '@prisma/internals';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -92,6 +92,104 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
    * Six survived that way, each defaulted and advertised, none consulted. Silence is the worst
    * outcome here — the setting looks applied.
    */
+  describe('option values that are the wrong shape', () => {
+    /**
+     * Three cases where a wrong value was accepted and acted on rather than rejected. Each produces
+     * no error, a zero exit code, and output that is either missing or broken.
+     */
+    it(
+      'rejects a bare string where a platform list belongs',
+      async () => {
+        // `platforms: 'typescript'` was iterated character by character: ten warnings reading
+        // "Platform t not yet implemented", "Platform y ...", then "Generated SDKs for 10 platforms"
+        // and no files at all.
+        const output = await runSdk({ platforms: 'typescript' as never }, 'platforms-string');
+
+        expect(output).not.toMatch(/Platform [ty] not yet implemented/);
+        expect(output.toLowerCase()).toMatch(/array|list/);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'says so when the platform list is empty',
+      async () => {
+        // Generated nothing, warned about nothing, exited 0.
+        const output = await runSdk({ platforms: [] }, 'platforms-empty');
+
+        expect(output.toLowerCase()).toMatch(/no platform|empty/);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'reports an action it does not implement',
+      async () => {
+        const captured: string[] = [];
+        vi.spyOn(console, 'log').mockImplementation((...args) => {
+          captured.push(args.join(' '));
+        });
+
+        const { generateServerActionsFromDMMF } = await import(
+          '../src/pro/features/server-actions/server-actions'
+        );
+        const dmmf = await getDMMF({ datamodel: SCHEMA });
+        const out = join(dir, 'bogus-actions');
+
+        await generateServerActionsFromDMMF(
+          dmmf,
+          {},
+          join(dir, 'schema.prisma'),
+          out,
+          '@prisma/client',
+          'postgresql',
+          { actions: ['upsert', 'createMany'] },
+          [],
+        );
+
+        const output = captured.join('\n');
+        expect(output).toMatch(/upsert|createMany/);
+        expect(output.toLowerCase()).toMatch(/not implemented|not supported|unknown/);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'does not emit a hook that imports nothing',
+      async () => {
+        // With only unsupported actions, every action body was skipped but the hook was still
+        // emitted, containing `import {  } from '../actions/invoice'` and referencing nothing.
+        const { generateServerActionsFromDMMF } = await import(
+          '../src/pro/features/server-actions/server-actions'
+        );
+        const dmmf = await getDMMF({ datamodel: SCHEMA });
+        const out = join(dir, 'bogus-actions-files');
+
+        await generateServerActionsFromDMMF(
+          dmmf,
+          {},
+          join(dir, 'schema.prisma'),
+          out,
+          '@prisma/client',
+          'postgresql',
+          { actions: ['upsert'] },
+          [],
+        );
+
+        const hooks = join(out, 'hooks');
+        if (existsSync(hooks)) {
+          for (const name of readdirSync(hooks)) {
+            expect(
+              readFileSync(join(hooks, name), 'utf-8'),
+              `${name} has an empty import`,
+            ).not.toMatch(/import \{\s*\} from/);
+          }
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   describe('options that were accepted and ignored', () => {
     /**
      * A schema with a tenant column, for the packs that need one. The shared fixture above has no
