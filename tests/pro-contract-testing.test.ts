@@ -86,6 +86,63 @@ describe.skipIf(!proAvailable)('Contract Testing pacts', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  describe('wiremockConfig', () => {
+    /**
+     * The option gated generation by presence alone — every sub-option was accepted and ignored.
+     * `mappingsPath` is the one with something to act on: the files were written to a hardcoded
+     * `<output>/wiremock/mappings` regardless. `port`, `host` and `standalone` describe a Wiremock
+     * server this pack does not run — it only writes mapping JSON — so they are declared
+     * unimplemented rather than silently dropped.
+     */
+    it(
+      'writes mappings where mappingsPath says',
+      async () => {
+        const out = await generate('wiremock-path', {
+          wiremockConfig: { mappingsPath: 'stubs/mappings' },
+        });
+
+        expect(existsSync(join(out, 'stubs', 'mappings')), 'mappingsPath should be honoured').toBe(
+          true,
+        );
+        expect(readdirSync(join(out, 'stubs', 'mappings')).length).toBeGreaterThan(0);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'defaults to wiremock/mappings',
+      async () => {
+        const out = await generate('wiremock-default', { wiremockConfig: {} });
+
+        expect(existsSync(join(out, 'wiremock', 'mappings'))).toBe(true);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'says which sub-options it cannot act on',
+      async () => {
+        const logged: string[] = [];
+        const origLog = console.log;
+        console.log = (...args: unknown[]) => {
+          logged.push(args.map(String).join(' '));
+        };
+        try {
+          await generate('wiremock-server-opts', {
+            wiremockConfig: { port: 8081, host: 'localhost', standalone: true },
+          });
+        } finally {
+          console.log = origLog;
+        }
+
+        const output = logged.join('\n');
+        expect(output).toMatch(/port|host|standalone/);
+        expect(output.toLowerCase()).toMatch(/no effect|not implemented|ignored/);
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   it(
     'matches response bodies by shape rather than exact value',
     async () => {

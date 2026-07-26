@@ -112,6 +112,60 @@ describe.skipIf(!proAvailable)('Server Actions pack', () => {
     expect(source).not.toContain("'use server'");
   });
 
+  describe('the Prisma client singleton', () => {
+    /**
+     * The emitted module did `new PrismaClient()` with no arguments. Prisma 7 does not allow that:
+     * `url` was removed from the datasource block, and its own validation error says to "pass either
+     * `adapter` for a direct database connection or `accelerateUrl` for Accelerate to the
+     * PrismaClient constructor". Measured against a real v7 client: `new PrismaClient()` throws
+     * `Cannot read properties of undefined (reading '__internal')`, while
+     * `new PrismaClient({ adapter })` constructs fine.
+     *
+     * Every generated action imports this singleton, so the whole pack failed on the Prisma version
+     * this repo requires — and the failure was a cryptic internal TypeError at import time rather
+     * than anything a reader could act on.
+     */
+    it('does not construct a client with no arguments', () => {
+      // Comments are excluded deliberately: the module explains what it used to do, and quoting the
+      // old call is worth keeping. What matters is that no executable line constructs a client.
+      const code = read('prisma-client.ts')
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('//'))
+        .join('\n');
+
+      expect(code).not.toMatch(/new PrismaClient\(\s*\)/);
+    });
+
+    it('lets the application supply its configured client', () => {
+      const source = read('prisma-client.ts');
+
+      // The pack cannot know the caller's adapter — pg, neon, planetscale — so it has to accept one.
+      expect(source).toMatch(/setPrismaClient/);
+      expect(source).toMatch(/adapter/i);
+    });
+
+    it('still exports `prisma`, because every action imports it', () => {
+      expect(read('prisma-client.ts')).toMatch(/export const prisma/);
+      expect(read('actions', 'member.ts')).toMatch(/from '\.\.\/prisma-client'/);
+    });
+
+    it('fails with an actionable message when nothing was supplied', async () => {
+      const mod = await import(join(dir, 'server-actions', 'prisma-client.ts'));
+
+      // Touching a delegate before configuration must say what to do, not throw from Prisma's guts.
+      expect(() => (mod.prisma as Record<string, unknown>).user).toThrow(/setPrismaClient/);
+    });
+
+    it('uses the client it was given', async () => {
+      const mod = await import(join(dir, 'server-actions', 'prisma-client.ts'));
+      const fake = { user: { findMany: () => Promise.resolve([{ id: 'u1' }]) } };
+
+      mod.setPrismaClient(fake as never);
+
+      expect((mod.prisma as typeof fake).user).toBe(fake.user);
+    });
+  });
+
   describe('input validation', () => {
     it('emits a Zod schema module per model', async () => {
       const schemas = await import(join(dir, 'server-actions', 'schemas', 'member.ts'));

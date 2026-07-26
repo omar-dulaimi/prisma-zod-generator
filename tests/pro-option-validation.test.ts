@@ -242,12 +242,17 @@ model Invoice {
     it(
       'treats enableGuards as the alias it is documented to be',
       async () => {
-        // The comment on the field says "Back-compat alias"; nothing read it. The guards it refers
-        // to are the $extends helpers in tenant-extensions.ts, which generatePrismaExtension gates.
+        // The comment on the field says "Back-compat alias"; nothing read it. The guards it refers to
+        // are the $extends helpers in tenant-extensions.ts, which generatePrismaExtension gates.
+        //
+        // Middleware is turned off alongside it here because the two are no longer independent:
+        // createTenantPrismaClient in the middleware module goes through withEnhancedTenantGuard,
+        // since Prisma removed the $use API it used to register on. Turning the guard off while
+        // asking for middleware therefore cannot remove the guard — see the next test.
         const off = await run(
           'features/multi-tenant-kit/multi-tenant-kit',
           'generateMultiTenantKitFromDMMF',
-          { enableGuards: false },
+          { enableGuards: false, generateMiddleware: false },
           'mt-no-guards',
           TENANT_SCHEMA,
         );
@@ -263,6 +268,26 @@ model Invoice {
         );
 
         expect(existsSync(join(on.out, 'tenant-extensions.ts'))).toBe(true);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'keeps the guard when middleware needs it, and says why',
+      async () => {
+        // Emitting the middleware without the guard it imports would leave a dangling import — the
+        // same breakage the other packs' flags used to produce. The guard wins, with an explanation.
+        const { output, out } = await run(
+          'features/multi-tenant-kit/multi-tenant-kit',
+          'generateMultiTenantKitFromDMMF',
+          { generatePrismaExtension: false, generateMiddleware: true },
+          'mt-conflict',
+          TENANT_SCHEMA,
+        );
+
+        expect(existsSync(join(out, 'tenant-extensions.ts'))).toBe(true);
+        expect(output).toMatch(/generatePrismaExtension/);
+        expect(output).toMatch(/tenant-middleware|imports/i);
       },
       GENERATION_TIMEOUT,
     );

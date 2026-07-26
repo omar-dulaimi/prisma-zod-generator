@@ -159,6 +159,44 @@ describe.skipIf(!proAvailable)('Multi-Tenant Kit', () => {
     });
   });
 
+  describe('createTenantPrismaClient', () => {
+    /**
+     * It called `prisma.$use(middleware)`. Prisma removed `$use` in v5 — proved against the generated
+     * client's own types, where `prisma.$use(...)` is TS2339 — and this package requires Prisma 7. The
+     * emitted code compiled only because the parameter is typed `any`, so the documented entry point
+     * threw `TypeError: prisma.$use is not a function` on the first call for every user of the pack,
+     * and `generateMiddleware` defaults to on.
+     *
+     * The working equivalent already existed next door: tenant-extensions.ts wires the same guard
+     * through `$extends`, which is what replaced middleware.
+     */
+    it('scopes a client without calling the removed $use API', async () => {
+      const out = await generate('middleware-entry', 'tenantId', {});
+      const { createTenantPrismaClient } = await import(join(out, 'tenant-middleware.ts'));
+
+      // A Prisma 7 client: $extends, no $use.
+      const extended = { marker: 'extended' };
+      const client = {
+        $extends: (_ext: unknown) => extended,
+        get $use() {
+          throw new Error('$use was removed in Prisma 5');
+        },
+      };
+
+      const scoped = createTenantPrismaClient(client, { tenantId: 'acme' });
+
+      expect(scoped).toBe(extended);
+    });
+
+    it('says so if the middleware factory is kept for older Prisma', async () => {
+      const out = await generate('middleware-doc', 'tenantId', {});
+      const source = readFileSync(join(out, 'tenant-middleware.ts'), 'utf-8');
+
+      // A function nothing can register should not read as the supported path.
+      expect(source).toMatch(/\$use|removed|Prisma 5|legacy/i);
+    });
+  });
+
   describe('the client extension', () => {
     it('registers query hooks for a tenant-scoped model', () => {
       const source = normalized(join(defaultOut, 'tenant-extensions.ts'));
