@@ -112,6 +112,77 @@ describe.skipIf(!proAvailable)('Server Actions pack', () => {
     expect(source).not.toContain("'use server'");
   });
 
+  describe('a model with a composite primary key', () => {
+    /**
+     * `@@id([userId, tenantId])` — a join table, which is the common case for one — produced
+     * `where: { userId: userId }`, only the first key, from a signature that took only the first
+     * argument. Prisma's own types reject it: TS2322, "Property 'userId_tenantId' is missing in type
+     * '{ userId: string; }' but required in type 'MembershipWhereUniqueInput'". So the pack emitted
+     * code that does not compile, and the caller had no way to supply the second key.
+     *
+     * `pkFields[0]` carried the comment "Assume single PK for simplicity" at four sites.
+     */
+    let source: string;
+
+    beforeAll(async () => {
+      const { generateServerActionsFromDMMF } = await import(
+        '../src/pro/features/server-actions/server-actions'
+      );
+      const dmmf = await getDMMF({
+        datamodel: `
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Membership {
+  userId   String
+  tenantId String
+  label    String?
+
+  @@id([userId, tenantId])
+}
+`,
+      });
+      const out = join(dir, 'composite');
+      await generateServerActionsFromDMMF(
+        dmmf,
+        {},
+        join(dir, 'schema.prisma'),
+        out,
+        '@prisma/client',
+        'postgresql',
+        {},
+        [],
+      );
+      source = readFileSync(join(out, 'actions', 'membership.ts'), 'utf-8');
+    }, GENERATION_TIMEOUT);
+
+    it('takes every key field, not just the first', () => {
+      const update = source.slice(source.indexOf('export async function updateMembership'));
+
+      expect(update).toMatch(/userId: string/);
+      expect(update).toMatch(/tenantId: string/);
+    });
+
+    it('builds the compound where clause Prisma requires', () => {
+      // Prisma names it by joining the fields with an underscore, or by @@id(name:).
+      expect(source).toMatch(/userId_tenantId:\s*\{/);
+      // The single-key form is what Prisma rejects.
+      expect(source).not.toMatch(/where:\s*\{\s*userId:\s*userId\s*\}/);
+    });
+
+    it('does the same for delete', () => {
+      const del = source.slice(source.indexOf('export async function deleteMembership'));
+
+      expect(del).toMatch(/tenantId: string/);
+      expect(del).toMatch(/userId_tenantId/);
+    });
+  });
+
   describe('the Prisma client singleton', () => {
     /**
      * The emitted module did `new PrismaClient()` with no arguments. Prisma 7 does not allow that:

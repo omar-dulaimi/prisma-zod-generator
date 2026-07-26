@@ -35,6 +35,15 @@ export const writeFileSafely = async (
   try {
     // In single-file mode, we don't write per-file; we append to aggregator
     // BUT skip single file mode for Pro generator files (api-docs, etc.)
+    //
+    // Both branches this guards are inert for Pro output, and the path test cannot be relied on to
+    // identify it: `initSingleFile` is called only from prisma-generator.ts and `currentManifest` is
+    // set only there, while Pro runs as its own process (`node lib/cli/pzg-pro.js`), so `enabled` is
+    // false and the manifest null throughout a Pro run. The literal '/generated/pro/' would also miss
+    // on Windows, where path.join yields backslashes, and misses any custom `output` — verified
+    // harmless by generating all 56 feature combinations to `output = "./pro"`, every one of which
+    // wrote its files. Left in place for the core generator's own paths; do not read it as a live
+    // Pro-detection mechanism.
     const isProGeneratorFile =
       writeLocation.includes('/generated/pro/') && !writeLocation.includes('/generated/zod/');
     if (isSingleFileEnabled() && !isProGeneratorFile) {
