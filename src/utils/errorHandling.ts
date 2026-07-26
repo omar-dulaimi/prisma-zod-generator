@@ -21,138 +21,10 @@ export class LicenseError extends PZGProError {
   }
 }
 
-export class ValidationError extends PZGProError {
-  constructor(message: string, feature: string, context?: Record<string, unknown>) {
-    super(message, 'VALIDATION_ERROR', feature, context);
-    this.name = 'ValidationError';
-  }
-}
-
 export class FileSystemError extends PZGProError {
   constructor(message: string, feature: string, context?: Record<string, unknown>) {
     super(message, 'FILESYSTEM_ERROR', feature, context);
     this.name = 'FileSystemError';
-  }
-}
-
-export class SecurityError extends PZGProError {
-  constructor(message: string, feature: string, context?: Record<string, unknown>) {
-    super(message, 'SECURITY_ERROR', feature, context);
-    this.name = 'SecurityError';
-  }
-}
-
-/**
- * Safe async wrapper that handles errors consistently
- */
-export async function safeAsync<T>(
-  operation: () => Promise<T>,
-  feature: string,
-  context?: Record<string, unknown>,
-): Promise<{ success: true; data: T } | { success: false; error: PZGProError }> {
-  try {
-    const result = await operation();
-    return { success: true, data: result };
-  } catch (error) {
-    if (error instanceof PZGProError) {
-      return { success: false, error };
-    }
-
-    const wrappedError = new PZGProError(
-      error instanceof Error ? error.message : 'Unknown error occurred',
-      'UNKNOWN_ERROR',
-      feature,
-      { ...context, originalError: error },
-    );
-
-    return { success: false, error: wrappedError };
-  }
-}
-
-/**
- * Safe sync wrapper that handles errors consistently
- */
-export function safeSync<T>(
-  operation: () => T,
-  feature: string,
-  context?: Record<string, unknown>,
-): { success: true; data: T } | { success: false; error: PZGProError } {
-  try {
-    const result = operation();
-    return { success: true, data: result };
-  } catch (error) {
-    if (error instanceof PZGProError) {
-      return { success: false, error };
-    }
-
-    const wrappedError = new PZGProError(
-      error instanceof Error ? error.message : 'Unknown error occurred',
-      'UNKNOWN_ERROR',
-      feature,
-      { ...context, originalError: error },
-    );
-
-    return { success: false, error: wrappedError };
-  }
-}
-
-/**
- * Retry wrapper for operations that may fail temporarily
- */
-export async function withRetry<T>(
-  operation: () => Promise<T>,
-  maxAttempts: number = 3,
-  delayMs: number = 1000,
-  feature: string = 'unknown',
-): Promise<T> {
-  let lastError: Error;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error('Unknown error');
-
-      if (attempt === maxAttempts) {
-        throw new PZGProError(
-          `Operation failed after ${maxAttempts} attempts: ${lastError.message}`,
-          'RETRY_EXHAUSTED',
-          feature,
-          { maxAttempts, originalError: lastError },
-        );
-      }
-
-      // Wait before retrying
-      await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
-    }
-  }
-
-  throw lastError!;
-}
-
-/**
- * Validate that a value is not null or undefined
- */
-export function assertDefined<T>(
-  value: T | null | undefined,
-  message: string,
-  feature: string,
-): asserts value is T {
-  if (value === null || value === undefined) {
-    throw new ValidationError(message, feature, { value });
-  }
-}
-
-/**
- * Validate that a string is not empty
- */
-export function assertNonEmpty(
-  value: string | null | undefined,
-  message: string,
-  feature: string,
-): asserts value is string {
-  if (!value || value.trim().length === 0) {
-    throw new ValidationError(message, feature, { value });
   }
 }
 
@@ -188,10 +60,26 @@ export function logError(error: PZGProError): void {
     timestamp: new Date().toISOString(),
   };
 
-  // In development, include more context
+  // stdout, not stderr, for the reason spelled out on `logger.warn`: Prisma runs generators as
+  // child processes over JSON-RPC and does not surface their stderr. Every caller of this
+  // rethrows, so the failure itself does reach the user via Prisma — but the detail here, the
+  // error code and which Pro feature was refused, is the part that makes it actionable, and on
+  // stderr none of it arrived.
   if (process.env.NODE_ENV === 'development') {
-    console.error('[PZG Pro Error]', safeContext, error.context);
+    console.log('[PZG Pro Error]', safeContext, error.context);
   } else {
-    console.error('[PZG Pro Error]', safeContext);
+    console.log('[PZG Pro Error]', safeContext);
   }
 }
+
+/*
+ * Seven exports were removed here as unreachable: the safeAsync, safeSync and withRetry
+ * wrappers, the assertDefined and assertNonEmpty guards, and the ValidationError and
+ * SecurityError classes. src/license.ts is this module's only consumer, and it imports exactly
+ * LicenseError, logError and safeFileOperation — 23 of the file's 24 functions were uncovered,
+ * which is what prompted the look.
+ *
+ * ValidationError went with the two assert helpers, which were the only things that threw it.
+ * FileSystemError stays because safeFileOperation throws it, and PZGProError stays as the base
+ * the remaining classes extend.
+ */
