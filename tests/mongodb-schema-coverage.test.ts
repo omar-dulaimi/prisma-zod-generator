@@ -247,10 +247,9 @@ describe('MongoDB Schema Coverage Tests', () => {
       `📊 Sample schemas: ${successfulSamples.length}/${sampleSchemas.length} (${(successRate * 100).toFixed(1)}%)`,
     );
 
-    // Expect at least 70% success rate for sampled schemas (if any schemas exist)
-    if (sampleSchemas.length > 0) {
-      expect(successRate).toBeGreaterThan(0.7);
-    }
+    // All 40 sampled schemas import and validate. The gate was 70%, so a quarter of them
+    // could break silently.
+    expect(successfulSamples.length).toBe(sampleSchemas.length);
   });
 
   it('should validate all imported schemas', async () => {
@@ -344,10 +343,8 @@ describe('MongoDB Schema Coverage Tests', () => {
 
     console.log(`✅ Validated ${validatedCount}/${allSchemas.length} schemas successfully`);
 
-    // Expect high validation success rate (if any schemas exist)
-    if (allSchemas.length > 0) {
-      expect(validatedCount / allSchemas.length).toBeGreaterThan(0.9);
-    }
+    // 52/52 validate. The gate was 90%.
+    expect(validatedCount).toBe(allSchemas.length);
   });
 
   it('should measure validation performance', async () => {

@@ -312,14 +312,13 @@ describe('Comprehensive Schema Coverage Tests', () => {
             `✅ ${provider}: ${imported}/${providerSchemas.length} imported, ${validated}/${imported} validated`,
           );
 
-          // More lenient expectations due to import complexity
-          // Expect at least 50% successful import rate (many schemas have complex dependencies)
-          expect(imported / providerSchemas.length).toBeGreaterThan(0.5);
-
-          // Expect at least 80% validation rate of imported schemas
-          if (imported > 0) {
-            expect(validated / imported).toBeGreaterThan(0.8);
-          }
+          // Every provider imports and validates all of its schemas — 246/246 for
+          // postgresql, 153/153 mysql, 193/193 mongodb, 149/149 sqlite and sqlserver.
+          // The gates here were 50% import and 80% validation, so a change that broke half
+          // the generated schemas for a provider passed, and the per-schema warnings above
+          // scrolled past in a suite reporting green. Require what the generator delivers.
+          expect(imported).toBe(providerSchemas.length);
+          expect(validated).toBe(imported);
         });
       });
     });
@@ -353,8 +352,8 @@ describe('Comprehensive Schema Coverage Tests', () => {
 
         console.log(`📈 ${category}: ${successful}/${sampleSize} schemas validated successfully`);
 
-        // Expect reasonable success rate
-        expect(successful / sampleSize).toBeGreaterThan(0.7);
+        // 32/32 enums, 100/100 objects, 100/100 operations. The gate was 70%.
+        expect(successful).toBe(sampleSize);
       });
     });
   });
