@@ -465,65 +465,6 @@ function validateZodSyntax(comment: string, context: FieldCommentContext): strin
 }
 
 /**
- * Get comment extraction statistics for debugging
- *
- * @param extractedComments - Array of extracted comments
- * @returns Statistics about comment extraction
- */
-export function getExtractionStatistics(extractedComments: ExtractedFieldComment[]): {
-  totalFields: number;
-  fieldsWithComments: number;
-  fieldsWithZodAnnotations: number;
-  extractionErrors: number;
-} {
-  const totalFields = extractedComments.length;
-  const fieldsWithComments = extractedComments.filter(
-    (ec) => ec.normalizedComment.length > 0,
-  ).length;
-  const fieldsWithZodAnnotations = extractedComments.filter((ec) => ec.hasZodAnnotations).length;
-  const extractionErrors = extractedComments.filter((ec) => ec.extractionErrors.length > 0).length;
-
-  return {
-    totalFields,
-    fieldsWithComments,
-    fieldsWithZodAnnotations,
-    extractionErrors,
-  };
-}
-
-/**
- * Filter extracted comments to only those with @zod annotations
- *
- * @param extractedComments - Array of all extracted comments
- * @returns Array of comments containing @zod annotations
- */
-export function filterZodComments(
-  extractedComments: ExtractedFieldComment[],
-): ExtractedFieldComment[] {
-  return extractedComments.filter((ec) => ec.hasZodAnnotations && ec.extractionErrors.length === 0);
-}
-
-/**
- * Get all extraction errors across multiple field comments
- *
- * @param extractedComments - Array of extracted comments
- * @returns Array of all errors with field context
- */
-export function getAllExtractionErrors(extractedComments: ExtractedFieldComment[]): Array<{
-  modelName: string;
-  fieldName: string;
-  errors: string[];
-}> {
-  return extractedComments
-    .filter((ec) => ec.extractionErrors.length > 0)
-    .map((ec) => ({
-      modelName: ec.context.modelName,
-      fieldName: ec.context.fieldName,
-      errors: ec.extractionErrors,
-    }));
-}
-
-/**
  * Interface for parsed @zod annotation
  */
 export interface ParsedZodAnnotation {
@@ -2506,64 +2447,6 @@ export function generateCompleteZodSchema(
 }
 
 /**
- * Get base Zod type for Prisma field type
- *
- * @param fieldType - Prisma field type
- * @param isOptional - Whether field is optional
- * @param isList - Whether field is a list
- * @returns Base Zod type string
- */
-export function getBaseZodType(fieldType: string, isOptional: boolean, isList: boolean): string {
-  let baseType: string;
-
-  switch (fieldType) {
-    case 'String':
-      baseType = 'z.string()';
-      break;
-    case 'Int':
-      baseType = 'z.number().int()';
-      break;
-    case 'Float':
-      baseType = 'z.number()';
-      break;
-    case 'Boolean':
-      baseType = 'z.boolean()';
-      break;
-    case 'DateTime':
-      baseType = 'z.date()';
-      break;
-    case 'BigInt':
-      baseType = 'z.bigint()';
-      break;
-    case 'Decimal':
-      baseType = 'z.number()'; // or custom decimal schema
-      break;
-    case 'Json':
-      baseType = 'z.unknown()'; // or z.record(z.unknown())
-      break;
-    case 'Bytes':
-      baseType = 'z.instanceof(Uint8Array)'; // or custom bytes schema
-      break;
-    default:
-      // Unknown complex type (enum or relation). Without field kind context use a safe fallback.
-      baseType = 'z.unknown()';
-      break;
-  }
-
-  // Handle arrays
-  if (isList) {
-    baseType = `z.array(${baseType})`;
-  }
-
-  // Handle optional fields
-  if (isOptional) {
-    baseType = `${baseType}.optional()`;
-  }
-
-  return baseType;
-}
-
-/**
  * Field-aware base type resolver to correctly handle enums vs relations.
  */
 export function getBaseZodTypeForField(
@@ -3252,3 +3135,9 @@ export function extractFieldCustomImports(
 
   return parseCustomImports(fieldComment, context);
 }
+
+/*
+ * getExtractionStatistics, filterZodComments, getAllExtractionErrors and getBaseZodType were
+ * removed as unreachable — no caller inside or outside this module. getBaseZodTypeForField is
+ * the live counterpart of the last one.
+ */

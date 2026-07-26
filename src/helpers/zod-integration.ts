@@ -324,53 +324,6 @@ function generateFallbackSchema(field: DMMF.Field): string {
 }
 
 /**
- * Get integration statistics for reporting
- *
- * @param enhancedModels - Array of enhanced model information
- * @returns Integration statistics
- */
-export function getZodIntegrationStatistics(enhancedModels: EnhancedModelInfo[]): {
-  totalModels: number;
-  modelsWithZodAnnotations: number;
-  totalFields: number;
-  fieldsWithZodAnnotations: number;
-  totalErrors: number;
-  uniqueImports: number;
-} {
-  const stats = {
-    totalModels: enhancedModels.length,
-    modelsWithZodAnnotations: 0,
-    totalFields: 0,
-    fieldsWithZodAnnotations: 0,
-    totalErrors: 0,
-    uniqueImports: 0,
-  };
-
-  const allImports = new Set<string>();
-
-  for (const enhancedModel of enhancedModels) {
-    if (enhancedModel.hasAnyZodAnnotations) {
-      stats.modelsWithZodAnnotations++;
-    }
-
-    stats.totalFields += enhancedModel.enhancedFields.length;
-    stats.totalErrors += enhancedModel.zodProcessingErrors.length;
-
-    for (const enhancedField of enhancedModel.enhancedFields) {
-      if (enhancedField.hasZodAnnotations) {
-        stats.fieldsWithZodAnnotations++;
-      }
-
-      stats.totalErrors += enhancedField.zodErrors.length;
-      enhancedField.zodImports.forEach((imp) => allImports.add(imp));
-    }
-  }
-
-  stats.uniqueImports = allImports.size;
-  return stats;
-}
-
-/**
  * Check if existing comment processing should be preserved
  *
  * This function ensures backward compatibility by checking if a field
@@ -415,72 +368,8 @@ export function extractNonZodCommentContent(comment: string): string {
   return cleanedComment.replace(/\s+/g, ' ').trim();
 }
 
-/**
- * Integration wrapper that maintains backward compatibility
- *
- * This function provides a drop-in replacement for existing comment processing
- * while adding @zod annotation support.
- *
- * @param models - Array of Prisma DMMF models
- * @param options - Integration options
- * @returns Models with both existing and Zod comment processing applied
+/*
+ * getZodIntegrationStatistics and integrateZodWithExistingComments were removed as
+ * unreachable — no caller inside or outside this module. processModelsWithZodIntegration is
+ * the entry point the generator actually uses.
  */
-export function integrateZodWithExistingComments(
-  models: DMMF.Model[],
-  options: ZodIntegrationOptions = {},
-): {
-  enhancedModels: EnhancedModelInfo[];
-  backwardCompatibilityPreserved: boolean;
-  integrationWarnings: string[];
-} {
-  const integrationWarnings: string[] = [];
-  let backwardCompatibilityPreserved = true;
-
-  try {
-    // Process models with Zod integration
-    const enhancedModels = processModelsWithZodIntegration(models, options);
-
-    // Check for backward compatibility concerns
-    for (const enhancedModel of enhancedModels) {
-      for (const enhancedField of enhancedModel.enhancedFields) {
-        const originalComment = enhancedField.field.documentation || '';
-
-        if (shouldPreserveExistingCommentProcessing(originalComment)) {
-          const nonZodContent = extractNonZodCommentContent(originalComment);
-          if (nonZodContent.length > 0) {
-            integrationWarnings.push(
-              `Field ${enhancedModel.model.name}.${enhancedField.field.name} has both @zod annotations and existing comment directives. ` +
-                `Existing directives: "${nonZodContent}"`,
-            );
-          }
-        }
-      }
-    }
-
-    return {
-      enhancedModels,
-      backwardCompatibilityPreserved,
-      integrationWarnings,
-    };
-  } catch (error) {
-    backwardCompatibilityPreserved = false;
-    integrationWarnings.push(
-      `Integration failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
-
-    // Return fallback data
-    return {
-      enhancedModels: models.map((model) => ({
-        model,
-        enhancedFields: model.fields.map(createFallbackFieldInfo),
-        allZodImports: new Set(),
-        hasAnyZodAnnotations: false,
-        zodProcessingErrors: ['Integration fallback due to processing error'],
-        modelCustomImports: [],
-        allCustomImports: [],
-      })),
-      backwardCompatibilityPreserved,
-      integrationWarnings,
-    };
-  }
-}
