@@ -1,5 +1,5 @@
 import { getDMMF } from '@prisma/internals';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -23,11 +23,19 @@ enum Status {
 }
 
 model Invoice {
-  id     String @id @default(cuid())
-  title  String
-  status Status @default(DRAFT)
+  id        String   @id @default(cuid())
+  title     String
+  status    Status   @default(DRAFT)
   /// @deprecated use title instead
-  legacy String?
+  legacy    String?
+  // A DateTime, a number, a boolean and a Json column, so an example is emitted for each kind.
+  // Without them the spec carried no DateTime example and the generation timestamp baked into one
+  // could not be observed here.
+  amount    Decimal
+  quantity  Int
+  isPaid    Boolean  @default(false)
+  meta      Json?
+  createdAt DateTime @default(now())
 }
 `;
 
@@ -129,6 +137,54 @@ describe.skipIf(!proAvailable)('API Docs options', () => {
    * already built against them, so English pluralisation is opt-in and the literal
    * rule stays the default.
    */
+  describe('determinism', () => {
+    /**
+     * Generated output that a user commits must be byte-identical between runs, or every
+     * `prisma generate` produces a diff nobody made. This pack baked `new Date().toISOString()` into
+     * the DateTime example of every field, so openapi.json, openapi.yaml and docs/index.html all
+     * changed on each run — and the usage guide carried the generation date, changing daily.
+     *
+     * Found by generating the same pack in 56 different feature combinations: it was the only pack
+     * whose output was not identical across all of them.
+     *
+     * The `new Date()` calls inside the emitted mock server are a different thing and stay: that is
+     * runtime code in the generated server, where a live timestamp is correct.
+     */
+    it(
+      'uses a fixed example for a DateTime field, not the moment it ran',
+      async () => {
+        // Asserted against today's date rather than by generating twice and comparing: two runs in
+        // the same millisecond produce the same ISO string, so that comparison passes by luck.
+        const out = await generate('determinism-example', {});
+        const today = new Date().toISOString().split('T')[0];
+
+        for (const file of ['openapi.json', 'openapi.yaml', join('docs', 'index.html')]) {
+          expect(
+            readFileSync(join(out, file), 'utf-8'),
+            `${file} embeds the generation date`,
+          ).not.toContain(today);
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'does not stamp the emitted docs with the day they were generated',
+      async () => {
+        const out = await generate('determinism-guide', {});
+        const today = new Date().toISOString().split('T')[0];
+
+        for (const name of readdirSync(out).filter((f) => f.endsWith('.md'))) {
+          expect(
+            readFileSync(join(out, name), 'utf-8'),
+            `${name} carries today's date`,
+          ).not.toContain(today);
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   describe('pluralization', () => {
     it(
       'keeps the literal rule by default',

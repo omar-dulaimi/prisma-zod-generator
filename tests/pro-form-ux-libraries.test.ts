@@ -87,6 +87,65 @@ describe.skipIf(!proAvailable)('Form UX ui library selection', () => {
   // legitimate there rather than a leak.
   const shadcnOnlyComponents = ['<FormField', '<FormItem', '<FormMessage'];
 
+  describe('the emitted README tells you what to install', () => {
+    /**
+     * The pack emits code importing between three and six third-party packages, and the README named
+     * them only in prose — no install line anywhere. With `generateTests: true` it described
+     * `__tests__/` as "comprehensive test suites" while never mentioning the three
+     * `@testing-library` packages they import, so the first thing a customer saw was a wall of
+     * TS2307. Found while type-checking mixed-option projects: the only remaining errors across 62
+     * generated projects were peer dependencies nothing had told anyone to add.
+     */
+    it('lists the packages a barebones form needs', async () => {
+      const out = await generate('readme-barebones', { uiLibrary: 'barebones' });
+      const readme = readFileSync(join(out, 'README.md'), 'utf-8');
+
+      for (const pkg of ['react-hook-form', 'zod', '@hookform/resolvers'])
+        expect(readme, `README should name ${pkg}`).toContain(pkg);
+    });
+
+    it('names the UI library it generated against', async () => {
+      const out = await generate('readme-mantine', { uiLibrary: 'mantine' });
+
+      expect(readFileSync(join(out, 'README.md'), 'utf-8')).toContain('@mantine/core');
+    });
+
+    it('names the testing packages when it emitted tests', async () => {
+      const out = await generate('readme-tests', { generateTests: true });
+      const readme = readFileSync(join(out, 'README.md'), 'utf-8');
+
+      for (const pkg of [
+        '@testing-library/react',
+        '@testing-library/user-event',
+        '@testing-library/jest-dom',
+      ])
+        expect(readme, `README should name ${pkg}`).toContain(pkg);
+    });
+
+    it('does not name the testing packages when it emitted no tests', async () => {
+      // Listing dependencies for files that were not generated is its own kind of wrong.
+      const out = await generate('readme-no-tests', { generateTests: false });
+
+      expect(readFileSync(join(out, 'README.md'), 'utf-8')).not.toContain('@testing-library');
+    });
+
+    it('names react-i18next only when i18n is on', async () => {
+      const on = await generate('readme-i18n', { enableI18n: true });
+      const off = await generate('readme-no-i18n', { enableI18n: false });
+
+      expect(readFileSync(join(on, 'README.md'), 'utf-8')).toContain('react-i18next');
+      expect(readFileSync(join(off, 'README.md'), 'utf-8')).not.toContain('react-i18next');
+    });
+
+    it('points shadcn users at their own component set rather than a package', async () => {
+      // shadcn components are copied into the consumer's project; there is nothing to install.
+      const out = await generate('readme-shadcn', { uiLibrary: 'shadcn' });
+      const readme = readFileSync(join(out, 'README.md'), 'utf-8');
+
+      expect(readme).toMatch(/@\/components\/ui|shadcn/);
+    });
+  });
+
   describe('generateTests: true', () => {
     /**
      * The emitted tests could never run. They are written to `__tests__/<Model>Form.test.tsx` while

@@ -93,11 +93,33 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
    * outcome here — the setting looks applied.
    */
   describe('options that were accepted and ignored', () => {
+    /**
+     * A schema with a tenant column, for the packs that need one. The shared fixture above has no
+     * `tenantId`, so the Multi-Tenant Kit finds nothing tenant-aware and — correctly — generates
+     * nothing at all, which is not what the enableGuards assertion is about.
+     */
+    const TENANT_SCHEMA = `
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Invoice {
+  id       String @id @default(cuid())
+  tenantId String
+  title    String
+}
+`;
+
     async function run(
       moduleSuffix: string,
       fn: string,
       config: Record<string, unknown>,
       label: string,
+      datamodel: string = SCHEMA,
     ) {
       const captured: string[] = [];
       vi.spyOn(console, 'log').mockImplementation((...args) => {
@@ -106,7 +128,7 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
 
       const mod = (await import(`../src/pro/${moduleSuffix}`)) as Record<string, unknown>;
       const generate = mod[fn] as (...args: unknown[]) => Promise<void>;
-      const dmmf = await getDMMF({ datamodel: SCHEMA });
+      const dmmf = await getDMMF({ datamodel });
       const out = join(dir, label);
 
       await generate(
@@ -227,6 +249,7 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
           'generateMultiTenantKitFromDMMF',
           { enableGuards: false },
           'mt-no-guards',
+          TENANT_SCHEMA,
         );
 
         expect(existsSync(join(off.out, 'tenant-extensions.ts'))).toBe(false);
@@ -236,6 +259,7 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
           'generateMultiTenantKitFromDMMF',
           { enableGuards: true },
           'mt-guards',
+          TENANT_SCHEMA,
         );
 
         expect(existsSync(join(on.out, 'tenant-extensions.ts'))).toBe(true);

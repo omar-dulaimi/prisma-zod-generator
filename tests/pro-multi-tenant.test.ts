@@ -116,6 +116,49 @@ describe.skipIf(!proAvailable)('Multi-Tenant Kit', () => {
     rmSync(root, { recursive: true, force: true });
   });
 
+  describe('when no model carries the configured tenant field', () => {
+    /**
+     * `tenantField: 'orgId'` against a schema whose models use `tenantId` left the tenant-aware model
+     * list empty, and the type union was emitted as `export type TenantModelName = ;` — TS1110, a file
+     * that cannot parse. The run reported success; the only hint was a warning that Prettier could not
+     * format the file, which reads as a formatting hiccup rather than invalid output.
+     *
+     * Found by mixing packs with non-default options: multi-tenant pointed at `orgId` while the
+     * policies annotations in the same schema scope by `tenantId`.
+     */
+    let out: string;
+    let logged: string[];
+
+    beforeAll(async () => {
+      logged = [];
+      const origLog = console.log;
+      console.log = (...args: unknown[]) => {
+        logged.push(args.map(String).join(' '));
+      };
+      try {
+        // The fixture's models all use `tenantId`, so nothing has `orgId`.
+        out = await generate('field-mismatch', 'tenantId', { tenantField: 'orgId' });
+      } finally {
+        console.log = origLog;
+      }
+    }, GENERATION_TIMEOUT);
+
+    it('does not emit a file that fails to parse', () => {
+      const types = join(out, 'tenant-types.ts');
+      if (existsSync(types)) {
+        const source = readFileSync(types, 'utf-8');
+        // An empty union is the specific shape that broke; `never` is the valid spelling.
+        expect(source).not.toMatch(/export type TenantModelName\s*=\s*;/);
+      }
+    });
+
+    it('says that no model has the field, naming it', () => {
+      const output = logged.join('\n');
+      expect(output).toMatch(/orgId/);
+      expect(output.toLowerCase()).toMatch(/no .*model|not found|none of/);
+    });
+  });
+
   describe('the client extension', () => {
     it('registers query hooks for a tenant-scoped model', () => {
       const source = normalized(join(defaultOut, 'tenant-extensions.ts'));

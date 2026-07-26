@@ -38,6 +38,48 @@ describe('Pro generator config', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  describe('where the output goes', () => {
+    /**
+     * `output` on the generator block was ignored. The CLI read only its own `outputPath` config key,
+     * falling back to `<schemaDir>/generated/pro` — while Prisma printed "Generated PZG Pro Generator
+     * to ./pro", the directory from the block, which contained nothing. Found by running the real CLI
+     * with an output path other than the one earlier tests happened to use.
+     *
+     * The core generator has always read `options.generator.output` (src/prisma-generator.ts).
+     */
+    const withOutput = (
+      output: string | undefined,
+      generatorConfig: Record<string, unknown> = {},
+    ) =>
+      ({
+        schemaPath: join(dir, 'schema.prisma'),
+        generator: {
+          config: generatorConfig,
+          ...(output === undefined ? {} : { output: { value: output, fromEnvVar: null } }),
+        },
+      }) as unknown as GeneratorOptions;
+
+    it('honours the generator block’s output', async () => {
+      const config = await parseProConfig(withOutput(join(dir, 'block-output')));
+
+      expect(config.outputPath).toBe(join(dir, 'block-output'));
+    });
+
+    it('lets an explicit outputPath win, since it is the more specific instruction', async () => {
+      const config = await parseProConfig(
+        withOutput(join(dir, 'block-output'), { outputPath: join(dir, 'explicit') }),
+      );
+
+      expect(config.outputPath).toBe(join(dir, 'explicit'));
+    });
+
+    it('falls back to generated/pro beside the schema when neither is given', async () => {
+      const config = await parseProConfig(withOutput(undefined));
+
+      expect(config.outputPath).toBe(join(dir, 'generated', 'pro'));
+    });
+  });
+
   it('reads flags from a file named by configPath', async () => {
     const config = await parseProConfig(optionsWith({ configPath: './flags.json' }));
 
