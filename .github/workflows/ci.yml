@@ -122,11 +122,16 @@ jobs:
 
       # The coverage ratchet, run once rather than on all three Node versions. Thresholds are
       # calibrated for a checkout without the private Pro submodule — what this job and every
-      # fork has — where 18 files skip and the figure is 87.9% statements / 88.5% branches /
-      # 70.4% functions. They sit below the lower of that and the with-submodule figure
-      # (89.5/87.7/70.6) so the same script passes either way; both were measured before these
+      # fork has — where 19 files skip and the figure is 89.3% statements / 88.5% branches /
+      # 74.7% functions. They sit below the lower of that and the with-submodule figure
+      # (91.6/88.0/72.5) so the same script passes either way; both were measured before these
       # numbers were set. Without this step the gate only ever ran when someone remembered to run
       # it locally.
+      #
+      # Function coverage reads low in both: c8 merges in-process src/*.ts coverage with remapped
+      # lib/*.js coverage, and a method exercised both ways gets two function-map entries, one of
+      # which always reads zero. It is understated by roughly 20 points — treat statements and
+      # branches as the meaningful figures.
       #
       # It re-runs the suite under c8 rather than reusing the run above, because c8 has to own
       # the process tree: most of these tests spawn `prisma generate`, and in-process coverage
