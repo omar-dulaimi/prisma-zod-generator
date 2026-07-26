@@ -11,12 +11,15 @@ import { prismaGenerateSync } from './helpers/prisma-generate';
  * *import* it at the right path (issue #196), never that what it exports works. So
  * the JSON validation shipped to every such project was unverified.
  *
- * There are two copies of this logic — the one users receive is a template string in
- * `Transformer.ensureJsonHelpersFile`, and `src/helpers/json-helpers.ts` is a second
- * copy that nothing imports. They agree today with nothing enforcing it, so every
- * behavioural test below runs against both. Comparing them as text is useless: the
- * module is Prettier-formatted and the template is not, so they differ in trailing
- * commas and line breaks while being the same program.
+ * These assertions run against the emitted file rather than anything under `src/`, because
+ * the emitted file is what ships. There used to be two copies of this program — a template
+ * string in `Transformer.ensureJsonHelpersFile` and a working implementation in
+ * `src/helpers/json-helpers.ts` that nothing imported — kept in step only by hand. That
+ * module is now the single source and returns the text, so there is one copy to verify.
+ *
+ * Its types are checked separately: tests/generated-output-compiles.test.ts compiles the
+ * whole generated tree, and its fixture schema has a `Json` column, so this file is in
+ * that run.
  */
 type Helpers = {
   transformJsonNull: (v?: unknown) => unknown;
@@ -59,7 +62,6 @@ model Event {
   prismaGenerateSync(join(root, 'schema.prisma'), process.cwd());
 
   copies.emitted = (await import(emittedPath)) as unknown as Helpers;
-  copies.module = (await import('../src/helpers/json-helpers')) as unknown as Helpers;
 }, GENERATION_TIMEOUT);
 
 afterAll(() => {
@@ -71,10 +73,8 @@ describe('emitted JSON helpers', () => {
     expect(existsSync(emittedPath)).toBe(true);
   });
 
-  // 'emitted' is the copy users get; 'module' is the in-repo copy. Running the same
-  // assertions over both is the sync check.
-  describe.each(['emitted', 'module'])('%s copy', (which) => {
-    const h = () => copies[which];
+  describe('emitted copy', () => {
+    const h = () => copies.emitted;
 
     describe('transformJsonNull', () => {
       it('collapses both Prisma null sentinels and absent values to null', () => {

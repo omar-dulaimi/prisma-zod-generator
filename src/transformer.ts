@@ -2824,7 +2824,11 @@ const isValidDecimalInput = (
         modelOperations: [],
         enumTypes: [],
       }).generateImportZodStatement();
-      const content = `${zImport2}\nexport type JsonPrimitive = string | number | boolean | null;\nexport type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };\nexport type InputJsonValue = Exclude<JsonPrimitive, null> | Array<InputJsonValue | null> | { [k: string]: InputJsonValue | null };\nexport type NullableJsonInput = JsonValue | 'JsonNull' | 'DbNull' | null;\nexport const transformJsonNull = (v?: NullableJsonInput) => {\n  if (v == null || v === 'DbNull') return null;\n  if (v === 'JsonNull') return null;\n  return v as JsonValue;\n};\nexport const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(), z.literal(null),\n    z.record(z.string(), z.lazy(() => JsonValueSchema.optional())),\n    z.array(z.lazy(() => JsonValueSchema)),\n  ])\n) as z.ZodType<JsonValue>;\nexport const InputJsonValueSchema: z.ZodType<InputJsonValue> = z.lazy(() =>\n  z.union([\n    z.string(), z.number(), z.boolean(),\n    z.record(z.string(), z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n    z.array(z.lazy(() => z.union([InputJsonValueSchema, z.literal(null)]))),\n  ])\n) as z.ZodType<InputJsonValue>;\nexport const NullableJsonValue = z\n  .union([JsonValueSchema, z.literal('DbNull'), z.literal('JsonNull'), z.literal(null)])\n  .transform((v) => transformJsonNull(v as NullableJsonInput));\n`;
+      // Single source: src/helpers/json-helpers.ts. This was a second copy of that program,
+      // maintained by hand.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { generateJsonHelpers } = require('./helpers/json-helpers');
+      const content = `${zImport2}\n${generateJsonHelpers()}`;
       fs.writeFileSync(filePath, content, 'utf8');
     } catch (e) {
       logger.warn(`Failed to write json helpers: ${e}`);
