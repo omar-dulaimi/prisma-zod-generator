@@ -99,8 +99,6 @@ export interface ResultGenerationContext {
   model: DMMF.Model;
   options: ResultSchemaOptions;
   baseModelSchema?: string;
-  relatedModels: Map<string, DMMF.Model>;
-  fieldTypeMap: Map<string, string>;
 }
 
 /**
@@ -284,36 +282,16 @@ export class ResultSchemaGenerator {
     model: DMMF.Model,
     options: ResultSchemaOptions,
   ): ResultGenerationContext {
-    const relatedModels = new Map<string, DMMF.Model>();
-    const fieldTypeMap = new Map<string, string>();
-
-    // Build field type mapping
-    model.fields.forEach((field) => {
-      fieldTypeMap.set(field.name, this.mapPrismaTypeToZod(field));
-
-      // Collect related models for relation fields
-      if (field.kind === 'object' && field.type !== model.name) {
-        // In a real implementation, you'd get this from the DMMF
-        // For now, we'll create a placeholder
-        relatedModels.set(field.type, {
-          name: field.type,
-          fields: [],
-          dbName: null,
-          schema: null,
-          primaryKey: null,
-          uniqueFields: [],
-          uniqueIndexes: [],
-          isGenerated: false,
-        } as DMMF.Model);
-      }
-    });
-
+    // This used to also build a `fieldTypeMap` and a `relatedModels` map, the latter from
+    // fabricated `DMMF.Model` objects with empty `fields` — carrying the comment "In a real
+    // implementation, you'd get this from the DMMF. For now, we'll create a placeholder".
+    // Neither map was ever read: they were attached to the context and nothing consumed
+    // them. The field types that do reach the output come from mapPrismaTypeToZod at the
+    // point of emission, which reads the real field.
     return {
       model,
       options,
       baseModelSchema: this.getBaseModelSchema(model),
-      relatedModels,
-      fieldTypeMap,
     };
   }
 

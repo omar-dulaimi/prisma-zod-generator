@@ -315,38 +315,6 @@ function validateConfigPath(configPath: string): void {
 }
 
 /**
- * Create default generator options
- */
-export function createDefaultGeneratorOptions(): ExtendedGeneratorOptions {
-  return {
-    minimal: false,
-    isGenerateSelect: false,
-    isGenerateInclude: false,
-    useMultipleFiles: true,
-    singleFileName: 'schemas.ts',
-    placeSingleFileAtRoot: true,
-    raw: {},
-  };
-}
-
-/**
- * Merge generator options with defaults
- */
-export function mergeGeneratorOptions(
-  options: Partial<ExtendedGeneratorOptions>,
-  defaults: ExtendedGeneratorOptions = createDefaultGeneratorOptions(),
-): ExtendedGeneratorOptions {
-  return {
-    config: options.config || defaults.config,
-    minimal: options.minimal ?? defaults.minimal,
-    variants: options.variants || defaults.variants,
-    isGenerateSelect: options.isGenerateSelect ?? defaults.isGenerateSelect,
-    isGenerateInclude: options.isGenerateInclude ?? defaults.isGenerateInclude,
-    raw: { ...defaults.raw, ...options.raw },
-  };
-}
-
-/**
  * Convert generator options to configuration overrides
  *
  * This creates a partial configuration that can be merged with
@@ -508,47 +476,6 @@ export class GeneratorOptionError extends Error {
 }
 
 /**
- * Format generator options for display/debugging
- */
-export function formatGeneratorOptions(options: ExtendedGeneratorOptions): string {
-  const lines = ['Generator Options:'];
-
-  if (options.config) {
-    lines.push(`  config: "${options.config}"`);
-  }
-
-  if (options.minimal !== undefined) {
-    lines.push(`  minimal: ${options.minimal}`);
-  }
-
-  if (options.variants) {
-    lines.push(`  variants: [${options.variants.join(', ')}]`);
-  }
-
-  if (options.useMultipleFiles !== undefined) {
-    lines.push(`  useMultipleFiles: ${options.useMultipleFiles}`);
-  }
-  if (options.singleFileName !== undefined) {
-    lines.push(`  singleFileName: ${options.singleFileName}`);
-  }
-
-  if (options.isGenerateSelect !== undefined) {
-    lines.push(`  isGenerateSelect: ${options.isGenerateSelect}`);
-  }
-
-  if (options.isGenerateInclude !== undefined) {
-    lines.push(`  isGenerateInclude: ${options.isGenerateInclude}`);
-  }
-
-  const rawCount = Object.keys(options.raw).length;
-  if (rawCount > 0) {
-    lines.push(`  raw options: ${rawCount} total`);
-  }
-
-  return lines.join('\n');
-}
-
-/**
  * Check if generator options indicate legacy usage
  */
 export function isLegacyUsage(options: ExtendedGeneratorOptions): boolean {
@@ -581,60 +508,15 @@ export function getLegacyMigrationSuggestions(options: ExtendedGeneratorOptions)
   return suggestions;
 }
 
-/**
- * Check if there are conflicting options between generator options and expected config file
+/*
+ * Five exports were removed here as unreachable: createDefaultGeneratorOptions,
+ * mergeGeneratorOptions, formatGeneratorOptions, detectOptionConflicts and
+ * getEffectiveConfigurationSummary. None had a caller.
+ *
+ * mergeGeneratorOptions was worth removing rather than wiring up: it merged 5 of this
+ * module's ~20 option fields and silently dropped the rest, so any future caller would
+ * have lost useMultipleFiles, singleFileName, placeSingleFileAtRoot and the pureModels
+ * flags. detectOptionConflicts duplicated warnOnFileLayoutConflicts in
+ * prisma-generator.ts, which is the mechanism the precedence docs actually describe and is
+ * wired up.
  */
-export function detectOptionConflicts(
-  generatorOptions: ExtendedGeneratorOptions,
-  configFileHasOptions: boolean,
-): string[] {
-  const conflicts: string[] = [];
-
-  if (configFileHasOptions && generatorOptions.minimal !== undefined) {
-    conflicts.push(
-      'Both config file and generator "minimal" option are specified. ' +
-        'Generator option will take precedence.',
-    );
-  }
-
-  if (configFileHasOptions && generatorOptions.variants !== undefined) {
-    conflicts.push(
-      'Both config file and generator "variants" option are specified. ' +
-        'Generator option will take precedence.',
-    );
-  }
-
-  return conflicts;
-}
-
-/**
- * Get effective configuration summary showing which options are active and their source
- */
-export function getEffectiveConfigurationSummary(
-  generatorOptions: ExtendedGeneratorOptions,
-  hasConfigFile: boolean,
-): string {
-  const lines = ['Effective Configuration:'];
-
-  if (generatorOptions.config) {
-    lines.push(`  Config file: ${generatorOptions.config} ${hasConfigFile ? '✅' : '❌'}`);
-  }
-
-  if (generatorOptions.minimal !== undefined) {
-    lines.push(`  Minimal mode: ${generatorOptions.minimal} (from generator options)`);
-  }
-
-  if (generatorOptions.variants) {
-    lines.push(`  Variants: [${generatorOptions.variants.join(', ')}] (from generator options)`);
-  }
-
-  if (generatorOptions.isGenerateSelect !== undefined) {
-    lines.push(`  Generate Select: ${generatorOptions.isGenerateSelect} (legacy)`);
-  }
-
-  if (generatorOptions.isGenerateInclude !== undefined) {
-    lines.push(`  Generate Include: ${generatorOptions.isGenerateInclude} (legacy)`);
-  }
-
-  return lines.join('\n');
-}

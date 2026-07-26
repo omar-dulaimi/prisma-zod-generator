@@ -57,6 +57,19 @@ export function resolveSafetyConfig(options: SafetyOptions = {}): ResolvedSafety
   const level: SafetyLevel = options.level || 'standard';
   const preset = SAFETY_LEVEL_PRESETS[level];
 
+  // An unrecognised level used to fall through here as `undefined` and fail on the next
+  // line with "Cannot read properties of undefined (reading 'customDangerousPaths')".
+  // Failing rather than defaulting is right — these settings gate deleting files, so a
+  // typo must not quietly pick a level for you — but the reason should be legible.
+  if (!preset) {
+    const valid = Object.keys(SAFETY_LEVEL_PRESETS).join(', ');
+    throw new Error(
+      `Unknown safety level "${level}". Valid levels are: ${valid}. ` +
+        `Set it via the generator block's safetyLevel option, the safety.level config key, ` +
+        `or PRISMA_ZOD_SAFETY_LEVEL.`,
+    );
+  }
+
   // Start with level preset, then apply user overrides
   const resolved: ResolvedSafetyConfig = {
     ...preset,
