@@ -27,6 +27,15 @@ const proAvailable = existsSync(PRO_INDEX);
 
 const COMPILE_TIMEOUT = 300_000;
 
+/*
+ * The numeric columns on Member below (age, budget) are load-bearing. Int, BigInt, Float, Decimal and
+ * Double all emit z.coerce.number(), whose Zod *input* type is `unknown` while z.infer gives the
+ * `number` output. A form that declared its values and its submit type from the same z.infer had
+ * useForm rejecting its own resolver, so any model with a number in it produced a component that did
+ * not compile. All five variants passed this check beforehand, because the fixture had no numeric
+ * field at all — which is the entire reason the bug survived.
+ */
+
 const SCHEMA = `
 datasource db {
   provider = "postgresql"
@@ -49,6 +58,8 @@ model Member {
   isActive Boolean @default(true)
   bio      String?
   meta     Json?
+  age      Int?
+  budget   Decimal
 }
 `;
 

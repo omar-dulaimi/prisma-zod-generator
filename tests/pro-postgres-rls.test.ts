@@ -75,7 +75,11 @@ describe.skipIf(!proAvailable)('PostgreSQL RLS context', () => {
       out,
       '@prisma/client',
       'postgresql',
-      { outputPath: out },
+      // Deliberately no `outputPath`: passing one here is what hid the bug. The pack defaulted to
+      // './postgres/rls' relative to the process CWD and ignored the directory the CLI computes,
+      // so it wrote policies.sql, migration.sql, rls-helper.ts and a README into the root of
+      // whatever project ran `prisma generate` — while reporting success.
+      {},
       [],
     );
   }, GENERATION_TIMEOUT);

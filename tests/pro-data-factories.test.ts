@@ -30,10 +30,16 @@ model Author {
   posts Post[]
 }
 
+enum PostState {
+  DRAFT
+  PUBLISHED
+}
+
 model Post {
-  id       String @id @default(cuid())
+  id       String    @id @default(cuid())
   title    String
-  author   Author @relation(fields: [authorId], references: [id])
+  state    PostState @default(DRAFT)
+  author   Author    @relation(fields: [authorId], references: [id])
   authorId String
 }
 `;
@@ -88,6 +94,15 @@ describe.skipIf(!proAvailable)('Data Factories persistence', () => {
     expect(emitted).toContain('Post');
     expect(emitted).not.toContain('Comment');
     expect(emitted).not.toContain('Organization');
+  });
+
+  it('gives an enum column a real member rather than null', () => {
+    // Enum fields fell through to `null`, which contradicts the generated <Model>Shape — it types
+    // the column as a string — and is rejected outright by prisma.create() for a non-nullable
+    // column. So `build()` produced an object that could not be persisted. This fixture had no
+    // enum in it until using the pack on a real schema turned it up.
+    expect(source).toMatch(/state:\s*'DRAFT'|state:\s*"DRAFT"/);
+    expect(source).not.toMatch(/state:\s*null/);
   });
 
   it('respects a model excluded in the generator config', async () => {
