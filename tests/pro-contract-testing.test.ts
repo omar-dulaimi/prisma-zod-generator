@@ -91,8 +91,9 @@ describe.skipIf(!proAvailable)('Contract Testing pacts', () => {
     async () => {
       const source = firstPact(await generate('matchers', {}));
 
-      expect(source).toMatch(/import \{[^}]*\blike\b/);
-      expect(source).toContain('like(');
+      // Matchers arrive under the MatchersV3 namespace, which is how PactV3 exposes them.
+      expect(source).toMatch(/import \{[^}]*\bMatchersV3\b/);
+      expect(source).toContain('MatchersV3.like(');
     },
     GENERATION_TIMEOUT,
   );
@@ -101,7 +102,7 @@ describe.skipIf(!proAvailable)('Contract Testing pacts', () => {
     'matches a collection with eachLike',
     async () => {
       const source = firstPact(await generate('collections', {}));
-      expect(source).toContain('eachLike(');
+      expect(source).toContain('MatchersV3.eachLike(');
     },
     GENERATION_TIMEOUT,
   );
@@ -125,12 +126,12 @@ describe.skipIf(!proAvailable)('Contract Testing pacts', () => {
     async () => {
       const source = firstPact(await generate('no-response', { includeResponseValidation: false }));
 
-      // Bound each willRespondWith object at its own closing brace: splitting on a
-      // looser delimiter runs past it into the next interaction's request.
+      // PactV3's fluent form: `.willRespondWith({ … })`. Bound each block at its own closing
+      // brace, because splitting on a looser delimiter runs past it into the next interaction.
       const responseBlocks = source
-        .split('willRespondWith: {')
+        .split('.willRespondWith({')
         .slice(1)
-        .map((block) => block.split('\n      },')[0]);
+        .map((block) => block.split('\n      })')[0]);
 
       expect(responseBlocks.length).toBeGreaterThan(0);
       for (const block of responseBlocks) {
