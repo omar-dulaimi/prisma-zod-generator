@@ -120,7 +120,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Upgrading',
       collapsed: true,
-      items: ['upgrade-guide', 'upgrade/pro-migration'],
+      items: ['upgrade-guide', 'upgrade/v3-breaking-changes', 'upgrade/pro-migration'],
     },
     'contributing',
     'changelog',
