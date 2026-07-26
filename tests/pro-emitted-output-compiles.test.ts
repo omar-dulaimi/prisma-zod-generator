@@ -1,5 +1,5 @@
 import { getDMMF } from '@prisma/internals';
-import { execFileSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import {
   copyFileSync,
   existsSync,
@@ -232,6 +232,28 @@ describe.skipIf(!proAvailable)('emitted Pro output compiles', () => {
       expect(emitted.filter((f) => f.endsWith('.ts')).length).toBeGreaterThan(0);
 
       expect(compile(join(out, 'typescript'))).toBe('');
+    },
+    COMPILE_TIMEOUT,
+  );
+
+  it(
+    'sdk-publisher (Python target)',
+    async () => {
+      // The Python client was only ever checked by hand with py_compile. Doing it here needs no
+      // dependency beyond the interpreter, which CI's ubuntu-latest image has.
+      const out = await generate('sdk-publisher', 'generateSDKFromDMMF', {
+        platforms: ['python'],
+        packageName: 'acme-api-sdk',
+      });
+
+      const client = join(out, 'python', 'api_client.py');
+      expect(existsSync(client), 'expected python/api_client.py').toBe(true);
+
+      // Byte-compiling proves it parses. It does not prove the API is right, and no type
+      // checker runs over it — mypy would be the next step if this pack's Python grows.
+      const result = spawnSync('python3', ['-m', 'py_compile', client], { encoding: 'utf-8' });
+      expect(`${result.stderr ?? ''}`.trim()).toBe('');
+      expect(result.status).toBe(0);
     },
     COMPILE_TIMEOUT,
   );

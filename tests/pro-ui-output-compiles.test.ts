@@ -107,6 +107,11 @@ describe.skipIf(!proAvailable || !fixturesInstalled)('emitted Pro UI output comp
           types: ['node', 'react', 'jest'],
           paths: {
             '@prisma/client': [join(outRoot, 'client', 'index.d.ts')],
+            // What a shadcn project's own tsconfig declares. Deliberately no `baseUrl`: with
+            // one, a bare `import { z } from 'zod'` resolves to the emitted `zod.ts` sitting in
+            // this same directory instead of the real package. Without it, `paths` resolve
+            // relative to this tsconfig, which is written into the output directory.
+            '@/*': ['./*'],
           },
         },
         include: ['**/*.ts', '**/*.tsx'],
@@ -145,9 +150,54 @@ describe.skipIf(!proAvailable || !fixturesInstalled)('emitted Pro UI output comp
     expect(files.filter((f) => /\.tsx?$/.test(f)).length).toBeGreaterThan(0);
   }
 
-  // shadcn is absent deliberately: its components import '@/components/ui/*', which the
-  // consumer scaffolds with the shadcn CLI, so there is nothing here to resolve them to.
-  for (const uiLibrary of ['barebones', 'mui', 'chakra', 'mantine']) {
+  /**
+   * shadcn output imports '@/components/ui/*' — components the consumer scaffolds with the
+   * shadcn CLI, which no package provides. These stand in for them.
+   *
+   * Be clear about what this does and does not prove. Props are typed loosely, so a wrong prop
+   * passed to a real shadcn Input would not be caught here. What it does catch is everything
+   * else in the file: the react-hook-form wiring, zodResolver, the generated schema types, the
+   * component's own props, and any component referenced without an import — which was the
+   * original defect in this pack, `<FormField>` emitted with nothing importing it.
+   */
+  function writeShadcnStubs(dir: string) {
+    const ui = join(dir, 'components', 'ui');
+    mkdirSync(ui, { recursive: true });
+
+    const passthrough = (names: string[]) =>
+      names
+        .map(
+          (name) =>
+            // Returning null is a valid component; no JSX.Element annotation, which is not a
+            // global namespace under React 19's types.
+            `export const ${name} = (_props: Record<string, unknown>) => null;`,
+        )
+        .join('\n');
+
+    writeFileSync(join(ui, 'button.tsx'), passthrough(['Button']));
+    writeFileSync(join(ui, 'input.tsx'), passthrough(['Input']));
+    writeFileSync(join(ui, 'textarea.tsx'), passthrough(['Textarea']));
+    writeFileSync(join(ui, 'checkbox.tsx'), passthrough(['Checkbox']));
+    writeFileSync(
+      join(ui, 'select.tsx'),
+      passthrough(['Select', 'SelectContent', 'SelectItem', 'SelectTrigger', 'SelectValue']),
+    );
+    writeFileSync(
+      join(ui, 'form.tsx'),
+      passthrough([
+        'Form',
+        'FormControl',
+        'FormDescription',
+        'FormField',
+        'FormItem',
+        'FormLabel',
+        'FormMessage',
+      ]),
+    );
+    writeFileSync(join(ui, 'label.tsx'), passthrough(['Label']));
+  }
+
+  for (const uiLibrary of ['barebones', 'shadcn', 'mui', 'chakra', 'mantine']) {
     it(
       `form-ux (${uiLibrary})`,
       async () => {
@@ -156,6 +206,7 @@ describe.skipIf(!proAvailable || !fixturesInstalled)('emitted Pro UI output comp
         });
 
         expectEmitted(out);
+        if (uiLibrary === 'shadcn') writeShadcnStubs(out);
         expect(compile(out)).toBe('');
       },
       COMPILE_TIMEOUT,
