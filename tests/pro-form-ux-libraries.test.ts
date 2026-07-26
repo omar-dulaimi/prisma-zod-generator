@@ -24,6 +24,7 @@ enum Role {
 
 model Member {
   id       String  @id @default(cuid())
+  joinedAt DateTime @default(now())
   email    String  @unique
   name     String?
   role     Role    @default(MEMBER)
@@ -177,6 +178,27 @@ describe.skipIf(!proAvailable)('Form UX ui library selection', () => {
     });
   });
 
+  describe('a DateTime column', () => {
+    /**
+     * It was emitted as a bare `z.string()`, so the form accepted "banana" for a date. The `<input
+     * type="date">` beside it stops a human typing that, but nothing stops a programmatic submit, a
+     * paste, or a filled-in default — and `validateJoinedAt('banana')` answered yes.
+     *
+     * Kept as a string rather than switched to `z.coerce.date()`: the date input's value is a string,
+     * and coercing would make `z.input` unknown, which is what the form's own value type is built
+     * from. Validating the string is the change that adds safety without weakening the types.
+     */
+    it('rejects a value that is not a date', async () => {
+      const out = await generate('datetime', { uiLibrary: 'barebones' });
+      const { MemberFormValidation } = await import(join(out, 'validation', 'MemberValidation.ts'));
+
+      expect(MemberFormValidation.validateJoinedAt('2026-01-15')).toBe(true);
+      expect(MemberFormValidation.validateJoinedAt('2026-01-15T09:30:00.000Z')).toBe(true);
+      expect(MemberFormValidation.validateJoinedAt('banana')).toBe(false);
+      expect(MemberFormValidation.validateJoinedAt('')).toBe(false);
+    });
+  });
+
   describe('the per-field validation helpers', () => {
     /**
      * `<Model>FormValidation` exposes a `validate<Field>` per column, which a form calls to check
@@ -223,7 +245,15 @@ describe.skipIf(!proAvailable)('Form UX ui library selection', () => {
       // The original failure was uniform: every helper returned false for everything. Probing with a
       // single value cannot show that, because a boolean column legitimately rejects a string — so
       // each helper is offered a spread of candidates and must accept one of them.
-      const candidates: unknown[] = ['MEMBER', 'someone@example.com', 42, true, undefined, {}];
+      const candidates: unknown[] = [
+        'MEMBER',
+        'someone@example.com',
+        '2026-01-15',
+        42,
+        true,
+        undefined,
+        {},
+      ];
       const alwaysFalse = Object.keys(helpers)
         .filter((key) => key.startsWith('validate'))
         .filter((key) => !candidates.some((candidate) => helpers[key](candidate)));

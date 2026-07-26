@@ -203,6 +203,18 @@ describe.skipIf(!proAvailable)('Data Factories persistence', () => {
     });
   });
 
+  it('types an enum column as its members, not as string', () => {
+    // The factory picks a real member — `state: 'DRAFT'` — but `<Model>Shape` declared the column
+    // `string`, so `build({ state: 'NONSENSE' })` type-checked. The generated value and the generated
+    // type disagreed about the same column.
+    const shape = source.slice(source.indexOf('export interface PostShape'));
+    const stateLine = shape.split('\n').find((line) => line.trim().startsWith('state'));
+
+    expect(stateLine, 'PostShape should declare the enum column').toBeTruthy();
+    expect(stateLine).toMatch(/'DRAFT'/);
+    expect(stateLine).not.toMatch(/:\s*string/);
+  });
+
   it('refuses to pretend a create succeeded without a client', () => {
     // Returning `{ ...data, id: random }` made an unpersisted object look saved.
     expect(source).not.toMatch(/id:\s*Math\.floor\(Math\.random\(\)/);
