@@ -979,7 +979,7 @@ function isObjectSchemaEnabled(objectSchemaName: string): boolean {
     if (allowedBasics.some((p) => p.test(objectSchemaName))) {
       // Special case: CreateMany inputs are heavier; only allow when explicitly requested
       if (/CreateManyInput$/.test(objectSchemaName)) {
-        const ops = (cfg as unknown as { minimalOperations?: string[] }).minimalOperations;
+        const ops = cfg?.minimalOperations;
         const allowCreateMany = Array.isArray(ops)
           ? ops.includes('createMany') || ops.includes('create')
           : false; // default off in pure minimal mode
@@ -1966,7 +1966,9 @@ async function generateVariantType(
   const variantPath = `${outputPath}/${variantName}`;
   await fs.mkdir(variantPath, { recursive: true });
 
-  const variantConfig = config.variants?.[variantName as keyof typeof config.variants];
+  // `variants` also accepts the array form of custom variants, which has no pure/input/result keys.
+  const builtInVariants = Array.isArray(config.variants) ? undefined : config.variants;
+  const variantConfig = builtInVariants?.[variantName as keyof typeof builtInVariants];
   if (!variantConfig) return;
 
   const exports: string[] = [];
@@ -2202,7 +2204,12 @@ async function generateVariantSchemaContent(
     .join(',\n');
 
   // Check if partial flag is enabled for this variant
-  const variantConfig = config?.variants?.[variantName as keyof typeof config.variants];
+  // `variants` also accepts the array form of custom variants, which has no pure/input/result keys.
+  const builtInVariantsForPartial = Array.isArray(config?.variants)
+    ? undefined
+    : config?.variants;
+  const variantConfig =
+    builtInVariantsForPartial?.[variantName as keyof typeof builtInVariantsForPartial];
   const shouldApplyPartial = variantConfig?.partial === true;
   const partialSuffix = shouldApplyPartial ? '.partial()' : '';
 

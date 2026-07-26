@@ -22,15 +22,15 @@ The generator ships a [JSON Schema draft‑07](https://json-schema.org/) definit
 
 Save the file and your editor immediately enables IntelliSense, hover docs, and red squiggles for invalid values.
 
-## Known Coverage Gaps
+## Coverage
 
-The schema sets `additionalProperties: false`, so anything it does not model is reported as `Unknown property`. Two things the generator accepts are not covered:
+The schema sets `additionalProperties: false`, so anything it does not model is reported as `Unknown property`. Everything the generator reads is now modelled, including the two cases that used to be gaps:
 
-- **Array-based custom variants.** The schema models only the object form of `variants` (`pure` / `input` / `result`), so the array form documented in [Variants System](./variants.md) is reported as `must be object`.
-- **`minimalOperations`.** This minimal-mode escape hatch is not part of the declared config contract, so it is reported as an unknown property. See [Generation Modes](./modes.md#overriding-the-minimal-operation-set).
+- **Array-based custom variants.** `variants` accepts either the object form (`pure` / `input` / `result`) or the array of custom variants documented in [Variants System](./variants.md). Previously only the object form was modelled, so the array form was reported as `must be object`.
+- **`minimalOperations`** and the four dual-export keys (`exportTypedSchemas`, `exportZodSchemas`, `typedSchemaSuffix`, `zodSchemaSuffix`). These are read at generate time and were absent from the schema, so a config using them was reported as having unknown properties.
 
 :::note
-These reports come from your editor or from `ConfigurationValidator`, never from generation itself — the generator does not validate your config against this schema, so a config using either feature still generates correctly. The flip side is that the generator also will not warn you about a genuine typo; see [Configuration Precedence → Unknown Keys Are Silently Ignored](./precedence.md#unknown-keys-are-silently-ignored).
+Editor reports and `ConfigurationValidator` never come from generation itself — the generator does not validate your config against this schema, so an unmodelled key still generates correctly. The flip side is that the generator will not warn you about a genuine typo either; see [Configuration Precedence → Unknown Keys Are Silently Ignored](./precedence.md#unknown-keys-are-silently-ignored).
 :::
 
 There is also one key the schema models but the generator ignores: `strictMode.enums` is accepted and offered by IntelliSense, yet nothing reads it (enum schemas are inherently strict). See [Strict Mode Configuration](./strict-mode.md#global-configuration).
@@ -63,6 +63,6 @@ if (!result.valid) {
 console.log('✅ Config looks good');
 ```
 
-Pair this with the `$schema` hint so editors catch problems before CI does. If your config uses array-based variants or `minimalOperations`, account for the [coverage gaps](#known-coverage-gaps) above before making this check blocking — the validator will flag them even though generation succeeds.
+Pair this with the `$schema` hint so editors catch problems before CI does. Every key the generator reads is modelled (see [Coverage](#coverage)), so this check is safe to make blocking.
 
 Once the `$schema` field is in place, every upgrade automatically refreshes the schema definition because the path always points to the version installed in `node_modules`.

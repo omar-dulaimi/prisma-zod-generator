@@ -270,7 +270,7 @@ export default class Transformer {
     // For minimal mode, only enable essential operations (no *Many, no upsert, no aggregate/groupBy)
     if (config.mode === 'minimal') {
       // Allow overrides via config.minimalOperations when present
-      const configured = (config as unknown as { minimalOperations?: string[] }).minimalOperations;
+      const configured = config?.minimalOperations;
       const baseAllowed =
         configured && Array.isArray(configured) && configured.length > 0
           ? configured
@@ -3897,7 +3897,7 @@ ${helperCode}
         if (deleteOne && Transformer.isOperationEnabled(modelName, 'deleteOne')) {
           const cfg = Transformer.getGeneratorConfig();
           if (cfg?.mode === 'minimal') {
-            const ops = (cfg as unknown as { minimalOperations?: string[] }).minimalOperations;
+            const ops = cfg?.minimalOperations;
             if (Array.isArray(ops) && !ops.includes('delete') && !ops.includes('deleteOne')) {
               logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.deleteOne`);
             } else {
@@ -4004,7 +4004,7 @@ ${helperCode}
         if (updateOne && Transformer.isOperationEnabled(modelName, 'updateOne')) {
           const cfg = Transformer.getGeneratorConfig();
           if (cfg?.mode === 'minimal') {
-            const ops = (cfg as unknown as { minimalOperations?: string[] }).minimalOperations;
+            const ops = cfg?.minimalOperations;
             if (Array.isArray(ops) && !ops.includes('update') && !ops.includes('updateOne')) {
               logger.debug(`⏭️  Minimal mode (custom ops): skipping ${modelName}.updateOne`);
               // Do not generate
@@ -4376,7 +4376,9 @@ ${helperCode}
       logger.debug('⏭️  Skipping result schema generation in minimal mode');
       return;
     }
-    if (config?.variants?.result?.enabled === false) {
+    // `variants` also accepts the array form of custom variants, which has no pure/input/result keys.
+    const builtInVariants = Array.isArray(config?.variants) ? undefined : config?.variants;
+    if (builtInVariants?.result?.enabled === false) {
       logger.debug('⏭️  Result schema generation is disabled globally');
       return;
     }
@@ -4825,10 +4827,11 @@ ${helperCode}
     if (!config?.variants) return;
 
     // Check if variants are configured but no models use them
-    const configuredVariants = Object.keys(config.variants);
+    // `variants` also accepts the array form of custom variants, which has no pure/input/result keys.
+    const builtInForWarning = Array.isArray(config.variants) ? undefined : config.variants;
+    const configuredVariants = Object.keys(builtInForWarning ?? {});
     const enabledVariants = configuredVariants.filter(
-      (variant) =>
-        config.variants && config.variants[variant as keyof typeof config.variants]?.enabled,
+      (variant) => builtInForWarning?.[variant as keyof typeof builtInForWarning]?.enabled,
     );
 
     if (enabledVariants.length === 0) {

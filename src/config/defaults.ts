@@ -33,6 +33,16 @@ function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial
 /**
  * Default configuration factory
  */
+/**
+ * The built-in pure/input/result variants, or undefined for the array form of custom
+ * variants, which has no such keys.
+ */
+function builtInVariantsOf(
+  config: GeneratorConfig,
+): Exclude<GeneratorConfig['variants'], unknown[]> | undefined {
+  return Array.isArray(config.variants) ? undefined : config.variants;
+}
+
 export class DefaultConfigurationManager {
   /**
    * Get complete default configuration
@@ -250,8 +260,11 @@ export class DefaultConfigurationManager {
     switch (config.mode) {
       case 'minimal':
         // Ensure minimal mode has appropriate defaults
-        if (result.variants?.result && result.variants.result.enabled === undefined) {
-          result.variants.result.enabled = false;
+        // `variants` also accepts an array of custom variants; on that form `?.result` is
+        // undefined and this is a no-op.
+        const minimalVariants = builtInVariantsOf(result);
+        if (minimalVariants?.result && minimalVariants.result.enabled === undefined) {
+          minimalVariants.result.enabled = false;
         }
 
         // Apply minimal operations to models that don't specify operations
@@ -267,9 +280,17 @@ export class DefaultConfigurationManager {
 
       case 'full':
         // Ensure all variants are enabled by default in full mode
+        // Deliberately over both forms. Iterating the array yields index keys and marks
+        // each custom variant `enabled: true`; the array-variant emission path depends on
+        // the defaults this step attaches, so restricting it to the object form stops
+        // array variants being written under variants/ at all.
         if (result.variants) {
-          Object.keys(result.variants).forEach((variantName) => {
-            const variant = result.variants?.[variantName as keyof typeof result.variants];
+          const variantsConfig = result.variants as unknown as Record<
+            string,
+            { enabled?: boolean } | undefined
+          >;
+          Object.keys(variantsConfig).forEach((variantName) => {
+            const variant = variantsConfig[variantName];
             if (variant && variant.enabled === undefined) {
               variant.enabled = true;
             }
@@ -369,7 +390,13 @@ export class DefaultConfigurationManager {
 
     const variants: Array<'pure' | 'input' | 'result'> = ['pure', 'input', 'result'];
     variants.forEach((variantName) => {
-      const variantsConfig = result.variants;
+      // Also applied to the array form, which attaches pure/input/result defaults as
+      // properties on the array. That reads as an accident but is load-bearing: the
+      // array-variant emission path reads those defaults, and skipping this step leaves
+      // custom variants out of variants/ and out of the barrel file.
+      const variantsConfig = result.variants as unknown as
+        | Record<'pure' | 'input' | 'result', VariantConfig | undefined>
+        | undefined;
       if (variantsConfig && !variantsConfig[variantName]) {
         variantsConfig[variantName] = this.getDefaultVariantConfig(variantName);
       } else if (variantsConfig) {

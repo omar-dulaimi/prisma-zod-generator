@@ -13,6 +13,17 @@ import {
 import { GeneratorConfig } from './parser';
 
 /**
+ * The built-in pure/input/result variants, or undefined when the caller used the array
+ * form of custom variants. `variants` accepts both, and the pure/input/result keys only
+ * exist on the object form.
+ */
+function builtInVariants(
+  config: GeneratorConfig,
+): Exclude<GeneratorConfig['variants'], unknown[]> | undefined {
+  return Array.isArray(config.variants) ? undefined : config.variants;
+}
+
+/**
  * Configuration validation result
  */
 export interface ValidationResult {
@@ -210,7 +221,8 @@ export class ConfigurationValidator {
     // Validate mode-specific constraints
     if (config.mode === 'minimal') {
       // In minimal mode, certain configurations don't make sense
-      if (config.variants?.result?.enabled) {
+      const builtIn = Array.isArray(config.variants) ? undefined : config.variants;
+      if (builtIn?.result?.enabled) {
         context.warnings.push('Result variants are not typically used in minimal mode');
       }
 
@@ -235,7 +247,13 @@ export class ConfigurationValidator {
     // Validate variant suffix uniqueness
     if (config.variants) {
       const suffixes = new Set<string>();
-      Object.entries(config.variants).forEach(([variantName, variantConfig]) => {
+      // Deliberately over both forms: for the array of custom variants, Object.entries
+      // yields index keys and each element carries `suffix`, so duplicates are caught there
+      // too (the reported path is then variants.0.suffix).
+      const variantEntries = Object.entries(config.variants) as Array<
+        [string, { suffix?: string } | undefined]
+      >;
+      variantEntries.forEach(([variantName, variantConfig]) => {
         if (variantConfig?.suffix) {
           if (suffixes.has(variantConfig.suffix)) {
             context.errors.push({
@@ -365,19 +383,19 @@ export class ConfigurationValidator {
       globalExclusions: config.globalExclusions || DEFAULT_CONFIG.globalExclusions,
       variants: {
         pure: {
-          enabled: config.variants?.pure?.enabled ?? DEFAULT_CONFIG.variants.pure.enabled,
-          suffix: config.variants?.pure?.suffix || DEFAULT_CONFIG.variants.pure.suffix,
-          excludeFields: config.variants?.pure?.excludeFields || [],
+          enabled: builtInVariants(config)?.pure?.enabled ?? DEFAULT_CONFIG.variants.pure.enabled,
+          suffix: builtInVariants(config)?.pure?.suffix || DEFAULT_CONFIG.variants.pure.suffix,
+          excludeFields: builtInVariants(config)?.pure?.excludeFields || [],
         },
         input: {
-          enabled: config.variants?.input?.enabled ?? DEFAULT_CONFIG.variants.input.enabled,
-          suffix: config.variants?.input?.suffix || DEFAULT_CONFIG.variants.input.suffix,
-          excludeFields: config.variants?.input?.excludeFields || [],
+          enabled: builtInVariants(config)?.input?.enabled ?? DEFAULT_CONFIG.variants.input.enabled,
+          suffix: builtInVariants(config)?.input?.suffix || DEFAULT_CONFIG.variants.input.suffix,
+          excludeFields: builtInVariants(config)?.input?.excludeFields || [],
         },
         result: {
-          enabled: config.variants?.result?.enabled ?? DEFAULT_CONFIG.variants.result.enabled,
-          suffix: config.variants?.result?.suffix || DEFAULT_CONFIG.variants.result.suffix,
-          excludeFields: config.variants?.result?.excludeFields || [],
+          enabled: builtInVariants(config)?.result?.enabled ?? DEFAULT_CONFIG.variants.result.enabled,
+          suffix: builtInVariants(config)?.result?.suffix || DEFAULT_CONFIG.variants.result.suffix,
+          excludeFields: builtInVariants(config)?.result?.excludeFields || [],
         },
       },
       models: config.models || DEFAULT_CONFIG.models,

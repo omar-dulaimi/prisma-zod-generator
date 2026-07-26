@@ -31,8 +31,8 @@ You can replace the built-in allow-list with your own by adding a top-level `min
 
 The array replaces the built-in allow-list wholesale for models you have not listed under `models` — a model with its own `operations` array always wins, and a model listed without one still receives `MINIMAL_OPERATIONS`. Legacy aliases (`createOne`, `updateOne`, `deleteOne`, `upsertOne`) are normalised to their canonical names before the check, so only the canonical form is needed here. Including `create` or `createMany` additionally unblocks the `*CreateManyInput` object schemas that minimal mode otherwise skips as too heavy.
 
-:::caution
-`minimalOperations` is an escape hatch rather than part of the declared config contract: it is absent from the generator's TypeScript config interface and from the published JSON Schema. If you wire up `$schema` (see [JSON Schema IntelliSense](./schema-json.md)), your editor will report it as an unknown property even though the generator honours it.
+:::note
+`minimalOperations` is an escape hatch rather than part of the per-model filtering contract — it applies globally, unlike `models.*.operations`. It is declared in the config interface and in the published JSON Schema, so `$schema` completion and `ConfigurationValidator` both accept it.
 :::
 
 ## Emission Heuristics

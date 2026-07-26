@@ -200,7 +200,11 @@ export class StrictModeResolver {
     variant: 'pure' | 'input' | 'result',
     defaultValue: boolean,
   ): boolean {
-    const variantConfig = this.config.variants?.[variant];
+    // `variants` also accepts the array form of custom variants, which has no pure/input/result keys.
+    const builtInVariants = Array.isArray(this.config.variants)
+      ? undefined
+      : this.config.variants;
+    const variantConfig = builtInVariants?.[variant];
     const modelVariantConfig = this.config.models?.[modelName]?.variants?.[variant];
 
     // Check model-specific variant config first (highest priority)

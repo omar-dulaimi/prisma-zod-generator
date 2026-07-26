@@ -15,8 +15,13 @@ export const ConfigurationSchema: JSONSchema7 = {
   properties: {
     $schema: {
       type: 'string',
-      default: 'http://json-schema.org/draft-07/schema#', // Placeholder most likely would be https://omar-dulaimi.github.io/prisma-zod-generator/docs/schema.json
-      description: 'JSON Schema for the Prisma Zod Generator configuration',
+      // No default. This carried 'http://json-schema.org/draft-07/schema#', which is the
+      // JSON Schema *meta*-schema — a config that adopted it would be validated against
+      // the grammar for writing schemas rather than against this one. The documented
+      // value is a path to the installed copy, which is project-relative and so has no
+      // sensible default (see website/docs/config/schema-json.md).
+      description:
+        'Path or URL to this schema, for editor completion. Typically ../node_modules/prisma-zod-generator/lib/config/schema.json relative to the config file.',
     },
     mode: {
       type: 'string',
@@ -60,6 +65,34 @@ export const ConfigurationSchema: JSONSchema7 = {
       type: 'boolean',
       default: false,
       description: 'Whether to run a formatter on generated schemas',
+    },
+    exportTypedSchemas: {
+      type: 'boolean',
+      default: true,
+      description:
+        'Whether to export the Prisma-typed schemas (e.g. UserFindManySchema, typed against Prisma.UserFindManyArgs)',
+    },
+    exportZodSchemas: {
+      type: 'boolean',
+      default: true,
+      description:
+        'Whether to export the plain Zod schemas alongside the typed ones (e.g. UserFindManyZodSchema)',
+    },
+    typedSchemaSuffix: {
+      type: 'string',
+      default: 'Schema',
+      description: 'Suffix appended to the exported name of each Prisma-typed schema',
+    },
+    zodSchemaSuffix: {
+      type: 'string',
+      default: 'ZodSchema',
+      description: 'Suffix appended to the exported name of each plain Zod schema',
+    },
+    minimalOperations: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'Overrides which operations minimal mode emits. An escape hatch: unlike `models.*.operations` it applies globally and is not part of the per-model filtering contract.',
     },
     pureModels: {
       type: 'boolean',
@@ -356,24 +389,77 @@ export const ConfigurationSchema: JSONSchema7 = {
       },
     },
 
+    // Both documented forms. The array form of custom variants was previously absent, so
+    // a config using it was rejected with "must be object" even though generation
+    // succeeds — one of the gaps listed on the JSON Schema IntelliSense docs page.
     variants: {
-      type: 'object',
-      additionalProperties: false,
-      description: 'Configuration for different schema variants',
-      properties: {
-        pure: {
-          $ref: '#/definitions/variantConfig',
-          description: 'Pure model schema variant configuration',
+      description:
+        'Configuration for schema variants: either the built-in pure/input/result object form, or an array of custom variants',
+      oneOf: [
+        {
+          type: 'object',
+          additionalProperties: false,
+          description: 'Built-in variants',
+          properties: {
+            pure: {
+              $ref: '#/definitions/variantConfig',
+              description: 'Pure model schema variant configuration',
+            },
+            input: {
+              $ref: '#/definitions/variantConfig',
+              description: 'Input schema variant configuration',
+            },
+            result: {
+              $ref: '#/definitions/variantConfig',
+              description: 'Result schema variant configuration',
+            },
+          },
         },
-        input: {
-          $ref: '#/definitions/variantConfig',
-          description: 'Input schema variant configuration',
+        {
+          type: 'array',
+          description: 'Custom variants, one object per emitted variant',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['name'],
+            properties: {
+              name: { type: 'string', description: 'Variant name, used in the emitted file name' },
+              suffix: {
+                type: 'string',
+                description: 'Suffix for the emitted file and exported schema name',
+              },
+              exclude: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Field names to omit from this variant',
+              },
+              additionalValidation: {
+                type: 'object',
+                additionalProperties: { type: 'string' },
+                description: 'Extra Zod chained calls per field name',
+              },
+              makeOptional: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Field names to mark optional in this variant',
+              },
+              transformRequiredToOptional: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Required field names to turn optional',
+              },
+              transformOptionalToRequired: {
+                type: 'boolean',
+                description: 'Turn every optional field required in this variant',
+              },
+              removeValidation: {
+                type: 'boolean',
+                description: 'Drop field-level validation rules in this variant',
+              },
+            },
+          },
         },
-        result: {
-          $ref: '#/definitions/variantConfig',
-          description: 'Result schema variant configuration',
-        },
-      },
+      ],
     },
 
     models: {

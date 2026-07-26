@@ -101,12 +101,31 @@ export interface GeneratorConfig {
     operations?: string[];
   };
 
-  /** Variant configuration */
-  variants?: {
-    pure?: VariantConfig;
-    input?: VariantConfig;
-    result?: VariantConfig;
-  };
+  /**
+   * Variant configuration: either the built-in pure/input/result form, or an array of
+   * custom variants.
+   *
+   * The array form is documented and honoured at generate time but was declared in
+   * neither this interface nor the published JSON Schema, so a config using it was
+   * rejected with "must be object". The fields below are the ones the array branch
+   * actually reads; note it ignores `partial` (see config/variants.md).
+   */
+  variants?:
+    | {
+        pure?: VariantConfig;
+        input?: VariantConfig;
+        result?: VariantConfig;
+      }
+    | Array<{
+        name: string;
+        suffix?: string;
+        exclude?: string[];
+        additionalValidation?: Record<string, string>;
+        makeOptional?: string[];
+        transformRequiredToOptional?: string[];
+        transformOptionalToRequired?: boolean;
+        removeValidation?: boolean;
+      }>;
 
   /** Per-model configuration */
   models?: Record<string, ModelConfig>;
@@ -204,6 +223,34 @@ export interface GeneratorConfig {
    * 'import { z }' for v3).
    */
   zodImportPath?: string;
+
+  /**
+   * Whether to export the Prisma-typed schemas (e.g. `UserFindManySchema`, typed against
+   * `Prisma.UserFindManyArgs`). Default: true.
+   */
+  exportTypedSchemas?: boolean;
+
+  /**
+   * Whether to export the plain Zod schemas alongside the typed ones
+   * (e.g. `UserFindManyZodSchema`). Default: true.
+   */
+  exportZodSchemas?: boolean;
+
+  /** Suffix appended to each Prisma-typed schema's exported name. Default: 'Schema'. */
+  typedSchemaSuffix?: string;
+
+  /** Suffix appended to each plain Zod schema's exported name. Default: 'ZodSchema'. */
+  zodSchemaSuffix?: string;
+
+  /**
+   * Overrides which operations minimal mode emits.
+   *
+   * An escape hatch rather than part of the per-model filtering contract: it applies
+   * globally, unlike `models.*.operations`. Declared here because it is documented and
+   * read at generate time — while it was absent, `ConfigurationValidator` rejected it as
+   * an unknown property, and the docs tell people to run that validator in CI.
+   */
+  minimalOperations?: string[];
 
   /** Global strict mode configuration for generated Zod schemas */
   strictMode?: {

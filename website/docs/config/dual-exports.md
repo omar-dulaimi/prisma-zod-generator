@@ -44,7 +44,7 @@ The equivalent JSON config form:
 ```
 
 :::note
-These four keys are not yet listed in the bundled JSON Schema (`lib/config/schema.json`), so an editor validating your config against it may flag them as unknown properties. They are read normally at generate time.
+All four keys are declared in the bundled JSON Schema (`lib/config/schema.json`), so an editor wired up with `$schema` completes and validates them. Before that they were rejected as unknown properties — the schema sets `additionalProperties: false`, so `ConfigurationValidator` failed a config that used them.
 :::
 
 Disable one side to shrink surface:
