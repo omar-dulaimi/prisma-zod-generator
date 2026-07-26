@@ -393,7 +393,8 @@ export class ConfigurationValidator {
           excludeFields: builtInVariants(config)?.input?.excludeFields || [],
         },
         result: {
-          enabled: builtInVariants(config)?.result?.enabled ?? DEFAULT_CONFIG.variants.result.enabled,
+          enabled:
+            builtInVariants(config)?.result?.enabled ?? DEFAULT_CONFIG.variants.result.enabled,
           suffix: builtInVariants(config)?.result?.suffix || DEFAULT_CONFIG.variants.result.suffix,
           excludeFields: builtInVariants(config)?.result?.excludeFields || [],
         },

@@ -2205,9 +2205,7 @@ async function generateVariantSchemaContent(
 
   // Check if partial flag is enabled for this variant
   // `variants` also accepts the array form of custom variants, which has no pure/input/result keys.
-  const builtInVariantsForPartial = Array.isArray(config?.variants)
-    ? undefined
-    : config?.variants;
+  const builtInVariantsForPartial = Array.isArray(config?.variants) ? undefined : config?.variants;
   const variantConfig =
     builtInVariantsForPartial?.[variantName as keyof typeof builtInVariantsForPartial];
   const shouldApplyPartial = variantConfig?.partial === true;
@@ -2461,8 +2459,12 @@ async function generatePureModelSchemas(
     // and a `databaseSpecific.optimizations` array nothing reads. But it meant a MySQL or
     // MongoDB project got PostgreSQL's notes, and the provider-specific rules that exist for
     // them never ran at all.
-    const provider = (Transformer.provider ||
-      'postgresql') as 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'mongodb';
+    const provider = (Transformer.provider || 'postgresql') as
+      | 'postgresql'
+      | 'mysql'
+      | 'sqlite'
+      | 'sqlserver'
+      | 'mongodb';
     const typeMapper = new PrismaTypeMapper({
       provider,
       zodImportTarget: config.zodImportTarget,

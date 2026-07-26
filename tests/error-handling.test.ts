@@ -53,9 +53,13 @@ describe('error handling', () => {
 
     it('survives a thrown non-Error', async () => {
       await expect(
-        safeFileOperation(() => {
-          throw 'just a string';
-        }, '/tmp/x', 'licence'),
+        safeFileOperation(
+          () => {
+            throw 'just a string';
+          },
+          '/tmp/x',
+          'licence',
+        ),
       ).rejects.toThrow(/File operation failed/);
     });
   });

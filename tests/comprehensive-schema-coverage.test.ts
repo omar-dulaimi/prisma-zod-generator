@@ -245,10 +245,9 @@ class ComprehensiveSchemaTest {
     // accept/reject behaviour is covered by tests/generated-schema-runtime.test.ts, which works
     // against a known schema rather than sweeping every generated file.
     if (/^create(One|Many)/.test(schemaInfo.name)) {
-      expect(
-        schema.safeParse({}).success,
-        `${schemaInfo.name} accepted args with no data`,
-      ).toBe(false);
+      expect(schema.safeParse({}).success, `${schemaInfo.name} accepted args with no data`).toBe(
+        false,
+      );
     }
 
     expect(() => schema.safeParse({})).not.toThrow();

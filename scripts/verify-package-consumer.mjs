@@ -106,7 +106,11 @@ try {
 
   // The JSON Schema is what `$schema` in a user's config points at; it is generated during
   // packaging rather than by tsc, so it is exactly the kind of file that goes missing.
-  if (!existsSync(join(consumer, 'node_modules', 'prisma-zod-generator', 'lib', 'config', 'schema.json')))
+  if (
+    !existsSync(
+      join(consumer, 'node_modules', 'prisma-zod-generator', 'lib', 'config', 'schema.json'),
+    )
+  )
     fail('lib/config/schema.json is missing from the installed package');
 
   writeFileSync(join(consumer, 'prisma', 'schema.prisma'), SCHEMA);
@@ -151,7 +155,10 @@ export default defineConfig({
   try {
     run(join(REPO, 'node_modules', '.bin', 'tsc'), ['-p', 'tsconfig.json'], { cwd: consumer });
   } catch (error) {
-    fail('the generated output does not type-check in a consumer project', `${error.stdout ?? ''}${error.stderr ?? ''}`);
+    fail(
+      'the generated output does not type-check in a consumer project',
+      `${error.stdout ?? ''}${error.stderr ?? ''}`,
+    );
   }
 
   console.log('▶️  Parsing a payload through an emitted schema…');
@@ -176,10 +183,15 @@ console.log('runtime validation behaved correctly');
     const output = run(join(REPO, 'node_modules', '.bin', 'tsx'), ['check.ts'], { cwd: consumer });
     if (!/behaved correctly/.test(output)) fail('the runtime check did not confirm', output);
   } catch (error) {
-    fail('the emitted schema misvalidated in a consumer project', `${error.stdout ?? ''}${error.stderr ?? ''}`);
+    fail(
+      'the emitted schema misvalidated in a consumer project',
+      `${error.stdout ?? ''}${error.stderr ?? ''}`,
+    );
   }
 
-  console.log('\n✅ The packaged generator installs, runs and validates as a consumer would use it.');
+  console.log(
+    '\n✅ The packaged generator installs, runs and validates as a consumer would use it.',
+  );
 } finally {
   rmSync(consumer, { recursive: true, force: true });
   if (tarball) rmSync(tarball, { force: true });

@@ -147,10 +147,14 @@ export default defineConfig({
     );
 
     try {
-      execFileSync(join(REPO_ROOT, 'node_modules', '.bin', 'tsc'), ['-p', join(root, 'tsconfig.json')], {
-        encoding: 'utf-8',
-        stdio: 'pipe',
-      });
+      execFileSync(
+        join(REPO_ROOT, 'node_modules', '.bin', 'tsc'),
+        ['-p', join(root, 'tsconfig.json')],
+        {
+          encoding: 'utf-8',
+          stdio: 'pipe',
+        },
+      );
       return '';
     } catch (error) {
       const err = error as { stdout?: string; stderr?: string };

@@ -798,7 +798,6 @@ ${allFields.join(',\n')}
   /**
    * Public utility methods
    */
-
 }
 
 export default ResultSchemaGenerator;

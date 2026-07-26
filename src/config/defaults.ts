@@ -426,7 +426,6 @@ export class DefaultConfigurationManager {
 
     return result;
   }
-
 }
 
 /**

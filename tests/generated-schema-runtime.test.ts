@@ -114,9 +114,9 @@ model User {
     it('accepts null for a nullable column and rejects it for a required one', () => {
       // `name String?` is nullable; `email String` is not. Getting this backwards would let a
       // consumer write null into a NOT NULL column and be told it was fine.
-      expect(
-        schemas.UserCreateInputObjectSchema.safeParse({ ...valid, name: null }).success,
-      ).toBe(true);
+      expect(schemas.UserCreateInputObjectSchema.safeParse({ ...valid, name: null }).success).toBe(
+        true,
+      );
       expect(schemas.UserCreateInputObjectSchema.safeParse({ email: null }).success).toBe(false);
     });
 

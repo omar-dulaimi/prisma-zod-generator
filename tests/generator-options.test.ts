@@ -106,7 +106,9 @@ describe('generator block options', () => {
 
   describe('validateGeneratorOptions', () => {
     it('accepts a plain config-file setup', () => {
-      expect(() => validateGeneratorOptions(parseGeneratorOptions({ config: './zod.json' }))).not.toThrow();
+      expect(() =>
+        validateGeneratorOptions(parseGeneratorOptions({ config: './zod.json' })),
+      ).not.toThrow();
     });
 
     it('does not reject minimal mode combined with variants', () => {
@@ -117,5 +119,4 @@ describe('generator block options', () => {
       ).not.toThrow();
     });
   });
-
 });

@@ -113,7 +113,11 @@ function transformContentForSingleFile(filePath: string, source: string): string
     // Same for the Decimal helpers. Their import names vary with what the schema uses
     // (DecimalJSLikeSchema, isValidDecimalInput, DECIMAL_STRING_REGEX), so match on the
     // module rather than the binding list.
-    if (/import\s+\{[^}]*\}\s+from\s+['"](?:\.{1,2}\/)+helpers\/decimal-helpers(?:\.js)?['"];?/.test(line)) {
+    if (
+      /import\s+\{[^}]*\}\s+from\s+['"](?:\.{1,2}\/)+helpers\/decimal-helpers(?:\.js)?['"];?/.test(
+        line,
+      )
+    ) {
       needsDecimalHelpers = true;
       // Set here rather than where the helpers are hoisted: the Prisma value import is
       // written to the header before that point, so a later flag would be ignored.

@@ -29,7 +29,11 @@ describe('manifest path containment', () => {
 
   it('records paths inside the output directory', () => {
     const m = manifest();
-    addFileToManifest(m, join(outputPath, 'schemas', 'objects', 'UserCreateInput.schema.ts'), outputPath);
+    addFileToManifest(
+      m,
+      join(outputPath, 'schemas', 'objects', 'UserCreateInput.schema.ts'),
+      outputPath,
+    );
 
     // Joined with the platform separator, since that is what path.relative returns.
     expect(m.files).toEqual([['schemas', 'objects', 'UserCreateInput.schema.ts'].join(sep)]);

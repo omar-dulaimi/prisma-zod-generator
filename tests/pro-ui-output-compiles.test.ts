@@ -140,7 +140,16 @@ describe.skipIf(!proAvailable || !fixturesInstalled)('emitted Pro UI output comp
     const run = mod[exportName] as (...args: unknown[]) => Promise<void>;
     const dmmf = await getDMMF({ datamodel: SCHEMA });
 
-    await run(dmmf, {}, join(outRoot, 'schema.prisma'), out, '@prisma/client', 'postgresql', config, []);
+    await run(
+      dmmf,
+      {},
+      join(outRoot, 'schema.prisma'),
+      out,
+      '@prisma/client',
+      'postgresql',
+      config,
+      [],
+    );
     return out;
   }
 
@@ -220,7 +229,12 @@ describe.skipIf(!proAvailable || !fixturesInstalled)('emitted Pro UI output comp
       // needs Next installed — which is why it belongs here rather than in the unconditional
       // check. It is also the pack the delegate-naming bug lived in: `prisma.projectvariant`
       // instead of `prisma.projectVariant`, which only a real compile catches.
-      const out = await generate('server-actions', 'server-actions', 'generateServerActionsFromDMMF', {});
+      const out = await generate(
+        'server-actions',
+        'server-actions',
+        'generateServerActionsFromDMMF',
+        {},
+      );
 
       expectEmitted(out);
       expect(compile(out)).toBe('');
@@ -231,7 +245,12 @@ describe.skipIf(!proAvailable || !fixturesInstalled)('emitted Pro UI output comp
   it(
     'contract-testing',
     async () => {
-      const out = await generate('contract-testing', 'contract-testing', 'generateContractTestsFromDMMF', {});
+      const out = await generate(
+        'contract-testing',
+        'contract-testing',
+        'generateContractTestsFromDMMF',
+        {},
+      );
 
       expectEmitted(out);
       expect(compile(out)).toBe('');

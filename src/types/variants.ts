@@ -181,7 +181,6 @@ export interface VariantManager {
   };
 }
 
-
 /*
  * The four DEFAULT_* constant tables that used to live here (naming configs,
  * field exclusions, validation customizations, schema options) were read only by

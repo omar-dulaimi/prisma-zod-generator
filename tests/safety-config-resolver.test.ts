@@ -118,7 +118,10 @@ describe('safety config', () => {
 
   describe('merging', () => {
     it('lets a later source win per key without wiping the earlier one', () => {
-      const merged = mergeSafetyConfigs({ level: 'strict', maxUserFiles: 3 }, { level: 'permissive' });
+      const merged = mergeSafetyConfigs(
+        { level: 'strict', maxUserFiles: 3 },
+        { level: 'permissive' },
+      );
 
       expect(merged.level).toBe('permissive');
       expect(merged.maxUserFiles).toBe(3);
