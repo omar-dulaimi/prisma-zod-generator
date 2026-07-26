@@ -135,7 +135,7 @@ describe.skipIf(!proAvailable)('SDK Publisher client', () => {
 
   it('still emits the client and its methods', () => {
     expect(source).toContain('export class APIClient');
-    expect(source).toContain('async listInvoices()');
+    expect(source).toContain('async listInvoices(');
   });
 
   /**
@@ -144,6 +144,68 @@ describe.skipIf(!proAvailable)('SDK Publisher client', () => {
    * OAuth2" claim, and packageName/version, which is what makes something a
    * publishable package rather than a loose file.
    */
+  describe('the TypeScript client’s typing', () => {
+    /**
+     * Measured against the client API Docs emits from the same schema, this one was the weaker of the
+     * two — which is backwards, since publishing SDKs is this pack's entire job and it sits in a
+     * higher tier. API Docs returned `Promise<Account[]>` and took `Partial<Account>`; this returned
+     * an inferred `any` from `request()` and took `data: any`, so nothing a caller wrote against it
+     * was checked. It also had no pagination and a thinner error message.
+     *
+     * The fix is parity, not consolidation: the two packs differ in ways that are deliberate — this
+     * one emits Python, package metadata and the authConfig variants — so sharing the emitter would be
+     * a large refactor across two paid packs for no user-visible gain. What must not diverge is
+     * already shared: the route pluralizer, after the two disagreed on /categories versus /categorys.
+     */
+    let client: string;
+
+    beforeAll(async () => {
+      const { generateSDKFromDMMF } = await import(
+        '../src/pro/features/sdk-publisher/sdk-publisher'
+      );
+      const dmmf = await getDMMF({ datamodel: SCHEMA });
+      const out = join(dir, 'typing');
+      await generateSDKFromDMMF(
+        dmmf,
+        {},
+        join(dir, 'schema.prisma'),
+        out,
+        '@prisma/client',
+        'postgresql',
+        { platforms: ['typescript'] },
+        [],
+      );
+      client = readFileSync(join(out, 'typescript', 'index.ts'), 'utf-8');
+    }, GENERATION_TIMEOUT);
+
+    /** Collapsed, because Prettier decides where the emitted signatures wrap. */
+    const flat = () => client.replace(/\s+/g, ' ');
+
+    it('declares what each method returns', () => {
+      expect(flat()).toMatch(/async listInvoices\([^)]*\): Promise<Invoice\[\]>/);
+      expect(flat()).toMatch(/async getInvoice\([^)]*\): Promise<Invoice>/);
+      expect(flat()).toMatch(/async deleteInvoice\([^)]*\): Promise<void>/);
+    });
+
+    it('types the request body instead of taking any', () => {
+      expect(flat()).toMatch(
+        /createInvoice\( data: Partial<Invoice>|createInvoice\(data: Partial<Invoice>/,
+      );
+      expect(flat()).toMatch(/updateInvoice\([^)]*data: Partial<Invoice>/);
+      expect(client).not.toMatch(/data: any/);
+    });
+
+    it('supports pagination on a list call', () => {
+      // Prettier adds a trailing separator when it breaks the object type across lines.
+      expect(flat()).toMatch(/listInvoices\(\s*params\?: \{ skip\?: number; take\?: number;? \}/);
+      expect(client).toMatch(/URLSearchParams/);
+    });
+
+    it('includes the status text in an error', () => {
+      expect(client).toMatch(/statusText/);
+    });
+  });
+
   describe('route pluralisation', () => {
     /**
      * API Docs and SDK Publisher derive the same URL paths from the same models, and only one of them
