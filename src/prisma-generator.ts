@@ -2806,7 +2806,12 @@ export function chooseUpsellHint(
   return null;
 }
 
-function maybeShowSponsorMessage(models: readonly { name: string; fields: readonly { name: string; documentation?: string }[] }[] = []) {
+function maybeShowSponsorMessage(
+  models: readonly {
+    name: string;
+    fields: readonly { name: string; documentation?: string }[];
+  }[] = [],
+) {
   if (bannerSuppressed()) return;
 
   try {
@@ -2820,7 +2825,10 @@ function maybeShowSponsorMessage(models: readonly { name: string; fields: readon
     let state: BannerState = { count: 0 };
     if (fsFull.existsSync(counterFile)) {
       try {
-        state = { ...state, ...(JSON.parse(fsFull.readFileSync(counterFile, 'utf8')) as BannerState) };
+        state = {
+          ...state,
+          ...(JSON.parse(fsFull.readFileSync(counterFile, 'utf8')) as BannerState),
+        };
       } catch {
         // A corrupt state file is not a reason to skip generation, or to nag twice as often.
       }

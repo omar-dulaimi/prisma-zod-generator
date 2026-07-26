@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { chooseUpsellHint } from '../src/prisma-generator';
@@ -35,33 +35,6 @@ ${models}`;
   const PLAIN = `
 model User {
   id    String @id @default(cuid())
-  email String @unique
-}
-`;
-
-  /** Most models carrying a tenant column — what the multi-tenant hint keys on. */
-  const TENANT_SCOPED = `
-model User {
-  id       String @id @default(cuid())
-  tenantId String
-}
-
-model Post {
-  id       String @id @default(cuid())
-  tenantId String
-}
-
-model Comment {
-  id       String @id @default(cuid())
-  tenantId String
-}
-`;
-
-  /** A schema already using the annotations the Policies pack consumes. */
-  const ANNOTATED = `
-model User {
-  id    String @id @default(cuid())
-  /// @pii email redact:logs
   email String @unique
 }
 `;
@@ -196,7 +169,10 @@ export default defineConfig({
       // Both match here. The annotation is the stronger signal: they are already writing the
       // syntax, rather than merely having a column shaped like a tenant key.
       const hint = chooseUpsellHint([
-        model('User', [field('tenantId'), field('email', '@policy read:where tenantId == ctx.tenantId')]),
+        model('User', [
+          field('tenantId'),
+          field('email', '@policy read:where tenantId == ctx.tenantId'),
+        ]),
         model('Post', [field('tenantId')]),
       ]);
 
