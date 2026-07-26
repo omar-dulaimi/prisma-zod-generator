@@ -287,6 +287,359 @@ describe.skipIf(!proAvailable)('Performance Pack module graph', () => {
     GENERATION_TIMEOUT,
   );
 
+  /**
+   * wrappers.ts calls itself "Drop-in replacements for standard Zod validators", and nothing about it
+   * was drop-in. `precompiledValidators.X()` returns a result object and never throws, so:
+   *
+   *  - `parse` returned `{ success: false, error }` instead of throwing, so `try { parse(x) } catch`
+   *    never fired and the return value was not the parsed data.
+   *  - the adaptive validator's `safeParse` wrapped that in `{ success: true, data: result }`, so
+   *    invalid input came back as `{"success":true,"data":{"success":false,"error":"id is required"}}`.
+   *    A caller writing `if (r.success) use(r.data)` — the whole point of safeParse — got a garbage
+   *    object and no indication anything was wrong. Measured on the emitted output.
+   *  - `parse` was typed sync but returned a Promise for arrays of 100 or more, because it silently
+   *    switched to the streaming path.
+   */
+  describe('the emitted validator API', () => {
+    let mod: Record<string, any>;
+    const valid = {
+      id: 'a1',
+      email: 'someone@example.com',
+      seats: 3,
+      tier: 'PRO',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    beforeAll(async () => {
+      const out = await generate('wrapper-api', {});
+      mod = await import(join(out, 'wrappers.ts'));
+    }, GENERATION_TIMEOUT);
+
+    it('parse returns the data itself on success', () => {
+      const parsed = mod.AccountPerformance.parse(valid);
+
+      // Not a result envelope: the caller asked for the row.
+      expect(parsed).toMatchObject({ id: 'a1', email: 'someone@example.com' });
+      expect(parsed).not.toHaveProperty('success');
+    });
+
+    it('parse throws on invalid input, naming the field', () => {
+      expect(() => mod.AccountPerformance.parse({ nope: true })).toThrow(/email|id|required/i);
+    });
+
+    it('safeParse reports failure for invalid input', () => {
+      const result = mod.AccountPerformance.safeParse({ nope: true });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeTruthy();
+    });
+
+    it('safeParse returns the row, not a nested result, on success', () => {
+      const result = mod.AccountPerformance.safeParse(valid);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({ id: 'a1' });
+      // The specific failure: data held another {success,error} object.
+      expect(result.data).not.toHaveProperty('success');
+    });
+
+    describe('the adaptive validator', () => {
+      it('does not report success for invalid input', () => {
+        const result = mod.AccountAdaptive.safeParse({ nope: true });
+
+        expect(result.success).toBe(false);
+        expect(JSON.stringify(result)).not.toContain('"success":true');
+      });
+
+      it('throws from parse rather than returning a failure', () => {
+        expect(() => mod.AccountAdaptive.parse({ nope: true })).toThrow();
+      });
+
+      it('never returns a promise from a synchronous method', () => {
+        expect(mod.AccountAdaptive.parse(valid)).not.toBeInstanceOf(Promise);
+        expect(mod.AccountAdaptive.safeParse(valid)).not.toBeInstanceOf(Promise);
+      });
+
+      it('handles many rows through an explicitly asynchronous method', async () => {
+        const rows = Array.from({ length: 250 }, () => valid);
+
+        // Whatever it is called, an array API must be awaited rather than pretending to be sync.
+        const result = await mod.AccountAdaptive.safeParseMany(rows);
+
+        expect(result.success).toBe(true);
+        expect(result.data).toHaveLength(250);
+      });
+
+      it('reports which row failed when validating many', async () => {
+        const rows = [valid, { nope: true }, valid];
+
+        const result = await mod.AccountAdaptive.safeParseMany(rows);
+
+        expect(result.success).toBe(false);
+        expect(JSON.stringify(result.errors ?? result.error)).toMatch(/1/);
+      });
+    });
+  });
+
+  describe('streaming progress and counts', () => {
+    let streaming: Record<string, any>;
+    const valid = {
+      id: 'a1',
+      email: 'someone@example.com',
+      seats: 3,
+      tier: 'PRO',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    beforeAll(async () => {
+      const out = await generate('streaming-progress', {});
+      streaming = await import(join(out, 'streaming.ts'));
+    }, GENERATION_TIMEOUT);
+
+    it('calls onProgress once per chunk, not once per record', async () => {
+      // `result.processed++; onProgress?.(...)` sat inside the per-item map, so 100,000 records meant
+      // 100,000 callbacks — and the pack's own README example is
+      // `onProgress: (processed, total) => console.log(...)`, which then prints 100,000 lines and
+      // costs more than the validation it is reporting on.
+      const rows = Array.from({ length: 250 }, () => valid);
+      let calls = 0;
+
+      await streaming.validateStream('Account', rows, {
+        chunkSize: 50,
+        onProgress: () => {
+          calls++;
+        },
+      });
+
+      expect(calls).toBe(5);
+    });
+
+    it('reports the running total to onProgress', async () => {
+      const rows = Array.from({ length: 100 }, () => valid);
+      const seen: Array<[number, number]> = [];
+
+      await streaming.validateStream('Account', rows, {
+        chunkSize: 25,
+        onProgress: (processed: number, total: number) => {
+          seen.push([processed, total]);
+        },
+      });
+
+      expect(seen).toEqual([
+        [25, 100],
+        [50, 100],
+        [75, 100],
+        [100, 100],
+      ]);
+    });
+
+    it('counts a row whose validation threw', async () => {
+      // `result.processed++` was inside the try block only, so anything that threw was recorded as
+      // invalid and then never counted — leaving `processed` short of the rows actually handled.
+      const exploding = new Proxy(
+        {},
+        {
+          get() {
+            throw new Error('column read failed');
+          },
+        },
+      );
+      const rows = [valid, exploding, valid];
+
+      const result = await streaming.validateStream('Account', rows, { chunkSize: 10 });
+
+      expect(result.processed).toBe(3);
+      expect(result.invalid).toHaveLength(1);
+      expect(result.valid).toHaveLength(2);
+    });
+  });
+
+  describe('validateBatchParallel', () => {
+    let batch: Record<string, any>;
+    const valid = {
+      id: 'a1',
+      email: 'someone@example.com',
+      seats: 3,
+      tier: 'PRO',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    beforeAll(async () => {
+      const out = await generate('batch-parallel', {});
+      batch = await import(join(out, 'batch.ts'));
+    }, GENERATION_TIMEOUT);
+
+    it('runs on the minimum supported Node version', async () => {
+      // `workers = navigator.hardwareConcurrency || 4` referenced a DOM global. Node only added
+      // `navigator` in v21, and this package supports >=20.19.0 — which CI tests — so on the floor
+      // version the first call threw ReferenceError. Deleting the global reproduces that exactly.
+      const saved = (globalThis as { navigator?: unknown }).navigator;
+      delete (globalThis as { navigator?: unknown }).navigator;
+      try {
+        const result = await batch.validateBatchParallel('Account', [valid, valid]);
+        expect(result.valid).toHaveLength(2);
+      } finally {
+        if (saved !== undefined) {
+          Object.defineProperty(globalThis, 'navigator', { value: saved, configurable: true });
+        }
+      }
+    });
+
+    it('validates every row and reports the failures', async () => {
+      const rows = [valid, { nope: true }, valid, valid];
+
+      const result = await batch.validateBatchParallel('Account', rows, { workers: 2 });
+
+      expect(result.valid).toHaveLength(3);
+      expect(result.errors).toHaveLength(1);
+      expect(result.totalProcessed).toBe(4);
+    });
+
+    it('keeps error indices pointing at the original rows', async () => {
+      // Chunking must not renumber the rows: an error at index 5 has to mean the sixth input.
+      const rows = Array.from({ length: 10 }, (_, i) => (i === 5 ? { nope: true } : valid));
+
+      const result = await batch.validateBatchParallel('Account', rows, { workers: 3 });
+
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].index).toBe(5);
+    });
+  });
+
+  describe('the emitted guide', () => {
+    /**
+     * Two separate problems, both in shipped documentation for a paid feature.
+     *
+     * The performance figures were presented as measurements and were not: `speedImprovement` is a
+     * three-way constant chosen by counting relation and Json columns, `memoryReduction` is the
+     * literal 45, and the sizes are `fieldCount * 50` and `fieldCount * 25` with "KB" appended. So
+     * every customer's README claimed "~2.1x faster than standard Zod", "~45% reduction" and a
+     * before/after byte size, none of which anything had timed or weighed.
+     *
+     * The config echo read the raw `config` argument instead of the resolved defaults, so with
+     * `enablePerformance = true` and no explicit options it reported "Optimization Level: undefined",
+     * "Streaming: Disabled", "Precompilation: Disabled" and "Batching: Disabled" — while the console
+     * printed "aggressive" and all three modules sat in the same directory.
+     */
+    let readme: string;
+    let out: string;
+
+    beforeAll(async () => {
+      out = await generate('guide', {});
+      readme = readFileSync(join(out, 'README.md'), 'utf-8');
+    }, GENERATION_TIMEOUT);
+
+    it('does not present invented figures as measurements', () => {
+      expect(readme).not.toMatch(/~?\d+(\.\d+)?x faster/i);
+      expect(readme).not.toMatch(/~?\d+% (reduction|less memory)/i);
+      // The sizes were fieldCount arithmetic with a KB suffix.
+      expect(readme).not.toMatch(/\d+KB \(vs \d+KB original\)/);
+    });
+
+    it('echoes the configuration that was actually used', () => {
+      expect(readme).not.toContain('undefined');
+      // Defaults: aggressive, medium, and all three modules on.
+      expect(readme).toMatch(/aggressive/);
+      expect(readme).toMatch(/medium/);
+      expect(readme).not.toMatch(/Streaming.*Disabled/);
+      expect(readme).not.toMatch(/Precompilation.*Disabled/);
+      expect(readme).not.toMatch(/Batching.*Disabled/);
+    });
+
+    it('echoes an explicit configuration too', async () => {
+      const custom = await generate('guide-custom', {
+        optimizationLevel: 'basic',
+        targetSize: 'large',
+        enableStreaming: true,
+      });
+      const text = readFileSync(join(custom, 'README.md'), 'utf-8');
+
+      expect(text).toMatch(/basic/);
+      expect(text).toMatch(/large/);
+      expect(text).not.toContain('undefined');
+    });
+
+    it('uses the reader’s own model names in its examples', () => {
+      // Every example was written against `User` and `Post`. On a schema with neither, the guide
+      // demonstrated the API with models the customer does not have — the same defect Data Factories
+      // had when it emitted validators for a hardcoded sample.
+      const mentioned = [...readme.matchAll(/precompiledValidators\.(\w+)/g)].map((m) => m[1]);
+      const inSchema = ['Member', 'Project', 'Account'];
+
+      expect(mentioned.length).toBeGreaterThan(0);
+      for (const name of mentioned) expect(inSchema).toContain(name);
+
+      for (const absent of ['User', 'Post']) {
+        expect(readme, `the guide should not reference ${absent}`).not.toMatch(
+          new RegExp(`['"\\.]${absent}['"\\)]`),
+        );
+      }
+    });
+
+    it('points the reader at the benchmark suite instead of quoting numbers', () => {
+      // If the pack will not measure, it should say how the reader can.
+      expect(readme).toMatch(/benchmark/i);
+    });
+  });
+
+  describe('the benchmark harness', () => {
+    /**
+     * The README now tells the reader to run this instead of quoting invented figures, so it has to
+     * produce real ones. It did not: `runBenchmark` called `fn()` inside a synchronous loop with no
+     * `await`, while `runAllBenchmarks` passes `async () => await validateStream(...)` as one of its
+     * arms. That timed the synchronous prologue of a promise and reported the result as the duration —
+     * a measured-looking number for work that had not finished. The same missing `await` meant
+     * `try { fn() } catch` could not catch a rejection, so a failing arm reported a 0% error rate
+     * while leaving `iterations` unawaited promises in flight.
+     */
+    let suite: any;
+    let benchmarks: Record<string, any>;
+
+    beforeAll(async () => {
+      const out = await generate('benchmarks', {});
+      benchmarks = await import(join(out, 'benchmarks.ts'));
+      suite = new benchmarks.BenchmarkSuite();
+    }, GENERATION_TIMEOUT);
+
+    it('waits for an asynchronous arm before recording its time', async () => {
+      const delayMs = 20;
+      const result = await suite.runBenchmark(
+        'sleep',
+        async () => {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        },
+        3,
+      );
+
+      // Unawaited, this reported a fraction of a millisecond.
+      expect(result.avgTime).toBeGreaterThanOrEqual(delayMs * 0.7);
+    });
+
+    it('counts a rejection as an error', async () => {
+      const result = await suite.runBenchmark(
+        'always rejects',
+        async () => {
+          throw new Error('nope');
+        },
+        4,
+      );
+
+      expect(result.errorRate).toBe(1);
+    });
+
+    it('does not claim to compare against a baseline it never produces', () => {
+      const source = readFileSync(
+        join(process.cwd(), 'src/pro/features/performance-pack/performance-pack.ts'),
+        'utf-8',
+      );
+      // compareWithBaseline takes results the caller captured; the file must not advertise otherwise.
+      expect(source).not.toMatch(/Compare standard vs optimized validation performance/);
+    });
+  });
+
   it(
     'emits every module it imports, by default',
     async () => {
