@@ -45,6 +45,16 @@ describe('safety config', () => {
       expect(resolved.allowUserFiles).toBe(true);
     });
 
+    it('turns everything off at the disabled level', () => {
+      // A fourth level exists alongside strict/standard/permissive, and it is the documented
+      // way to switch the guard off wholesale.
+      const resolved = resolveSafetyConfig({ level: 'disabled' });
+
+      expect(resolved.enabled).toBe(false);
+      expect(resolved.skipManifest).toBe(true);
+      expect(resolved.maxUserFiles).toBe(Infinity);
+    });
+
     it('rejects an unrecognised level with a message naming the valid ones', () => {
       // This used to throw `Cannot read properties of undefined (reading
       // 'customDangerousPaths')` from spreading a missing preset. It failed closed, which is
@@ -52,7 +62,7 @@ describe('safety config', () => {
       // deserves better than an internal TypeError.
       expect(() => resolveSafetyConfig({ level: 'bogus' as never })).toThrow(/bogus/);
       expect(() => resolveSafetyConfig({ level: 'bogus' as never })).toThrow(
-        /strict.*standard.*permissive/,
+        /strict.*standard.*permissive.*disabled/,
       );
     });
   });

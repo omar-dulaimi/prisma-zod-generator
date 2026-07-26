@@ -512,36 +512,9 @@ export class BusinessSecurity {
  */
 export const businessSecurity = new BusinessSecurity();
 
-/**
- * Decorator for securing business logic methods
+/*
+ * secureBusinessLogic, a method decorator wrapping calls in an authorisation check, was removed
+ * as unreachable — no caller inside or outside this module. The live entry point is the
+ * `businessSecurity` singleton's validateFeatureAccess, which license.ts calls directly and
+ * tests/business-security-gate.test.ts covers.
  */
-export function secureBusinessLogic(
-  resource: string,
-  action: string,
-  options?: { tenantIsolation?: boolean },
-) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-    const originalMethod = descriptor.value;
-
-    descriptor.value = async function (context: SecurityContext, ...args: any[]) {
-      const auth = businessSecurity.authorize(
-        context,
-        resource,
-        action,
-        options?.tenantIsolation ? args[0] : undefined,
-      );
-
-      if (!auth.authorized) {
-        throw new BusinessSecurityError(`Unauthorized access: ${auth.reason}`, 'authorization', {
-          resource,
-          action,
-          userId: context.userId,
-        });
-      }
-
-      return originalMethod.apply(this, [context, ...args]);
-    };
-
-    return descriptor;
-  };
-}

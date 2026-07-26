@@ -276,41 +276,6 @@ export function mergeSafetyConfigs(...configs: SafetyOptions[]): SafetyOptions {
 }
 
 /**
- * Get a human-readable description of the safety configuration
- */
-export function describeSafetyConfig(config: ResolvedSafetyConfig): string {
-  if (!config.enabled) {
-    return 'Safety system is disabled - no protection against dangerous paths';
-  }
-
-  const parts: string[] = [];
-  parts.push(`Safety level: ${config.level}`);
-
-  const permissions: string[] = [];
-  if (config.allowDangerousPaths) permissions.push('dangerous paths');
-  if (config.allowProjectRoots) permissions.push('project roots');
-  if (config.allowUserFiles) permissions.push('user files');
-
-  if (permissions.length > 0) {
-    parts.push(`Allows: ${permissions.join(', ')}`);
-  }
-
-  if (config.warningsOnly) {
-    parts.push('Warnings only (no blocking)');
-  }
-
-  if (config.skipManifest) {
-    parts.push('Manifest tracking disabled');
-  }
-
-  if (config.maxUserFiles < Infinity) {
-    parts.push(`Max user files: ${config.maxUserFiles}`);
-  }
-
-  return parts.join(' | ');
-}
-
-/**
  * Utility function to parse boolean values from strings
  */
 function parseBoolean(value: string | boolean): boolean {
@@ -322,31 +287,10 @@ function parseBoolean(value: string | boolean): boolean {
   return false;
 }
 
-/**
- * Validate safety configuration and return any errors
+/*
+ * describeSafetyConfig and validateSafetyConfig were removed as unreachable — no caller inside
+ * or outside this module. describeSafetyConfig rendered a config as prose for logging;
+ * validateSafetyConfig checked a SafetyOptions object and returned a list of problems. Both
+ * agreed with the presets above, including the `disabled` level; there was simply nothing that
+ * called either.
  */
-export function validateSafetyConfig(config: SafetyOptions): string[] {
-  const errors: string[] = [];
-
-  // Validate safety level
-  if (config.level && !['strict', 'standard', 'permissive', 'disabled'].includes(config.level)) {
-    errors.push(
-      `Invalid safety level: ${config.level}. Must be one of: strict, standard, permissive, disabled`,
-    );
-  }
-
-  // Validate maxUserFiles
-  if (
-    config.maxUserFiles !== undefined &&
-    (config.maxUserFiles < 0 || !Number.isInteger(config.maxUserFiles))
-  ) {
-    errors.push(`maxUserFiles must be a non-negative integer, got: ${config.maxUserFiles}`);
-  }
-
-  // Check for conflicting options
-  if (config.enabled === false && config.warningsOnly === false) {
-    errors.push('Cannot have warningsOnly=false when safety is disabled');
-  }
-
-  return errors;
-}
