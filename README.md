@@ -150,7 +150,20 @@ trade-offs.
 
 ## PZG Pro
 
-The generator above is MIT licensed and complete on its own. Optional commercial packs build on it:
+The generator above is MIT licensed and complete on its own. The commercial packs generate the layers
+people usually hand-write around it:
+
+- **Server Actions** — typed Next.js `'use server'` actions per model, validation already wired in.
+- **Form UX** — working forms from your schema for shadcn, MUI, Chakra, Mantine, or plain elements,
+  with react-hook-form and your Zod schemas connected.
+- **Policies & Redaction** — turn `/// @policy` and `/// @pii` comments in your schema into enforced
+  access rules and redacted logs, plus PostgreSQL row-level security.
+- **Drift Guard** — a CI command that compares two git refs and fails the build on a breaking schema
+  change, with an allow-list for the ones you accept.
+- **SDK Publisher** — a publishable TypeScript or Python client for your models.
+- **API Docs, Contract Testing, Data Factories, Performance, Multi-Tenant Kit** — OpenAPI plus a mock
+  server, Pact consumer and provider tests, seed factories typed to your schema, precompiled
+  generation for large schemas, and tenant isolation enforced in the client.
 
 | Pack                                                                          | Minimum plan |
 | ----------------------------------------------------------------------------- | ------------ |
@@ -159,20 +172,26 @@ The generator above is MIT licensed and complete on its own. Optional commercial
 | API Docs, Contract Testing, Data Factories                                    | Business     |
 | Multi-Tenant Kit                                                              | Enterprise   |
 
-Pro code ships inside the published package, is unlocked with a `PZG_LICENSE_KEY`, and is invoked through the
-bundled `pzg-pro` CLI.
+Pro code ships inside the published package, is unlocked with a `PZG_LICENSE_KEY`, and is invoked
+through the bundled `pzg-pro` CLI.
 [Pro features](https://omar-dulaimi.github.io/prisma-zod-generator/docs/features/overview) ·
 [Pricing](https://omar-dulaimi.github.io/prisma-zod-generator/pricing)
 
-## Sponsor
+### Buying a licence
 
-Sponsorships fund maintenance and new feature work: <https://github.com/sponsors/omar-dulaimi>
-
-Pro licenses are sold through the same page. Open the **One-time** tab (the second one) and pick a yearly
-**PZG Starter**, **PZG Professional**, **PZG Business**, or **PZG Enterprise** tier; the monthly support tiers
-do not include a PZG Pro license.
+Licences are sold through GitHub Sponsors, which needs one thing spelled out: open the
+**One-time** tab — the second one — and pick a yearly **PZG Starter**, **PZG Professional**,
+**PZG Business**, or **PZG Enterprise** tier. The monthly support tiers on the first tab do **not**
+include a PZG Pro licence.
 
 <img src="website/static/img/tiers.png" alt="GitHub Sponsors One-time tab showing the PZG yearly tiers" width="320" />
+
+<https://github.com/sponsors/omar-dulaimi>
+
+## Sponsor
+
+Sponsorships fund maintenance and new feature work, separately from any Pro licence:
+<https://github.com/sponsors/omar-dulaimi>
 
 ## Contributing
 

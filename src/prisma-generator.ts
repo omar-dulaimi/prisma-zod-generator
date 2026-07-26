@@ -734,7 +734,7 @@ export async function generate(options: GeneratorOptions) {
       logger.debug('[prisma-generator] Skipping manifest save (skipManifest enabled)');
     }
 
-    maybeShowSponsorMessage();
+    maybeShowSponsorMessage(options.dmmf?.datamodel?.models ?? []);
   } catch (error) {
     // Log for context, then rethrow: swallowing here made `prisma generate`
     // exit 0 after a failed generation, so a broken setup looked like success
@@ -2728,7 +2728,87 @@ function inferZodTypeFromValue(value: any): string {
 const green = (msg: string) => `\x1b[32m${msg}\x1b[0m`; // green
 const cyan = (msg: string) => `\x1b[36m${msg}\x1b[0m`; // cyan
 
-function maybeShowSponsorMessage() {
+/**
+ * Whether this run should print anything at all.
+ *
+ * The banner used to be behind `if (true)` — a leftover that made it print on every single
+ * `prisma generate`, forever, with a run counter sitting above it that incremented and gated
+ * nothing. People run this command dozens of times a day, and it printed into CI logs too.
+ */
+function bannerSuppressed(): boolean {
+  if (process.env.PZG_NO_BANNER === '1' || process.env.PZG_NO_BANNER === 'true') return true;
+  // Nobody reads a build log for an upsell, and it is noise in everyone else's CI.
+  if (process.env.CI || process.env.GITHUB_ACTIONS) return true;
+  // Piped or redirected output is being consumed by a tool, not a person.
+  if (!process.stdout.isTTY) return true;
+  return false;
+}
+
+const BANNER_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface BannerState {
+  count: number;
+  lastShownAt?: number;
+  hintsShown?: string[];
+}
+
+/**
+ * A hint tied to something true about *this* schema.
+ *
+ * A blanket feature list gets filtered out on sight. Something that names what is actually in
+ * front of the reader — the number of models they have, the tenant column on every table, the
+ * `@policy` comments they are already writing — is worth the line it takes. Each fires once per
+ * project and never again.
+ */
+export function chooseUpsellHint(
+  models: readonly { name: string; fields: readonly { name: string; documentation?: string }[] }[],
+): { id: string; lines: string[] } | null {
+  const modelCount = models.length;
+  const documentation = models
+    .flatMap((model) => model.fields.map((field) => field.documentation ?? ''))
+    .join('\n');
+
+  // They are already writing the annotation syntax the Policies pack consumes.
+  if (/@policy|@pii/.test(documentation)) {
+    return {
+      id: 'policies',
+      lines: [
+        'Your schema already carries @policy / @pii annotations.',
+        'PZG Pro turns them into enforced access rules and redaction:',
+      ],
+    };
+  }
+
+  const tenantScoped = models.filter((model) =>
+    model.fields.some((field) => /^(tenantId|organizationId|orgId|accountId)$/i.test(field.name)),
+  ).length;
+
+  if (modelCount >= 3 && tenantScoped >= Math.ceil(modelCount * 0.6)) {
+    return {
+      id: 'multi-tenant',
+      lines: [
+        `${tenantScoped} of your ${modelCount} models carry a tenant column.`,
+        'PZG Pro can enforce that isolation in the client and in PostgreSQL RLS:',
+      ],
+    };
+  }
+
+  if (modelCount >= 40) {
+    return {
+      id: 'performance',
+      lines: [
+        `This schema has ${modelCount} models.`,
+        'PZG Pro precompiles and parallelises generation for schemas this size:',
+      ],
+    };
+  }
+
+  return null;
+}
+
+function maybeShowSponsorMessage(models: readonly { name: string; fields: readonly { name: string; documentation?: string }[] }[] = []) {
+  if (bannerSuppressed()) return;
+
   try {
     const cacheDir = path.join(process.cwd(), 'node_modules', '.cache', 'prisma-zod-generator');
     const counterFile = path.join(cacheDir, 'counter.json');
@@ -2737,35 +2817,58 @@ function maybeShowSponsorMessage() {
       fsFull.mkdirSync(cacheDir, { recursive: true });
     }
 
-    let count = 0;
+    let state: BannerState = { count: 0 };
     if (fsFull.existsSync(counterFile)) {
-      const raw = fsFull.readFileSync(counterFile, 'utf8');
-      count = JSON.parse(raw).count || 0;
+      try {
+        state = { ...state, ...(JSON.parse(fsFull.readFileSync(counterFile, 'utf8')) as BannerState) };
+      } catch {
+        // A corrupt state file is not a reason to skip generation, or to nag twice as often.
+      }
     }
 
-    count++;
-    fsFull.writeFileSync(counterFile, JSON.stringify({ count }, null, 2));
+    state.count = (state.count || 0) + 1;
 
-    if (true) {
-      console.log(`
-${cyan(`🚀 prisma-zod-generator has powered ${count} runs on this project!`)}
+    const now = Date.now();
+    const firstRun = state.count === 1;
+    const dueAgain = !state.lastShownAt || now - state.lastShownAt >= BANNER_INTERVAL_MS;
 
-✨ Level up with PZG Pro (14-day trial, no card needed):
-   - Server actions & policy automation
-   - SDK publisher, API docs, drift guard
-   - Performance tooling for large teams and more!
-   ${green('https://omar-dulaimi.github.io/prisma-zod-generator/pricing')}
+    const hint = chooseUpsellHint(models);
+    const hintIsNew = hint ? !(state.hintsShown ?? []).includes(hint.id) : false;
 
-💬 Need help or want to suggest an idea?
-   ${green('https://github.com/omar-dulaimi/prisma-zod-generator/issues')}
+    // First run, once a week after that, or a hint this project has not seen before.
+    const show = firstRun || dueAgain || hintIsNew;
 
-🙌 Sponsorships literally keep the lights (and tests) running:
-   My current Dell Latitude laptop needs 40+ minutes to finish the full test suite.
-   Helping me upgrade means faster fixes and better tooling for everyone.
-   ${green('https://github.com/sponsors/omar-dulaimi')}
-`);
+    if (show) {
+      state.lastShownAt = now;
+      if (hint && hintIsNew) state.hintsShown = [...(state.hintsShown ?? []), hint.id];
     }
+
+    fsFull.writeFileSync(counterFile, JSON.stringify(state, null, 2));
+    if (!show) return;
+
+    const pitch = hint
+      ? hint.lines
+      : [
+          'PZG Pro adds server actions, generated forms, access policies,',
+          'a CI drift guard and a publishable SDK on top of this generator:',
+        ];
+
+    console.log(
+      [
+        '',
+        cyan(`🚀 prisma-zod-generator has powered ${state.count} runs on this project`),
+        '',
+        ...pitch.map((line) => `   ${line}`),
+        `   ${green('https://omar-dulaimi.github.io/prisma-zod-generator/pricing')}`,
+        '',
+        `   Ideas or trouble? ${green('https://github.com/omar-dulaimi/prisma-zod-generator/issues')}`,
+        `   Sponsor: ${green('https://github.com/sponsors/omar-dulaimi')}`,
+        '',
+        '   Shown once a week. Set PZG_NO_BANNER=1 to silence it.',
+        '',
+      ].join('\n'),
+    );
   } catch {
-    // Fail silently, we don’t want to break generator if fs fails
+    // Fail silently, we don't want to break the generator if fs fails
   }
 }
