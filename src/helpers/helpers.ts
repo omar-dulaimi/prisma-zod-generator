@@ -29,7 +29,11 @@ export function addMissingInputObjectTypes(
 ) {
   const cfg = Transformer.getGeneratorConfig();
   const isMinimal = cfg?.mode === 'minimal';
-  // TODO: remove once Prisma fix this issue: https://github.com/prisma/prisma/issues/14900
+  // Works around prisma/prisma#14900: the DMMF advertises MongoDB's raw operations in
+  // `mappings.modelOperations` but emits no argument input types for them, so those are
+  // synthesised below. Still true as of Prisma 7.0.0, verified by
+  // tests/upstream-mongodb-raw-ops.test.ts — when that test starts failing, Prisma has begun
+  // emitting the types and this branch can go rather than being layered on top of them.
   if (dataSourceProvider === 'mongodb') {
     addMissingInputObjectTypesForMongoDbRawOpsAndQueries(
       modelOperations,
