@@ -25,10 +25,18 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
 model Invoice {
   id     String @id @default(cuid())
   title  String
   amount Int
+  // The fixture had no enum, so the contract example for one could not be observed here.
+  role   Role   @default(MEMBER)
 }
 `;
 
@@ -85,6 +93,23 @@ describe.skipIf(!proAvailable)('Contract Testing pacts', () => {
     else process.env.PZG_DEV_MODE = savedDevMode;
     rmSync(dir, { recursive: true, force: true });
   });
+
+  it(
+    'uses a real enum member in the contract example',
+    async () => {
+      // Pact publishes these examples to the broker as the documented shape of the response. An enum
+      // column got `example_role`, a value the API can never return — the matcher passes, because
+      // `like` compares types, but anyone reading the pact sees a value that does not exist. Same
+      // family as the enum fixes in factories, forms and api-docs.
+      const out = await generate('enum-example', {});
+      const source = firstPact(out);
+
+      expect(source).not.toMatch(/example_/);
+      // The fixture's enum members are the only acceptable values.
+      expect(source).toMatch(/'(OWNER|ADMIN|MEMBER)'/);
+    },
+    GENERATION_TIMEOUT,
+  );
 
   describe('wiremockConfig', () => {
     /**
