@@ -3242,12 +3242,88 @@ See the generated `README.md` in the pack for more integration patterns.
 
 # Pro Features Overview
 
-Upgrade the core generator with production‑ready feature packs. Generate UI, SDKs, docs, security helpers, CI tooling — all in minutes.
+The core generator emits Zod schemas. These packs generate the layers teams usually hand-write around
+them — forms, server actions, SDKs, API docs, access policies, contract tests and CI guards — from the
+same Prisma schema.
 
 import Link from '@docusaurus/Link';
 import tiersImg from '@site/static/img/tiers.png';
 
-## How to Get Pro Features
+## Packs at a glance
+
+<div className="feature-card-grid">
+  <Link className="feature-card" to="./forms">
+    <div className="feature-card__icon">🧩</div>
+    <div className="feature-card__title">Forms UX</div>
+    <div className="feature-card__desc">Schema‑driven React forms with Zod + RHF.</div>
+  </Link>
+
+  <Link className="feature-card" to="./sdk">
+    <div className="feature-card__icon">🔌</div>
+    <div className="feature-card__title">SDK Publisher</div>
+    <div className="feature-card__desc">Typed TypeScript + Python HTTP clients from your schema.</div>
+  </Link>
+
+  <Link className="feature-card" to="./api-docs">
+    <div className="feature-card__icon">📚</div>
+    <div className="feature-card__title">API Docs</div>
+    <div className="feature-card__desc">OpenAPI + runnable mock server for local dev.</div>
+  </Link>
+
+  <Link className="feature-card" to="./policies">
+    <div className="feature-card__icon">🕵️</div>
+    <div className="feature-card__title">Policies</div>
+    <div className="feature-card__desc">PII redaction + policy helpers from annotations.</div>
+  </Link>
+
+  <Link className="feature-card" to="./postgres-rls">
+    <div className="feature-card__icon">🧷</div>
+    <div className="feature-card__title">Postgres RLS</div>
+    <div className="feature-card__desc">RLS session context helpers + example SQL.</div>
+  </Link>
+
+  <Link className="feature-card" to="./multi-tenant">
+    <div className="feature-card__icon">🏷️</div>
+    <div className="feature-card__title">Multi‑Tenant</div>
+    <div className="feature-card__desc">Server-side tenant validation, middleware, and extensions.</div>
+  </Link>
+
+  <Link className="feature-card" to="./performance">
+    <div className="feature-card__icon">🚄</div>
+    <div className="feature-card__title">Performance</div>
+    <div className="feature-card__desc">Streaming validators for large arrays.</div>
+  </Link>
+
+  <Link className="feature-card" to="./factories">
+    <div className="feature-card__icon">🏭</div>
+    <div className="feature-card__title">Factories</div>
+    <div className="feature-card__desc">Realistic test data builders.</div>
+  </Link>
+
+  <Link className="feature-card" to="./guard">
+    <div className="feature-card__icon">🛡️</div>
+    <div className="feature-card__title">Drift Guard</div>
+    <div className="feature-card__desc">CI diffs to catch breaking changes.</div>
+  </Link>
+
+  <Link className="feature-card" to="./contracts">
+    <div className="feature-card__icon">🤝</div>
+    <div className="feature-card__title">Contracts</div>
+    <div className="feature-card__desc">Consumer/provider tests + definitions.</div>
+  </Link>
+
+  <Link className="feature-card" to="./server-actions">
+    <div className="feature-card__icon">🧠</div>
+    <div className="feature-card__title">Server Actions</div>
+    <div className="feature-card__desc">Typed actions validated with Zod.</div>
+  </Link>
+</div>
+
+:::tip Pro Tip
+You can generate multiple packs side‑by‑side — e.g., SDK + API Docs + Forms — to iterate UI against a mock server while the backend evolves.
+:::
+
+## Getting a licence
 
 Purchase any tier through GitHub Sponsors and get started in minutes:
 
@@ -3435,80 +3511,6 @@ the Performance Pack, which parse the schema themselves, from 2.8.2+):
 ```json
 { "models": { "AuditLog": { "enabled": false }, "SessionToken": { "enabled": false } } }
 ```
-
-## Packs at a glance
-
-<div className="feature-card-grid">
-  <Link className="feature-card" to="./forms">
-    <div className="feature-card__icon">🧩</div>
-    <div className="feature-card__title">Forms UX</div>
-    <div className="feature-card__desc">Schema‑driven React forms with Zod + RHF.</div>
-  </Link>
-
-  <Link className="feature-card" to="./sdk">
-    <div className="feature-card__icon">🔌</div>
-    <div className="feature-card__title">SDK Publisher</div>
-    <div className="feature-card__desc">Typed TypeScript + Python HTTP clients from your schema.</div>
-  </Link>
-
-  <Link className="feature-card" to="./api-docs">
-    <div className="feature-card__icon">📚</div>
-    <div className="feature-card__title">API Docs</div>
-    <div className="feature-card__desc">OpenAPI + runnable mock server for local dev.</div>
-  </Link>
-
-  <Link className="feature-card" to="./policies">
-    <div className="feature-card__icon">🕵️</div>
-    <div className="feature-card__title">Policies</div>
-    <div className="feature-card__desc">PII redaction + policy helpers from annotations.</div>
-  </Link>
-
-  <Link className="feature-card" to="./postgres-rls">
-    <div className="feature-card__icon">🧷</div>
-    <div className="feature-card__title">Postgres RLS</div>
-    <div className="feature-card__desc">RLS session context helpers + example SQL.</div>
-  </Link>
-
-  <Link className="feature-card" to="./multi-tenant">
-    <div className="feature-card__icon">🏷️</div>
-    <div className="feature-card__title">Multi‑Tenant</div>
-    <div className="feature-card__desc">Server-side tenant validation, middleware, and extensions.</div>
-  </Link>
-
-  <Link className="feature-card" to="./performance">
-    <div className="feature-card__icon">🚄</div>
-    <div className="feature-card__title">Performance</div>
-    <div className="feature-card__desc">Streaming validators for large arrays.</div>
-  </Link>
-
-  <Link className="feature-card" to="./factories">
-    <div className="feature-card__icon">🏭</div>
-    <div className="feature-card__title">Factories</div>
-    <div className="feature-card__desc">Realistic test data builders.</div>
-  </Link>
-
-  <Link className="feature-card" to="./guard">
-    <div className="feature-card__icon">🛡️</div>
-    <div className="feature-card__title">Drift Guard</div>
-    <div className="feature-card__desc">CI diffs to catch breaking changes.</div>
-  </Link>
-
-  <Link className="feature-card" to="./contracts">
-    <div className="feature-card__icon">🤝</div>
-    <div className="feature-card__title">Contracts</div>
-    <div className="feature-card__desc">Consumer/provider tests + definitions.</div>
-  </Link>
-
-  <Link className="feature-card" to="./server-actions">
-    <div className="feature-card__icon">🧠</div>
-    <div className="feature-card__title">Server Actions</div>
-    <div className="feature-card__desc">Typed actions validated with Zod.</div>
-  </Link>
-</div>
-
-:::tip Pro Tip
-You can generate multiple packs side‑by‑side — e.g., SDK + API Docs + Forms — to iterate UI against a mock server while the backend evolves.
-:::
 
 ## Examples
 
