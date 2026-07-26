@@ -105,8 +105,11 @@ jobs:
       - name: Run type checking
         run: pnpm run test:type-check
 
+      # Reported but not blocking. `|| echo` *and* continue-on-error meant a lint failure
+      # could not even be seen in the job's conclusion; continue-on-error alone still
+      # surfaces it while keeping the build green.
       - name: Run linting
-        run: pnpm run lint || echo "Linting failed but continuing for now"
+        run: pnpm run lint
         continue-on-error: true
 
       # Runs every file matched by the vitest include glob, not a hand-maintained
@@ -115,6 +118,21 @@ jobs:
       # `prisma generate`, they never connect.
       - name: Run full test suite
         run: pnpm run test:all
+        timeout-minutes: 45
+
+      # The coverage ratchet, run once rather than on all three Node versions. Thresholds are
+      # calibrated for a checkout without the private Pro submodule — what this job and every
+      # fork has — where 18 files skip and the figure is 87.6% statements / 88.6% branches /
+      # 69.1% functions. They sit below the lower of that and the with-submodule figure
+      # (89.0/87.6/68.2) so the same script passes either way. Without this step the gate only
+      # ever ran when someone remembered to run it locally.
+      #
+      # It re-runs the suite under c8 rather than reusing the run above, because c8 has to own
+      # the process tree: most of these tests spawn `prisma generate`, and in-process coverage
+      # cannot see child processes at all.
+      - name: Check coverage thresholds
+        if: matrix.node-version == '24.x'
+        run: pnpm run test:coverage:ci
         timeout-minutes: 45
 
   package-test:
@@ -178,6 +196,18 @@ jobs:
         run: |
           cd package
           npm pack --dry-run
+
+      # The only job with the private submodule, so the only place these can run. They generate
+      # the Form UX and Contract Testing packs and type-check the result against the real MUI,
+      # Chakra, Mantine and Pact packages, which live in tests/typecheck-fixtures rather than the
+      # root install — 322 transitive packages that nothing else here needs. The test skips
+      # itself when that package is absent, so it was previously never running anywhere.
+      #
+      # Uncompilable emitted output is the most common defect these packs have had, and it is
+      # invisible to every other check.
+      - name: Type-check emitted Pro UI output
+        run: pnpm run test:typecheck-fixtures
+        timeout-minutes: 20
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v5
