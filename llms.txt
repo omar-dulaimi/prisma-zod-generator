@@ -83,7 +83,7 @@
 
 > Prisma → Zod in one generate. Ship validated, typed data everywhere.
 
-Last updated: 2026-07-25 • Version: 2.8.1
+Last updated: 2026-07-26 • Version: 2.8.1
 
 ## Quick start
 
@@ -477,7 +477,7 @@ The equivalent JSON config form:
 ```
 
 :::note
-These four keys are not yet listed in the bundled JSON Schema (`lib/config/schema.json`), so an editor validating your config against it may flag them as unknown properties. They are read normally at generate time.
+All four keys are declared in the bundled JSON Schema (`lib/config/schema.json`), so an editor wired up with `$schema` completes and validates them. Before that they were rejected as unknown properties — the schema sets `additionalProperties: false`, so `ConfigurationValidator` failed a config that used them.
 :::
 
 Disable one side to shrink surface:
@@ -1130,8 +1130,8 @@ You can replace the built-in allow-list with your own by adding a top-level `min
 
 The array replaces the built-in allow-list wholesale for models you have not listed under `models` — a model with its own `operations` array always wins, and a model listed without one still receives `MINIMAL_OPERATIONS`. Legacy aliases (`createOne`, `updateOne`, `deleteOne`, `upsertOne`) are normalised to their canonical names before the check, so only the canonical form is needed here. Including `create` or `createMany` additionally unblocks the `*CreateManyInput` object schemas that minimal mode otherwise skips as too heavy.
 
-:::caution
-`minimalOperations` is an escape hatch rather than part of the declared config contract: it is absent from the generator's TypeScript config interface and from the published JSON Schema. If you wire up `$schema` (see [JSON Schema IntelliSense](./schema-json.md)), your editor will report it as an unknown property even though the generator honours it.
+:::note
+`minimalOperations` is an escape hatch rather than part of the per-model filtering contract — it applies globally, unlike `models.*.operations`. It is declared in the config interface and in the published JSON Schema, so `$schema` completion and `ConfigurationValidator` both accept it.
 :::
 
 ## Emission Heuristics
@@ -1614,15 +1614,15 @@ The generator ships a [JSON Schema draft‑07](https://json-schema.org/) definit
 
 Save the file and your editor immediately enables IntelliSense, hover docs, and red squiggles for invalid values.
 
-## Known Coverage Gaps
+## Coverage
 
-The schema sets `additionalProperties: false`, so anything it does not model is reported as `Unknown property`. Two things the generator accepts are not covered:
+The schema sets `additionalProperties: false`, so anything it does not model is reported as `Unknown property`. Everything the generator reads is now modelled, including the two cases that used to be gaps:
 
-- **Array-based custom variants.** The schema models only the object form of `variants` (`pure` / `input` / `result`), so the array form documented in [Variants System](./variants.md) is reported as `must be object`.
-- **`minimalOperations`.** This minimal-mode escape hatch is not part of the declared config contract, so it is reported as an unknown property. See [Generation Modes](./modes.md#overriding-the-minimal-operation-set).
+- **Array-based custom variants.** `variants` accepts either the object form (`pure` / `input` / `result`) or the array of custom variants documented in [Variants System](./variants.md). Previously only the object form was modelled, so the array form was reported as `must be object`.
+- **`minimalOperations`** and the four dual-export keys (`exportTypedSchemas`, `exportZodSchemas`, `typedSchemaSuffix`, `zodSchemaSuffix`). These are read at generate time and were absent from the schema, so a config using them was reported as having unknown properties.
 
 :::note
-These reports come from your editor or from `ConfigurationValidator`, never from generation itself — the generator does not validate your config against this schema, so a config using either feature still generates correctly. The flip side is that the generator also will not warn you about a genuine typo; see [Configuration Precedence → Unknown Keys Are Silently Ignored](./precedence.md#unknown-keys-are-silently-ignored).
+Editor reports and `ConfigurationValidator` never come from generation itself — the generator does not validate your config against this schema, so an unmodelled key still generates correctly. The flip side is that the generator will not warn you about a genuine typo either; see [Configuration Precedence → Unknown Keys Are Silently Ignored](./precedence.md#unknown-keys-are-silently-ignored).
 :::
 
 There is also one key the schema models but the generator ignores: `strictMode.enums` is accepted and offered by IntelliSense, yet nothing reads it (enum schemas are inherently strict). See [Strict Mode Configuration](./strict-mode.md#global-configuration).
@@ -1655,7 +1655,7 @@ if (!result.valid) {
 console.log('✅ Config looks good');
 ```
 
-Pair this with the `$schema` hint so editors catch problems before CI does. If your config uses array-based variants or `minimalOperations`, account for the [coverage gaps](#known-coverage-gaps) above before making this check blocking — the validator will flag them even though generation succeeds.
+Pair this with the `$schema` hint so editors catch problems before CI does. Every key the generator reads is modelled (see [Coverage](#coverage)), so this check is safe to make blocking.
 
 Once the `$schema` field is in place, every upgrade automatically refreshes the schema definition because the path always points to the version installed in `node_modules`.
 
@@ -2476,7 +2476,7 @@ Consumer/provider contract tests and JSON definitions to verify API compatibilit
 
 ```bash
 # Install Pact.js & Jest helpers
-pnpm add -D "@pact-foundation/pact@^15" jest jest-pact @prisma/client
+pnpm add -D @pact-foundation/pact jest jest-pact @prisma/client
 
 # PZG Pro license required
 ```
@@ -2541,26 +2541,28 @@ pnpm run test:contract
 
 ## Consumer Example
 
-The generated tests drive the `Pact` class from `@pact-foundation/pact` directly against the
-generated `client.ts`, and both sides are emitted from **2.6.0+**:
+The generated tests drive `PactV3` from `@pact-foundation/pact` directly against the generated
+`client.ts`, and both sides are emitted from **2.6.0+**:
 
 - `pact/<consumer>-<provider>.test.ts` — the consumer side, recording the pacts
 - `provider/<provider>.verify.test.ts` — replays those pacts against a running provider with Pact's
   `Verifier`. Point `PACT_PROVIDER_BASE_URL` at your provider and fill in the `stateHandlers` entry
   for `'default state'` with whatever seeding each interaction needs.
 
-Bodies are asserted with matchers (`like`, `eachLike`) rather than literal values, so a contract test
+Bodies are asserted with matchers (`MatchersV3.like`, `MatchersV3.eachLike`) rather than literal values, so a contract test
 passes on a differing id instead of failing on the fixture. `includeRequestValidation` and
 `includeResponseValidation` control the request and response bodies independently; with both off you
 still get the interactions, pinning methods, paths and status codes. Before 2.6.0 the two flags were
 OR'd into a single gate deciding whether any test was written, and every body was a literal.
 
-:::caution Pin the Pact major
-The generated tests target the V2/V3 DSL (`new Pact({...})` plus
-`InteractionObject`). From v16 onward `Pact` is an alias for the V4 DSL, which
-takes a different constructor and interaction shape — installing the current
-`@pact-foundation/pact` (17.x) makes the generated tests fail to compile. Pin
-`^15` as shown above, or port the tests to the V4 builder API yourself.
+:::note Any current Pact major works
+The generated tests use `PactV3`, which every version from 15 to 17 exports from the package root
+with the same shape, so no version pin is needed. Compilation against both 15 and 17 is checked on
+every run of the emitted-output type checks.
+
+The root `Pact` export is deliberately avoided: it means the V2 server API in 15 and is an alias for
+V4 from 16 onward, so anything written against it compiles on exactly one major. Before 2.9.0 these
+tests did use it, which is why `^15` had to be pinned.
 :::
 
 The `jest-pact` wrapper below is optional sugar for tests you write yourself:
