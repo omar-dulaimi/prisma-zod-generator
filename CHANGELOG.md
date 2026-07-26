@@ -1,3 +1,13 @@
+## [2.9.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.8.3...v2.9.0) (2026-07-26)
+
+### 🚀 Features
+
+* make the Pro pitch quieter, truer and relevant ([cf665a2](https://github.com/omar-dulaimi/prisma-zod-generator/commit/cf665a22b189bb2602234875574a7607b84b9e7c))
+
+### 📚 Documentation
+
+* lead the Pro overview with what the packs do ([8f5b1a8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8f5b1a8e38ac8495567fe711645c5f4576e97942))
+
 ## [2.8.3](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.8.2...v2.8.3) (2026-07-26)
 
 ### 🐛 Bug Fixes
