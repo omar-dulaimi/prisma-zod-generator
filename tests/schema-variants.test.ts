@@ -701,11 +701,13 @@ model User {
             expect(content).toMatch(/email:/);
             expect(content).toMatch(/name:/);
 
-            // May include computed field or reference base schema
-            if (content.includes('computedField') || content.includes('UserBaseSchema')) {
-              // Either includes computedField directly or extends base schema
-              expect(true).toBe(true);
-            }
+            // The variant either carries the computed field itself or extends the base
+            // schema that declares it. This was an `expect(true).toBe(true)` guarded by the
+            // same condition, so it passed whether or not either was true.
+            expect(
+              content.includes('computedField') || content.includes('UserBaseSchema'),
+              'variant should either declare computedField or extend UserBaseSchema',
+            ).toBe(true);
           }
         } finally {
           await testEnv.cleanup();

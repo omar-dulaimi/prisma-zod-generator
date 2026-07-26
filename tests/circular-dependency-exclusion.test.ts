@@ -701,8 +701,7 @@ model Opportunity {
               timeout: 30000,
             });
 
-            // If we reach here, compilation succeeded
-            expect(true).toBe(true);
+            // Compilation succeeded; execSync throws otherwise.
           } catch (error) {
             // Check if the error is specifically about circular dependencies
             const errorOutput = error.toString();
@@ -720,11 +719,10 @@ model Opportunity {
               );
             }
 
-            // Allow other TypeScript errors (like missing dependencies) but log them
-            console.warn(
-              'TypeScript compilation had non-circular errors (expected in test environment):',
-              errorOutput,
-            );
+            // Other TypeScript errors used to be logged and tolerated, which meant the
+            // generated output could stop compiling for any other reason and this test
+            // still passed. The generated tree compiles cleanly here, so require it.
+            throw new Error(`TypeScript compilation failed: ${errorOutput}`);
           }
         } finally {
           await testEnv.cleanup();

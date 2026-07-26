@@ -172,8 +172,13 @@ describe('Multi-Provider Integration Tests', () => {
             (r) => r.testCase.includes('limitation') || r.testCase.includes('Limitation'),
           );
 
-          // Either limitation tests exist, or they're skipped gracefully
-          expect(limitationTests.length >= 0).toBe(true);
+          // `length >= 0` is true of every array, so this asserted nothing. What the
+          // runner actually guarantees for a provider with declared limitations is that
+          // it produced results and none of the limitation cases failed.
+          expect(result.results.length).toBeGreaterThan(0);
+          expect(
+            limitationTests.filter((r) => r.status === 'failed').map((r) => r.testCase),
+          ).toEqual([]);
         }
       }
     });

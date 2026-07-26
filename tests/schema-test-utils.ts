@@ -59,15 +59,6 @@ export class SchemaTestUtils {
   }
 
   /**
-   * Test schema type inference matches expected TypeScript type
-   */
-  static testTypeInference<T extends z.ZodType>(_schema: T): void {
-    // Intentionally minimal to avoid generic constraint complexity in CI
-    // This provides a placeholder for future stricter checks if desired.
-    expect(true).toBe(true);
-  }
-
-  /**
    * Test schema parsing with type coercion
    */
   static testCoercion<T extends z.ZodType>(
