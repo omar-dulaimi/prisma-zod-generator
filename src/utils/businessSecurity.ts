@@ -1,8 +1,15 @@
 /**
- * Business Logic Security Utilities
+ * The gate `license.ts` consults before letting a paid feature run.
  *
- * Comprehensive protection against business logic vulnerabilities
- * including authorization bypasses, privilege escalation, and data leakage
+ * This file described itself as "comprehensive protection against business logic
+ * vulnerabilities including authorization bypasses, privilege escalation, and data leakage",
+ * and was 520 lines of exactly that shape: an authorization rule registry, tenant-isolation
+ * checks, a recursive `sanitizeData` for sensitive fields, and an audit log.
+ *
+ * None of it was reachable. `validateFeatureAccess` is the only thing any caller uses; the
+ * registry, the sanitiser and the audit log had no readers at all, so nothing was being
+ * protected by them. What is left is the licence gate itself, which is real and tested in
+ * tests/business-security-gate.test.ts.
  */
 
 import { LicenseInfo } from '../license';
@@ -15,15 +22,6 @@ export interface SecurityContext {
   sessionId: string;
   isAdmin: boolean;
   licenseInfo?: LicenseInfo;
-}
-
-export interface AuthorizationRule {
-  resource: string;
-  action: string;
-  requiredRoles?: string[];
-  requiredPermissions?: string[];
-  customValidator?: (context: SecurityContext, resource: any) => boolean;
-  tenantIsolation?: boolean;
 }
 
 export class BusinessSecurityError extends Error {
@@ -45,22 +43,6 @@ export class BusinessSecurityError extends Error {
  * Business Logic Security Manager
  */
 export class BusinessSecurity {
-  private authorizationRules = new Map<string, AuthorizationRule>();
-  private sensitiveFields = new Set<string>();
-  private auditLog: Array<{
-    timestamp: Date;
-    userId: string;
-    action: string;
-    resource: string;
-    allowed: boolean;
-    reason?: string;
-  }> = [];
-
-  constructor() {
-    this.initializeDefaultRules();
-    this.initializeSensitiveFields();
-  }
-
   /**
    * Validate feature access with comprehensive checks
    */
@@ -107,335 +89,15 @@ export class BusinessSecurity {
       return { allowed: false, reason: 'Invalid security context' };
     }
 
-    // Log successful access
-    this.auditLog.push({
-      timestamp: new Date(),
-      userId: context.userId,
-      action: 'feature_access',
-      resource: feature,
-      allowed: true,
-    });
+    // A successful access used to be appended to an in-memory `auditLog` array. Nothing ever
+    // read it — the only accessor, getAuditLog(), had no caller — so it grew for the life of the
+    // process and was discarded. That is not an audit trail; if one is wanted it needs a sink
+    // that outlives the run.
 
     return { allowed: true };
-  }
-
-  /**
-   * Strict tenant isolation validation
-   */
-  validateTenantIsolation(
-    data: any,
-    context: SecurityContext,
-    tenantField: string = 'tenantId',
-  ): { isolated: boolean; reason?: string } {
-    // Step 1: Context validation
-    if (!context.tenantId) {
-      return { isolated: false, reason: 'No tenant context available' };
-    }
-
-    // Step 2: Data validation
-    if (!data || typeof data !== 'object') {
-      return { isolated: false, reason: 'Invalid data object' };
-    }
-
-    const dataTenant = data[tenantField];
-
-    // Step 3: Tenant field presence
-    if (dataTenant === undefined || dataTenant === null) {
-      return { isolated: false, reason: `Missing ${tenantField} in data` };
-    }
-
-    // Step 4: Strict tenant matching
-    if (String(dataTenant) !== String(context.tenantId)) {
-      this.auditLog.push({
-        timestamp: new Date(),
-        userId: context.userId,
-        action: 'tenant_violation',
-        resource: 'data_access',
-        allowed: false,
-        reason: `Tenant mismatch: expected ${context.tenantId}, got ${dataTenant}`,
-      });
-
-      return {
-        isolated: false,
-        reason: `Cross-tenant access denied: ${context.tenantId} -> ${dataTenant}`,
-      };
-    }
-
-    return { isolated: true };
-  }
-
-  /**
-   * Comprehensive authorization check
-   */
-  authorize(
-    context: SecurityContext,
-    resource: string,
-    action: string,
-    data?: any,
-  ): { authorized: boolean; reason?: string } {
-    const ruleKey = `${resource}:${action}`;
-    const rule = this.authorizationRules.get(ruleKey);
-
-    if (!rule) {
-      // Default deny for undefined rules
-      return { authorized: false, reason: `No authorization rule for ${ruleKey}` };
-    }
-
-    // Step 1: Role-based check
-    if (rule.requiredRoles?.length) {
-      const hasRole = rule.requiredRoles.some((role) => context.roles.includes(role));
-      if (!hasRole) {
-        return {
-          authorized: false,
-          reason: `Required roles: ${rule.requiredRoles.join(', ')}, user has: ${context.roles.join(', ')}`,
-        };
-      }
-    }
-
-    // Step 2: Permission-based check
-    if (rule.requiredPermissions?.length) {
-      const hasPermission = rule.requiredPermissions.some((perm) =>
-        context.permissions.includes(perm),
-      );
-      if (!hasPermission) {
-        return {
-          authorized: false,
-          reason: `Required permissions: ${rule.requiredPermissions.join(', ')}`,
-        };
-      }
-    }
-
-    // Step 3: Tenant isolation check
-    if (rule.tenantIsolation && data) {
-      const isolation = this.validateTenantIsolation(data, context);
-      if (!isolation.isolated) {
-        return { authorized: false, reason: isolation.reason };
-      }
-    }
-
-    // Step 4: Custom validation
-    if (rule.customValidator) {
-      const customResult = rule.customValidator(context, data);
-      if (!customResult) {
-        return { authorized: false, reason: 'Custom validation failed' };
-      }
-    }
-
-    // Log successful authorization
-    this.auditLog.push({
-      timestamp: new Date(),
-      userId: context.userId,
-      action,
-      resource,
-      allowed: true,
-    });
-
-    return { authorized: true };
-  }
-
-  /**
-   * Sanitize data to prevent information leakage
-   */
-  sanitizeData(data: any, context: SecurityContext): any {
-    if (!data || typeof data !== 'object') {
-      return data;
-    }
-
-    const sanitized = Array.isArray(data) ? [] : {};
-
-    for (const [key, value] of Object.entries(data)) {
-      // Remove sensitive fields based on context
-      if (this.isSensitiveField(key, context)) {
-        continue; // Skip sensitive field
-      }
-
-      // Recursively sanitize nested objects
-      if (value && typeof value === 'object') {
-        (sanitized as any)[key] = this.sanitizeData(value, context);
-      } else {
-        (sanitized as any)[key] = value;
-      }
-    }
-
-    return sanitized;
-  }
-
-  /**
-   * Validate dashboard permissions securely
-   */
-  validateDashboardAccess(
-    dashboard: any,
-    context: SecurityContext,
-  ): { allowed: boolean; reason?: string } {
-    if (!dashboard?.permissions) {
-      return { allowed: false, reason: 'Dashboard has no permissions defined' };
-    }
-
-    // Admin override
-    if (context.isAdmin) {
-      return { allowed: true };
-    }
-
-    // Check if user has any of the required permissions
-    const hasPermission = dashboard.permissions.some(
-      (perm: string) => context.permissions.includes(perm) || context.roles.includes(perm),
-    );
-
-    if (!hasPermission) {
-      return {
-        allowed: false,
-        reason: `Required permissions: ${dashboard.permissions.join(', ')}`,
-      };
-    }
-
-    return { allowed: true };
-  }
-
-  /**
-   * Secure dashboard creation with permission validation
-   */
-  validateDashboardCreation(
-    dashboardConfig: any,
-    context: SecurityContext,
-  ): { allowed: boolean; reason?: string; sanitizedConfig?: any } {
-    // Step 1: Basic validation
-    if (!dashboardConfig?.permissions) {
-      return { allowed: false, reason: 'Dashboard must specify permissions' };
-    }
-
-    // Step 2: Permission escalation check
-    const requestedPerms = dashboardConfig.permissions;
-    const unauthorizedPerms = requestedPerms.filter(
-      (perm: string) => !context.permissions.includes(perm) && !context.roles.includes(perm),
-    );
-
-    if (!context.isAdmin && unauthorizedPerms.length > 0) {
-      return {
-        allowed: false,
-        reason: `Cannot assign unauthorized permissions: ${unauthorizedPerms.join(', ')}`,
-      };
-    }
-
-    // Step 3: Sanitize configuration
-    const sanitizedConfig = {
-      ...dashboardConfig,
-      created_by: context.userId, // Force correct creator
-      permissions: context.isAdmin
-        ? dashboardConfig.permissions
-        : dashboardConfig.permissions.filter(
-            (perm: string) => context.permissions.includes(perm) || context.roles.includes(perm),
-          ),
-    };
-
-    return { allowed: true, sanitizedConfig };
-  }
-
-  /**
-   * Get audit log for security monitoring
-   */
-  getAuditLog(filter?: {
-    userId?: string;
-    action?: string;
-    resource?: string;
-    startDate?: Date;
-    endDate?: Date;
-    allowedOnly?: boolean;
-  }): Array<{
-    timestamp: Date;
-    userId: string;
-    action: string;
-    resource: string;
-    allowed: boolean;
-    reason?: string;
-  }> {
-    let filtered = this.auditLog;
-
-    if (filter?.userId) {
-      filtered = filtered.filter((entry) => entry.userId === filter.userId);
-    }
-
-    if (filter?.action) {
-      filtered = filtered.filter((entry) => entry.action === filter.action);
-    }
-
-    if (filter?.resource) {
-      filtered = filtered.filter((entry) => entry.resource === filter.resource);
-    }
-
-    if (filter?.startDate) {
-      filtered = filtered.filter((entry) => entry.timestamp >= filter.startDate!);
-    }
-
-    if (filter?.endDate) {
-      filtered = filtered.filter((entry) => entry.timestamp <= filter.endDate!);
-    }
-
-    if (filter?.allowedOnly !== undefined) {
-      filtered = filtered.filter((entry) => entry.allowed === filter.allowedOnly);
-    }
-
-    return filtered.slice(-1000); // Return last 1000 entries
   }
 
   // Private helper methods
-
-  private initializeDefaultRules(): void {
-    // Dashboard rules
-    this.authorizationRules.set('dashboard:create', {
-      resource: 'dashboard',
-      action: 'create',
-      requiredPermissions: ['dashboard_create'],
-      customValidator: (context, data) => this.validateDashboardCreation(data, context).allowed,
-    });
-
-    this.authorizationRules.set('dashboard:read', {
-      resource: 'dashboard',
-      action: 'read',
-      customValidator: (context, data) => this.validateDashboardAccess(data, context).allowed,
-    });
-
-    this.authorizationRules.set('dashboard:update', {
-      resource: 'dashboard',
-      action: 'update',
-      requiredPermissions: ['dashboard_update'],
-      customValidator: (context, data) => data.created_by === context.userId || context.isAdmin,
-    });
-
-    // Multi-tenant rules
-    this.authorizationRules.set('data:read', {
-      resource: 'data',
-      action: 'read',
-      tenantIsolation: true,
-    });
-
-    this.authorizationRules.set('data:write', {
-      resource: 'data',
-      action: 'write',
-      tenantIsolation: true,
-    });
-
-    // License rules
-    this.authorizationRules.set('license:validate', {
-      resource: 'license',
-      action: 'validate',
-      requiredRoles: ['authenticated'],
-    });
-  }
-
-  private initializeSensitiveFields(): void {
-    this.sensitiveFields.add('password');
-    this.sensitiveFields.add('secret');
-    this.sensitiveFields.add('token');
-    this.sensitiveFields.add('api_key');
-    this.sensitiveFields.add('license_key');
-    this.sensitiveFields.add('webhook_secret');
-    this.sensitiveFields.add('private_key');
-    this.sensitiveFields.add('encryption_key');
-    this.sensitiveFields.add('session_id');
-    this.sensitiveFields.add('ssn');
-    this.sensitiveFields.add('credit_card');
-    this.sensitiveFields.add('bank_account');
-  }
 
   private getFeaturePlans(): Map<string, string[]> {
     return new Map([
@@ -487,24 +149,6 @@ export class BusinessSecurity {
     );
   }
 
-  private isSensitiveField(fieldName: string, context: SecurityContext): boolean {
-    const field = fieldName.toLowerCase();
-
-    // Always sensitive fields
-    if (this.sensitiveFields.has(field)) {
-      return true;
-    }
-
-    // Context-sensitive fields
-    if (!context.isAdmin) {
-      const adminOnlyFields = ['created_by', 'admin_notes', 'internal_id'];
-      if (adminOnlyFields.some((adminField) => field.includes(adminField))) {
-        return true;
-      }
-    }
-
-    return false;
-  }
 }
 
 /**
