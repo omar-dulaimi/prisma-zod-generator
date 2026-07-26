@@ -37,6 +37,13 @@ model Invoice {
   meta      Json?
   createdAt DateTime @default(now())
 }
+
+// A model whose naive and English plurals differ. "Invoice" alone gives "invoices" under both rules,
+// so it cannot show the route pluralisation reaching some parts of the mock server and not others.
+model Category {
+  id   String @id @default(cuid())
+  name String
+}
 `;
 
 /**
@@ -137,6 +144,71 @@ describe.skipIf(!proAvailable)('API Docs options', () => {
    * already built against them, so English pluralisation is opt-in and the literal
    * rule stays the default.
    */
+  describe('the generated mock server', () => {
+    /**
+     * Three problems, all discoverable only by reading what it prints against what it registers.
+     *
+     * The route handlers went through `pluralize()` but the `/` info payload and the startup banner
+     * did not, so with `pluralization: 'english'` the server registered `/categories` while telling
+     * the operator to call `/categorys`. And it advertised
+     * "API documentation: http://localhost:PORT/docs" while never registering `/docs` — the file it
+     * would serve, index.html, is generated right beside it.
+     */
+    let server: string;
+
+    beforeAll(async () => {
+      const out = await generate('mock-server', {
+        enableMockServer: true,
+        pluralization: 'english',
+      });
+      server = readFileSync(join(out, 'mock-server.js'), 'utf-8');
+    }, GENERATION_TIMEOUT);
+
+    it('advertises the same routes it registers', () => {
+      const registered = new Set(
+        [...server.matchAll(/app\.get\('\/([a-z]+)'/g)]
+          .map((m) => m[1])
+          .filter((r) => r.length > 0),
+      );
+      // Every plural mentioned anywhere in the file must be one the server actually serves.
+      const mentioned = [...server.matchAll(/\/(categor[a-z]+|invoice[a-z]*)\b/g)].map((m) => m[1]);
+
+      expect(mentioned.length).toBeGreaterThan(0);
+      for (const route of new Set(mentioned)) {
+        expect(registered.has(route), `mentions /${route} but does not register it`).toBe(true);
+      }
+    });
+
+    it('reads mock data under the keys it declares', () => {
+      // The route handlers went through pluralize() and the in-memory store did not, so under
+      // `pluralization: 'english'` the store held `categorys` while `GET /categories/:id` did
+      // `mockData.categories.find(...)` — TypeError: Cannot read properties of undefined, a 500 on
+      // every request rather than a cosmetic mismatch.
+      const declared = new Set([...server.matchAll(/^\s{2}([a-z]+): \[\],?$/gm)].map((m) => m[1]));
+      const referenced = new Set([...server.matchAll(/mockData\.([a-z]+)/g)].map((m) => m[1]));
+
+      expect(referenced.size).toBeGreaterThan(0);
+      for (const key of referenced) {
+        expect(declared.has(key), `handlers read mockData.${key}, which is never declared`).toBe(
+          true,
+        );
+      }
+    });
+
+    it('registers the documentation route it points the operator at', () => {
+      if (/\/docs/.test(server)) {
+        expect(server).toMatch(/app\.get\('\/docs'/);
+      }
+    });
+
+    it('serves the spec its documentation page fetches', () => {
+      // index.html loads './openapi.json'; serving the page without it shows an empty Swagger UI.
+      if (/app\.get\('\/docs'/.test(server)) {
+        expect(server).toMatch(/openapi\.json/);
+      }
+    });
+  });
+
   describe('determinism', () => {
     /**
      * Generated output that a user commits must be byte-identical between runs, or every

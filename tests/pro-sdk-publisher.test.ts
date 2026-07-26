@@ -42,6 +42,19 @@ model Invoice {
   role     Role     @default(MEMBER)
   dueAt    DateTime?
 }
+
+// Models whose naive and English plurals differ. "Invoice" alone cannot show a pluralisation
+// difference — both rules give "invoices" — which is why the SDK diverging from the OpenAPI spec
+// went unnoticed here.
+model Category {
+  id   String @id @default(cuid())
+  name String
+}
+
+model Status {
+  id    String @id @default(cuid())
+  label String
+}
 `;
 
 /**
@@ -131,6 +144,97 @@ describe.skipIf(!proAvailable)('SDK Publisher client', () => {
    * OAuth2" claim, and packageName/version, which is what makes something a
    * publishable package rather than a loose file.
    */
+  describe('route pluralisation', () => {
+    /**
+     * API Docs and SDK Publisher derive the same URL paths from the same models, and only one of them
+     * knew about `pluralization`. With `pluralization: 'english'` the spec documented `/categories`
+     * while this pack's client called `/categorys` — so the generated SDK 404s against the mock server
+     * the same run produced. The SDK rejected the option outright as unknown.
+     *
+     * Found by generating both packs from one schema with irregular plurals and diffing their paths.
+     */
+    async function paths(config: Record<string, unknown>) {
+      const { generateSDKFromDMMF } = await import(
+        '../src/pro/features/sdk-publisher/sdk-publisher'
+      );
+      const dmmf = await getDMMF({ datamodel: SCHEMA });
+      const out = join(dir, `plural-${JSON.stringify(config).replace(/\W/g, '')}`);
+
+      await generateSDKFromDMMF(
+        dmmf,
+        {},
+        join(dir, 'schema.prisma'),
+        out,
+        '@prisma/client',
+        'postgresql',
+        { platforms: ['typescript'], ...config },
+        [],
+      );
+
+      const source = readFileSync(join(out, 'typescript', 'index.ts'), 'utf-8');
+      return [...source.matchAll(/'\/([a-z]+)'/g)].map((m) => m[1]);
+    }
+
+    it(
+      'appends a bare s by default, matching every previously generated client',
+      async () => {
+        const found = await paths({});
+
+        expect(found).toContain('categorys');
+        expect(found).toContain('statuss');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'applies English rules when asked, like the OpenAPI spec does',
+      async () => {
+        const found = await paths({ pluralization: 'english' });
+
+        expect(found).toContain('categories');
+        expect(found).toContain('statuses');
+        expect(found).not.toContain('categorys');
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'agrees with the paths API Docs documents',
+      async () => {
+        // The two packs are routinely enabled together; disagreeing on a path makes the SDK
+        // unusable against the spec's own mock server.
+        const { generateAPIDocsFromDMMF } = await import('../src/pro/features/api-docs/api-docs');
+        const dmmf = await getDMMF({ datamodel: SCHEMA });
+        const docsOut = join(dir, 'plural-docs');
+
+        await generateAPIDocsFromDMMF(
+          dmmf,
+          {},
+          join(dir, 'schema.prisma'),
+          docsOut,
+          '@prisma/client',
+          'postgresql',
+          { pluralization: 'english' },
+          [],
+        );
+
+        const spec = JSON.parse(readFileSync(join(docsOut, 'openapi.json'), 'utf-8')) as {
+          paths: Record<string, unknown>;
+        };
+        const documented = Object.keys(spec.paths)
+          .filter((route) => !route.includes('{'))
+          .map((route) => route.replace('/', ''));
+
+        for (const route of await paths({ pluralization: 'english' })) {
+          expect(documented, `the SDK calls /${route}, which the spec does not document`).toContain(
+            route,
+          );
+        }
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
+
   describe('configuration', () => {
     async function generate(label: string, config: Record<string, unknown>) {
       const { generateSDKFromDMMF } = await import(
