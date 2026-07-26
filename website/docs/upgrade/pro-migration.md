@@ -151,37 +151,42 @@ Review your Prisma schema for:
 ### 2. Add Policy Comments
 Update your Prisma schema with policy annotations:
 
+Read policies go on the **model** — they narrow the `where` clause of every generated read. `@pii`
+goes on the **field**:
+
 ```prisma
+/// @policy read:where tenantId == ctx.tenantId
+/// @policy deny:role in ["guest"]
 model User {
   id        String   @id @default(cuid())
+  tenantId  String
 
   /// @pii email redact:logs mask:partial
   email     String   @unique
 
-  /// @policy read:role in ["admin"]
-  /// @pii sensitive hash:sha256
-  salary    Int?
+  /// @policy deny:role in ["admin"]
+  salary    Int?     // present in UserAdminSchema, omitted from the other role schemas
 
-  /// @policy write:role in ["admin"]
   role      Role     @default(USER)
-
   createdAt DateTime @default(now())
 }
 
+/// @policy read:where userId == ctx.userId
 model Post {
   id        String   @id @default(cuid())
-
-  /// @policy write:userId eq context.userId
   title     String
-
-  /// @policy read:published eq true OR role in ["admin"]
   content   String
-
   published Boolean  @default(false)
   userId    String
   user      User     @relation(fields: [userId], references: [id])
 }
 ```
+
+Three condition forms are implemented: `role in ["a", "b"]`, `userId == ctx.userId` and
+`tenantId == ctx.tenantId`. Anything else — an arbitrary field comparison like `published eq true`,
+or a boolean combination with `OR` — is reported at generation time and refused at runtime rather
+than silently leaving the query unscoped. Use one annotation per condition. `write:` is not
+implemented; use `deny:`, `create:`, `update:` or `delete:`.
 
 ### 3. Generate Policies
 Ensure `enablePolicies = true` in your `generator pzgPro` block, then run:

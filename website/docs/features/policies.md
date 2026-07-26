@@ -110,12 +110,18 @@ The generated `combinePolicyCondition` recognizes exactly three condition shapes
 
 | Condition | Effect on the query |
 | --- | --- |
-| `read:where userId == ctx.userId` | adds `where.userId = context.userId` |
-| `read:where tenantId == ctx.tenantId` | adds `where.tenantId = context.tenantId` |
+| `read:where userId == ctx.userId` | adds `where.userId = context.userId`; if the context has no `userId`, narrows the query to match nothing |
+| `read:where tenantId == ctx.tenantId` | adds `where.tenantId = context.tenantId`; if the context has no `tenantId`, narrows the query to match nothing |
 | `read:where role in ["admin", "owner"]` | if the role is not listed, adds an impossible `where.id` so nothing matches |
 
-Any other condition text is carried into the generated file and then ignored, leaving the query
-unfiltered — so verify each policy against a real query before relying on it.
+A missing context value denies rather than widens. Prisma strips `undefined` from a `where` clause,
+so in earlier versions a `findMany()` with no context — or one whose `tenantId` had not been
+populated — dropped the filter and read every tenant's rows while the call site still read as scoped.
+
+Any other condition text is refused: the generator warns at build time, naming the model and the
+condition, and the generated code throws rather than running an unscoped query. Earlier versions
+carried such a condition into the generated file and ignored it, leaving the query unfiltered.
+`read:fields` and `read:values` parse but are not implemented, and are reported the same way.
 
 `@policy deny:<condition>` refuses a create or update whose condition matches; the same three shapes
 apply. (Before 2.4.1 the generated evaluator returned `false` unconditionally, so a `deny` rule never
