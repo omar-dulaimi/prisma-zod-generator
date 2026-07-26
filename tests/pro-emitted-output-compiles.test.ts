@@ -1,6 +1,15 @@
 import { getDMMF } from '@prisma/internals';
 import { execFileSync } from 'child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -58,14 +67,16 @@ model ProjectVariant {
  * regression the next day — and emitted code that does not compile is the single
  * most common defect these packs have had. Six separate ones shipped that way.
  *
- * This makes the check standing rather than anecdotal. It covers every pack whose emitted
- * code compiles against what this repo already installs — Prisma client, zod, and for the
- * SDK nothing at all, since its TypeScript target is fetch-based and imports only its own
- * package.
+ * This makes the check standing rather than anecdotal. It covers every pack whose emitted code
+ * compiles against what this repo already installs — Prisma client and zod, or in the case of
+ * the two SDKs nothing at all, since both are fetch-based.
  *
- * Form UX and Contract Testing are still out: their output imports MUI, Chakra, Mantine and
- * Pact, so covering them means adding those to this repo's devDependencies. See
- * tests/README-typecheck-fixtures.md for how that is handled instead.
+ * Form UX, Server Actions and Contract Testing are checked separately by
+ * pro-ui-output-compiles.test.ts, because their output imports MUI, Chakra, Mantine, Pact and
+ * Next; see tests/typecheck-fixtures/README.md. Drift Guard is absent from both because it
+ * writes no files — it compares two DMMFs and returns changes plus a Markdown string, which
+ * pro-drift-guard-report.test.ts covers. Between the two files, ten of the eleven packs have
+ * their emitted output compiled.
  *
  * Skipped when the private submodule is absent (plain CI and forks).
  */
@@ -221,6 +232,23 @@ describe.skipIf(!proAvailable)('emitted Pro output compiles', () => {
       expect(emitted.filter((f) => f.endsWith('.ts')).length).toBeGreaterThan(0);
 
       expect(compile(join(out, 'typescript'))).toBe('');
+    },
+    COMPILE_TIMEOUT,
+  );
+
+  it(
+    'api-docs (emitted SDK)',
+    async () => {
+      // The pack emits openapi.json/yaml, an HTML viewer, a JS mock server, examples and
+      // sdk.ts. Only the SDK is TypeScript, and it is self-contained — interfaces plus a
+      // fetch-based client — so it compiles here with no extra dependencies.
+      const out = await generate('api-docs', 'generateAPIDocsFromDMMF');
+
+      const sdkOnly = join(root, 'api-docs-sdk');
+      mkdirSync(sdkOnly, { recursive: true });
+      copyFileSync(join(out, 'sdk.ts'), join(sdkOnly, 'sdk.ts'));
+
+      expect(compile(sdkOnly)).toBe('');
     },
     COMPILE_TIMEOUT,
   );

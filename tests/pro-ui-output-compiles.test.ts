@@ -3,21 +3,24 @@ import { execFileSync } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { prismaGenerate } from './helpers/prisma-generate';
 
 const REPO_ROOT = join(__dirname, '..');
 const FIXTURES = join(__dirname, 'typecheck-fixtures');
 const PRO_INDEX = join(REPO_ROOT, 'src', 'pro', 'index.ts');
 
 /**
- * These two packs emit code importing MUI, Chakra, Mantine, react-hook-form and Pact. Those
- * are not root devDependencies — 322 transitive packages for output belonging to paid packs —
- * so they live in tests/typecheck-fixtures and this file skips unless they are installed.
- * `pnpm run test:typecheck-fixtures` installs them and runs it.
+ * These three packs emit code importing MUI, Chakra, Mantine, react-hook-form, Pact and Next.
+ * Those are not root devDependencies — 428 transitive packages for output belonging to paid
+ * packs — so they live in tests/typecheck-fixtures and this file skips unless they are
+ * installed. `pnpm run test:typecheck-fixtures` installs them and runs it; CI runs it in the one
+ * job that has the private submodule.
  *
  * Everything else Pro emits is covered unconditionally by pro-emitted-output-compiles.test.ts.
- * These were the packs left over, and they are the ones where uncompilable output has actually
- * shipped: the Form UX MUI/Chakra/Mantine variants were emitting components with no imports at
- * all, and the Chakra rewrite was first written against the v2 API that v3 removed.
+ * These are the packs where uncompilable output has actually shipped: the Form UX
+ * MUI/Chakra/Mantine variants emitted components with no imports at all, the Chakra rewrite was
+ * first written against the v2 API that v3 removed, and Server Actions addressed Prisma
+ * delegates by lowercasing the model name.
  */
 const fixturesInstalled = existsSync(join(FIXTURES, 'node_modules'));
 const proAvailable = existsSync(PRO_INDEX);
@@ -49,15 +52,33 @@ model Member {
 }
 `;
 
+/** The same models, with a client generator so a real @prisma/client can be built from them. */
+const CLIENT_SCHEMA = SCHEMA.replace(
+  `generator client {
+  provider = "prisma-client-js"
+}`,
+  `generator client {
+  provider = "prisma-client-js"
+  output   = "./client"
+}`,
+);
+
 describe.skipIf(!proAvailable || !fixturesInstalled)('emitted Pro UI output compiles', () => {
   const outRoot = join(FIXTURES, '.out');
   const savedDevMode = process.env.PZG_DEV_MODE;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     process.env.PZG_DEV_MODE = 'true';
     rmSync(outRoot, { recursive: true, force: true });
     mkdirSync(outRoot, { recursive: true });
-  });
+
+    // Server Actions emits `prisma.member.create({ data })` and imports `Member` and
+    // `Prisma.MemberCreateInput`, so it needs a client built from *this* schema. Without that,
+    // `@prisma/client` resolves up to the repo's own client — which has SQLServerUser, not
+    // Member — and every model type looks missing. Same trap the unconditional check hit.
+    writeFileSync(join(outRoot, 'schema.prisma'), CLIENT_SCHEMA);
+    await prismaGenerate(join(outRoot, 'schema.prisma'), outRoot);
+  }, COMPILE_TIMEOUT);
 
   afterAll(() => {
     if (savedDevMode === undefined) delete process.env.PZG_DEV_MODE;
@@ -84,6 +105,9 @@ describe.skipIf(!proAvailable || !fixturesInstalled)('emitted Pro UI output comp
           esModuleInterop: true,
           jsx: 'react-jsx',
           types: ['node', 'react', 'jest'],
+          paths: {
+            '@prisma/client': [join(outRoot, 'client', 'index.d.ts')],
+          },
         },
         include: ['**/*.ts', '**/*.tsx'],
       }),
@@ -137,6 +161,21 @@ describe.skipIf(!proAvailable || !fixturesInstalled)('emitted Pro UI output comp
       COMPILE_TIMEOUT,
     );
   }
+
+  it(
+    'server-actions',
+    async () => {
+      // Emits `'use server'` modules that import `redirect` from 'next/navigation', so this
+      // needs Next installed — which is why it belongs here rather than in the unconditional
+      // check. It is also the pack the delegate-naming bug lived in: `prisma.projectvariant`
+      // instead of `prisma.projectVariant`, which only a real compile catches.
+      const out = await generate('server-actions', 'server-actions', 'generateServerActionsFromDMMF', {});
+
+      expectEmitted(out);
+      expect(compile(out)).toBe('');
+    },
+    COMPILE_TIMEOUT,
+  );
 
   it(
     'contract-testing',
