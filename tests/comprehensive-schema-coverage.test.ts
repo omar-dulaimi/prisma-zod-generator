@@ -185,61 +185,73 @@ class ComprehensiveSchemaTest {
   }
 
   /**
-   * Test enum schemas
+   * Test enum schemas.
+   *
+   * Every assertion in this class used to be a tautology — `expect(typeof result.success).toBe(
+   * 'boolean')` and `expect(result.success || !result.success).toBe(true)` hold for any schema,
+   * including a broken one. So the "246/246 validated" figures meant only that safeParse could be
+   * called, which is worth something but is not validation.
    */
-  private testEnumSchema(schema: z.ZodTypeAny, _schemaInfo: SchemaInfo): void {
-    // Test empty enum parsing (should fail gracefully)
-    const result = schema.safeParse(undefined);
-    expect(result.success || !result.success).toBe(true); // Either should be valid
+  private testEnumSchema(schema: z.ZodTypeAny, schemaInfo: SchemaInfo): void {
+    // An enum that accepts a value outside its members is not an enum.
+    const bogus = schema.safeParse('__definitely_not_an_enum_member__');
+    expect(bogus.success, `${schemaInfo.name} accepted a value outside its members`).toBe(false);
 
-    // Test invalid enum value
-    const invalidResult = schema.safeParse('invalid_enum_value_12345');
-    // Most enums should reject invalid values, but some might be permissive
-    expect(typeof invalidResult.success).toBe('boolean');
+    // And it must accept its own members. Reading them defensively: this sweeps every generated
+    // enum, and a schema wrapped in a transform or a union would not expose `options`.
+    const members = (schema as unknown as { options?: unknown[] }).options;
+    if (Array.isArray(members) && members.length > 0 && typeof members[0] === 'string') {
+      const first = schema.safeParse(members[0]);
+      expect(first.success, `${schemaInfo.name} rejected its own member ${members[0]}`).toBe(true);
+    }
   }
 
   /**
    * Test object schemas
    */
   private testObjectSchema(schema: z.ZodTypeAny, schemaInfo: SchemaInfo): void {
-    // Test empty object
-    const emptyResult = schema.safeParse({});
-    expect(typeof emptyResult.success).toBe('boolean');
-
-    // Test null/undefined
-    const nullResult = schema.safeParse(null);
-    const undefinedResult = schema.safeParse(undefined);
-    expect(typeof nullResult.success).toBe('boolean');
-    expect(typeof undefinedResult.success).toBe('boolean');
-
-    // Test with some basic field types
-    if (schemaInfo.name.includes('Input') || schemaInfo.name.includes('Where')) {
-      const testData = { id: 1 };
-      const dataResult = schema.safeParse(testData);
-      expect(typeof dataResult.success).toBe('boolean');
+    // A primitive is never a valid object input, whatever the fields are. This is the strongest
+    // claim that holds across every generated object schema without knowing its shape.
+    for (const primitive of ['a string', 42, true]) {
+      const result = schema.safeParse(primitive);
+      expect(
+        result.success,
+        `${schemaInfo.name} accepted the primitive ${JSON.stringify(primitive)}`,
+      ).toBe(false);
     }
+
+    // safeParse must not throw on any input; a schema that does is malformed. The empty object and
+    // null are the interesting cases because optionality decides them, so the outcome is not
+    // asserted — only that asking is safe.
+    expect(() => schema.safeParse({})).not.toThrow();
+    expect(() => schema.safeParse(null)).not.toThrow();
   }
 
   /**
    * Test operation schemas
    */
   private testOperationSchema(schema: z.ZodTypeAny, schemaInfo: SchemaInfo): void {
-    // Test minimal valid input
-    const emptyResult = schema.safeParse({});
-    expect(typeof emptyResult.success).toBe('boolean');
-
-    // Test with typical operation fields
-    if (schemaInfo.name.includes('find') || schemaInfo.name.includes('Find')) {
-      const findData = { take: 10, skip: 0 };
-      const findResult = schema.safeParse(findData);
-      expect(typeof findResult.success).toBe('boolean');
+    // Operation args are objects, so a primitive is never valid — the same claim the object
+    // schemas get, and again the strongest one available without knowing each schema's shape.
+    for (const primitive of ['a string', 42, true]) {
+      const result = schema.safeParse(primitive);
+      expect(
+        result.success,
+        `${schemaInfo.name} accepted the primitive ${JSON.stringify(primitive)}`,
+      ).toBe(false);
     }
 
-    if (schemaInfo.name.includes('create') || schemaInfo.name.includes('Create')) {
-      const createData = { data: {} };
-      const createResult = schema.safeParse(createData);
-      expect(typeof createResult.success).toBe('boolean');
+    // A create operation requires `data`, so the empty object must be rejected. Precise per-schema
+    // accept/reject behaviour is covered by tests/generated-schema-runtime.test.ts, which works
+    // against a known schema rather than sweeping every generated file.
+    if (/^create(One|Many)/.test(schemaInfo.name)) {
+      expect(
+        schema.safeParse({}).success,
+        `${schemaInfo.name} accepted args with no data`,
+      ).toBe(false);
     }
+
+    expect(() => schema.safeParse({})).not.toThrow();
   }
 
   /**
