@@ -16,11 +16,18 @@ generator client {
   provider = "prisma-client-js"
 }
 
+/// @policy read:where tenantId == ctx.tenantId
 model Document {
   id       String @id @default(cuid())
   title    String
   tenantId String
   userId   String
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String
+  value String
 }
 `;
 
@@ -88,6 +95,46 @@ describe.skipIf(!proAvailable)('PostgreSQL RLS context', () => {
     if (savedDevMode === undefined) delete process.env.PZG_DEV_MODE;
     else process.env.PZG_DEV_MODE = savedDevMode;
     rmSync(root, { recursive: true, force: true });
+  });
+
+  describe('the emitted SQL', () => {
+    // The pack's whole output is this file. It was generated with only the helper functions in it —
+    // no ENABLE ROW LEVEL SECURITY, no CREATE POLICY — while the run logged "Generated RLS policies
+    // for N models", because model-level `/// @policy` annotations were read with
+    // parseFieldAnnotations(model, '', 'policy'): an empty field name, which matches no field. The
+    // fixture had no annotations at all, so nothing here noticed.
+    const sql = () => readFileSync(join(out, 'policies.sql'), 'utf-8');
+
+    it('turns row level security on for an annotated model', () => {
+      expect(sql()).toMatch(/ALTER TABLE "Document" ENABLE ROW LEVEL SECURITY/i);
+    });
+
+    it('creates a policy from the model-level annotation', () => {
+      expect(sql()).toMatch(/CREATE POLICY/i);
+    });
+
+    it('scopes the policy by the tenant column', () => {
+      const text = sql();
+      expect(text).toMatch(/tenantId/);
+      expect(text).toMatch(/current_setting\('app\.current_tenant_id'/);
+    });
+
+    it('leaves a model with no tenant column alone', () => {
+      // Setting has no tenantId, so a tenant predicate against it would be invalid SQL that fails
+      // the moment the migration runs.
+      const settingBlock = sql()
+        .split(/\n(?=--|ALTER TABLE)/)
+        .filter((chunk) => chunk.includes('"Setting"'))
+        .join('\n');
+      expect(settingBlock).not.toMatch(/tenantId/);
+    });
+
+    it('includes the same statements in the migration', () => {
+      const migration = readFileSync(join(out, 'migration.sql'), 'utf-8');
+      expect(migration).toMatch(/CREATE POLICY/i);
+      expect(migration).toMatch(/BEGIN;/);
+      expect(migration).toMatch(/COMMIT;/);
+    });
   });
 
   async function helper() {

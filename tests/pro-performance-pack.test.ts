@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { GENERATION_TIMEOUT } from './helpers';
 
 const PRO_PERFORMANCE = join(
@@ -33,6 +33,23 @@ model Project {
   id    String @id @default(cuid())
   title String
 }
+
+enum Tier {
+  FREE
+  PRO
+}
+
+model Account {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  nickname  String?
+  seats     Int
+  ratio     Float?
+  tier      Tier     @default(FREE)
+  isActive  Boolean
+  createdAt DateTime @default(now())
+  meta      Json?
+}
 `;
 
 /**
@@ -58,6 +75,77 @@ describe.skipIf(!proAvailable)('Performance Pack module graph', () => {
     await generatePerformancePack(schemaPath, { outputPath, ...config });
     return outputPath;
   }
+
+  describe('the precompiled validator', () => {
+    /**
+     * The pack's headline claim is a drop-in validator "~2.1x faster than standard Zod". It emitted
+     * `const stringFields = ['id', 'name']` for every model regardless of its fields, so it both
+     * rejected valid rows — `nickname String?` absent, or a model with no `name` column at all —
+     * and accepted invalid ones, ignoring email, enums, numbers, booleans and dates entirely. The
+     * fixture's two models each had `id` plus one required string, so nothing here disagreed.
+     */
+    let validate: (data: unknown) => { success: boolean; error?: string };
+
+    const valid = {
+      id: 'a1',
+      email: 'someone@example.com',
+      seats: 3,
+      tier: 'PRO',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    beforeAll(async () => {
+      const out = await generate('precompiled-behaviour', {});
+      const mod = await import(join(out, 'precompiled.ts'));
+      validate = mod.validateAccountFast;
+      expect(validate, 'validateAccountFast should be emitted').toBeTypeOf('function');
+    }, GENERATION_TIMEOUT);
+
+    it('accepts a row with every required field', () => {
+      const result = validate(valid);
+      expect(result.success, result.error).toBe(true);
+    });
+
+    it('accepts a row that omits an optional column', () => {
+      // nickname, ratio and meta are all optional in the schema.
+      expect(validate({ ...valid, nickname: undefined }).success).toBe(true);
+      expect(validate({ ...valid, nickname: null }).success).toBe(true);
+    });
+
+    it('rejects a missing required column', () => {
+      const withoutEmail: Record<string, unknown> = { ...valid };
+      delete withoutEmail.email;
+      expect(validate(withoutEmail).success).toBe(false);
+    });
+
+    it('rejects a required string given a number', () => {
+      expect(validate({ ...valid, email: 42 }).success).toBe(false);
+    });
+
+    it('rejects a non-numeric value in an Int column', () => {
+      expect(validate({ ...valid, seats: 'three' }).success).toBe(false);
+    });
+
+    it('rejects a non-boolean in a Boolean column', () => {
+      expect(validate({ ...valid, isActive: 'yes' }).success).toBe(false);
+    });
+
+    it('rejects a value outside the enum', () => {
+      expect(validate({ ...valid, tier: 'ENTERPRISE' }).success).toBe(false);
+      expect(validate({ ...valid, tier: 'FREE' }).success).toBe(true);
+    });
+
+    it('does not demand a column the model has no equivalent of', () => {
+      // `name` is not a column on Account. Requiring it was pure template accident.
+      expect(validate(valid).success).toBe(true);
+      expect(JSON.stringify(validate(valid))).not.toContain('name must be');
+    });
+
+    it('names the offending field so the error is actionable', () => {
+      expect(validate({ ...valid, seats: 'three' }).error).toMatch(/seats/);
+    });
+  });
 
   /** Relative imports in emitted files that have no corresponding emitted module. */
   function unresolvedImports(dir: string): string[] {
@@ -133,6 +221,68 @@ describe.skipIf(!proAvailable)('Performance Pack module graph', () => {
 
       expect(precompiled).toContain('Member');
       expect(precompiled).not.toContain('Project');
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  /**
+   * `enablePrecompilation: false` was caught and handled; `enableStreaming: false` and
+   * `enableBatching: false` have exactly the same problem and were not. benchmarks.ts and
+   * wrappers.ts import both modules unconditionally, so turning either off emitted files importing
+   * something that was never written — output the customer cannot compile at all.
+   *
+   * Found by generating every documented value of every option and type-checking each result.
+   */
+  it(
+    'emits every module it imports with streaming disabled',
+    async () => {
+      const out = await generate('no-streaming', { enableStreaming: false });
+      expect(unresolvedImports(out)).toEqual([]);
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
+    'emits every module it imports with batching disabled',
+    async () => {
+      const out = await generate('no-batching', { enableBatching: false });
+      expect(unresolvedImports(out)).toEqual([]);
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
+    'says so when it cannot honour enableStreaming: false',
+    async () => {
+      const logged: string[] = [];
+      const spy = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+        logged.push(args.map(String).join(' '));
+      });
+      try {
+        await generate('no-streaming-warn', { enableStreaming: false });
+      } finally {
+        spy.mockRestore();
+      }
+
+      expect(logged.join('\n')).toMatch(/enableStreaming/);
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
+    'says so when it cannot honour enableBatching: false',
+    async () => {
+      const logged: string[] = [];
+      const spy = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+        logged.push(args.map(String).join(' '));
+      });
+      try {
+        await generate('no-batching-warn', { enableBatching: false });
+      } finally {
+        spy.mockRestore();
+      }
+
+      expect(logged.join('\n')).toMatch(/enableBatching/);
     },
     GENERATION_TIMEOUT,
   );

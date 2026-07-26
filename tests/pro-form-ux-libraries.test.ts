@@ -87,6 +87,91 @@ describe.skipIf(!proAvailable)('Form UX ui library selection', () => {
   // legitimate there rather than a leak.
   const shadcnOnlyComponents = ['<FormField', '<FormItem', '<FormMessage'];
 
+  describe('generateTests: true', () => {
+    /**
+     * The emitted tests could never run. They are written to `__tests__/<Model>Form.test.tsx` while
+     * the component sits in `components/`, and they imported `'./<Model>Form'` — a sibling that does
+     * not exist. They also call `toBeInTheDocument()` without importing `@testing-library/jest-dom`,
+     * which registers that matcher. For an option whose entire job is emitting runnable tests, both
+     * are fatal. Found by generating every documented value of every option and type-checking.
+     */
+    let source: string;
+    let out: string;
+
+    beforeAll(async () => {
+      out = await generate('with-tests', { generateTests: true });
+      source = readFileSync(join(out, '__tests__', 'MemberForm.test.tsx'), 'utf-8');
+    }, GENERATION_TIMEOUT);
+
+    it('imports the component by a path that exists', () => {
+      const specifier = source.match(/from '(\.[^']*MemberForm)'/)?.[1];
+      expect(specifier, 'the test should import the component').toBeTruthy();
+      expect(existsSync(join(out, '__tests__', `${specifier}.tsx`))).toBe(true);
+    });
+
+    it('registers the jest-dom matchers it uses', () => {
+      // Without this import `toBeInTheDocument` is not a function at runtime and not a type at
+      // compile time.
+      if (source.includes('toBeInTheDocument')) {
+        expect(source).toMatch(/@testing-library\/jest-dom/);
+      }
+    });
+  });
+
+  describe('the per-field validation helpers', () => {
+    /**
+     * `<Model>FormValidation` exposes a `validate<Field>` per column, which a form calls to check
+     * one input as the user types. Each was implemented as
+     * `Schema.safeParse({ <field>: value })` against the *whole model* schema — so every other
+     * required column was missing and the parse always failed. Measured on the emitted output:
+     * `validateEmail('a@b.c')` and `validateEmail(12345)` both returned false, making the helpers
+     * not merely useless but indistinguishable between valid and invalid input. A form wired to them
+     * rejects everything the user types.
+     */
+    let helpers: Record<string, (value: unknown) => boolean>;
+
+    beforeAll(async () => {
+      const out = await generate('field-validation', { uiLibrary: 'barebones' });
+      const mod = await import(join(out, 'validation', 'MemberValidation.ts'));
+      helpers = mod.MemberFormValidation;
+    }, GENERATION_TIMEOUT);
+
+    it('accepts a valid value for a required string', () => {
+      expect(helpers.validateEmail('someone@example.com')).toBe(true);
+    });
+
+    it('rejects a value of the wrong type', () => {
+      expect(helpers.validateEmail(12345)).toBe(false);
+    });
+
+    it('accepts a valid value for an optional column', () => {
+      expect(helpers.validateName('Alice')).toBe(true);
+      // Optional means absent is fine too.
+      expect(helpers.validateName(undefined)).toBe(true);
+    });
+
+    it('validates an enum against its members', () => {
+      expect(helpers.validateRole('MEMBER')).toBe(true);
+      expect(helpers.validateRole('EMPEROR')).toBe(false);
+    });
+
+    it('validates a boolean column', () => {
+      expect(helpers.validateIsActive(true)).toBe(true);
+      expect(helpers.validateIsActive('yes')).toBe(false);
+    });
+
+    it('accepts at least one plausible value for every field it emits', () => {
+      // The original failure was uniform: every helper returned false for everything. Probing with a
+      // single value cannot show that, because a boolean column legitimately rejects a string — so
+      // each helper is offered a spread of candidates and must accept one of them.
+      const candidates: unknown[] = ['MEMBER', 'someone@example.com', 42, true, undefined, {}];
+      const alwaysFalse = Object.keys(helpers)
+        .filter((key) => key.startsWith('validate'))
+        .filter((key) => !candidates.some((candidate) => helpers[key](candidate)));
+      expect(alwaysFalse).toEqual([]);
+    });
+  });
+
   describe('an unrecognised uiLibrary', () => {
     it(
       'falls back to barebones and says so',

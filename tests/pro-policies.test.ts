@@ -2,7 +2,7 @@ import { getDMMF } from '@prisma/internals';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { GENERATION_TIMEOUT } from './helpers';
 
 const PRO_POLICIES = join(__dirname, '..', 'src', 'pro', 'features', 'policies', 'policies.ts');
@@ -45,6 +45,13 @@ model Note {
   id     String @id @default(cuid())
   body   String
   userId String
+}
+
+/// @policy read:where status == "PUBLISHED"
+model Article {
+  id     String @id @default(cuid())
+  title  String
+  status String
 }
 
 /// @policy read:where tenantId == ctx.tenantId
@@ -151,6 +158,48 @@ describe.skipIf(!proAvailable)('Policies enforcement', () => {
     });
   });
 
+  describe('enableRedaction: false', () => {
+    /**
+     * The redaction modules are emitted only when `enableRedaction` is on, but index.ts exported
+     * them whenever the model had a `@pii` field — so turning redaction off produced an index
+     * importing files that were never written (TS2307), and the whole pack stopped compiling.
+     * Found by generating every documented value of every option and type-checking each result.
+     */
+    let out: string;
+
+    beforeAll(async () => {
+      const { generatePoliciesFromDMMF } = await import('../src/pro/features/policies/policies');
+      const dmmf = await getDMMF({ datamodel: SCHEMA });
+      out = join(dir, 'no-redaction');
+      await generatePoliciesFromDMMF(
+        dmmf,
+        {},
+        join(dir, 'schema.prisma'),
+        out,
+        '@prisma/client',
+        'postgresql',
+        { enableRedaction: false },
+        [],
+      );
+    }, GENERATION_TIMEOUT);
+
+    it('does not export a redaction module it did not write', () => {
+      const index = readFileSync(join(out, 'index.ts'), 'utf-8');
+      const exported = [...index.matchAll(/from '\.\/(redaction\/[^']+)'/g)].map((m) => m[1]);
+
+      for (const target of exported) {
+        expect(existsSync(join(out, `${target}.ts`)), `${target} exported but not emitted`).toBe(
+          true,
+        );
+      }
+    });
+
+    it('still emits the safe-crud and dto modules', () => {
+      expect(existsSync(join(out, 'safe-crud', 'member.ts'))).toBe(true);
+      expect(existsSync(join(out, 'dto', 'member.ts'))).toBe(true);
+    });
+  });
+
   describe('read policies', () => {
     async function memberOps(context: Record<string, unknown>) {
       const { MemberSafeCRUD } = await import(join(dir, 'policies', 'safe-crud', 'member.ts'));
@@ -218,6 +267,70 @@ describe.skipIf(!proAvailable)('Policies enforcement', () => {
     });
   });
 
+  describe('a scoped read denies when the context is missing', () => {
+    async function opsFor(model: string, context: Record<string, unknown>) {
+      const file = join(dir, 'policies', 'safe-crud', `${model.toLowerCase()}.ts`);
+      const exported = (await import(file)) as Record<string, new (...args: unknown[]) => unknown>;
+      const prisma = recordingPrisma();
+      const ctor = exported[`${model}SafeCRUD`];
+      return {
+        ops: new ctor(prisma.client, context) as { findMany: (c?: unknown) => Promise<unknown> },
+        prisma,
+      };
+    }
+
+    function whereOf(prisma: { calls: { args: unknown }[] }) {
+      return ((prisma.calls[0].args as { where?: Record<string, unknown> }).where ?? {}) as Record<
+        string,
+        unknown
+      >;
+    }
+
+    it('filters by tenant when the context carries one', async () => {
+      const { ops, prisma } = await opsFor('Document', { tenantId: 'acme' });
+
+      await ops.findMany();
+
+      expect(whereOf(prisma)).toEqual({ tenantId: 'acme' });
+    });
+
+    it('matches nothing when the tenant is absent, rather than everything', async () => {
+      // This emitted `{ tenantId: context.tenantId }` unconditionally, and Prisma strips
+      // `undefined` from a where clause — so the filter vanished and the query read every
+      // tenant's rows. The call site still looked scoped, which is what made it dangerous.
+      const { ops, prisma } = await opsFor('Document', {});
+
+      await ops.findMany();
+
+      const where = whereOf(prisma);
+      expect(where).not.toEqual({});
+      expect(where.id).toEqual({ in: [] });
+    });
+
+    it('matches nothing when the user is absent', async () => {
+      const { ops, prisma } = await opsFor('Note', {});
+
+      await ops.findMany();
+
+      expect(whereOf(prisma).id).toEqual({ in: [] });
+    });
+
+    it('filters by user when the context carries one', async () => {
+      const { ops, prisma } = await opsFor('Note', { userId: 'u_1' });
+
+      expect(
+        whereOf(
+          await (async () => {
+            await ops.findMany();
+            return prisma;
+          })(),
+        ),
+      ).toEqual({
+        userId: 'u_1',
+      });
+    });
+  });
+
   describe('write policies', () => {
     it('scopes a delete with the model read policies', async () => {
       // Read policies constrain what a caller can see; a delete that ignores them
@@ -244,6 +357,115 @@ describe.skipIf(!proAvailable)('Policies enforcement', () => {
       expect((prisma.calls[0].args as { where: unknown }).where).toMatchObject({
         tenantId: 'tenant-a',
       });
+    });
+  });
+
+  describe('a policy the evaluator cannot enforce', () => {
+    // The parser accepts any condition text after `read:where`, but the generated evaluator
+    // implements exactly three forms: `role in [...]`, `userId == ctx.userId` and
+    // `tenantId == ctx.tenantId`. Anything else used to fall through to `return where` — parsed,
+    // emitted, iterated, and enforcing nothing, with the query left unscoped and no warning at
+    // any point. Article carries `read:where status == "PUBLISHED"`, which is not one of the three.
+    it('refuses the query instead of running it unscoped', async () => {
+      const { ArticleSafeCRUD } = await import(join(dir, 'policies', 'safe-crud', 'article.ts'));
+      const prisma = recordingPrisma();
+      const ops = new ArticleSafeCRUD(prisma.client, {}) as { findMany: () => Promise<unknown> };
+
+      // The message has to name the offending condition and the forms that do work, because the
+      // fix is a schema edit and the annotation text is the only way to find it.
+      await expect(ops.findMany()).rejects.toThrow(/cannot be enforced.*PUBLISHED/s);
+      await expect(ops.findMany()).rejects.toThrow(/tenantId == ctx\.tenantId/);
+      // Reaching Prisma at all would mean the unscoped read happened.
+      expect(prisma.calls).toHaveLength(0);
+    });
+
+    it('still enforces the policies it does understand', async () => {
+      // The throw must be confined to the unenforceable condition. A model whose policy is
+      // supported has to keep working, and an allowed role still reads unrestricted.
+      const { MemberSafeCRUD } = await import(join(dir, 'policies', 'safe-crud', 'member.ts'));
+      const prisma = recordingPrisma();
+      const ops = new MemberSafeCRUD(prisma.client, { role: 'ADMIN' }) as {
+        findMany: () => Promise<unknown>;
+      };
+
+      await expect(ops.findMany()).resolves.toBeDefined();
+      expect(prisma.calls).toHaveLength(1);
+    });
+
+    it('warns at generation time, naming the model and the condition', async () => {
+      // The runtime throw is the backstop; this is the part that reaches someone while they can
+      // still fix the schema. Without it the first sign is a failing query in a running app.
+      const { generatePoliciesFromDMMF } = await import('../src/pro/features/policies/policies');
+      const logs: string[] = [];
+      const spy = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+        logs.push(args.map(String).join(' '));
+      });
+
+      const target = mkdtempSync(join(tmpdir(), 'pzg-policies-warn-'));
+      try {
+        const dmmf = await getDMMF({ datamodel: SCHEMA });
+        await generatePoliciesFromDMMF(
+          dmmf,
+          {},
+          join(target, 'schema.prisma'),
+          join(target, 'policies'),
+          '@prisma/client',
+          'postgresql',
+          {},
+          [],
+        );
+      } finally {
+        spy.mockRestore();
+        rmSync(target, { recursive: true, force: true });
+      }
+
+      const warnings = logs.filter((line) => line.includes('cannot be enforced'));
+      expect(warnings.length, logs.join('\n')).toBeGreaterThan(0);
+      expect(logs.join('\n')).toContain('Article');
+      expect(logs.join('\n')).toContain('PUBLISHED');
+    });
+  });
+
+  describe('a deny policy rejects a write', () => {
+    // The generated README says `create` and `update` throw when a `deny:` policy matches. That
+    // sentence is only worth shipping if it is true, so it is asserted here. Member carries
+    // `deny:role in ["MEMBER"]`; the condition is evaluated against the caller's context.
+    async function memberCrud(context: Record<string, unknown>) {
+      const { MemberSafeCRUD } = await import(join(dir, 'policies', 'safe-crud', 'member.ts'));
+      const prisma = recordingPrisma();
+      return {
+        ops: new MemberSafeCRUD(prisma.client, context) as {
+          create: (c: unknown, a: unknown) => Promise<unknown>;
+          update: (c: unknown, a: unknown) => Promise<unknown>;
+        },
+        prisma,
+      };
+    }
+
+    it('throws on create for a denied role, and does not reach prisma', async () => {
+      const { ops, prisma } = await memberCrud({ role: 'MEMBER' });
+
+      await expect(
+        ops.create({ role: 'MEMBER' }, { data: { email: 'a@b.c', role: 'MEMBER' } }),
+      ).rejects.toThrow(/Policy violation/);
+      // Throwing after the row was written would be the worst of both worlds.
+      expect(prisma.calls).toHaveLength(0);
+    });
+
+    it('throws on update for a denied role', async () => {
+      const { ops } = await memberCrud({ role: 'MEMBER' });
+
+      await expect(
+        ops.update({ role: 'MEMBER' }, { where: { id: 'm1' }, data: { email: 'a@b.c' } }),
+      ).rejects.toThrow(/Policy violation/);
+    });
+
+    it('allows the write for a role the deny policy does not name', async () => {
+      const { ops, prisma } = await memberCrud({ role: 'ADMIN' });
+
+      await ops.create({ role: 'ADMIN' }, { data: { email: 'a@b.c', role: 'MEMBER' } });
+
+      expect(prisma.calls).toHaveLength(1);
     });
   });
 

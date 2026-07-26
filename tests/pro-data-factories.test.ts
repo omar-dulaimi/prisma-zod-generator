@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -121,6 +121,86 @@ describe.skipIf(!proAvailable)('Data Factories persistence', () => {
     const emitted = readFileSync(join(outputPath, 'factories.ts'), 'utf-8');
     expect(emitted).toContain('AuthorFactory');
     expect(emitted).not.toContain('PostFactory');
+  });
+
+  describe('options that produced output nobody could compile', () => {
+    /**
+     * Found by generating every documented value of every option and type-checking each result.
+     * `generateFixtures: false` and `generateFactories: false` left seeders.ts and test-helpers.ts
+     * importing `./fixtures` and `./factories`, which were never written (TS2307), and
+     * `locale: 'de'` emitted providers.ts indexing a hardcoded `{ en, es, fr }` map (TS7053).
+     * All three are documented options, and all three produced output that does not compile.
+     */
+    async function generateWith(label: string, config: Record<string, unknown>) {
+      const logged: string[] = [];
+      const origLog = console.log;
+      console.log = (...args: unknown[]) => {
+        logged.push(args.map(String).join(' '));
+      };
+
+      const outputPath = join(dir, label);
+      try {
+        const { generateDataFactories } = await import(
+          '../src/pro/features/data-factories/data-factories'
+        );
+        await generateDataFactories(join(dir, 'schema.prisma'), { outputPath, ...config });
+      } finally {
+        console.log = origLog;
+      }
+
+      return { outputPath, output: logged.join('\n') };
+    }
+
+    /**
+     * Relative imports with no matching emitted module, resolved the way TypeScript does: a
+     * specifier may name a sibling file or a directory carrying an index.
+     */
+    function unresolved(outputPath: string): string[] {
+      const entries = readdirSync(outputPath, { withFileTypes: true });
+      const modules = new Set<string>();
+      for (const entry of entries) {
+        if (entry.isDirectory() && existsSync(join(outputPath, entry.name, 'index.ts'))) {
+          modules.add(entry.name);
+        } else if (entry.name.endsWith('.ts')) {
+          modules.add(entry.name.replace(/\.ts$/, ''));
+        }
+      }
+
+      const missing: string[] = [];
+      for (const entry of entries.filter((e) => e.isFile() && e.name.endsWith('.ts'))) {
+        const source = readFileSync(join(outputPath, entry.name), 'utf-8');
+        for (const match of source.matchAll(/from '\.\/([^']+)'/g)) {
+          const target = match[1].replace(/\.js$/, '');
+          if (!modules.has(target)) missing.push(`${entry.name} -> ./${target}`);
+        }
+      }
+      return missing;
+    }
+
+    it('resolves every import by default', async () => {
+      const { outputPath } = await generateWith('imports-default', {});
+      expect(unresolved(outputPath)).toEqual([]);
+    });
+
+    it('resolves every import with fixtures disabled', async () => {
+      const { outputPath } = await generateWith('no-fixtures', { generateFixtures: false });
+      expect(unresolved(outputPath)).toEqual([]);
+    });
+
+    it('resolves every import with factories disabled', async () => {
+      const { outputPath } = await generateWith('no-factories', { generateFactories: false });
+      expect(unresolved(outputPath)).toEqual([]);
+    });
+
+    it('falls back to a locale it has data for, and says so', async () => {
+      const { outputPath, output } = await generateWith('locale-de', { locale: 'de' });
+
+      expect(output).toMatch(/locale/i);
+      // providers.ts must not index its data map with a key the map does not have.
+      const providers = readFileSync(join(outputPath, 'providers.ts'), 'utf-8');
+      const localeKeys = [...providers.matchAll(/locales\[['"]([a-z-]+)['"]\]/g)].map((m) => m[1]);
+      for (const key of localeKeys) expect(['en', 'es', 'fr']).toContain(key);
+    });
   });
 
   it('refuses to pretend a create succeeded without a client', () => {

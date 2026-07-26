@@ -1,5 +1,5 @@
 import { getDMMF } from '@prisma/internals';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -83,6 +83,166 @@ describe.skipIf(!proAvailable)('Pro option validation', () => {
 
     return logged.join('\n');
   }
+
+  /**
+   * Options that were listed as supported while nothing read them.
+   *
+   * Found by generating every pack under every documented value of every option and hashing the
+   * output: a config whose output is byte-identical to the default is an option that does nothing.
+   * Six survived that way, each defaulted and advertised, none consulted. Silence is the worst
+   * outcome here — the setting looks applied.
+   */
+  describe('options that were accepted and ignored', () => {
+    async function run(
+      moduleSuffix: string,
+      fn: string,
+      config: Record<string, unknown>,
+      label: string,
+    ) {
+      const captured: string[] = [];
+      vi.spyOn(console, 'log').mockImplementation((...args) => {
+        captured.push(args.join(' '));
+      });
+
+      const mod = (await import(`../src/pro/${moduleSuffix}`)) as Record<string, unknown>;
+      const generate = mod[fn] as (...args: unknown[]) => Promise<void>;
+      const dmmf = await getDMMF({ datamodel: SCHEMA });
+      const out = join(dir, label);
+
+      await generate(
+        dmmf,
+        {},
+        join(dir, 'schema.prisma'),
+        out,
+        '@prisma/client',
+        'postgresql',
+        config,
+        [],
+      );
+
+      return { output: captured.join('\n'), out };
+    }
+
+    it(
+      'says so when asked for yup, which is not implemented',
+      async () => {
+        // `validation` was never read: 'yup' emitted byte-identical zod output. Falling back is
+        // right — the forms work — but doing it silently is not.
+        const { output } = await run(
+          'features/form-ux/form-ux',
+          'generateFormUXFromDMMF',
+          { validation: 'yup' },
+          'form-yup',
+        );
+
+        expect(output).toMatch(/yup/i);
+        expect(output.toLowerCase()).toMatch(/not (implemented|supported)|no effect|zod/);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'honours defaultValues: false by omitting the defaults block',
+      async () => {
+        const off = await run(
+          'features/form-ux/form-ux',
+          'generateFormUXFromDMMF',
+          { defaultValues: false },
+          'form-nodefaults',
+        );
+        const on = await run(
+          'features/form-ux/form-ux',
+          'generateFormUXFromDMMF',
+          { defaultValues: true },
+          'form-defaults',
+        );
+
+        const read = (base: string) =>
+          readFileSync(join(base, 'components', 'InvoiceForm.tsx'), 'utf-8');
+
+        // The whole point of the flag is that the caller supplies its own initial values.
+        expect(read(on.out)).toMatch(/defaultValues:\s*\{/);
+        expect(read(off.out)).not.toMatch(/defaultValues:\s*\{\s*\w/);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'says so when asked for the prisma migration format',
+      async () => {
+        const { output } = await run(
+          'features/postgres-rls/postgres-rls',
+          'generatePostgresRLSFromDMMF',
+          { migrationFormat: 'prisma' },
+          'rls-prisma-format',
+        );
+
+        expect(output).toMatch(/migrationFormat|prisma/i);
+        expect(output.toLowerCase()).toMatch(/not (implemented|supported)|no effect|sql/);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'says so when asked for audit logging',
+      async () => {
+        const { output } = await run(
+          'features/postgres-rls/postgres-rls',
+          'generatePostgresRLSFromDMMF',
+          { enableAuditLogging: true },
+          'rls-audit',
+        );
+
+        expect(output).toContain('enableAuditLogging');
+        expect(output.toLowerCase()).toMatch(/no effect|not implemented/);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'says so when asked for error boundaries',
+      async () => {
+        // Every generated action already wraps its body in try/catch and returns a typed error.
+        // What this option promised — emitted React error-boundary components — does not exist.
+        const { output } = await run(
+          'features/server-actions/server-actions',
+          'generateServerActionsFromDMMF',
+          { enableErrorBoundaries: false },
+          'sa-no-boundaries',
+        );
+
+        expect(output).toContain('enableErrorBoundaries');
+        expect(output.toLowerCase()).toMatch(/no effect|not implemented/);
+      },
+      GENERATION_TIMEOUT,
+    );
+
+    it(
+      'treats enableGuards as the alias it is documented to be',
+      async () => {
+        // The comment on the field says "Back-compat alias"; nothing read it. The guards it refers
+        // to are the $extends helpers in tenant-extensions.ts, which generatePrismaExtension gates.
+        const off = await run(
+          'features/multi-tenant-kit/multi-tenant-kit',
+          'generateMultiTenantKitFromDMMF',
+          { enableGuards: false },
+          'mt-no-guards',
+        );
+
+        expect(existsSync(join(off.out, 'tenant-extensions.ts'))).toBe(false);
+
+        const on = await run(
+          'features/multi-tenant-kit/multi-tenant-kit',
+          'generateMultiTenantKitFromDMMF',
+          { enableGuards: true },
+          'mt-guards',
+        );
+
+        expect(existsSync(join(on.out, 'tenant-extensions.ts'))).toBe(true);
+      },
+      GENERATION_TIMEOUT,
+    );
+  });
 
   it(
     'warns about an option it accepts but does not act on',
