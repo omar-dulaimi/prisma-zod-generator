@@ -60,8 +60,14 @@ export default defineConfig({
         'node_modules',
         '**/node_modules/**',
         '**/*.d.ts',
-        // Generated Prisma client, not our code.
+        // Generated output, not our code — the same three directories tsconfig.json excludes
+        // from compilation. `src/schemas` is written by `pnpm run gen-example`, which is CI's
+        // build step, so leaving it in counted several hundred generated files at 0% there and
+        // nowhere locally: a 10-point gap between the same nominal measurement on the two
+        // machines, and the reason the first CI run of the coverage gate failed.
         'src/dsrc/**',
+        'src/schemas/**',
+        'src/generated/**',
         // Declaration modules. These are interfaces and type aliases that erase at
         // compile time, so they can only ever report 0% — measuring them says
         // nothing about how well the generator is tested.

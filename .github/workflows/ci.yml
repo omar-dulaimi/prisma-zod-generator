@@ -122,8 +122,10 @@ jobs:
 
       # The coverage ratchet, run once rather than on all three Node versions. Thresholds are
       # calibrated for a checkout without the private Pro submodule — what this job and every
-      # fork has — where 19 files skip and the figure is 89.3% statements / 88.5% branches /
-      # 74.7% functions. They sit below the lower of that and the with-submodule figure
+      # fork has — where 19 files skip. Measured *after* `pnpm run gen-example`, because that build
+      # step writes several hundred generated schemas into src/schemas; counting those (tsconfig
+      # excludes them, the coverage config did not) put CI 10 points below the same measurement
+      # taken locally without them, which is how the first run of this gate failed. They sit below the lower of that and the with-submodule figure
       # (91.6/88.0/72.5) so the same script passes either way; both were measured before these
       # numbers were set. Without this step the gate only ever ran when someone remembered to run
       # it locally.
