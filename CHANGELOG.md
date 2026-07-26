@@ -1,3 +1,27 @@
+## [3.0.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.9.0...v3.0.0) (2026-07-26)
+
+### ⚠ BREAKING CHANGES
+
+* **breaking:** Policies queries with no context now match no rows instead of
+every row; an unenforceable policy condition throws instead of running unscoped;
+the Performance Pack's `parse` throws and returns the row rather than a result
+envelope, with arrays moved to `parseMany`/`safeParseMany`; and Server Actions
+requires `setPrismaClient(...)` at startup instead of constructing a client. See
+website/docs/upgrade/v3-breaking-changes.md.
+
+### 🐛 Bug Fixes
+
+* **breaking:** declare the four behaviour changes in this release ([b610c8f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/b610c8ff3b63ca5bdce489aff52c0fcf8a50a462))
+* **core:** note that the Pro path test guards nothing ([14074b7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/14074b708976de37299cb3028b8cdea6f3d4ba87))
+* **pro-cli:** accept `config` as an alias for `configPath` ([6e1ee50](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6e1ee50a831dac8fad8568a271073824dd6611e1))
+* **pro-cli:** honour the generator block's output ([1af6e99](https://github.com/omar-dulaimi/prisma-zod-generator/commit/1af6e997136ad19dcd5b3a01aa65ec59ae279fe5))
+
+### 📚 Documentation
+
+* correct the policy syntax the docs advertised but never worked ([742a1ee](https://github.com/omar-dulaimi/prisma-zod-generator/commit/742a1eeecf32ead56847aa1e92f271add2084a2c))
+* correct three pages the Prisma 7 work left behind ([5d2c35e](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5d2c35eb3dfc421a57b77ed16fcbc4e2058a41d4))
+* regenerate llms.txt for the 3.0 pages ([d71a912](https://github.com/omar-dulaimi/prisma-zod-generator/commit/d71a912204a79166a48b0d96f72e9595a1240813))
+
 ## [2.9.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.8.3...v2.9.0) (2026-07-26)
 
 ### 🚀 Features
