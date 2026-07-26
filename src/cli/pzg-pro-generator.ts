@@ -375,16 +375,44 @@ export async function generateProFeatures(options: GeneratorOptions): Promise<vo
     if (enabledFeatures.length > 0) {
       console.log(`📦 Generated features: ${enabledFeatures.join(', ')}`);
     } else {
-      console.log('⚠️  No features enabled. Configure features in your generator config.');
-      console.log('\nExample configuration:');
+      console.log('⚠️  No features enabled, so nothing was generated.');
+
+      // Say which of the two places was actually consulted. Reporting only "no features enabled"
+      // left someone who had written their flags in the right file, under the wrong key, with
+      // nothing to go on.
+      if (config.configPath) {
+        console.log(`\nRead config from: ${config.configPath}`);
+        console.log('It contained no recognised enable* flags.');
+      } else {
+        console.log('\nNo config file was referenced, so only the generator block was read.');
+      }
+
+      console.log('\nFlags go in either place. In the generator block:');
       console.log('generator pzgPro {');
-      console.log('  provider = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"');
-      console.log('  output   = "./generated/pro"');
-      console.log('  enablePolicies = true');
+      console.log(
+        '  provider            = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"',
+      );
+      console.log('  output              = "./generated/pro"');
+      console.log('  enablePolicies      = true');
       console.log('  enableServerActions = true');
       console.log('}');
+      console.log('\nOr in a JSON file referenced by configPath (config is accepted too):');
+      console.log('generator pzgPro {');
+      console.log('  provider   = "node ./node_modules/prisma-zod-generator/lib/cli/pzg-pro.js"');
+      console.log('  output     = "./generated/pro"');
+      console.log('  configPath = "./pzg-pro.json"');
+      console.log('}');
+      console.log('\n// pzg-pro.json');
+      console.log('{ "enablePolicies": true, "enableServerActions": true }');
+      console.log(
+        `\nAvailable flags: ${['enablePolicies', 'enableServerActions', 'enableSDK', 'enableContracts', 'enablePostgresRLS', 'enableForms', 'enableApiDocs', 'enableMultiTenant', 'enablePerformance', 'enableFactories'].join(', ')}`,
+      );
     }
   } catch (error) {
+    // stderr is correct *here*, unlike everywhere else in this file. Prisma swallows a generator's
+    // stderr on the success path — which is why every diagnostic above uses console.log — but when
+    // the generator exits non-zero Prisma relays stderr as the body of the error it reports. Verified
+    // against prisma generate with a probe generator: stderr appears under "Error:", stdout does not.
     console.error('\n❌ PZG Pro Generation Failed:');
     if (error instanceof Error) {
       console.error(error.message);
@@ -481,7 +509,12 @@ function handleFeatureError(context: string, error: unknown): void {
   }
 }
 
-async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesConfig> {
+/**
+ * Exported for `tests/pro-config-parsing.test.ts`. Which packs run, and where that decision is read
+ * from, is worth testing directly: the `config`/`configPath` mismatch it now tolerates failed by
+ * enabling nothing and saying nothing, which no end-to-end assertion on generated files would catch.
+ */
+export async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesConfig> {
   const config: ProFeaturesConfig = {
     enablePolicies: false,
     enableServerActions: false,
@@ -546,8 +579,14 @@ async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesCon
     }
   }
 
-  if (generatorConfig.configPath) {
-    config.configPath = String(generatorConfig.configPath);
+  // `config` is accepted as an alias for `configPath`. The core generator reads its JSON config from
+  // `config = "./zod-generator.config.json"`, so anyone who set that up writes the same key here —
+  // and this used to read nothing, apply no flags, and report "No features enabled" while printing an
+  // example whose flags happen to sit inline, so nothing pointed at the mismatch.
+  const configPathValue = generatorConfig.configPath ?? generatorConfig.config;
+
+  if (configPathValue) {
+    config.configPath = String(configPathValue);
 
     try {
       const schemaBaseDir = path.dirname(options.schemaPath);
@@ -559,7 +598,9 @@ async function parseProConfig(options: GeneratorOptions): Promise<ProFeaturesCon
       Object.assign(config, externalConfig);
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
-      console.warn(`⚠️  Failed to load external config: ${detail}`);
+      // stdout: Prisma does not relay a generator's stderr, so console.warn would be invisible.
+      console.log(`⚠️  Failed to load PZG Pro config from "${config.configPath}": ${detail}`);
+      console.log('   No feature flags were applied from it.');
     }
   }
 
