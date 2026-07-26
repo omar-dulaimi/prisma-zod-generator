@@ -236,12 +236,48 @@ export function createNewManifest(
   };
 }
 
+/**
+ * The path recorded for `filePath`, or null when it falls outside `outputPath`.
+ *
+ * The manifest drives deletion: `performSmartCleanup` resolves each entry with
+ * `path.join(outputPath, relativePath)` and unlinks it, ignoring failures. An entry of
+ * `../something.ts` therefore makes the next run delete a file outside the directory this
+ * generator owns, without saying so. That is reachable from a naming `filePattern` such as
+ * `"../shared/{Model}.ts"`.
+ *
+ * Writing where the config points is the user's call, so the write is left alone — but such a
+ * path is not tracked, which is what keeps cleanup inside the output directory.
+ */
+function manifestPathFor(targetPath: string, outputPath: string, kind: string): string | null {
+  const relativePath = path.relative(outputPath, targetPath);
+
+  // `..` as a segment covers the sibling-directory case too: relative('/a/out', '/a/out-old')
+  // is '../out-old', which a startsWith check on the absolute paths would have missed.
+  const escapes =
+    relativePath === '..' ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath);
+
+  if (escapes) {
+    logger.warn(
+      `⚠️  Not tracking ${kind} outside the output directory: ${targetPath}. ` +
+        `It was written, but it will not be cleaned up on the next run, because removing ` +
+        `files outside ${outputPath} is never something this generator should do.`,
+    );
+    return null;
+  }
+
+  return relativePath;
+}
+
 export function addFileToManifest(
   manifest: GeneratedManifest,
   filePath: string,
   outputPath: string,
 ): void {
-  const relativePath = path.relative(outputPath, filePath);
+  const relativePath = manifestPathFor(filePath, outputPath, 'file');
+  if (relativePath === null) return;
+
   if (!manifest.files.includes(relativePath)) {
     manifest.files.push(relativePath);
   }
@@ -257,7 +293,9 @@ export function addDirectoryToManifest(
   dirPath: string,
   outputPath: string,
 ): void {
-  const relativePath = path.relative(outputPath, dirPath);
+  const relativePath = manifestPathFor(dirPath, outputPath, 'directory');
+  if (relativePath === null) return;
+
   if (relativePath !== '.' && !manifest.directories.includes(relativePath)) {
     manifest.directories.push(relativePath);
   }
