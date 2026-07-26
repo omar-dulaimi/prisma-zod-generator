@@ -15,6 +15,10 @@ const prismaValueImports = new Set<string>(); // enums etc.
 let sawPrismaAlias = false; // whether __PrismaAlias was referenced
 let prismaImportBase = '@prisma/client';
 let needsJsonHelpers = false; // whether to inject json helpers block
+// Same treatment as the JSON helpers, and for the same reason: the per-file imports are
+// removed by the generic relative-import stripper below, so the bundle has to carry one
+// hoisted copy of the definitions or every reference dangles.
+let needsDecimalHelpers = false;
 const exportedTypeNames = new Set<string>(); // track exported type identifiers to prevent collisions
 // External imports declared via @zod.import (e.g. custom validator modules).
 // Unlike internal schema imports, these point outside the generated tree and
@@ -39,6 +43,7 @@ export function initSingleFile(bundleFullPath: string) {
   prismaValueImports.clear();
   sawPrismaAlias = false;
   needsJsonHelpers = false;
+  needsDecimalHelpers = false;
   exportedTypeNames.clear();
   customImportLines.clear();
 }
@@ -103,6 +108,16 @@ function transformContentForSingleFile(filePath: string, source: string): string
       )
     ) {
       needsJsonHelpers = true;
+      continue;
+    }
+    // Same for the Decimal helpers. Their import names vary with what the schema uses
+    // (DecimalJSLikeSchema, isValidDecimalInput, DECIMAL_STRING_REGEX), so match on the
+    // module rather than the binding list.
+    if (/import\s+\{[^}]*\}\s+from\s+['"](?:\.{1,2}\/)+helpers\/decimal-helpers(?:\.js)?['"];?/.test(line)) {
+      needsDecimalHelpers = true;
+      // Set here rather than where the helpers are hoisted: the Prisma value import is
+      // written to the header before that point, so a later flag would be ignored.
+      needsPrismaValueImport = true;
       continue;
     }
     // Strip inline literalSchema definition (minimal mode)
@@ -383,6 +398,23 @@ export async function flushSingleFile(): Promise<void> {
     );
     header.push(`);`);
   }
+  if (needsDecimalHelpers) {
+    // Generated from the same source the multi-file `helpers/decimal-helpers.ts` uses, so
+    // the two layouts cannot drift. `export` is dropped because these are internal to the
+    // bundle, and `Prisma` is needed as a value here for Prisma.Decimal.isDecimal.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { generateDecimalHelpers, isDecimalJsAvailable } = require('../helpers/decimal-helpers');
+    const hasDecimalJs = isDecimalJsAvailable();
+    const { helperCode, imports } = generateDecimalHelpers(hasDecimalJs, 'z', prismaImportBase);
+
+    if (hasDecimalJs) {
+      const decimalJsImport = imports.find((line: string) => line.includes("'decimal.js'"));
+      if (decimalJsImport) header.push(decimalJsImport);
+    }
+
+    header.push(`// Decimal helper schemas (hoisted)`);
+    header.push(helperCode.replace(/^export /gm, ''));
+  }
   if (sawPrismaAlias) {
     header.push(`type __PrismaAlias = Prisma.JsonValue | Prisma.InputJsonValue;`);
     // Ensure Prisma type import is present
@@ -408,6 +440,7 @@ export async function flushSingleFile(): Promise<void> {
   prismaValueImports.clear();
   sawPrismaAlias = false;
   needsJsonHelpers = false;
+  needsDecimalHelpers = false;
   exportedTypeNames.clear();
   customImportLines.clear();
 }
