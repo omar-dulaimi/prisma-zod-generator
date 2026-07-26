@@ -24,10 +24,10 @@ generator zod {
 
 datasource db {
   provider = "mongodb"
-  // Newer Prisma 7 releases reject `url` here (verified on 7.9): move the
-  // connection string to prisma.config.ts, or pass an adapter to the
-  // PrismaClient constructor. On Prisma 7.0 and earlier it is still accepted as
-  // `url = env("DATABASE_URL")`.
+  // Prisma 7 rejects `url` here — verified on 7.0.0, which fails validation with
+  // P1012, "The datasource property `url` is no longer supported in schema
+  // files". Put the connection string in prisma.config.ts, and pass an `adapter`
+  // to the PrismaClient constructor.
 }
 
 model Post {

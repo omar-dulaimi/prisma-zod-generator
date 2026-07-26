@@ -110,9 +110,11 @@ empty `current_setting()` and the callback took no argument.
 
 ### Prisma Middleware
 
-:::caution Requires Prisma 5 or earlier
-`prisma.$use()` was removed in Prisma 6. On Prisma 6 or 7 this throws
-`prisma.$use is not a function` — set the context per transaction instead.
+:::caution Prisma 4 only
+`prisma.$use()` does not exist on Prisma 7 — verified against a generated v7 client, where the property
+is `undefined`. Use `rls.withContext(...)`, which sets the context and runs your queries inside one
+interactive transaction; `set_config(..., true)` is transaction-scoped, so the context has to be
+established and used in the same transaction.
 :::
 
 ```ts

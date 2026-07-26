@@ -87,23 +87,29 @@ Operations are `'create' | 'update' | 'find'`. The same file exports a `TenantVa
 keyed by model name, if you'd rather hold a validator instance than go through the string lookup on
 every call.
 
-### Prisma Middleware
+### Scoping a client
 
-:::caution Requires Prisma 5 or earlier
-The generated middleware is installed with `prisma.$use()`, which Prisma removed
-in v6. On Prisma 6 or 7 — including the versions this generator targets — the
-call throws `prisma.$use is not a function`. Validate at the call site with
-`validateTenantAccess(...)` instead; that is the supported path today.
-:::
-
-On Prisma 5 and earlier, the middleware injects the tenant filter on reads and
-deletes and validates results in `strict` mode:
+`prisma.$use()` does not exist on Prisma 7 — verified against a generated v7 client, where the call is
+a type error and the property is `undefined` at runtime. Client extensions replaced it, so scope a
+client with `createTenantPrismaClient`:
 
 ```ts
-import { createTenantMiddleware } from '@/generated/pro/multi-tenant/tenant-middleware'
+import { createTenantPrismaClient } from '@/generated/pro/multi-tenant/tenant-middleware'
 
-prisma.$use(createTenantMiddleware({ tenantId: 't1' }))
+const scoped = createTenantPrismaClient(prisma, { tenantId: 't1' })
+
+// Reads through `scoped` carry the tenant filter.
+const rows = await scoped.invoice.findMany()
 ```
+
+It returns `prisma.$extends(withEnhancedTenantGuard(context))`, so you can use the guard directly if
+you prefer to compose extensions yourself. `validateTenantAccess(...)` remains available for validating
+at the call site.
+
+:::note The middleware factory
+`createTenantMiddleware` is still exported for projects on Prisma 4, which is the last version with
+`$use`. There is nothing to register it on in a current client.
+:::
 
 ### Enforce Modes
 
