@@ -1,3 +1,9 @@
+## [3.0.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.0.0...v3.0.1) (2026-07-26)
+
+### 🐛 Bug Fixes
+
+* build against current Prisma, 7.0.0 to 7.9.0 ([ef0020f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ef0020ff3ea4308ad8ba489a5da7cebedd2699f7))
+
 ## [3.0.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v2.9.0...v3.0.0) (2026-07-26)
 
 ### ⚠ BREAKING CHANGES
