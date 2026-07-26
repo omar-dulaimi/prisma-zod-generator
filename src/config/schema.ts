@@ -971,22 +971,6 @@ export interface ValidationError {
 }
 
 /**
- * Utility function to validate field names
- */
-export function isValidFieldName(fieldName: string): boolean {
-  return (
-    /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName) && fieldName.length > 0 && fieldName.length <= 64
-  );
-}
-
-/**
- * Utility function to validate model names (PascalCase)
- */
-export function isValidModelName(modelName: string): boolean {
-  return /^[A-Z][a-zA-Z0-9_]*$/.test(modelName) && modelName.length > 0 && modelName.length <= 64;
-}
-
-/**
  * Utility function to validate Prisma operations
  */
 export function isValidOperation(operation: string): boolean {
@@ -994,52 +978,8 @@ export function isValidOperation(operation: string): boolean {
 }
 
 /**
- * Utility function to validate generation modes
- */
-export function isValidMode(mode: string): boolean {
-  return GENERATION_MODES.includes(mode as (typeof GENERATION_MODES)[number]);
-}
-
-/**
  * Utility function to validate schema variants
  */
 export function isValidVariant(variant: string): boolean {
   return SCHEMA_VARIANTS.includes(variant as (typeof SCHEMA_VARIANTS)[number]);
-}
-
-/**
- * Utility function to validate file suffixes
- */
-export function isValidSuffix(suffix: string): boolean {
-  return /^\.[a-zA-Z][a-zA-Z0-9_]*$/.test(suffix) && suffix.length >= 2 && suffix.length <= 20;
-}
-
-/**
- * Get schema reference for a specific configuration section
- */
-export function getSchemaSection(section: 'variantConfig' | 'modelConfig'): JSONSchema7 {
-  return ConfigurationSchema.definitions?.[section] as JSONSchema7;
-}
-
-/**
- * Create a custom schema for validating specific parts of the configuration
- */
-export function createPartialSchema(properties: string[]): JSONSchema7 {
-  const baseSchema = { ...ConfigurationSchema };
-  const filteredProperties: Record<string, JSONSchema7> = {};
-
-  properties.forEach((prop) => {
-    if (baseSchema.properties?.[prop]) {
-      const propSchema = baseSchema.properties[prop];
-      if (typeof propSchema === 'object') {
-        filteredProperties[prop] = propSchema;
-      }
-    }
-  });
-
-  return {
-    ...baseSchema,
-    properties: filteredProperties,
-    required: properties.filter((prop) => baseSchema.required?.includes(prop)),
-  };
 }
