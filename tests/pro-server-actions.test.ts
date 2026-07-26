@@ -112,6 +112,27 @@ describe.skipIf(!proAvailable)('Server Actions pack', () => {
     expect(source).not.toContain("'use server'");
   });
 
+  describe('the usage guide', () => {
+    /**
+     * The pack now requires `setPrismaClient(...)` before any action runs, and the guide's Quick Start
+     * walked the reader straight into calling an action — which throws until it is wired. The error
+     * message says what to do, but a guide that leads you into it is a defect of its own, and it was
+     * one I introduced when I changed the client.
+     */
+    it('tells the reader to wire the client before calling an action', () => {
+      const guide = read('USAGE.md');
+      const quickStart = guide.slice(guide.indexOf('Quick Start'));
+
+      expect(quickStart).toMatch(/setPrismaClient/);
+      // And it must come before the first action call, or the order teaches the wrong thing.
+      expect(quickStart.indexOf('setPrismaClient')).toBeLessThan(quickStart.indexOf('await get'));
+    });
+
+    it('names an adapter, since Prisma 7 requires one', () => {
+      expect(read('USAGE.md')).toMatch(/adapter/i);
+    });
+  });
+
   describe('a model with a composite primary key', () => {
     /**
      * `@@id([userId, tenantId])` — a join table, which is the common case for one — produced
