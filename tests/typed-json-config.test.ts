@@ -194,6 +194,27 @@ describe('typedJson configuration', () => {
       expect(result.kind === 'unresolved' && result.reason).toMatch(/schemaModule|map/);
     });
 
+    /**
+     * The dangerous shape is a raw `typedJson` block, straight from the user's config,
+     * reaching this function without going through `resolveTypedJsonConfig` - which is
+     * what an unwary caller writes, and what happened on the first crossing between the
+     * annotation reader and this module.
+     *
+     * Left unguarded it does not merely throw on the missing `map`: with `schemaSuffix`
+     * also unset it composes the import name `WorkflowNodeundefined`, an identifier that
+     * looks plausible in the emitted file and does not exist in the user's module. The
+     * import fails at build time in their project, not here.
+     */
+    it('applies the defaults itself when handed a raw, unresolved block', () => {
+      const raw = { schemaModule: './json-types' };
+      expect(resolveTypedJsonType('WorkflowNode', raw)).toEqual({
+        kind: 'module',
+        importName: 'WorkflowNodeSchema',
+        module: './json-types',
+        expression: 'WorkflowNodeSchema',
+      });
+    });
+
     it('reports unresolved for a type name that is not an identifier', () => {
       const resolved = resolveTypedJsonConfig({ typedJson: { schemaModule: './json-types' } })!;
       const result = resolveTypedJsonType('not a type', resolved);

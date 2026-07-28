@@ -124,10 +124,17 @@ export function resolveTypedJsonConfig(
  * 1. `typedJson.map[TypeName]`, an exact expression.
  * 2. `<TypeName><schemaSuffix>` imported from `typedJson.schemaModule`.
  * 3. Neither: unresolved, with a reason worth putting in a warning.
+ *
+ * Accepts a raw `typedJson` block as well as a resolved one, and normalises before
+ * reading anything. Not politeness: a raw block has no `schemaSuffix`, and reading it
+ * unnormalised composes the import name `FooSchema` as `Fooundefined` - an identifier
+ * that looks plausible in the emitted file, is missing from the user's module, and only
+ * fails when *they* build. `resolveTypedJsonConfig` is idempotent, so normalising an
+ * already-resolved config is free.
  */
 export function resolveTypedJsonType(
   typeName: string,
-  config: ResolvedTypedJsonConfig,
+  config: ResolvedTypedJsonConfig | TypedJsonConfig,
 ): TypedJsonTypeResolution {
   const name = typeName?.trim() ?? '';
 
@@ -138,17 +145,26 @@ export function resolveTypedJsonType(
     };
   }
 
-  const mapped = config.map[name];
+  const settings = resolveTypedJsonConfig({ typedJson: config ?? {} }) ?? {
+    schemaModule: undefined,
+    schemaSuffix: DEFAULT_TYPED_JSON_SCHEMA_SUFFIX,
+    namespace: DEFAULT_TYPED_JSON_NAMESPACE,
+    emitNamespace: false,
+    namespaceOutput: DEFAULT_TYPED_JSON_NAMESPACE_OUTPUT,
+    map: {},
+  };
+
+  const mapped = settings.map[name];
   if (typeof mapped === 'string' && mapped.trim().length > 0) {
     return { kind: 'mapped', expression: mapped.trim() };
   }
 
-  if (config.schemaModule) {
-    const importName = `${name}${config.schemaSuffix}`;
+  if (settings.schemaModule) {
+    const importName = `${name}${settings.schemaSuffix}`;
     return {
       kind: 'module',
       importName,
-      module: config.schemaModule,
+      module: settings.schemaModule,
       expression: importName,
     };
   }
