@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../target/mysql"
+}
+
+generator json {
+  provider  = "node ./index.js"
+  namespace = "PMysqlJson"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// Does not support Json[] fields, user have to manually use string[] and do 
+// JSON.parse/JSON.stringify calls
+model Model {
+  id Int @id
+
+  /// [Simple]
+  simple Json
+
+  /// [Optional]
+  optional Json?
+}
+
+model Text {
+  id Int @id
+
+  untyped String
+  /// [WithType]
+  typed   String
+  /// !['A' | 'B']
+  literal String
+}

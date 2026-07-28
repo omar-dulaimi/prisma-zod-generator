@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../target/string"
+}
+
+generator json {
+  provider = "node ./index.js"
+  namespace = "PStringJson"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Model {
+  id Int @id @default(autoincrement())
+
+  untyped String
+  /// [WithType]
+  typed String
+  /// !['A' | 'B']
+  literal String
+}
+
+model StringArrayModel {
+  id String @id @default(uuid()) @db.Uuid
+  /// [StringArrayType]
+  tags String[] @default([])
+}

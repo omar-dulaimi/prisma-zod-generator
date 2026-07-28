@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../target/mongo"
+}
+
+generator json {
+  provider  = "node ./index.js"
+  namespace = "PMongoJson"
+}
+
+datasource db {
+  provider = "mongodb"
+}
+
+model Model {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  /// [Simple]
+  simple Json
+
+  /// [Optional]
+  optional Json?
+
+  /// [List]
+  list Json[]
+
+  nested Nested
+}
+
+model Text {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  untyped String
+  /// [WithType]
+  typed   String
+  /// !['A' | 'B']
+  literal String
+}
+
+type Nested {
+  /// [Simple]
+  simple Json
+
+  /// [Optional]
+  optional Json?
+
+  /// [List]
+  list Json[]
+}

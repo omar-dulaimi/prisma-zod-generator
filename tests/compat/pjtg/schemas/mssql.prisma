@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../target/mssql"
+}
+
+generator json {
+  provider  = "node ./index.js"
+  namespace = "PMssqlJson"
+}
+
+datasource db {
+  provider = "sqlserver"
+}
+
+// SQLite does not have JSON support, so we only allow JSON fields and require
+// the user to manually call JSON.stringify/JSON.parse.
+model Text {
+  id   Int     @id @default(autoincrement())
+
+  untyped String
+  /// [WithType]
+  typed   String
+  /// !['A' | 'B']
+  literal String
+}

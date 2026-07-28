@@ -1,0 +1,31 @@
+generator client_old {
+  provider = "prisma-client"
+  output   = "../target/multiple-clients-old"
+}
+
+generator client_new {
+  provider = "prisma-client"
+  output   = "../target/multiple-clients-new"
+}
+
+generator json {
+  provider = "node ./index.js"
+  namespace = "PMultipleClientsJson"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id Int @id @default(autoincrement())
+
+  /// [Profile]
+  profile Json
+
+  /// [Settings]
+  settings Json?
+
+  /// [Tag]
+  tags Json[]
+}

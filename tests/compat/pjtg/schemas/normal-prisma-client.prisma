@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../target/normal-prisma-client"
+  importFileExtension = "js"
+}
+
+generator json {
+  provider = "node ./index.js"
+  namespace = "PNormalPrismaClientJson"
+  allowAny = true
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Model {
+  id Int @id @default(autoincrement())
+
+  /// [Simple]
+  simple Json
+
+  /// [Optional]
+  optional Json?
+
+  /// [List]
+  list Json[]
+
+  models SubModel[]
+}
+
+model SubModel {
+  id Int @id @default(autoincrement())
+
+  /// [Simple]
+  simple Json
+
+  modelId Int
+  model   Model @relation(fields: [modelId], references: [id])
+}
