@@ -22,7 +22,14 @@ import {
   resolveAddMissingInputObjectTypeOptions,
   resolveModelsComments,
 } from './helpers';
+import {
+  writeTypedJsonNamespace,
+  type TypedJsonNamespaceBinding,
+} from './generators/typed-json-namespace';
 import Transformer from './transformer';
+import { detectPjtgAnnotation } from './typed-json/annotation-parser';
+import { isTypedJsonInputType, reportTypedJsonResult } from './typed-json/emission';
+import { resolveTypedJsonField } from './typed-json/resolver';
 import type { SchemaEnumWithValues } from './types';
 import { ResolvedSafetyConfig } from './types/safety';
 import { logger } from './utils/logger';
@@ -727,6 +734,9 @@ export async function generate(options: GeneratorOptions) {
       } catch {}
     }
 
+    // After the single-file cleanup, which wipes everything beside the bundle.
+    await emitTypedJsonNamespace(models);
+
     // Save the manifest at the end of generation
     const finalManifest = Transformer.getCurrentManifest();
     if (finalManifest && resolvedSafetyConfig && !resolvedSafetyConfig.skipManifest) {
@@ -742,6 +752,114 @@ export async function generate(options: GeneratorOptions) {
     // and simply produced no schemas.
     console.error(error);
     throw error;
+  }
+}
+
+/**
+ * A field is only worth a namespace declaration if an emitter would actually have replaced
+ * its schema. Declaring `PrismaJson.Foo` for a field whose schema is untouched tells the
+ * user the annotation took effect when it did not.
+ */
+function isTypedJsonCandidate(field: DMMF.Field): boolean {
+  return field.kind === 'scalar' && isTypedJsonInputType(field.type) && !!field.documentation;
+}
+
+/**
+ * Tell the user their prisma-json-types-generator annotations were seen and ignored.
+ *
+ * Output is unchanged, which is the whole contract for an unconfigured project. Silence
+ * would be worse than a line of text: a schema carrying `/// [Foo]` looks like it should be
+ * doing something, and there is otherwise nothing to distinguish "not configured" from
+ * "configured and quietly broken".
+ */
+function warnAboutIgnoredPjtgAnnotations(models: DMMF.Model[]): void {
+  const annotated: string[] = [];
+  for (const model of models) {
+    for (const field of model.fields) {
+      if (isTypedJsonCandidate(field) && detectPjtgAnnotation(field.documentation)) {
+        annotated.push(`${model.name}.${field.name}`);
+      }
+    }
+  }
+  if (annotated.length === 0) return;
+
+  const shown = annotated.slice(0, 5).join(', ');
+  const more = annotated.length > 5 ? `, and ${annotated.length - 5} more` : '';
+  logger.warn(
+    `[typedJson] ${annotated.length} field(s) carry prisma-json-types-generator annotations ` +
+      `(${shown}${more}), but "typedJson" is not configured, so their schemas are unchanged. ` +
+      `Set typedJson.schemaModule to have prisma-zod-generator use them.`,
+  );
+}
+
+/**
+ * Write the `declare global` namespace file, when `typedJson.emitNamespace` asks for it.
+ *
+ * Runs after every emitter, so the declarations describe the schemas that were actually
+ * used. `writeTypedJsonNamespace` decides whether there is anything to write and refuses to
+ * overwrite a file it did not generate.
+ */
+async function emitTypedJsonNamespace(models: DMMF.Model[]): Promise<void> {
+  const config = Transformer.getTypedJsonConfig();
+  if (!config) {
+    warnAboutIgnoredPjtgAnnotations(models);
+    return;
+  }
+
+  const bindings: TypedJsonNamespaceBinding[] = [];
+  for (const model of models) {
+    for (const field of model.fields) {
+      if (!isTypedJsonCandidate(field)) continue;
+
+      const result = resolveTypedJsonField(
+        {
+          modelName: model.name,
+          fieldName: field.name,
+          documentation: field.documentation,
+          isList: field.isList,
+          isOptional: !field.isRequired,
+        },
+        config,
+      );
+      // Deduplicated in-process, so this reports anything the emitters could not - including
+      // when the emitters are switched off entirely and nothing else would have said so.
+      reportTypedJsonResult(result, () => `${model.name}.${field.name}`);
+      if (result.status !== 'resolved') continue;
+
+      for (const use of result.typeUses) {
+        bindings.push({
+          typeName: use.typeName,
+          model: model.name,
+          field: field.name,
+          resolution: use.resolution,
+        });
+      }
+    }
+  }
+
+  const outputPath = Transformer.getOutputPath();
+  const result = await writeTypedJsonNamespace({
+    bindings,
+    config,
+    baseDir: outputPath,
+    zodImportSpecifier: Transformer.resolveZodImportSpecifier(),
+  });
+
+  for (const warning of result.warnings) logger.warn(warning);
+
+  if (!result.filePath) return;
+  logger.debug(
+    `[typedJson] Wrote ${config.namespace} namespace to ${result.filePath} (${result.declared.length} type(s))`,
+  );
+
+  // Track it only when it lands inside the output directory. `namespaceOutput` is meant to
+  // be allowed to point at the consumer's src/, and the manifest drives cleanup of the
+  // output directory alone.
+  const manifest = Transformer.getCurrentManifest();
+  const relative = path.relative(outputPath, result.filePath);
+  const isInsideOutput = !relative.startsWith('..') && !path.isAbsolute(relative);
+  if (manifest && isInsideOutput) {
+    addFileToManifest(manifest, result.filePath, outputPath);
   }
 }
 
@@ -2529,6 +2647,7 @@ async function generatePureModelSchemas(
       jsonSchemaCompatible: config.jsonSchemaCompatible,
       jsonSchemaOptions: config.jsonSchemaOptions,
       decimalMode: config.decimalMode,
+      typedJson: config.typedJson,
     });
 
     // Detect circular dependencies if the option is enabled

@@ -20,6 +20,14 @@ import {
 import { logger } from '../utils/logger';
 import { resolveEnumNaming, generateExportName } from '../utils/naming-resolver';
 import type { GeneratorConfig as ZodGeneratorConfig } from '../config/parser';
+import { resolveTypedJsonConfig, type TypedJsonConfig } from '../config/typed-json';
+import {
+  isTypedJsonInputType,
+  mergeTypedJsonImports,
+  reportTypedJsonResult,
+} from '../typed-json/emission';
+import { resolveTypedJsonField } from '../typed-json/resolver';
+import { isSingleFileEnabled } from '../utils/singleFileAggregator';
 
 /**
  * Interface for transformer module methods used in import generation
@@ -27,6 +35,36 @@ import type { GeneratorConfig as ZodGeneratorConfig } from '../config/parser';
 interface TransformerModule {
   getGeneratorConfig?: () => ZodGeneratorConfig | null;
   getImportFileExtension?: () => string;
+}
+
+interface TransformerStatics extends TransformerModule {
+  typedJsonOutputSubdir?: (subdir: string) => string;
+}
+
+/**
+ * Reach the Transformer's static configuration.
+ *
+ * Lazily required, like the other uses in this file, because `transformer.ts` imports this
+ * module and a top-level import would close the cycle.
+ */
+function getTransformerModule(): TransformerStatics {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require to avoid circular import
+    return require('../transformer').default as TransformerStatics;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Where pure models sit relative to the generator output directory, which is what a
+ * relative `typedJson.schemaModule` is rewritten against.
+ *
+ * Delegated to the Transformer rather than recomputed here, so single-file mode and a
+ * custom output layout cannot make the two emitters disagree about where the module is.
+ */
+function typedJsonModelsSubdir(): string {
+  return getTransformerModule().typedJsonOutputSubdir?.('models') ?? 'models';
 }
 
 /**
@@ -56,6 +94,13 @@ export interface TypeMappingConfig {
 
   /** Zod import target for version-specific behavior */
   zodImportTarget?: 'auto' | 'v3' | 'v4';
+  /**
+   * PJTG-compatible typed JSON / typed scalar configuration.
+   *
+   * Absent means the feature is off and every field maps exactly as it did in 3.0.0.
+   */
+  typedJson?: TypedJsonConfig;
+
   /** Whether to generate JSON Schema compatible schemas */
   jsonSchemaCompatible?: boolean;
   /** JSON Schema compatibility options */
@@ -174,6 +219,9 @@ export interface FieldTypeMappingResult {
   /** Whether this field requires special handling */
   requiresSpecialHandling: boolean;
 
+  /** Imports a typed-JSON replacement needs, if the field got one. */
+  typedJsonImports?: CustomImport[];
+
   /** Database-specific considerations */
   databaseSpecific?: {
     constraints: string[];
@@ -258,6 +306,9 @@ export interface ComposedFieldSchema {
 
   /** Custom imports required via @zod.import annotations on this field */
   customImports?: CustomImport[];
+
+  /** Imports required by a typedJson replacement on this field, merged before rendering */
+  typedJsonImports?: CustomImport[];
 }
 
 /**
@@ -653,8 +704,18 @@ export class PrismaTypeMapper {
         }
       }
 
+      // Typed JSON / typed scalars, sitting deliberately BELOW the two `.custom.use`
+      // fast-paths above (which `return` and so skip the list wrapper) and ABOVE the kind
+      // dispatch. That position is what makes `applyListWrapper` still fire, so `[Tag]` on
+      // a `String[]` becomes `z.array(TagSchema)` rather than a bare `TagSchema`.
+      const typedJson = this.resolveTypedJson(field, model);
+      if (typedJson) {
+        result.zodSchema = typedJson.zodSchema;
+        result.typedJsonImports = typedJson.imports;
+        result.requiresSpecialHandling = true;
+      }
       // Handle scalar types
-      if (field.kind === 'scalar') {
+      else if (field.kind === 'scalar') {
         this.mapScalarType(field, result, model);
       }
       // Handle enum types
@@ -676,8 +737,14 @@ export class PrismaTypeMapper {
         this.applyListWrapper(result);
       }
 
-      // Apply inline validation from @zod comments AFTER list wrapper
-      this.applyInlineValidations(field, result, model.name);
+      // Apply inline validation from @zod comments AFTER list wrapper.
+      // Skipped for a typed replacement, exactly as the CRUD path skips them for one:
+      // `mapAnnotationsToZodSchema` rebuilds the base from the field's Prisma type, so
+      // letting it run would quietly turn `[Tag]` back into a `z.string()` chain. The user
+      // is told their @zod annotations were dropped rather than silently mis-served.
+      if (!typedJson) {
+        this.applyInlineValidations(field, result, model.name);
+      }
 
       // Apply enhanced optionality handling
       const optionalityResult = this.determineFieldOptionality(field, model);
@@ -703,6 +770,40 @@ export class PrismaTypeMapper {
     }
 
     return result;
+  }
+
+  /**
+   * Resolve a field's PJTG annotation, or `null` to map it exactly as 3.0.0 did.
+   *
+   * Returns the ELEMENT schema for a list field, because `applyListWrapper` runs
+   * afterwards and adds the `z.array(...)` itself.
+   */
+  private resolveTypedJson(
+    field: DMMF.Field,
+    model: DMMF.Model,
+  ): { zodSchema: string; imports: CustomImport[] } | null {
+    const config = resolveTypedJsonConfig({ typedJson: this.config.typedJson });
+    if (!config) return null;
+    if (!field.documentation) return null;
+    if (field.kind !== 'scalar' || !isTypedJsonInputType(field.type)) return null;
+
+    const result = resolveTypedJsonField(
+      {
+        modelName: model.name,
+        fieldName: field.name,
+        documentation: field.documentation,
+        isList: field.isList,
+        isOptional: !field.isRequired,
+        outputSubdir: typedJsonModelsSubdir(),
+        importExtension: getTransformerModule().getImportFileExtension?.() ?? '',
+      },
+      config,
+    );
+
+    reportTypedJsonResult(result, () => `${model.name}.${field.name}`);
+    if (result.status !== 'resolved') return null;
+
+    return { zodSchema: result.elementExpression, imports: result.imports };
   }
 
   /**
@@ -2498,6 +2599,10 @@ export class PrismaTypeMapper {
           hasDefaultValue: !!field.hasDefaultValue,
           isAutoGenerated: this.isAutoGeneratedField(field),
           customImports: fieldCustomImportsResult.imports,
+          // Kept apart from `customImports` on purpose: those are rendered one statement
+          // per `@zod.import(...)` exactly as the user wrote them, while typed-JSON imports
+          // are synthesised and get merged to one statement per module.
+          typedJsonImports: fieldMapping.typedJsonImports ?? [],
         };
 
         composition.fields.push(composedField);
@@ -2755,9 +2860,18 @@ export class PrismaTypeMapper {
       })
       .sort((a, b) => a.importStatement.localeCompare(b.importStatement));
 
-    if (mergedCustomImports.length > 0) {
+    // Typed-JSON imports are merged to one statement per module and filtered to the names
+    // this file actually mentions, then rendered through the same pipeline.
+    const typedJsonImports = mergeTypedJsonImports(
+      composition.fields.flatMap((field) => field.typedJsonImports ?? []),
+      schemaBody,
+      isSingleFileEnabled(),
+    );
+
+    const allCustomImports = [...mergedCustomImports, ...typedJsonImports];
+    if (allCustomImports.length > 0) {
       const helper = new transformerModule({});
-      const block = helper.generateCustomImportStatements(mergedCustomImports, 'models');
+      const block = helper.generateCustomImportStatements(allCustomImports, 'models');
       if (block) {
         for (const rawLine of block.trim().split('\n')) {
           const trimmedLine = rawLine.trim();
