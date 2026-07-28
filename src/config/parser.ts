@@ -3,6 +3,9 @@ import { isAbsolute, resolve } from 'path';
 import type { SafetyOptions } from '../types/safety';
 import { logger } from '../utils/logger';
 import { ConfigurationSchema } from './schema';
+import type { TypedJsonConfig } from './typed-json';
+
+export type { TypedJsonConfig };
 
 /**
  * Configuration interface for the Prisma Zod Generator
@@ -300,6 +303,16 @@ export interface GeneratorConfig {
    * - Prisma still enforces selector correctness at runtime.
    */
   validateWhereUniqueAtLeastOne?: boolean;
+
+  /**
+   * Read prisma-json-types-generator's `/// [TypeName]` and `/// ![<ts type>]`
+   * annotations and validate those fields at runtime, instead of maintaining the same
+   * shape once for PJTG and again for PZG.
+   *
+   * Unrelated to {@link jsonSchemaCompatible} / {@link jsonSchemaOptions}, which concern
+   * JSON Schema as an output format. Omitting this key leaves generation byte-identical.
+   */
+  typedJson?: TypedJsonConfig;
 }
 
 /**

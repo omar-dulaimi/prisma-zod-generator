@@ -1,6 +1,7 @@
 import type { ConnectorType, DMMF as PrismaDMMF } from '@prisma/generator-helper';
 import path from 'path';
 import type { GeneratorConfig as ZodGeneratorConfig } from './config/parser';
+import { resolveTypedJsonConfig, type ResolvedTypedJsonConfig } from './config/typed-json';
 import { ResultSchemaGenerator, type ResultModelSchemaRef } from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
 import { generateDecimalInputSchema, isDecimalJsAvailable } from './helpers/decimal-helpers';
@@ -140,6 +141,18 @@ export default class Transformer {
 
   static getGeneratorConfig(): ZodGeneratorConfig | null {
     return this.generatorConfig;
+  }
+
+  /**
+   * The `typedJson` block with its defaults filled in, or `null` when the user did not
+   * configure it.
+   *
+   * `null` is load-bearing: it is what keeps output byte-identical to 3.0.0 for every
+   * configuration that omits the key. Read it, never reconstruct it, so there is one
+   * place that decides whether the feature is on.
+   */
+  static getTypedJsonConfig(): ResolvedTypedJsonConfig | null {
+    return resolveTypedJsonConfig(this.generatorConfig);
   }
 
   static getStrictModeResolver(): StrictModeResolver | null {
