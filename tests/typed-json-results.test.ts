@@ -57,6 +57,11 @@ model Workflow {
   plainTags   String[]
   createdAt   DateTime
 
+  // Nullable and unannotated: the gate. Nothing about these two may move when the flag
+  // is on, because moving them would mean moving them with the flag off too.
+  plainOptionalJson   Json?
+  plainOptionalString String?
+
   owner   Owner @relation(fields: [ownerId], references: [id])
   ownerId Int
 }
@@ -185,8 +190,18 @@ const VALID_ROW = {
   plainInt: 7,
   plainTags: ['whatever'],
   createdAt: new Date(),
+  plainOptionalJson: null,
+  // A string rather than null, because the untyped read path still rejects null for a
+  // nullable column in a groupBy result. See the inertness test below.
+  plainOptionalString: 'y',
   ownerId: 1,
 };
+
+/**
+ * The same row as Prisma returns it when the nullable columns are null, which is the
+ * ordinary state of a nullable column and not a legacy row.
+ */
+const ROW_WITH_NULLS = { ...VALID_ROW, meta: null };
 
 describe('typedJson.applyToResults: on', () => {
   let env: GeneratedEnv;
@@ -209,8 +224,9 @@ describe('typedJson.applyToResults: on', () => {
       expect(fieldLine(content, 'tier'), name).toBe(TIER);
       expect(fieldLine(content, 'ratio'), name).toBe('RatioSchema');
       expect(fieldLine(content, 'tags'), name).toBe('z.array(TagSchema)');
-      // Optionality is the emitter's, applied outside the replacement exactly as before.
-      expect(fieldLine(content, 'meta'), name).toBe('WorkflowNodeSchema.optional()');
+      // Optionality is the emitter's, applied outside the replacement exactly as before,
+      // and a nullable column also gets the null its own database row holds.
+      expect(fieldLine(content, 'meta'), name).toBe('WorkflowNodeSchema.nullable().optional()');
     }
   });
 
@@ -224,6 +240,10 @@ describe('typedJson.applyToResults: on', () => {
       expect(fieldLine(content, 'plainTags'), name).toBe('z.array(z.string())');
       expect(fieldLine(content, 'createdAt'), name).toBe('z.date()');
       expect(fieldLine(content, 'owner'), name).toBe('OwnerSchema.optional()');
+      // Unannotated and nullable: still exactly the 3.0.0 expression, `.nullable()` and
+      // all. Adding it here would add it with the flag off too.
+      expect(fieldLine(content, 'plainOptionalJson'), name).toBe('z.unknown().optional()');
+      expect(fieldLine(content, 'plainOptionalString'), name).toBe('z.string().optional()');
     }
   });
 
@@ -248,6 +268,26 @@ describe('typedJson.applyToResults: on', () => {
     ]);
     expect(fieldLines(content, 'nodes')).toEqual(['WorkflowNodeSchema', 'z.number()']);
     expect(fieldLines(content, 'steps')).toEqual(['z.array(WorkflowNodeSchema)', 'z.number()']);
+  });
+
+  it('gives the grouped value of a nullable column the same optionality the record results give it', () => {
+    const content = resultFile(env, 'WorkflowGroupByResult');
+
+    // The grouped value, then the _count. A nullable column groups as null, and a
+    // groupBy that does not name the column in `by` omits it entirely.
+    expect(fieldLines(content, 'meta')).toEqual([
+      'WorkflowNodeSchema.nullable().optional()',
+      'z.number()',
+    ]);
+    // The untyped path is where it was: z.unknown() already accepts null, and moving it
+    // would move it with the flag off too.
+    expect(fieldLines(content, 'plainOptionalJson')).toEqual(['z.unknown()', 'z.number()']);
+    expect(fieldLines(content, 'plainOptionalString')).toEqual([
+      'z.string()',
+      'z.number()',
+      'z.string().nullable()',
+      'z.string().nullable()',
+    ]);
   });
 
   it('types _min and _max on the aggregate result too', () => {
@@ -312,16 +352,55 @@ describe('typedJson.applyToResults: on', () => {
       return mod[exportName] as { parse: (value: unknown) => unknown };
     }
 
+    const PAGINATION = {
+      page: 1,
+      pageSize: 10,
+      total: 1,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    };
+
+    /**
+     * `meta Json?` is null in the row Prisma just returned. That is what a nullable column
+     * holds most of the time, not a row written before the annotation existed, so a flag
+     * that rejects it is a flag nobody can turn on.
+     */
+    it('accepts an explicit null in a nullable annotated column', async () => {
+      const findMany = await load('WorkflowFindManyResult', 'WorkflowFindManyResultSchema');
+      expect(() =>
+        findMany.parse({ data: [ROW_WITH_NULLS], pagination: PAGINATION }),
+      ).not.toThrow();
+
+      const findUnique = await load('WorkflowFindUniqueResult', 'WorkflowFindUniqueResultSchema');
+      expect(() => findUnique.parse(ROW_WITH_NULLS)).not.toThrow();
+
+      const groupBy = await load('WorkflowGroupByResult', 'WorkflowGroupByResultSchema');
+      expect(() => groupBy.parse([ROW_WITH_NULLS])).not.toThrow();
+
+      // Nullable is not "anything": the annotation still holds for a non-null value.
+      expect(() =>
+        findMany.parse({ data: [{ ...row, meta: { id: 1 } }], pagination: PAGINATION }),
+      ).toThrow();
+      expect(() => groupBy.parse([{ ...row, meta: { id: 1 } }])).toThrow();
+    });
+
+    /**
+     * A groupBy result names only the columns in `by`, so every column has to survive
+     * being absent. The untyped path gets that from `z.unknown()`; the typed one has to
+     * be told.
+     */
+    it('accepts a groupBy row that omits an annotated nullable column', async () => {
+      const groupBy = await load('WorkflowGroupByResult', 'WorkflowGroupByResultSchema');
+      const withoutMeta: Record<string, unknown> = { ...row };
+      delete withoutMeta.meta;
+
+      expect(() => groupBy.parse([withoutMeta])).not.toThrow();
+    });
+
     it('accepts a conforming findMany payload and rejects what the annotation excludes', async () => {
       const schema = await load('WorkflowFindManyResult', 'WorkflowFindManyResultSchema');
-      const pagination = {
-        page: 1,
-        pageSize: 10,
-        total: 1,
-        totalPages: 1,
-        hasNext: false,
-        hasPrev: false,
-      };
+      const pagination = PAGINATION;
 
       expect(() => schema.parse({ data: [row], pagination })).not.toThrow();
       expect(() => schema.parse({ data: [{ ...row, status: 'archived' }], pagination })).toThrow();
@@ -348,6 +427,7 @@ describe('typedJson.applyToResults: on', () => {
         plainInt: null,
         plainTags: null,
         createdAt: null,
+        plainOptionalString: null,
         ownerId: null,
       };
       const minMax = (status: string) => ({
@@ -438,5 +518,26 @@ describe('typedJson.applyToResults: off (the default)', () => {
       'utf-8',
     );
     expect(fieldLine(content, 'status')).toBe(ENUM);
+  });
+
+  /**
+   * The untyped read path rejects null for a nullable *scalar* column, and has since
+   * 3.0.0: `z.string().optional()` is not `z.string().nullish()`. It is a real defect and
+   * it is not this one. Correcting it changes bytes for every tree that has no `typedJson`
+   * block at all, which is the one thing the flag-off contract forbids, so it is pinned
+   * here rather than fixed here.
+   */
+  it('leaves the untyped nullable columns exactly as 3.0.0 emitted them', async () => {
+    const content = resultFile(configured, 'WorkflowFindManyResult');
+    expect(fieldLine(content, 'meta')).toBe('z.unknown().optional()');
+    expect(fieldLine(content, 'plainOptionalString')).toBe('z.string().optional()');
+
+    const mod = await import(join(resultsDir(configured), 'WorkflowGroupByResult.schema.ts'));
+    const groupBy = mod.WorkflowGroupByResultSchema as { parse: (value: unknown) => unknown };
+
+    // z.unknown() takes the null, which is why the annotated column is where this showed.
+    expect(() => groupBy.parse([{ ...VALID_ROW, meta: null }])).not.toThrow();
+    // z.string() does not, with or without a typedJson block. Pre-existing, and pinned.
+    expect(() => groupBy.parse([{ ...VALID_ROW, plainOptionalString: null }])).toThrow();
   });
 });

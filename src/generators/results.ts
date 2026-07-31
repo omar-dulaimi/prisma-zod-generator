@@ -660,13 +660,12 @@ ${allFields.join(',\n')}
       if (field.kind === 'object') {
         return `  ${field.name}: ${this.buildRelationFieldSchema(field, model, modelDependencies)}`;
       }
-      const zodType = this.mapPrismaTypeToZod(field, model);
+      const { expression, typed } = this.mapPrismaFieldToZod(field, model);
       // `.nullable()` before `.optional()`, because a nullable column returns null and
       // `.optional()` admits only undefined. Without it, `bio String?` emitted
       // `z.string().optional()` and rejected the ordinary state of the column, in all seven
       // record-shaped schemas. `Json?` and enums escaped it only by mapping to z.unknown().
-      const optionalMarker = !field.isRequired ? '.nullable().optional()' : '';
-      return `  ${field.name}: ${zodType}${optionalMarker}`;
+      return `  ${field.name}: ${expression}${this.optionalityMarkers(field, typed, '.nullable().optional()')}`;
     });
 
     // Add included relations
@@ -831,11 +830,36 @@ ${allFields.join(',\n')}
 
     return groupableFields
       .map((field) => {
-        const zodType = this.mapPrismaTypeToZod(field, model);
-        const nullable = field.isRequired ? '' : '.nullable()';
-        return `  ${field.name}: ${zodType}${nullable}.optional()`;
+        const { expression, typed } = this.mapPrismaFieldToZod(field, model);
+        const markers = this.optionalityMarkers(field, typed, '.nullable()');
+        // `optionalityMarkers` already ends in `.optional()` for a typed nullable column.
+        const optional = markers.endsWith('.optional()') ? '' : '.optional()';
+        return `  ${field.name}: ${expression}${markers}${optional}`;
       })
       .join(',\n');
+  }
+
+  /**
+   * What a non-required column's schema needs appended, given the expression it already got.
+   *
+   * A nullable column's ordinary value is `null`: that is what Prisma returns for it, and
+   * a groupBy that does not name the column in `by` leaves it out altogether. Both were
+   * already true of the untyped expressions, which is why nobody noticed - `z.unknown()`
+   * accepts null and undefined on its own, so the missing `.nullable()` never showed. A
+   * replacement schema accepts neither, so this is where the flag either works on ordinary
+   * data or does not work at all.
+   *
+   * Gated on `typed` for one reason: correcting the untyped path would change the emitted
+   * bytes of every tree that has no `typedJson` block at all (`z.string().optional()` would
+   * become nullish, and a groupBy field would gain markers it has never had). That is the
+   * one thing the flag-off contract forbids, so the untyped defect stays put and is pinned
+   * by a test instead. With no `typedJson.applyToResults`, `typed` is never true and this
+   * method returns `fallback`, which is the marker the call site emitted before.
+   */
+  private optionalityMarkers(field: DMMF.Field, typed: boolean, fallback: string): string {
+    if (field.isRequired) return '';
+    if (!typed) return fallback;
+    return '.nullable().optional()';
   }
 
   private generatePaginationSchema(): string {
@@ -850,22 +874,49 @@ ${allFields.join(',\n')}
   }
 
   /**
+   * The expression alone, for the `_min` / `_max` slots, which append their own
+   * `.nullable()` whatever produced it and so have nothing to ask.
+   */
+  private mapPrismaTypeToZod(field: DMMF.Field, model: DMMF.Model): string {
+    return this.mapPrismaFieldToZod(field, model).expression;
+  }
+
+  /**
    * The Zod expression for one field of the model, in every result schema that carries
-   * it: the record-shaped results, the grouped values, and the `_min` / `_max` slots.
+   * it - the record-shaped results, the grouped values, and the `_min` / `_max` slots -
+   * and whether a PJTG annotation is what produced it.
    *
    * `model` is required rather than optional so that a new call site cannot quietly opt
    * out of the annotation lookup and emit a different schema for the same column than
    * the file next to it.
+   *
+   * `typed` is here because the two callers that append optionality need it: what a
+   * nullable column has to accept is the same either way, and only a replacement fails to
+   * accept it unaided. See {@link optionalityMarkers}.
    */
-  private mapPrismaTypeToZod(field: DMMF.Field, model: DMMF.Model): string {
-    // A PJTG annotation replaces the base expression and nothing else: the list wrapper
-    // below, the `.nullable()` an aggregate slot appends and the `.optional()` a record
-    // field appends are all still the emitter's, applied outside it exactly as before.
+  private mapPrismaFieldToZod(
+    field: DMMF.Field,
+    model: DMMF.Model,
+  ): { expression: string; typed: boolean } {
+    // A PJTG annotation replaces the base expression and nothing else: the list wrapper,
+    // the `.nullable()` an aggregate slot appends and the `.optional()` a record field
+    // appends are all still the emitter's, applied outside it exactly as before.
     const typedJson = this.typedJsonExpression(field, model);
     if (typedJson) {
-      return field.isList ? `z.array(${typedJson})` : typedJson;
+      return {
+        expression: field.isList ? `z.array(${typedJson})` : typedJson,
+        typed: true,
+      };
     }
 
+    return { expression: this.mapUntypedPrismaTypeToZod(field), typed: false };
+  }
+
+  /**
+   * The expression for a field no annotation reaches: the 3.0.0 type map, unchanged, and
+   * the only expression a repo with no `typedJson` block ever sees.
+   */
+  private mapUntypedPrismaTypeToZod(field: DMMF.Field): string {
     const isJsonSchemaCompatible = this.isJsonSchemaModeEnabled();
 
     // Handle JSON Schema compatibility mapping
