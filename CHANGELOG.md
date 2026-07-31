@@ -1,3 +1,28 @@
+## [3.1.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.0.2...v3.1.0) (2026-07-31)
+
+### 🚀 Features
+
+* **config:** add typedJson and the declare global namespace emitter ([204e23a](https://github.com/omar-dulaimi/prisma-zod-generator/commit/204e23a2d6168973f272b11fbf480a19c8e8b7d1))
+* **typed-json:** apply PJTG annotations to the variant schemas ([7906bb9](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7906bb91f21887b990903b286a5899679ec8014a))
+* **typed-json:** emit typed JSON and typed scalar schemas from PJTG annotations ([9d3b8b3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/9d3b8b38b6b4394e474759fd0c4279e65b8a9748))
+* **typed-json:** read PJTG annotations and convert TypeScript types to Zod ([42aace0](https://github.com/omar-dulaimi/prisma-zod-generator/commit/42aace086f8a9844c6141d13f83d364ac4f3e491))
+* **typed-json:** type the { set } and { push } list-operation wrappers ([8c704e8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8c704e8ad0f167a96ace970a6c932449eda0b305))
+* **typed-json:** type the result schemas behind typedJson.applyToResults ([811ab16](https://github.com/omar-dulaimi/prisma-zod-generator/commit/811ab16d199ca65f5817a40debc03ac6f865e150))
+
+### 🐛 Bug Fixes
+
+* **config:** normalise the typedJson block inside resolveTypedJsonType ([15f6759](https://github.com/omar-dulaimi/prisma-zod-generator/commit/15f6759b2ad890c0ca71d9917bf0030ace8ce8ac))
+* **typed-json:** accept null for a nullable column in a typed result schema ([c7cbc2b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/c7cbc2bf4db80d19ef5c7e072922e448cc4fa12c))
+* **typed-json:** follow importFileExtension in the emitted namespace ([8e699b8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8e699b81896a920c2c809e6b5bc7e3934a110696))
+* **typed-json:** give an annotated column its own update-operations schema ([bc3a3a9](https://github.com/omar-dulaimi/prisma-zod-generator/commit/bc3a3a99c142bae9821898418e95ee2c5852a4a9))
+* **typed-json:** give the emitter back the top-level optionality marker ([657313d](https://github.com/omar-dulaimi/prisma-zod-generator/commit/657313d9ed14af5708cb0f8ab35e981399690b21))
+* **typed-json:** match schema names as whole names, not substrings ([8ed629f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8ed629f8155c620c625a58233ff48e91d7529fcc))
+* **typed-json:** stop the optionality strip reaching inside a typed replacement ([8915e45](https://github.com/omar-dulaimi/prisma-zod-generator/commit/8915e45eb09ea1f3d924fe45411dfec26efbcc92))
+
+### 📚 Documentation
+
+* **typed-json:** document the prisma-json-types-generator interop ([6ccf084](https://github.com/omar-dulaimi/prisma-zod-generator/commit/6ccf084cc6edc13f74ebce27036f0f47254bafdd))
+
 ## [3.0.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.0.1...v3.0.2) (2026-07-31)
 
 ### 🐛 Bug Fixes
