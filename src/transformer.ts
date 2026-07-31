@@ -2366,7 +2366,15 @@ export default class Transformer {
   private extractZodValidationsForField(fieldName: string): string | null {
     // IMPORTANT: Don't apply field validations to Select schemas
     // Select schemas should always use boolean types regardless of the original field type
-    if (this.name && this.name.includes('Select')) {
+    //
+    // Anchored, not a substring test. Every schema this guard exists for is a suffix
+    // (`<Model>Select`, `<Model>CountOutputTypeSelect`), while "Select" is an ordinary
+    // thing to find inside a user-chosen model name: `SelectionRound`, `SelectorProfile`,
+    // `PreSelection`. A substring test silently dropped every `@zod` annotation on those
+    // models' objects/ schemas while leaving them working in variants/, so nothing looked
+    // wrong until an unvalidated payload reached the database. Keep it anchored.
+    // `src/typed-json/emission.ts` matches Select schemas the same way.
+    if (this.name && /^\w+Select$/.test(this.name)) {
       return null;
     }
 
