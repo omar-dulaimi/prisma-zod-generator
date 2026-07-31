@@ -232,15 +232,21 @@ function matchesUpstream(testCase: Case, outcome: Outcome): boolean {
 const SIMPLE_OPTIONAL_LIST = { Simple: '1', Optional: '2', List: '3' };
 const WITH_TYPE = { WithType: `'C' | 'D'` };
 
-/** The `{ push }` / `{ set }` wrappers, which upstream calls UpdateManyInput<T>. */
-const LIST_WRAPPER_UNTYPED =
-  'the { set } / { push } list wrappers are deliberately left untyped, so a wrong element type is accepted';
+/**
+ * The two result-schema gaps are open **by configuration, not by omission**.
+ *
+ * `typedJson.applyToResults` closes both, and it defaults to false on purpose: result
+ * schemas are emitted by default, so typing them by default would change the read path
+ * for everyone who turns `typedJson` on, and a row written before the annotation existed
+ * would start throwing. This corpus generates with the default, so the score reflects what
+ * a user gets out of the box rather than the best PZG can be configured to do.
+ */
+const RESULTS_NOT_OPTED_IN =
+  'typedJson.applyToResults defaults to false, so result schemas keep the column scalar type; the corpus generates with the default';
 
-const AGGREGATE_NOT_NARROWED =
-  'min/max aggregate results keep the column scalar type, so the annotation does not narrow them';
+const AGGREGATE_NOT_NARROWED = `min/max aggregate results are not narrowed: ${RESULTS_NOT_OPTED_IN}`;
 
-const RESULT_JSON_UNTYPED =
-  'result schemas emit z.unknown() for Json columns; typedJson is wired into the CRUD and pure-model emitters only';
+const RESULT_JSON_UNTYPED = `result schemas emit z.unknown() for Json columns: ${RESULTS_NOT_OPTED_IN}`;
 
 const UPSTREAM_CONTRADICTION =
   "upstream's client is emitted under @ts-nocheck, where expectNotAssignable never fires; this row is a copy of the accept case above it and asserts that a valid value is invalid";
@@ -355,7 +361,6 @@ function listWrapperCases(prefix: string): Case[] {
       at: 'push',
       value: { push: '3' },
       from: `${prefix}: expectNotAssignable<UpdateManyInput>({ push: '3' })`,
-      gap: LIST_WRAPPER_UNTYPED,
     },
     {
       target,
@@ -363,7 +368,6 @@ function listWrapperCases(prefix: string): Case[] {
       at: 'push',
       value: { push: ['3'] },
       from: `${prefix}: expectNotAssignable<UpdateManyInput>({ push: ['3'] })`,
-      gap: LIST_WRAPPER_UNTYPED,
     },
     {
       target,
@@ -385,7 +389,6 @@ function listWrapperCases(prefix: string): Case[] {
       at: 'set',
       value: { set: ['3,3,3'] },
       from: `${prefix}: expectNotAssignable<UpdateManyInput>({ set: ['3,3,3'] })`,
-      gap: LIST_WRAPPER_UNTYPED,
     },
   ];
 }
@@ -730,7 +733,6 @@ const CORPUS: CorpusFile[] = [
         at: 'tags',
         value: { tags: { set: ['invalid'] } },
         from: "string.test-d.ts: expectNotAssignable<StringArrayModelCreateInput>({ tags: { set: ['invalid'] } })",
-        gap: LIST_WRAPPER_UNTYPED,
       },
       {
         target: 'objects/StringArrayModelUpdateInput',
@@ -757,7 +759,6 @@ const CORPUS: CorpusFile[] = [
         at: 'tags',
         value: { tags: { set: ['invalid'] } },
         from: "string.test-d.ts: expectNotAssignable<StringArrayModelUpdateInput>({ tags: { set: ['invalid'] } })",
-        gap: LIST_WRAPPER_UNTYPED,
       },
       {
         target: 'results/ModelAggregateResult',
@@ -1731,15 +1732,24 @@ describe('PJTG corpus conformance: the score', () => {
 /**
  * Updated deliberately, in the same commit as any change to the gap list.
  *
- * 197 of 230 upstream assertions reproduce against the generated Zod, which is 85.7 percent. The
- * 33 gaps are not scattered; they are three coherent classes, all outside the input path this
- * feature targets:
+ * 214 of 230 upstream assertions reproduce against the generated Zod, which is 93.0 percent.
+ * The 17 that moved were all one thing: `<Model><Create|Update><field>Input`, the `{ set }` and
+ * `{ push }` object a list column is actually written through, which took the annotation from
+ * the column it wraps. What is left is 16 gaps in three classes:
  *
- *   - `UpdateManyInput` `{ set }` and `{ push }` operation wrappers
- *   - `GroupByOutputType` and the Min/Max aggregate output types
- *   - update-input wrappers of the form `{ field: { set: <value> } }`
+ *   - `GroupByOutputType` and the Min/Max aggregate output types, which stay untyped unless
+ *     `typedJson.applyToResults` is set: a result schema describes a row already in the
+ *     database, and narrowing it on READ can reject data written before the annotation existed
+ *   - update-input wrappers of the form `{ field: { set: <value> } }` on a **scalar** column,
+ *     which go through the shared `StringFieldUpdateOperationsInput`; typing that would apply
+ *     one column's annotation to every String column in the schema
+ *   - assertions with no runtime counterpart at all: `as any` versus `as unknown`, upstream's
+ *     `strictUndefinedChecks`, and rows copied from an accept case under `@ts-nocheck`
+ *
+ * The last class is not closable. A Zod schema validates a value; it cannot assert anything
+ * about a type's identity, so the honest ceiling here is about 224, not 230.
  *
  * They are recorded rather than hidden because a legible gap list is worth more than a green
  * suite that was trimmed to fit. The snapshot below names every one with its reason.
  */
-const EXPECTED_TALLY = { cases: 230, matching: 197, gaps: 33 };
+const EXPECTED_TALLY = { cases: 230, matching: 214, gaps: 16 };

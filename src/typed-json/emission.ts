@@ -15,6 +15,17 @@ import type { TypedJsonResult } from './resolver';
 const TYPED_JSON_INPUT_TYPES = new Set(['Json', 'String', 'Int', 'Float']);
 
 /**
+ * The members of a `<Model><Create|Update><field>Input` list wrapper that hold values of
+ * the wrapped column, and so inherit its annotation.
+ *
+ * `{ set: [...] }` and `{ push: ... }` are how a list column is written through Prisma,
+ * which is the whole reason these wrappers need typing. The list is closed rather than
+ * "everything in the file" so that any member Prisma adds later is left alone until
+ * somebody has checked that a replacement is right for it.
+ */
+export const LIST_OPERATION_MEMBERS = new Set(['set', 'push']);
+
+/**
  * Whether an annotation is allowed to replace this input type.
  *
  * Deliberately a short allow-list rather than "every scalar". These are the types the

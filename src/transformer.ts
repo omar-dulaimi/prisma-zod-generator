@@ -15,6 +15,7 @@ import { SchemaEnumWithValues, TransformerParams } from './types';
 import {
   isTypedJsonExcludedSchema,
   isTypedJsonInputType,
+  LIST_OPERATION_MEMBERS,
   mergeTypedJsonImports,
   reportTypedJsonResult,
 } from './typed-json/emission';
@@ -1568,27 +1569,69 @@ export default class Transformer {
     return enhancedModel.enhancedFields.find((ef) => ef.field.name === fieldName)?.field ?? null;
   }
 
-  /**
-   * Whether this schema is one of the per-field `{ set }` / `{ push }` list wrappers.
-   *
-   * Those files are named `<Model><Create|Update><field>Input` and their members are
-   * literally `set` and `push`, so the annotation lookup normally misses them and they stay
-   * untyped - a known limitation. It stops being harmless the moment a model has a field
-   * actually *called* `set` or `push`: the lookup would then succeed and stamp that field's
-   * annotation onto an unrelated wrapper. Detecting the wrapper by name closes that.
-   */
-  private isListWrapperSchema(modelName: string): boolean {
-    const match = this.name?.match(
-      new RegExp(`^${Transformer.escapeRegExp(modelName)}(?:Create|Update)(.+)Input$`),
-    );
-    const fieldName = match?.[1];
-    if (!fieldName) return false;
+  /** Memoised `listWrapperTarget()`. `undefined` means "not computed", `null` means "not one". */
+  private listWrapperTargetCache?: { modelName: string; field: PrismaDMMF.Field } | null;
 
-    const enhancedModel = this.enhancedModels.find((em) => em.model.name === modelName);
-    return (
-      enhancedModel?.enhancedFields.some((ef) => ef.field.name === fieldName && ef.field.isList) ??
-      false
-    );
+  /**
+   * The model list field this schema is the `{ set }` / `{ push }` wrapper for, if it is one.
+   *
+   * Prisma emits one of these per list column, named `<Model><Create|Update><field>Input`,
+   * and its members are literally `set` and `push`. So the model cannot be read off the
+   * schema name by `extractModelNameFromContext` - and must not be taught to it, because
+   * that same function drives file naming and field filtering. It is resolved here instead,
+   * against the models actually in the schema.
+   *
+   * The longest matching model name wins, so `Foo` and `FooBar` both existing resolves
+   * `FooBarUpdatetagsInput` to `FooBar.tags` regardless of DMMF order.
+   */
+  private listWrapperTarget(): { modelName: string; field: PrismaDMMF.Field } | null {
+    if (this.listWrapperTargetCache !== undefined) return this.listWrapperTargetCache;
+
+    let best: { modelName: string; field: PrismaDMMF.Field } | null = null;
+    for (const enhancedModel of this.enhancedModels) {
+      const modelName = enhancedModel.model.name;
+      if (best && modelName.length <= best.modelName.length) continue;
+
+      const fieldName = this.name?.match(
+        new RegExp(`^${Transformer.escapeRegExp(modelName)}(?:Create|Update)(.+)Input$`),
+      )?.[1];
+      if (!fieldName) continue;
+
+      const field = enhancedModel.enhancedFields.find(
+        (ef) => ef.field.name === fieldName && ef.field.isList,
+      )?.field;
+      if (field) best = { modelName, field };
+    }
+
+    this.listWrapperTargetCache = best;
+    return best;
+  }
+
+  /**
+   * The model field an input-object member should take its annotation from, if any.
+   *
+   * Normally that is the field of the same name. A list-operation wrapper is the exception:
+   * `set` and `push` are operations on the wrapped column, so the annotation belongs to
+   * that column. Looking a wrapper's members up by name would find nothing, or - once a
+   * model has a column actually *called* `set` - find an unrelated one and stamp its
+   * annotation onto every wrapper in the model.
+   */
+  private typedJsonTargetForArg(
+    argName: string,
+  ): { modelName: string; field: PrismaDMMF.Field } | null {
+    const wrapper = this.listWrapperTarget();
+    if (wrapper) {
+      // Only the operation members. Anything else in one of these files is not a value of
+      // the wrapped column and has no business carrying its annotation.
+      if (!LIST_OPERATION_MEMBERS.has(argName)) return null;
+      return wrapper.field.documentation ? wrapper : null;
+    }
+
+    const modelName = Transformer.extractModelNameFromContext(this.name);
+    if (!modelName) return null;
+
+    const field = this.getModelFieldForArg(argName);
+    return field?.documentation ? { modelName, field } : null;
   }
 
   /**
@@ -1606,18 +1649,14 @@ export default class Transformer {
     if (!isTypedJsonInputType(inputType.type)) return null;
     if (isTypedJsonExcludedSchema(this.name)) return null;
 
-    const modelName = Transformer.extractModelNameFromContext(this.name);
-    if (!modelName) return null;
-    if (this.isListWrapperSchema(modelName)) return null;
-
-    const modelField = this.getModelFieldForArg(field.name);
-    if (!modelField?.documentation) return null;
+    const target = this.typedJsonTargetForArg(field.name);
+    if (!target?.field.documentation) return null;
 
     const result = resolveTypedJsonField(
       {
-        modelName,
-        fieldName: field.name,
-        documentation: modelField.documentation,
+        modelName: target.modelName,
+        fieldName: target.field.name,
+        documentation: target.field.documentation,
         // The DMMF arg carries the list-ness for this position; the model field is a
         // list even where the arg is a single `push` value.
         isList: inputType.isList,
@@ -1628,7 +1667,7 @@ export default class Transformer {
       config,
     );
 
-    reportTypedJsonResult(result, () => `${modelName}.${field.name}`);
+    reportTypedJsonResult(result, () => `${target.modelName}.${target.field.name}`);
     return result.status === 'resolved' ? result : null;
   }
 
@@ -1641,9 +1680,15 @@ export default class Transformer {
     schemaContent: string,
   ): CustomImport[] {
     const config = Transformer.getTypedJsonConfig();
-    if (!config || !modelName) return [];
+    if (!config) return [];
 
-    const enhancedModel = this.enhancedModels.find((em) => em.model.name === modelName);
+    // A `{ set }` / `{ push }` wrapper's name does not yield its model to the general
+    // extraction, so it has to be resolved the way the members themselves are. Without
+    // this the wrapper references a schema it never imports.
+    const owner = modelName ?? this.listWrapperTarget()?.modelName ?? null;
+    if (!owner) return [];
+
+    const enhancedModel = this.enhancedModels.find((em) => em.model.name === owner);
     if (!enhancedModel) return [];
 
     const collected: CustomImport[] = [];
@@ -1653,7 +1698,7 @@ export default class Transformer {
 
       const result = resolveTypedJsonField(
         {
-          modelName,
+          modelName: owner,
           fieldName: enhancedField.field.name,
           documentation,
           isList: enhancedField.field.isList,

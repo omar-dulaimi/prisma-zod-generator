@@ -417,19 +417,20 @@ model Workflow {
     expect(() => schema.parse({ ...valid, note: 'x'.repeat(17) })).toThrow();
   });
 
-  it('leaves the ordinary {set} / {push} list wrappers untyped', () => {
-    // An accepted limitation: these files are named `<Model>Create<field>Input` and their
-    // members are `set` and `push`, so there is no model field to look an annotation up by.
+  it('types the {set} / {push} list wrapper from the column it wraps', () => {
+    // These files are named `<Model>Create<field>Input` and their members are `set` and
+    // `push`, so the annotation has to come from the wrapped column rather than from a
+    // field of the member's own name. Detail in tests/typed-json-list-wrappers.test.ts.
     const content = objectFile(env, 'WorkflowCreatetagsInput');
-    expect(fieldLine(content, 'set')).toBe('z.string().array()');
-    expect(content).not.toContain('TagSchema');
+    expect(fieldLine(content, 'set')).toBe('TagSchema.array()');
   });
 
   it('does not leak a field annotation into a list wrapper whose name collides with a model pattern', () => {
     // `ManyThings` is a legal Prisma field name, and it makes the wrapper
     // `WorkflowCreateManyThingsInput` - which the model-name patterns DO match, resolving
-    // to `Workflow`. Its member `set` then finds this model's real `set` field, whose
-    // annotation belongs to a completely different column.
+    // to `Workflow`. A member-name lookup would then find this model's real `set` field,
+    // whose annotation belongs to a completely different column. The wrapper takes its
+    // annotation from `ManyThings`, which has none, so the file is untouched.
     const content = objectFile(env, 'WorkflowCreateManyThingsInput');
     expect(fieldLine(content, 'set')).toBe('z.string().array()');
     expect(content).not.toContain('TagSchema');
