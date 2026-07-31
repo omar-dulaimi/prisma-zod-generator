@@ -1956,7 +1956,7 @@ export default class Transformer {
     try {
       // Add safety check to prevent infinite loops
       if (field.name && typeof field.name === 'string' && field.name.length > 0) {
-        const zodValidations = this.extractZodValidationsForField(field.name);
+        const zodValidations = this.extractZodValidationsForField(field.name, field);
 
         if (!skipZodAnnotations && zodValidations) {
           const base = (mainValidator ?? '').trim();
@@ -2363,7 +2363,36 @@ export default class Transformer {
   /**
    * Extract @zod validations for a specific field using the enhanced model information
    */
-  private extractZodValidationsForField(fieldName: string): string | null {
+  /**
+   * Whether this member carries a sort direction rather than the column's value.
+   *
+   * `OrderByWithRelationInput`, `OrderByWithAggregationInput` and the five
+   * `<Agg>OrderByAggregateInput` families all take `SortOrder` (plus `SortOrderInput` on a
+   * nullable column, which adds `nulls`). A `@zod.email()` written for the column is a
+   * statement about the column's value and means nothing here, so applying it rejects
+   * `orderBy: { contact: 'asc' }` and accepts `orderBy: { contact: 'a@b.com' }`.
+   *
+   * Asked of the DMMF rather than of the schema name on purpose. The sibling guards above
+   * match `<Model>Select` and `<Agg>AggregateInput` by name, and the Select one shipped as a
+   * substring test that silently dropped every annotation on a model named `SelectionRound`.
+   * A name test here would do the same to `OrderByHistory`. An OrderBy member never offers
+   * the scalar arm and a write or filter member always does, so the DMMF answers this
+   * exactly, whatever the model is called.
+   */
+  private static isSortDirectionMember(field?: PrismaDMMF.SchemaArg): boolean {
+    const inputTypes = field?.inputTypes;
+    if (!inputTypes || inputTypes.length === 0) return false;
+    return inputTypes.every((it) => it.type === 'SortOrder' || it.type === 'SortOrderInput');
+  }
+
+  private extractZodValidationsForField(
+    fieldName: string,
+    field?: PrismaDMMF.SchemaArg,
+  ): string | null {
+    if (Transformer.isSortDirectionMember(field)) {
+      return null;
+    }
+
     // IMPORTANT: Don't apply field validations to Select schemas
     // Select schemas should always use boolean types regardless of the original field type
     //
