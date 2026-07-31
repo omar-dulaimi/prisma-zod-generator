@@ -688,15 +688,30 @@ ${allFields.join(',\n')}
     return aggregateFields.join(',\n');
   }
 
+  /**
+   * The grouped columns of a `groupBy` row, before the aggregate slots.
+   *
+   * Every column is optional, because a groupBy returns the columns named in `by` and
+   * nothing else: `groupBy({ by: ['name'] })` gives `[{ name: 'x' }]`. Prisma's
+   * `GroupByOutputType` lists them all because it is the maximal type, and the client
+   * narrows it per call with `Pick<..., T['by'][number]>`. A runtime schema cannot see
+   * `by`, so requiring them rejected nearly every real response.
+   *
+   * A nullable column also gets `.nullable()`, since null is its ordinary value and
+   * `.optional()` admits only undefined.
+   *
+   * Enums are groupable and appear in Prisma's own output type, so the old
+   * `kind === 'scalar'` filter simply lost those columns. Arrays are groupable on
+   * PostgreSQL and stay.
+   */
   private buildGroupByFields(model: DMMF.Model): string {
-    // For groupBy, we include the actual field values that can be grouped by
-    // Arrays can be grouped by in databases like PostgreSQL, so include them
-    const groupableFields = model.fields.filter((f) => f.kind === 'scalar');
+    const groupableFields = model.fields.filter((f) => f.kind === 'scalar' || f.kind === 'enum');
 
     return groupableFields
       .map((field) => {
         const zodType = this.mapPrismaTypeToZod(field);
-        return `  ${field.name}: ${zodType}`;
+        const nullable = field.isRequired ? '' : '.nullable()';
+        return `  ${field.name}: ${zodType}${nullable}.optional()`;
       })
       .join(',\n');
   }
