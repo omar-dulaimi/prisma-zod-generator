@@ -117,6 +117,46 @@ model User {
 See [Zod comment annotations](https://omar-dulaimi.github.io/prisma-zod-generator/docs/pipeline/zod-comments)
 for the supported validators, custom imports, and metadata annotations.
 
+### Already using prisma-json-types-generator?
+
+PZG can read [prisma-json-types-generator](https://github.com/arthurfiorette/prisma-json-types-generator)
+(PJTG) annotations directly, so the `/// [TypeName]` and `/// ![<ts type>]` comments you already have
+start validating at runtime. No annotation changes, no schema changes:
+
+```json
+{
+  "typedJson": {
+    "schemaModule": "./json-types"
+  }
+}
+```
+
+```prisma
+model Workflow {
+  id Int @id @default(autoincrement())
+  /// [WorkflowNode]
+  nodes Json
+  /// !['draft' | 'published']
+  status String
+}
+```
+
+```ts
+// objects/WorkflowCreateInput.schema.ts
+  nodes: z.union([JsonNullValueInputSchema, WorkflowNodeSchema]),
+  status: z.enum(['draft', 'published'])
+```
+
+**This is additive, not a migration. Keep PJTG installed.** PJTG types the generated Prisma Client so
+`prisma.workflow.findFirst()` returns a typed `nodes`; PZG cannot do that and does not try. What PZG adds
+is the half PJTG leaves out: runtime validation, including on `String`/`Int`/`Float` literal unions that
+neither library checked before. Add `"emitNamespace": true` and the Zod schema becomes the single authored
+definition, with the `PrismaJson` type derived from it via `z.infer`, so the two cannot drift.
+
+Fields with no annotation are untouched, and with no `typedJson` block output is unchanged.
+See [prisma-json-types-generator interop](https://omar-dulaimi.github.io/prisma-zod-generator/docs/integrations/prisma-json-types-generator)
+for the option reference, the supported `![...]` conversions, and the limitations.
+
 ## Configuration
 
 Options can be set in the generator block or in a JSON file next to `schema.prisma`.

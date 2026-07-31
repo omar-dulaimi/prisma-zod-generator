@@ -498,6 +498,13 @@ nodes: z.array(WorkflowNodeSchema),
 
 Un-annotated `Json` fields keep the default `z.unknown()` / `jsonSchema` base, so this is fully opt-in per field.
 
+:::tip Already annotating for prisma-json-types-generator?
+You do not have to rewrite those comments as `@zod.import(...).custom.use(...)`. `typedJson` reads PJTG's
+`/// [TypeName]` and `/// ![<ts type>]` forms directly, on `Json` **and** on `String`/`Int`/`Float`
+columns. See [prisma-json-types-generator interop](../integrations/prisma-json-types-generator.md).
+`@zod.custom.use` still wins where both are present.
+:::
+
 ## Custom Object Schema (@zod.custom)
 
 For JSON fields, use `@zod.custom()` to define structured object schemas using JavaScript object literals:

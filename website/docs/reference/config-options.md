@@ -54,6 +54,13 @@ Defaults are the **observed** values the generator resolves at runtime, which is
 | `jsonSchemaOptions.conversionOptions.unrepresentable` † | `"throw" \| "any"` | `"any"` (declared) | both | [/docs/config/json-schema-compatibility](/docs/config/json-schema-compatibility) |
 | `jsonSchemaOptions.conversionOptions.cycles` † | `"ref" \| "throw"` | `"throw"` (declared) | both | [/docs/config/json-schema-compatibility](/docs/config/json-schema-compatibility) |
 | `jsonSchemaOptions.conversionOptions.reused` † | `"inline" \| "ref"` | `"inline"` (declared) | both | [/docs/config/json-schema-compatibility](/docs/config/json-schema-compatibility) |
+| `typedJson.schemaModule` | string | none (absent means the feature is off) | config file | [/docs/integrations/prisma-json-types-generator](/docs/integrations/prisma-json-types-generator) |
+| `typedJson.schemaSuffix` | string (empty allowed) | `"Schema"` | config file | [/docs/integrations/prisma-json-types-generator](/docs/integrations/prisma-json-types-generator) |
+| `typedJson.namespace` | string (identifier) | `"PrismaJson"` | config file | [/docs/integrations/prisma-json-types-generator](/docs/integrations/prisma-json-types-generator) |
+| `typedJson.applyToResults` | boolean | `false` | config file | [/docs/integrations/prisma-json-types-generator](/docs/integrations/prisma-json-types-generator) |
+| `typedJson.emitNamespace` | boolean | `false` | config file | [/docs/integrations/prisma-json-types-generator](/docs/integrations/prisma-json-types-generator) |
+| `typedJson.namespaceOutput` | string | `"./prisma-json-types.d.ts"` | config file | [/docs/integrations/prisma-json-types-generator](/docs/integrations/prisma-json-types-generator) |
+| `typedJson.map` | object (`TypeName` → Zod expression) | `{}` | config file | [/docs/integrations/prisma-json-types-generator](/docs/integrations/prisma-json-types-generator) |
 | `zodImportTarget` | `"auto" \| "v3" \| "v4"` | `"auto"` | config file | [/docs/recipes/zod-import-targets](/docs/recipes/zod-import-targets) |
 | `zodImportPath` | string | `"zod"`; `"zod/v3"` when target is `v3`, `"zod/v4"` when target is `v4` | config file | [/docs/recipes/zod-import-targets](/docs/recipes/zod-import-targets) |
 | `strictCreateInputs` | boolean | `true` | config file | [/docs/recipes/granular-per-model](/docs/recipes/granular-per-model) |
