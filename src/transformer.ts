@@ -45,6 +45,14 @@ import { addIndexExport, writeIndexFile } from './utils/writeIndexFile';
 const TYPED_JSON_MASK = '\u0000pzgTypedJson';
 
 /**
+ * A run of optionality markers at the very end of a typed-JSON replacement.
+ *
+ * Anchored at the end on purpose: where the marker sits is the whole boundary between
+ * one the emitter decides and one the annotation decides. See `typedJsonSlotExpression`.
+ */
+const TYPED_JSON_TRAILING_OPTIONALITY = /(?:\.(?:optional|nullable|nullish)\(\))+$/;
+
+/**
  * Filter validation result interface
  */
 interface FilterValidationResult {
@@ -1879,6 +1887,46 @@ export default class Transformer {
   }
 
   /**
+   * The replacement text to compose into a property line, given where it is about to land.
+   *
+   * A typed replacement is the user's schema and the emitter does not rewrite it, with one
+   * exception that is not a rewrite so much as a division of labour: a marker at the TOP
+   * LEVEL of the replacement answers a question the emitter has already answered from the
+   * DMMF, and only one of the two answers can be right.
+   *
+   * Every object schema is cast to the Prisma input type for the same operation, so
+   * whether a key may be omitted and whether it admits `null` are facts about the column,
+   * not opinions the annotation gets to hold. `![string | undefined]` on a required column
+   * would make a required key omittable; `![{ a: string } | null]` on a required `Json`
+   * column would accept a bare `null` where `Prisma.<M>CreateInput` says
+   * `JsonNullValueInput | InputJsonValue` and means `Prisma.JsonNull`. Both are payloads
+   * the type the schema is cast to rejects. So a trailing run of markers comes off here and
+   * the emitter's own optional/nullable policy re-applies whatever the column actually
+   * says - which is also why an annotation that agrees with the column no longer emits its
+   * marker twice.
+   *
+   * Nothing else in the replacement is touched. `{ a: string; b?: number }` keeps `b`
+   * optional, and so does an element inside a `z.array(...)` the annotation wrote itself:
+   * those markers are nowhere near the top level and describe the user's own type.
+   *
+   * The `isList` case is the reason this takes an `inputType` rather than working on the
+   * string alone. On a list field the replacement is the ELEMENT schema and
+   * `wrapWithZodValidators` is about to append `.array()` to it, so its trailing marker
+   * ends up under that wrapper describing an element rather than the field. Prisma's
+   * `InputJsonArray` is `ReadonlyArray<InputJsonValue | null>`, so a null element is a
+   * value it really does accept, and the condition below is the same one the wrapper
+   * itself uses to decide whether to append.
+   */
+  private static typedJsonSlotExpression(
+    expression: string,
+    inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
+  ): string {
+    const willWrapInArray = inputType.isList && !expression.includes('.array()');
+    if (willWrapInArray) return expression;
+    return expression.replace(TYPED_JSON_TRAILING_OPTIONALITY, '');
+  }
+
+  /**
    * Run an optionality strip over a composed property line without letting it reach
    * inside a typed-JSON replacement.
    *
@@ -1887,11 +1935,16 @@ export default class Transformer {
    * union adds its own tail, and the optional/nullable policy below re-applies exactly
    * one marker. Left unstripped that composes two markers where the policy allows one.
    *
-   * A typed replacement is not the emitter's expression, though. It is the user's schema,
-   * and `{ a: string; b?: number }` means `b` is optional in every artifact that reads
-   * that annotation - the pure model and the result schema both say so. Masking each
-   * replacement to an opaque token keeps the outer strip doing its job while the
-   * replacement passes through byte for byte.
+   * Inside a typed replacement is not the emitter's to strip, though. That is the user's
+   * schema, and `{ a: string; b?: number }` means `b` is optional in every artifact that
+   * reads the annotation - the pure model and the result schema both say so. Masking each
+   * replacement to an opaque token keeps the outer strip doing its job while what it
+   * covers passes through byte for byte.
+   *
+   * What it covers is `typedJsonSlotExpression`'s answer, which is the replacement with
+   * the top-level markers the emitter owns already removed. So the two halves compose
+   * rather than fight: the emitter decides the outermost marker, the annotation decides
+   * every marker under it, and neither reaches into the other.
    *
    * Nothing is ever collected without a `typedJson` block, so for everyone else this is
    * exactly `strip(expression)`.
@@ -1937,11 +1990,20 @@ export default class Transformer {
      * Typed replacements used in this property line, kept out of the optionality strips
      * below. Empty unless `typedJson` is configured, which is what leaves those strips
      * byte-identical for everybody else.
+     *
+     * What goes in the set is what was composed into the line, which is the replacement
+     * minus whatever `typedJsonSlotExpression` handed back to the emitter. So the mask
+     * protects the user's schema and nothing more: the emitter's own markers, including
+     * the one the annotation duplicated, are still in front of the strips.
      */
     const typedJsonExpressions = new Set<string>();
-    const typedJsonBase = (typedJson: TypedJsonResolved | null): string | undefined => {
-      const expression = typedJson?.elementExpression;
-      if (!expression) return undefined;
+    const typedJsonBase = (
+      typedJson: TypedJsonResolved | null,
+      inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
+    ): string | undefined => {
+      const resolved = typedJson?.elementExpression;
+      if (!resolved) return undefined;
+      const expression = Transformer.typedJsonSlotExpression(resolved, inputType);
       typedJsonExpressions.add(expression);
       return expression;
     };
@@ -1958,7 +2020,7 @@ export default class Transformer {
         // Check for custom schema from @zod.import() annotations
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = typedJsonBase(typedJson) || customSchema || 'z.string()';
+        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || 'z.string()';
         result.push(
           this.wrapWithZodValidators(
             baseSchema,
@@ -1977,14 +2039,15 @@ export default class Transformer {
       } else if (inputType.type === 'Int') {
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = typedJsonBase(typedJson) || customSchema || 'z.number().int()';
+        const baseSchema =
+          typedJsonBase(typedJson, inputType) || customSchema || 'z.number().int()';
         result.push(
           this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
         );
       } else if (inputType.type === 'Float') {
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = typedJsonBase(typedJson) || customSchema || 'z.number()';
+        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || 'z.number()';
         result.push(
           this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
         );
@@ -2071,7 +2134,7 @@ export default class Transformer {
       } else if (inputType.type === 'Json') {
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = typedJsonBase(typedJson) || customSchema || 'jsonSchema';
+        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || 'jsonSchema';
         // A typed field no longer mentions `jsonSchema`, so flagging it would emit an
         // unused import. Gated on typedJson specifically, not on the resulting expression:
         // the `@zod.custom.use` path has always set this and must keep doing so, or every

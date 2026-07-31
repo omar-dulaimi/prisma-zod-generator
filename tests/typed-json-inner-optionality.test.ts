@@ -23,6 +23,12 @@ import { ConfigGenerator, GENERATION_TIMEOUT, TestEnvironment } from './helpers'
  * Text assertions alone would not catch this: the emitted file is still valid TypeScript
  * either way. The schemas are executed below against a value that omits the optional key,
  * which is the difference the user actually sees.
+ *
+ * "Inside" is meant literally, and the other half of the boundary lives in
+ * tests/typed-json-top-level-optionality.test.ts: a marker at the TOP LEVEL of the
+ * replacement is not inside anything. It is the outermost operator of the field's own
+ * schema, answering the requiredness question the emitter has already answered from the
+ * DMMF, in a file cast to `z.ZodType<Prisma.<M><Op>Input>`. Those come off.
  */
 
 const SCHEMA_BODY = `
@@ -154,24 +160,23 @@ describe('typed JSON: inner optionality, configured', () => {
       );
     });
 
-    it('keeps a whole-expression null the annotation asked for', () => {
-      // `![string | null]` resolves to `z.string().nullable()`. Prisma has the column as a
-      // required non-null String, so nothing else in the pipeline would add that null -
-      // it is the annotation's, and dropping it is the same defect at the top level.
-      expect(memberLine(objectFile(env, 'DocCreateInput'), 'maybeName')).toBe(
-        'z.string().nullable()',
-      );
+    it('leaves a whole-expression null to the emitter, which owns the top level', () => {
+      // The other side of the boundary, and the limit of what "inside" means.
+      // `![string | null]` resolves to `z.string().nullable()`, where the marker is not
+      // inside anything: it is the outermost operator of the field's own schema, and
+      // requiredness and null-admission there come from the column. `maybeName String` is
+      // required and non-null, `Prisma.DocCreateInput` types it `string`, and the schema
+      // is cast to that type - so the null comes off and the emitter's policy decides.
+      // tests/typed-json-top-level-optionality.test.ts pins that half in full.
+      expect(memberLine(objectFile(env, 'DocCreateInput'), 'maybeName')).toBe('z.string()');
     });
 
-    it('lets the emitter policy stack on top of the replacement rather than editing it', () => {
-      // `maybeNick String?` is nullable by column *and* nullable by annotation, so the
-      // policy's own `.nullable()` lands on an expression that already ends in one. The
-      // repeat is redundant, not wrong, and it is the honest outcome of the rule this fix
-      // is built on: the emitter appends its markers and never rewrites the replacement.
-      // Deduplicating would mean parsing the replacement, which is how the inner markers
-      // got eaten in the first place.
+    it('emits one marker, not two, where the annotation agreed with the column', () => {
+      // `maybeNick String?` is nullable by column *and* nullable by annotation. Only one
+      // of the two gets to answer, the column does, and the line it produces is the same
+      // one an unannotated `String?` gets rather than a chain with the marker repeated.
       expect(memberLine(objectFile(env, 'DocCreateInput'), 'maybeNick')).toBe(
-        'z.string().nullable().optional().nullable()',
+        'z.string().optional().nullable()',
       );
     });
   });
@@ -233,7 +238,7 @@ describe('typed JSON: inner optionality, configured', () => {
     it('accepts the same values through the CRUD input the client is written with', async () => {
       const schema = await objectSchema(env, 'DocCreateInput');
       expect(() =>
-        schema.parse({ meta: { a: 'x' }, mapped: { b: null }, maybeName: null }),
+        schema.parse({ meta: { a: 'x' }, mapped: { b: null }, maybeName: 'name' }),
       ).not.toThrow();
       expect(() =>
         schema.parse({
@@ -245,7 +250,12 @@ describe('typed JSON: inner optionality, configured', () => {
         }),
       ).not.toThrow();
       expect(() =>
-        schema.parse({ meta: { b: 1 }, mapped: { b: null }, maybeName: null }),
+        schema.parse({ meta: { b: 1 }, mapped: { b: null }, maybeName: 'name' }),
+      ).toThrow();
+      // `maybeName String` is required and non-null, whatever `![string | null]` says.
+      // `Prisma.DocCreateInput` types it `string`, and this is the schema cast to it.
+      expect(() =>
+        schema.parse({ meta: { a: 'x' }, mapped: { b: null }, maybeName: null }),
       ).toThrow();
     });
 
@@ -256,7 +266,7 @@ describe('typed JSON: inner optionality, configured', () => {
       const schema = await objectSchema(env, 'DocCreateInput');
       for (const maybeNick of [null, undefined, 'nick']) {
         expect(() =>
-          schema.parse({ meta: { a: 'x' }, mapped: { b: null }, maybeName: null, maybeNick }),
+          schema.parse({ meta: { a: 'x' }, mapped: { b: null }, maybeName: 'name', maybeNick }),
         ).not.toThrow();
       }
     });
