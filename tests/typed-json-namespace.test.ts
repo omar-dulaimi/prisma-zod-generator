@@ -1,13 +1,14 @@
 import { execFileSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveTypedJsonConfig, resolveTypedJsonType } from '../src/config/typed-json';
 import {
   buildTypedJsonNamespace,
   writeTypedJsonNamespace,
   type TypedJsonNamespaceBinding,
 } from '../src/generators/typed-json-namespace';
+import { ConfigGenerator, GENERATION_TIMEOUT, TestEnvironment } from './helpers';
 
 const REPO_ROOT = join(__dirname, '..');
 
@@ -420,6 +421,211 @@ void ok; void missing;
       );
       await emitInto(root);
       const result = tsc(root);
+      expect(result.output).toBe('');
+      expect(result.code).toBe(0);
+    }, 120_000);
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `importFileExtension`, which the rest of the emitted tree already follows.
+ *
+ * A `prisma-client` generator with `moduleFormat = "esm"` and `importFileExtension = "js"`
+ * is the supported NodeNext setup, and every other file the generator writes puts the
+ * extension on its relative imports. The namespace file did not, which under
+ * `moduleResolution: nodenext` is `error TS2835` - so the generated tree stopped
+ * compiling as a whole because of one line in one file.
+ *
+ * The assertions that matter here are the `tsc` runs. Reading the emitted specifier only
+ * says the string changed; running the compiler that rejected it is what says the tree
+ * builds.
+ */
+describe('typedJson namespace emitter: import extensions', () => {
+  /**
+   * Exactly the compiler invocation a NodeNext consumer runs. The scratch package is
+   * marked `"type": "module"`, because that is what makes the file ECMAScript to
+   * TypeScript's resolver, and a missing extension only fails there.
+   */
+  function tscNodeNext(file: string): { code: number; output: string } {
+    try {
+      execFileSync(
+        join(REPO_ROOT, 'node_modules', '.bin', 'tsc'),
+        [
+          '--noEmit',
+          '--strict',
+          '--target',
+          'es2022',
+          '--module',
+          'nodenext',
+          '--moduleResolution',
+          'nodenext',
+          file,
+        ],
+        { encoding: 'utf-8', stdio: 'pipe' },
+      );
+      return { code: 0, output: '' };
+    } catch (error) {
+      const err = error as { status?: number; stdout?: string; stderr?: string };
+      return { code: err.status ?? 1, output: `${err.stdout ?? ''}${err.stderr ?? ''}` };
+    }
+  }
+
+  const JSON_TYPES_MODULE = `import * as z from 'zod';
+
+export const WorkflowNodeSchema = z.object({ id: z.string(), label: z.string().optional() });
+`;
+
+  function esmScratch(label: string): string {
+    const root = scratch(label);
+    writeFileSync(join(root, 'package.json'), `${JSON.stringify({ type: 'module' }, null, 2)}\n`);
+    writeFileSync(join(root, 'json-types.ts'), JSON_TYPES_MODULE);
+    return root;
+  }
+
+  it('appends the extension to a relative schemaModule, and the file then compiles', async () => {
+    const root = esmScratch('nodenext-relative');
+    const config = configOf();
+    const written = await writeTypedJsonNamespace({
+      bindings: [bindingOf('WorkflowNode', 'Workflow', 'nodes', config)],
+      config,
+      baseDir: root,
+      importExtension: '.js',
+    });
+
+    expect(readFileSync(written.filePath!, 'utf-8')).toContain(
+      "import type { WorkflowNodeSchema } from './json-types.js';",
+    );
+    const result = tscNodeNext(written.filePath!);
+    expect(result.output).toBe('');
+    expect(result.code).toBe(0);
+  }, 120_000);
+
+  it('appends it to a rewritten nested specifier too', () => {
+    const result = buildTypedJsonNamespace({
+      bindings: [bindingOf('WorkflowNode', 'Workflow', 'nodes')],
+      config: configOf({ namespaceOutput: './types/nested/prisma-json.d.ts' }),
+      baseDir: '/out',
+      importExtension: '.js',
+    });
+    expect(result.content).toContain(
+      "import type { WorkflowNodeSchema } from '../../json-types.js';",
+    );
+  });
+
+  it('leaves a package specifier alone', () => {
+    const config = configOf({ schemaModule: '@acme/json-types' });
+    const result = buildTypedJsonNamespace({
+      bindings: [bindingOf('WorkflowNode', 'Workflow', 'nodes', config)],
+      config,
+      baseDir: '/out',
+      importExtension: '.js',
+    });
+    expect(result.content).toContain("import type { WorkflowNodeSchema } from '@acme/json-types';");
+  });
+
+  it('does not double an extension the user already wrote', () => {
+    const config = configOf({ schemaModule: './json-types.js' });
+    const result = buildTypedJsonNamespace({
+      bindings: [bindingOf('WorkflowNode', 'Workflow', 'nodes', config)],
+      config,
+      baseDir: '/out',
+      importExtension: '.js',
+    });
+    expect(result.content).toContain("import type { WorkflowNodeSchema } from './json-types.js';");
+    expect(result.content).not.toContain('json-types.js.js');
+  });
+
+  it('writes the bare specifier when no extension is configured', () => {
+    // The regression contract for everyone not on NodeNext: unchanged output.
+    const result = buildTypedJsonNamespace({
+      bindings: [bindingOf('WorkflowNode', 'Workflow', 'nodes')],
+      config: configOf(),
+      baseDir: '/out',
+    });
+    expect(result.content).toContain("import type { WorkflowNodeSchema } from './json-types';");
+  });
+
+  /**
+   * The defect as reported: a real `prisma generate`, with the extension configured where
+   * users configure it - on the `prisma-client` generator block, not on this generator.
+   */
+  describe('end to end, from the prisma-client generator block', () => {
+    let outputDir: string;
+    let testDir: string;
+
+    beforeAll(async () => {
+      const testEnv = await TestEnvironment.createTestEnv('typed-json-ns-nodenext');
+      roots.push(testEnv.testDir);
+      testDir = testEnv.testDir;
+      outputDir = testEnv.outputDir;
+
+      writeFileSync(
+        join(testEnv.testDir, 'config.json'),
+        JSON.stringify(
+          {
+            ...ConfigGenerator.createBasicConfig(),
+            typedJson: { schemaModule: './json-types', emitNamespace: true },
+          },
+          null,
+          2,
+        ),
+      );
+      writeFileSync(
+        testEnv.schemaPath,
+        `
+generator client {
+  provider            = "prisma-client"
+  output              = "./generated/client"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${testEnv.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model Workflow {
+  id Int @id @default(autoincrement())
+
+  /// [WorkflowNode]
+  nodes Json[]
+}
+`,
+      );
+
+      await testEnv.runGeneration();
+
+      // Written after generation so the output-directory cleanup never sees them.
+      writeFileSync(join(outputDir, 'schemas', 'json-types.ts'), JSON_TYPES_MODULE);
+      writeFileSync(
+        join(testDir, 'package.json'),
+        `${JSON.stringify({ type: 'module' }, null, 2)}\n`,
+      );
+    }, GENERATION_TIMEOUT);
+
+    it('writes the same specifier the rest of the emitted tree writes', () => {
+      const objects = readFileSync(
+        join(outputDir, 'schemas', 'objects', 'WorkflowCreatenodesInput.schema.ts'),
+        'utf-8',
+      );
+      expect(objects).toContain("from '../json-types.js'");
+
+      const namespaceFile = join(outputDir, 'schemas', 'prisma-json-types.d.ts');
+      expect(existsSync(namespaceFile)).toBe(true);
+      expect(readFileSync(namespaceFile, 'utf-8')).toContain("from './json-types.js'");
+    });
+
+    it('compiles under --module nodenext --moduleResolution nodenext', () => {
+      const result = tscNodeNext(join(outputDir, 'schemas', 'prisma-json-types.d.ts'));
       expect(result.output).toBe('');
       expect(result.code).toBe(0);
     }, 120_000);

@@ -5,6 +5,7 @@ import {
   type ResolvedTypedJsonConfig,
   type TypedJsonTypeResolution,
 } from '../config/typed-json';
+import Transformer from '../transformer';
 
 /**
  * The `declare global` emitter for `typedJson.emitNamespace`.
@@ -60,6 +61,16 @@ export interface BuildTypedJsonNamespaceInput {
   baseDir: string;
   /** Module `z` is imported from. Defaults to `zod`; follows `zodImportTarget`. */
   zodImportSpecifier?: string;
+  /**
+   * Extension appended to a relative import specifier, for example `.js`.
+   *
+   * Defaults to whatever the `prisma-client` generator block implies, which is what every
+   * other file this generator writes uses. It has to be the same answer: under
+   * `moduleResolution: nodenext` a relative ESM import without an extension is
+   * `error TS2835`, so one file disagreeing with the rest stops the whole emitted tree
+   * compiling. Empty for everyone not on NodeNext, which is the unchanged default.
+   */
+  importExtension?: string;
 }
 
 /** A type name annotated twice, resolving to two different schemas. */
@@ -97,8 +108,17 @@ export function typedJsonNamespacePath(config: ResolvedTypedJsonConfig, baseDir:
  * A relative `schemaModule` is written once, in the config, relative to the output
  * directory; the file importing it can sit anywhere under that directory. Package
  * specifiers are used verbatim, since they do not depend on the importer's location.
+ *
+ * `extension` is appended to a relative specifier that does not already carry one, by the
+ * same rule `resolveImportSpecifier` applies to every other emitted import - the two have
+ * to agree, or the namespace file is the one file in the tree NodeNext rejects.
  */
-function specifierFrom(specifier: string, baseDir: string, fromDir: string): string {
+function specifierFrom(
+  specifier: string,
+  baseDir: string,
+  fromDir: string,
+  extension: string,
+): string {
   if (!specifier.startsWith('.')) {
     return specifier;
   }
@@ -107,7 +127,13 @@ function specifierFrom(specifier: string, baseDir: string, fromDir: string): str
   if (relative.length === 0) {
     relative = '.';
   }
-  return relative.startsWith('.') ? relative : `./${relative}`;
+  const rewritten = relative.startsWith('.') ? relative : `./${relative}`;
+  // `includes('.', 1)` rather than `extname`: it ignores a leading dot, so `./.config`
+  // still counts as extensionless.
+  if (extension !== '' && !path.posix.basename(rewritten).includes('.', 1)) {
+    return `${rewritten}${extension}`;
+  }
+  return rewritten;
 }
 
 function originOf(binding: TypedJsonNamespaceBinding): string {
@@ -136,6 +162,9 @@ export function buildTypedJsonNamespace(
 ): TypedJsonNamespaceResult {
   const { bindings, config, baseDir } = input;
   const zodSpecifier = input.zodImportSpecifier ?? 'zod';
+  // Read from the same place every other emitter reads it, so a caller that says nothing
+  // still gets the specifier the rest of the tree uses rather than a bare one.
+  const importExtension = input.importExtension ?? Transformer.getImportFileExtension();
   const filePath = typedJsonNamespacePath(config, baseDir);
   const fromDir = path.dirname(filePath);
 
@@ -230,7 +259,7 @@ export function buildTypedJsonNamespace(
   // an unused import is a compile error under noUnusedLocals.
   const imports = new Map<string, Set<string>>();
   for (const declaration of declarations) {
-    const specifier = specifierFrom(declaration.module, baseDir, fromDir);
+    const specifier = specifierFrom(declaration.module, baseDir, fromDir, importExtension);
     const names = imports.get(specifier) ?? new Set<string>();
     names.add(declaration.importName);
     imports.set(specifier, names);
