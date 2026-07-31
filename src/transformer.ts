@@ -18,6 +18,7 @@ import {
   LIST_OPERATION_MEMBERS,
   mergeTypedJsonImports,
   reportTypedJsonResult,
+  resolveTypedJsonOwnerModel,
 } from './typed-json/emission';
 import { resolveTypedJsonField, type TypedJsonResolved } from './typed-json/resolver';
 import { logger } from './utils/logger';
@@ -1560,9 +1561,25 @@ export default class Transformer {
     }
   }
 
+  /**
+   * The model this schema's members take their typed-JSON annotations from.
+   *
+   * `resolveTypedJsonOwnerModel` repairs the one shape the general extraction reads wrong -
+   * `<Model>UncheckedCreateWithout<Relation>Input` and its update twin, which it answers as
+   * a model called `<Model>Unchecked`. The repair lives here, on the typed-JSON path only,
+   * rather than in `extractModelNameFromContext`, because that function also drives file
+   * naming and field filtering: a changed answer there would move bytes for repos that have
+   * never configured `typedJson`.
+   */
+  private typedJsonOwnerModel(extractedName: string | null): string | null {
+    return resolveTypedJsonOwnerModel(extractedName, (name) =>
+      this.enhancedModels.some((em) => em.model.name === name),
+    );
+  }
+
   /** The DMMF model field an input-object member refers to, when there is one. */
   private getModelFieldForArg(fieldName: string): PrismaDMMF.Field | null {
-    const modelName = Transformer.extractModelNameFromContext(this.name);
+    const modelName = this.typedJsonOwnerModel(Transformer.extractModelNameFromContext(this.name));
     if (!modelName) return null;
     const enhancedModel = this.enhancedModels.find((em) => em.model.name === modelName);
     if (!enhancedModel) return null;
@@ -1627,7 +1644,7 @@ export default class Transformer {
       return wrapper.field.documentation ? wrapper : null;
     }
 
-    const modelName = Transformer.extractModelNameFromContext(this.name);
+    const modelName = this.typedJsonOwnerModel(Transformer.extractModelNameFromContext(this.name));
     if (!modelName) return null;
 
     const field = this.getModelFieldForArg(argName);
@@ -1684,8 +1701,10 @@ export default class Transformer {
 
     // A `{ set }` / `{ push }` wrapper's name does not yield its model to the general
     // extraction, so it has to be resolved the way the members themselves are. Without
-    // this the wrapper references a schema it never imports.
-    const owner = modelName ?? this.listWrapperTarget()?.modelName ?? null;
+    // this the wrapper references a schema it never imports - and the same is true of the
+    // `Unchecked` halves of a nested write, whose model the extraction reads wrong.
+    const owner =
+      this.typedJsonOwnerModel(modelName) ?? this.listWrapperTarget()?.modelName ?? null;
     if (!owner) return [];
 
     const enhancedModel = this.enhancedModels.find((em) => em.model.name === owner);

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { isTypedJsonExcludedSchema, resolveTypedJsonOwnerModel } from '../src/typed-json/emission';
 import { ConfigGenerator, GENERATION_TIMEOUT, TestEnvironment } from './helpers';
 
 /**
@@ -121,6 +122,86 @@ function fieldLine(content: string, fieldName: string): string {
   if (!match) throw new Error(`No line for field "${fieldName}" in:\n${content}`);
   return match[1].replace(/,$/, '').trim();
 }
+
+describe('schema-name matching', () => {
+  /**
+   * Both of these decide whether a field keeps its annotation, from a name alone, and both
+   * are wrong in the same direction when the match is loose: a model name is arbitrary user
+   * text, so anything short of a whole-name match eventually collides with somebody's model.
+   */
+  describe('isTypedJsonExcludedSchema', () => {
+    it('skips the boolean-flag and aggregate schemas it is meant to skip', () => {
+      for (const name of [
+        'UserSelect',
+        'UserCountOutputTypeSelect',
+        'UserScalarWhereWithAggregatesInput',
+        'UserCountAggregateInput',
+        'UserMinAggregateInput',
+        'UserMaxAggregateInput',
+        'UserSumAggregateInput',
+        'UserAvgAggregateInput',
+      ]) {
+        expect(isTypedJsonExcludedSchema(name), name).toBe(true);
+      }
+    });
+
+    it('does not skip the input schemas of a model whose NAME contains one of those words', () => {
+      for (const name of [
+        'SelectionRoundCreateInput',
+        'SelectionRoundWhereInput',
+        'SelectionRoundUncheckedCreateWithoutVotesInput',
+        'ProductSelectionCreateInput',
+        'CountryCreateInput',
+        'MaxLengthCreateInput',
+        'SumTotalWhereInput',
+      ]) {
+        expect(isTypedJsonExcludedSchema(name), name).toBe(false);
+      }
+    });
+
+    it('leaves the order-by aggregates alone, exactly as before', () => {
+      // Their members are SortOrder enums, so nothing here could type them anyway; asserted
+      // so that tightening the aggregate patterns cannot quietly widen what they cover.
+      expect(isTypedJsonExcludedSchema('UserCountOrderByAggregateInput')).toBe(false);
+      expect(isTypedJsonExcludedSchema('UserMinOrderByAggregateInput')).toBe(false);
+    });
+
+    it('answers false for no name at all', () => {
+      expect(isTypedJsonExcludedSchema(undefined)).toBe(false);
+      expect(isTypedJsonExcludedSchema(null)).toBe(false);
+      expect(isTypedJsonExcludedSchema('')).toBe(false);
+    });
+  });
+
+  describe('resolveTypedJsonOwnerModel', () => {
+    const known =
+      (...names: string[]) =>
+      (name: string) =>
+        names.includes(name);
+
+    it('passes a real model name straight through', () => {
+      expect(resolveTypedJsonOwnerModel('Workflow', known('Workflow'))).toBe('Workflow');
+    });
+
+    it('repairs the "<Model>Unchecked" the general extraction reads off a nested write', () => {
+      expect(resolveTypedJsonOwnerModel('WorkflowUnchecked', known('Workflow'))).toBe('Workflow');
+    });
+
+    it('prefers a model that is really called <Something>Unchecked', () => {
+      expect(
+        resolveTypedJsonOwnerModel('WorkflowUnchecked', known('Workflow', 'WorkflowUnchecked')),
+      ).toBe('WorkflowUnchecked');
+    });
+
+    it('leaves anything else unresolved, which is what "leave the field alone" needs', () => {
+      expect(resolveTypedJsonOwnerModel('Missing', known('Workflow'))).toBeNull();
+      expect(resolveTypedJsonOwnerModel('MissingUnchecked', known('Workflow'))).toBeNull();
+      expect(resolveTypedJsonOwnerModel('Unchecked', known('Workflow'))).toBeNull();
+      expect(resolveTypedJsonOwnerModel(null, known('Workflow'))).toBeNull();
+      expect(resolveTypedJsonOwnerModel(undefined, known('Workflow'))).toBeNull();
+    });
+  });
+});
 
 describe('typed JSON: configured', () => {
   let env: GeneratedEnv;
@@ -475,6 +556,169 @@ describe('typed JSON: single-file mode', () => {
     },
     GENERATION_TIMEOUT,
   );
+});
+
+describe('typed JSON: nested writes', () => {
+  /**
+   * A nested write offers both arms of the relation input as `z.union([Checked, Unchecked])`,
+   * so an untyped `*UncheckedCreateWithout<R>Input` is not a cosmetic gap: it is a way round
+   * the typed arm, and the annotation stops being a constraint at all.
+   *
+   * The `Without<R>Input` families are where the model name is hardest to read off the schema
+   * name, because `WorkflowUncheckedCreateWithoutPostsInput` also reads as a `CreateWithout`
+   * of a model called `WorkflowUnchecked`.
+   */
+  const NESTED_SCHEMA_BODY = `
+model Workflow {
+  id Int @id @default(autoincrement())
+
+  /// [Tag]
+  label String
+
+  posts Post[]
+}
+
+model Post {
+  id Int @id @default(autoincrement())
+  title String
+
+  workflow   Workflow @relation(fields: [workflowId], references: [id])
+  workflowId Int
+}
+`;
+
+  let env: GeneratedEnv;
+
+  beforeAll(async () => {
+    env = await generate('typed-json-nested-writes', NESTED_SCHEMA_BODY, {
+      typedJson: { schemaModule: './json-types', schemaSuffix: 'Schema' },
+    });
+    writeFileSync(join(schemasDir(env), 'json-types.ts'), JSON_TYPES_MODULE);
+  }, GENERATION_TIMEOUT);
+
+  it('offers both arms of the nested create, so an untyped arm would be a way round', () => {
+    const content = objectFile(env, 'WorkflowCreateNestedOneWithoutPostsInput');
+    expect(content).toContain('WorkflowCreateWithoutPostsInputObjectSchema');
+    expect(content).toContain('WorkflowUncheckedCreateWithoutPostsInputObjectSchema');
+  });
+
+  it('gives the unchecked create arm exactly what the checked arm gets', () => {
+    const checked = objectFile(env, 'WorkflowCreateWithoutPostsInput');
+    const unchecked = objectFile(env, 'WorkflowUncheckedCreateWithoutPostsInput');
+
+    expect(fieldLine(checked, 'label')).toBe('TagSchema');
+    expect(fieldLine(unchecked, 'label')).toBe(fieldLine(checked, 'label'));
+    expect(unchecked).toContain("from '../json-types'");
+  });
+
+  it('gives the unchecked update arm exactly what the checked arm gets', () => {
+    const checked = objectFile(env, 'WorkflowUpdateWithoutPostsInput');
+    const unchecked = objectFile(env, 'WorkflowUncheckedUpdateWithoutPostsInput');
+
+    expect(fieldLine(checked, 'label')).toContain('TagSchema');
+    expect(fieldLine(unchecked, 'label')).toBe(fieldLine(checked, 'label'));
+    expect(unchecked).toContain("from '../json-types'");
+  });
+
+  describe('the emitted nested write actually rejects the value', () => {
+    async function objectSchema(name: string) {
+      const mod = await import(join(schemasDir(env), 'objects', `${name}.schema.ts`));
+      return mod[`${name}ObjectZodSchema`] as { parse: (value: unknown) => unknown };
+    }
+
+    it('rejects a bad label written through a nested create', async () => {
+      const schema = await objectSchema('PostCreateInput');
+
+      expect(() =>
+        schema.parse({ title: 't', workflow: { create: { label: 'alpha' } } }),
+      ).not.toThrow();
+      // Routed through the unchecked arm of the union, which typing only the checked arm
+      // leaves wide open.
+      expect(() => schema.parse({ title: 't', workflow: { create: { label: 'nope' } } })).toThrow();
+    });
+
+    it('rejects a bad label written through a nested update', async () => {
+      const schema = await objectSchema('PostUpdateInput');
+
+      expect(() => schema.parse({ workflow: { update: { label: 'alpha' } } })).not.toThrow();
+      expect(() => schema.parse({ workflow: { update: { label: 'nope' } } })).toThrow();
+    });
+  });
+});
+
+describe('typed JSON: model names that contain a schema keyword', () => {
+  /**
+   * `SelectionRound` is an ordinary model name that happens to contain "Select". The
+   * exclusion meant for Prisma's boolean-flag `*Select` schemas must not swallow it, and
+   * the failure is silent: the model's `models/` schema is typed while every one of its
+   * `objects/` schemas is not.
+   */
+  const SELECT_NAME_SCHEMA_BODY = `
+model SelectionRound {
+  id Int @id @default(autoincrement())
+
+  /// [Tag]
+  label String
+
+  /// [WorkflowNode]
+  payload Json
+}
+
+model Workflow {
+  id Int @id @default(autoincrement())
+
+  /// [Tag]
+  label String
+}
+`;
+
+  let env: GeneratedEnv;
+
+  beforeAll(async () => {
+    env = await generate('typed-json-select-name', SELECT_NAME_SCHEMA_BODY, {
+      typedJson: { schemaModule: './json-types', schemaSuffix: 'Schema' },
+      addSelectType: true,
+    });
+    writeFileSync(join(schemasDir(env), 'json-types.ts'), JSON_TYPES_MODULE);
+  }, GENERATION_TIMEOUT);
+
+  it('types the input schemas of a model whose name contains "Select", like any other', () => {
+    const content = objectFile(env, 'SelectionRoundCreateInput');
+    const control = objectFile(env, 'WorkflowCreateInput');
+
+    expect(fieldLine(content, 'label')).toBe(fieldLine(control, 'label'));
+    expect(fieldLine(content, 'label')).toBe('TagSchema');
+    expect(fieldLine(content, 'payload')).toBe(
+      'z.union([JsonNullValueInputSchema, WorkflowNodeSchema])',
+    );
+  });
+
+  it('types its filters and its pure model the same way it types the control model', () => {
+    expect(fieldLine(objectFile(env, 'SelectionRoundWhereInput'), 'label')).toBe(
+      fieldLine(objectFile(env, 'WorkflowWhereInput'), 'label'),
+    );
+    expect(fieldLine(modelFile(env, 'SelectionRound'), 'label')).toBe(
+      fieldLine(modelFile(env, 'Workflow'), 'label'),
+    );
+  });
+
+  it('still leaves the boolean-flag Select schemas alone', () => {
+    const content = objectFile(env, 'SelectionRoundSelect');
+    expect(fieldLine(content, 'label')).toBe('z.boolean().optional()');
+    expect(content).not.toContain('TagSchema');
+  });
+
+  it('rejects a value the annotation excludes, at runtime', async () => {
+    const mod = await import(
+      join(schemasDir(env), 'objects', 'SelectionRoundCreateInput.schema.ts')
+    );
+    const schema = mod.SelectionRoundCreateInputObjectZodSchema as {
+      parse: (value: unknown) => unknown;
+    };
+
+    expect(() => schema.parse({ label: 'alpha', payload: { id: 'n', label: 'x' } })).not.toThrow();
+    expect(() => schema.parse({ label: 'nope', payload: { id: 'n', label: 'x' } })).toThrow();
+  });
 });
 
 describe('typed JSON: unresolvable annotations', () => {

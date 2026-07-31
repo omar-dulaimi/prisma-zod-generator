@@ -46,16 +46,65 @@ export function isTypedJsonInputType(inputType: unknown): boolean {
  * untyped: `{ price: { gt: 100 } }` has to keep typechecking there without a cast, since
  * an aggregate comparison is over the whole group and not over one annotated value.
  *
- * `Select` and the `*AggregateInput` family are boolean-flag schemas whose members happen
+ * `*Select` and the `*AggregateInput` family are boolean-flag schemas whose members happen
  * to share the field names; the existing `extractZodValidationsForField` bails on exactly
  * these two for the same reason.
+ *
+ * Every test here is a whole-name match, never a substring. Prisma builds these names as
+ * `<Model><suffix>`, and a model name is arbitrary user text: `includes('Select')` reads
+ * `SelectionRoundCreateInput` as a flag schema and silently drops typing from every
+ * `objects/` schema of a model called `SelectionRound`, while its `models/` and `results/`
+ * schemas keep it. The two boolean-flag families this skips - `<Model>Select`,
+ * `<CountOutputType>Select`, `<Model><Count|Min|Max|Sum|Avg>AggregateInput` - are all
+ * suffixes, so matching the suffix loses none of them.
  */
 export function isTypedJsonExcludedSchema(schemaName: string | undefined | null): boolean {
   if (!schemaName) return false;
-  if (schemaName.includes('Select')) return true;
-  if (/ScalarWhereWithAggregatesInput$/.test(schemaName)) return true;
-  if (/(?:Count|Min|Max|Sum|Avg)AggregateInput$/.test(schemaName)) return true;
+  if (/^\w+Select$/.test(schemaName)) return true;
+  if (/^\w+ScalarWhereWithAggregatesInput$/.test(schemaName)) return true;
+  if (/^\w+(?:Count|Min|Max|Sum|Avg)AggregateInput$/.test(schemaName)) return true;
   return false;
+}
+
+/**
+ * The token the general model-name patterns swallow.
+ *
+ * `<Model>UncheckedCreateWithout<Relation>Input` also reads as a `CreateWithout` of a model
+ * called `<Model>Unchecked`, and `\w+` is greedy, so the earlier pattern wins.
+ */
+const UNCHECKED_SUFFIX = 'Unchecked';
+
+/**
+ * The model whose fields an input-object schema's members refer to, repaired for the one
+ * shape the general extraction reads wrong.
+ *
+ * `Transformer.extractModelNameFromContext` tries `<Model>CreateWithout<Relation>Input`
+ * before `<Model>UncheckedCreateWithout<Relation>Input`, so it answers `WorkflowUnchecked`
+ * for `WorkflowUncheckedCreateWithoutPostsInput` - a model that does not exist, so the
+ * annotation lookup finds nothing and the field is emitted untyped. That is not a cosmetic
+ * gap: a nested write offers `z.union([Checked, Unchecked])`, so the untyped half is a way
+ * round the typed half and the annotation stops constraining anything at all.
+ *
+ * The repair is deliberately a repair and not a rewrite of the extraction. That function
+ * also drives file naming and field filtering, where a changed answer moves bytes for
+ * people who have never configured `typedJson`. So this takes the extraction's answer as
+ * given, accepts it when it names a real model, and otherwise strips only a trailing
+ * `Unchecked`. Anything else stays unresolved, which is the same "leave the field alone"
+ * that an unknown model name already produced.
+ *
+ * The exact match is tried first, so a model genuinely called `FooUnchecked` still wins
+ * over `Foo` plus the token.
+ */
+export function resolveTypedJsonOwnerModel(
+  extractedName: string | undefined | null,
+  isKnownModel: (name: string) => boolean,
+): string | null {
+  if (!extractedName) return null;
+  if (isKnownModel(extractedName)) return extractedName;
+  if (!extractedName.endsWith(UNCHECKED_SUFFIX)) return null;
+
+  const owner = extractedName.slice(0, -UNCHECKED_SUFFIX.length);
+  return owner && isKnownModel(owner) ? owner : null;
 }
 
 /**
