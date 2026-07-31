@@ -242,8 +242,12 @@ describe('typedJson.applyToResults: on', () => {
       expect(fieldLine(content, 'owner'), name).toBe('OwnerSchema.optional()');
       // Unannotated and nullable: still exactly the 3.0.0 expression, `.nullable()` and
       // all. Adding it here would add it with the flag off too.
-      expect(fieldLine(content, 'plainOptionalJson'), name).toBe('z.unknown().optional()');
-      expect(fieldLine(content, 'plainOptionalString'), name).toBe('z.string().optional()');
+      expect(fieldLine(content, 'plainOptionalJson'), name).toBe(
+        'z.unknown().nullable().optional()',
+      );
+      expect(fieldLine(content, 'plainOptionalString'), name).toBe(
+        'z.string().nullable().optional()',
+      );
     }
   });
 
@@ -252,22 +256,28 @@ describe('typedJson.applyToResults: on', () => {
 
     // In document order: the grouped value, the _count, the _min, the _max.
     expect(fieldLines(content, 'status')).toEqual([
-      ENUM,
-      'z.number()',
-      `${ENUM}.nullable()`,
-      `${ENUM}.nullable()`,
+      `${ENUM}.optional()`,
+      'z.number().optional()',
+      `${ENUM}.nullable().optional()`,
+      `${ENUM}.nullable().optional()`,
     ]);
     expect(fieldLines(content, 'tier')).toEqual([
-      TIER,
-      'z.number()',
+      `${TIER}.optional()`,
+      'z.number().optional()',
       // _sum and _avg are numbers whatever the column holds, so they keep z.number().
-      'z.number().nullable()',
-      'z.number().nullable()',
-      `${TIER}.nullable()`,
-      `${TIER}.nullable()`,
+      'z.number().nullable().optional()',
+      'z.number().nullable().optional()',
+      `${TIER}.nullable().optional()`,
+      `${TIER}.nullable().optional()`,
     ]);
-    expect(fieldLines(content, 'nodes')).toEqual(['WorkflowNodeSchema', 'z.number()']);
-    expect(fieldLines(content, 'steps')).toEqual(['z.array(WorkflowNodeSchema)', 'z.number()']);
+    expect(fieldLines(content, 'nodes')).toEqual([
+      'WorkflowNodeSchema.optional()',
+      'z.number().optional()',
+    ]);
+    expect(fieldLines(content, 'steps')).toEqual([
+      'z.array(WorkflowNodeSchema).optional()',
+      'z.number().optional()',
+    ]);
   });
 
   it('gives the grouped value of a nullable column the same optionality the record results give it', () => {
@@ -277,16 +287,19 @@ describe('typedJson.applyToResults: on', () => {
     // groupBy that does not name the column in `by` omits it entirely.
     expect(fieldLines(content, 'meta')).toEqual([
       'WorkflowNodeSchema.nullable().optional()',
-      'z.number()',
+      'z.number().optional()',
     ]);
-    // The untyped path is where it was: z.unknown() already accepts null, and moving it
-    // would move it with the flag off too.
-    expect(fieldLines(content, 'plainOptionalJson')).toEqual(['z.unknown()', 'z.number()']);
+    // The untyped path now says the same thing. A nullable column groups as null and a
+    // column outside `by` is absent, so both markers belong on both paths.
+    expect(fieldLines(content, 'plainOptionalJson')).toEqual([
+      'z.unknown().nullable().optional()',
+      'z.number().optional()',
+    ]);
     expect(fieldLines(content, 'plainOptionalString')).toEqual([
-      'z.string()',
-      'z.number()',
-      'z.string().nullable()',
-      'z.string().nullable()',
+      'z.string().nullable().optional()',
+      'z.number().optional()',
+      'z.string().nullable().optional()',
+      'z.string().nullable().optional()',
     ]);
   });
 
@@ -295,16 +308,16 @@ describe('typedJson.applyToResults: on', () => {
 
     // _count, then _min, then _max. No grouped value on an aggregate result.
     expect(fieldLines(content, 'status')).toEqual([
-      'z.number()',
-      `${ENUM}.nullable()`,
-      `${ENUM}.nullable()`,
+      'z.number().optional()',
+      `${ENUM}.nullable().optional()`,
+      `${ENUM}.nullable().optional()`,
     ]);
     expect(fieldLines(content, 'ratio')).toEqual([
-      'z.number()',
-      'z.number().nullable()',
-      'z.number().nullable()',
-      'RatioSchema.nullable()',
-      'RatioSchema.nullable()',
+      'z.number().optional()',
+      'z.number().nullable().optional()',
+      'z.number().nullable().optional()',
+      'RatioSchema.nullable().optional()',
+      'RatioSchema.nullable().optional()',
     ]);
   });
 
@@ -333,8 +346,12 @@ describe('typedJson.applyToResults: on', () => {
     expect(resultFile(env, 'WorkflowFindManyResult')).toContain(
       "import { RatioSchema, TagSchema, WorkflowNodeSchema } from '../json-types'",
     );
+    // `TagSchema` used to appear here too, but only because `tags String[]` was wrongly
+    // emitted into _min/_max. Prisma takes no min or max of a list column, so the column
+    // is gone from those slots and the import goes with it. `ratio Float` still needs
+    // RatioSchema, which is what keeps this assertion honest rather than vacuous.
     expect(resultFile(env, 'WorkflowAggregateResult')).toContain(
-      "import { RatioSchema, TagSchema } from '../json-types'",
+      "import { RatioSchema } from '../json-types'",
     );
   });
 
@@ -521,23 +538,27 @@ describe('typedJson.applyToResults: off (the default)', () => {
   });
 
   /**
-   * The untyped read path rejects null for a nullable *scalar* column, and has since
-   * 3.0.0: `z.string().optional()` is not `z.string().nullish()`. It is a real defect and
-   * it is not this one. Correcting it changes bytes for every tree that has no `typedJson`
-   * block at all, which is the one thing the flag-off contract forbids, so it is pinned
-   * here rather than fixed here.
+   * Both paths now say the same thing. This assertion used to pin the opposite, because a
+   * nullable scalar emitted `z.string().optional()`, which admits undefined and not null and
+   * so rejected the ordinary state of the column. It is fixed with the rest of the
+   * result-schema shape; what stays pinned here is that turning `typedJson` OFF does not
+   * change any of it.
    */
-  it('leaves the untyped nullable columns exactly as 3.0.0 emitted them', async () => {
+  it('leaves the untyped nullable columns as the record path emits them', async () => {
     const content = resultFile(configured, 'WorkflowFindManyResult');
-    expect(fieldLine(content, 'meta')).toBe('z.unknown().optional()');
-    expect(fieldLine(content, 'plainOptionalString')).toBe('z.string().optional()');
+    expect(fieldLine(content, 'meta')).toBe('z.unknown().nullable().optional()');
+    expect(fieldLine(content, 'plainOptionalString')).toBe('z.string().nullable().optional()');
 
     const mod = await import(join(resultsDir(configured), 'WorkflowGroupByResult.schema.ts'));
     const groupBy = mod.WorkflowGroupByResultSchema as { parse: (value: unknown) => unknown };
 
     // z.unknown() takes the null, which is why the annotated column is where this showed.
     expect(() => groupBy.parse([{ ...VALID_ROW, meta: null }])).not.toThrow();
-    // z.string() does not, with or without a typedJson block. Pre-existing, and pinned.
-    expect(() => groupBy.parse([{ ...VALID_ROW, plainOptionalString: null }])).toThrow();
+    // And so does z.string() now. A nullable column groups as null, so the grouped value
+    // is `.nullable().optional()` on both paths. This assertion used to pin the opposite:
+    // the defect was known but left alone because correcting it moves bytes in a tree with
+    // no typedJson block, which the flag-off contract forbade during that work. It is fixed
+    // deliberately now, with the rest of the result-schema shape.
+    expect(() => groupBy.parse([{ ...VALID_ROW, plainOptionalString: null }])).not.toThrow();
   });
 });
