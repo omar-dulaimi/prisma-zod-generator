@@ -543,7 +543,11 @@ ${allFields.join(',\n')}
         return `  ${field.name}: ${this.buildRelationFieldSchema(field, model, modelDependencies)}`;
       }
       const zodType = this.mapPrismaTypeToZod(field);
-      const optionalMarker = !field.isRequired ? '.optional()' : '';
+      // `.nullable()` before `.optional()`, because a nullable column returns null and
+      // `.optional()` admits only undefined. Without it, `bio String?` emitted
+      // `z.string().optional()` and rejected the ordinary state of the column, in all seven
+      // record-shaped schemas. `Json?` and enums escaped it only by mapping to z.unknown().
+      const optionalMarker = !field.isRequired ? '.nullable().optional()' : '';
       return `  ${field.name}: ${zodType}${optionalMarker}`;
     });
 
@@ -601,43 +605,81 @@ ${allFields.join(',\n')}
     return `z.object({ /* ${field.type} fields */ }).optional()`;
   }
 
+  /**
+   * The `_count` / `_sum` / `_avg` / `_min` / `_max` slots of an aggregate result.
+   *
+   * Membership and optionality both follow Prisma, measured from the DMMF for a model
+   * carrying every scalar type, a list of each, an enum and a relation:
+   *
+   *   Count -> every scalar including lists, no relations, plus `_all`
+   *   Min   -> non-list scalars and enums, plus Boolean, Bytes and DateTime; no Json
+   *   Max   -> same as Min
+   *   Sum   -> numeric columns including lists, and a list column sums to an ARRAY
+   *   Avg   -> numeric columns including lists, always a single number (Decimal stays Decimal)
+   *
+   * Every member is `.optional()`, which is the part that was actually breaking reads.
+   * An aggregate selects its members: `aggregate({ _count: { id: true } })` returns
+   * `_count: { id: 3 }` and nothing else, so a required member rejects the real response.
+   * Emitting relation counts and list columns in `_min` made that certain rather than
+   * merely likely, since Prisma can never supply them.
+   */
   private buildAggregateFields(model: DMMF.Model): string {
-    const numericFields = model.fields.filter((f) =>
-      ['Int', 'Float', 'Decimal', 'BigInt'].includes(f.type),
-    );
+    const isNumeric = (f: DMMF.Field) => ['Int', 'Float', 'Decimal', 'BigInt'].includes(f.type);
+    const numericFields = model.fields.filter((f) => f.kind !== 'object' && isNumeric(f));
 
-    // _count: object with per-field counts (including booleans and relations), optional
-    const countObjectFields = model.fields.map((field) => `    ${field.name}: z.number()`);
+    // Relations are counted through `_count` on the record, never in the aggregate's
+    // `_count`, so including them rejected every real response for a model with a relation.
+    const countableFields = model.fields.filter((field) => field.kind !== 'object');
+    const countObjectFields = [
+      ...countableFields.map((field) => `    ${field.name}: z.number().optional()`),
+      '    _all: z.number().optional()',
+    ];
+    // `aggregate({ _count: true })` answers with a bare number, and only
+    // `_count: { id: true }` answers with the object. Our own args schema already emits
+    // `_count: z.union([z.literal(true), <CountAggregateInput>])`, so accepting only the
+    // object here made the result schema reject a response the request schema had just
+    // allowed the caller to ask for.
     const aggregateFields: string[] = [
-      `  _count: z.object({\n${countObjectFields.join(',\n')}\n  }).optional()`,
+      `  _count: z.union([z.number(), z.object({\n${countObjectFields.join(',\n')}\n  })]).optional()`,
     ];
 
     if (numericFields.length > 0) {
-      // Sum: numbers for numeric fields; BigInt as bigint
-      const sumFields = numericFields.map(
-        (field) =>
-          `    ${field.name}: ${field.type === 'BigInt' ? 'z.bigint()' : 'z.number()'}.nullable()`,
-      );
+      // Summing a list column yields a list: `ratios Float[]` sums to `Float[]`.
+      const sumFields = numericFields.map((field) => {
+        const scalar = field.type === 'BigInt' ? 'z.bigint()' : 'z.number()';
+        const expression = field.isList ? `z.array(${scalar})` : scalar;
+        return `    ${field.name}: ${expression}.nullable().optional()`;
+      });
       aggregateFields.push(
         `  _sum: z.object({\n${sumFields.join(',\n')}\n  }).nullable().optional()`,
       );
 
-      // Avg: average results are numbers
-      const avgFields = numericFields.map((field) => `    ${field.name}: z.number().nullable()`);
+      // An average is a single number even for a list column, and Decimal stays Decimal.
+      const avgFields = numericFields.map((field) => {
+        const expression = field.type === 'Decimal' ? this.decimalResultExpression() : 'z.number()';
+        return `    ${field.name}: ${expression}.nullable().optional()`;
+      });
       aggregateFields.push(
         `  _avg: z.object({\n${avgFields.join(',\n')}\n  }).nullable().optional()`,
       );
     }
 
-    // Min/max for comparable fields (include BigInt)
-    const comparableFields = model.fields.filter((field) =>
-      ['Int', 'Float', 'Decimal', 'DateTime', 'String', 'BigInt'].includes(field.type),
+    // Prisma takes a min/max of anything orderable, which is every scalar and enum except
+    // Json, and never a list. The previous list was narrower in one direction (no Boolean,
+    // Bytes or enum) and wider in the other (list columns), so it both dropped members
+    // Prisma returns and demanded members it does not.
+    const comparableFields = model.fields.filter(
+      (field) => field.kind !== 'object' && !field.isList && field.type !== 'Json',
     );
 
     if (comparableFields.length > 0) {
+      // `_min` and `_max` are the only aggregate slots holding a column *value*, so they
+      // are the only ones an annotation may narrow. `_count` is a row count and
+      // `_sum` / `_avg` are arithmetic over the group; all three stay numeric whatever
+      // the column holds.
       const minMaxFields = comparableFields.map((field) => {
         const zodType = this.mapPrismaTypeToZod(field);
-        return `    ${field.name}: ${zodType}.nullable()`;
+        return `    ${field.name}: ${zodType}.nullable().optional()`;
       });
       aggregateFields.push(
         `  _min: z.object({\n${minMaxFields.join(',\n')}\n  }).nullable().optional()`,
@@ -650,15 +692,30 @@ ${allFields.join(',\n')}
     return aggregateFields.join(',\n');
   }
 
+  /**
+   * The grouped columns of a `groupBy` row, before the aggregate slots.
+   *
+   * Every column is optional, because a groupBy returns the columns named in `by` and
+   * nothing else: `groupBy({ by: ['name'] })` gives `[{ name: 'x' }]`. Prisma's
+   * `GroupByOutputType` lists them all because it is the maximal type, and the client
+   * narrows it per call with `Pick<..., T['by'][number]>`. A runtime schema cannot see
+   * `by`, so requiring them rejected nearly every real response.
+   *
+   * A nullable column also gets `.nullable()`, since null is its ordinary value and
+   * `.optional()` admits only undefined.
+   *
+   * Enums are groupable and appear in Prisma's own output type, so the old
+   * `kind === 'scalar'` filter simply lost those columns. Arrays are groupable on
+   * PostgreSQL and stay.
+   */
   private buildGroupByFields(model: DMMF.Model): string {
-    // For groupBy, we include the actual field values that can be grouped by
-    // Arrays can be grouped by in databases like PostgreSQL, so include them
-    const groupableFields = model.fields.filter((f) => f.kind === 'scalar');
+    const groupableFields = model.fields.filter((f) => f.kind === 'scalar' || f.kind === 'enum');
 
     return groupableFields
       .map((field) => {
         const zodType = this.mapPrismaTypeToZod(field);
-        return `  ${field.name}: ${zodType}`;
+        const nullable = field.isRequired ? '' : '.nullable()';
+        return `  ${field.name}: ${zodType}${nullable}.optional()`;
       })
       .join(',\n');
   }
