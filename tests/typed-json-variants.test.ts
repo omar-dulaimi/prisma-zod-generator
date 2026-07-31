@@ -173,17 +173,20 @@ describe('precedence matches the CRUD path', () => {
   it('stands down when @zod.custom.use is present', () => {
     // The resolver reports `superseded` for a column carrying both, so the annotation does
     // not replace an explicit custom schema. What the variant then emits is `z.string()`
-    // rather than the custom schema, because variants drop `@zod.custom.use` entirely.
+    // rather than the custom schema, because variants honour no form of `@zod.custom.use`.
     //
-    // That is pre-existing and orthogonal, measured on 3.0.1 with no typedJson block at all:
+    // Pre-existing and orthogonal. Measured on 3.0.1 with no typedJson block at all, using
+    // both the documented `.import([...]).custom.use(X)` form and the bare one:
     //
-    //   models/Scoped.schema.ts         both: z.literal('explicit')   <- honoured
-    //   objects/ScopedCreateInput       both: z.string()              <- dropped
-    //   variants/{pure,input}/Scoped    both: z.string()              <- dropped
+    //                      .import(...).custom.use(X)   bare .custom.use(X)
+    //   models/                       honoured                 honoured
+    //   objects/                      honoured                 DROPPED
+    //   variants/pure                 DROPPED                  DROPPED
+    //   variants/input                DROPPED                  DROPPED
     //
     // So this pins the half that is this feature's business: the annotation must not step
-    // in and claim the column the custom schema asked for. Fixing the drop is a separate
-    // change on a separate plane, and pinning it here means that change cannot land
+    // in and claim the column the custom schema asked for. Closing those four gaps is a
+    // separate change on separate planes, and pinning it here means it cannot land
     // silently.
     for (const variant of VARIANTS) {
       const emitted = member(variantFile(variant), 'both');
