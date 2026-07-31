@@ -26,6 +26,7 @@ describe('typedJson configuration', () => {
     schemaModule: './json-types',
     schemaSuffix: 'Schema',
     namespace: 'PrismaJson',
+    applyToResults: false,
     emitNamespace: false,
     namespaceOutput: './prisma-json-types.d.ts',
     map: { Weird: 'z.custom<unknown>()' },
@@ -110,6 +111,7 @@ describe('typedJson configuration', () => {
         schemaModule: undefined,
         schemaSuffix: DEFAULT_TYPED_JSON_SCHEMA_SUFFIX,
         namespace: DEFAULT_TYPED_JSON_NAMESPACE,
+        applyToResults: false,
         emitNamespace: false,
         namespaceOutput: DEFAULT_TYPED_JSON_NAMESPACE_OUTPUT,
         map: {},
@@ -117,6 +119,25 @@ describe('typedJson configuration', () => {
       expect(DEFAULT_TYPED_JSON_SCHEMA_SUFFIX).toBe('Schema');
       expect(DEFAULT_TYPED_JSON_NAMESPACE).toBe('PrismaJson');
       expect(DEFAULT_TYPED_JSON_NAMESPACE_OUTPUT).toBe('./prisma-json-types.d.ts');
+    });
+
+    /**
+     * The read path is opt-in, and only an explicit `true` opts in. A result schema
+     * describes rows the database already returned, so narrowing it can make a row
+     * written before the annotation existed throw on READ - which is why the truthy
+     * values a config file can pick up by accident must not be enough.
+     */
+    it.each([
+      [undefined, false],
+      [false, false],
+      ['true', false],
+      [1, false],
+      [true, true],
+    ])('resolves applyToResults: %s to %s', (given, expected) => {
+      const resolved = resolveTypedJsonConfig({
+        typedJson: { applyToResults: given as boolean | undefined },
+      });
+      expect(resolved?.applyToResults).toBe(expected);
     });
 
     it('keeps an explicitly empty schemaSuffix instead of defaulting it', () => {

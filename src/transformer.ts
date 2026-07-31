@@ -4636,7 +4636,15 @@ ${helperCode}
     if (!generatorConfig) {
       throw new Error('Generator config not available for result schema generation');
     }
-    const resultGenerator = new ResultSchemaGenerator(generatorConfig);
+    // The typed-JSON context is where the *file* sits, which the generator cannot know:
+    // a relative `typedJson.schemaModule` has to resolve from `results/`, and in
+    // single-file mode from wherever the bundle lands. It is inert unless the user set
+    // `typedJson.applyToResults`.
+    const resultGenerator = new ResultSchemaGenerator(generatorConfig, {
+      outputSubdir: Transformer.typedJsonOutputSubdir('results'),
+      importExtension: Transformer.getImportFileExtension(),
+      singleFile: isSingleFileEnabled(),
+    });
 
     // Determine which pure model schemas (schemas/models/<Model>.schema.ts) are
     // emitted so relation fields in result schemas can reference them instead of
@@ -4777,6 +4785,13 @@ ${helperCode}
               `import { ${info.exportName} } from '../models/${info.fileBase}${importExtension}';\n`,
             );
           }
+        }
+
+        // Typed-JSON replacements, already merged per module and filtered to the names
+        // this file mentions. Empty unless `typedJson.applyToResults` is on, which is
+        // what keeps the emitted bytes identical for everyone who did not ask for this.
+        for (const typedJsonImport of resultSchema.typedJsonImports ?? []) {
+          imports.push(`${typedJsonImport.importStatement};\n`);
         }
 
         await writeFileSafely(filePath, `${imports.join('')}${resultSchema.zodSchema}`);

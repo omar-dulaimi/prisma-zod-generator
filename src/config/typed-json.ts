@@ -53,6 +53,28 @@ export interface TypedJsonConfig {
   /** Namespace the emitted `declare global` block declares. Default: `PrismaJson`. */
   namespace?: string;
 
+  /**
+   * Apply the annotation to `schemas/results/*` as well. **Default: false.**
+   *
+   * Off by default deliberately, and the reasoning is the point rather than the setting.
+   * Without it PZG is self-inconsistent: the same field with the same annotation is
+   * `z.enum(['A','B'])` in `WorkflowCreateInput` and `z.string()` in
+   * `WorkflowFindManyResult`. That is a defect on its own terms.
+   *
+   * It is still not worth defaulting to true, because result schemas are emitted by
+   * default - thirteen per model, with no `emit` config at all. So typing them by default
+   * would not be a quiet nicety for people who opted into result validation; it would
+   * change the READ path for everyone who turns `typedJson` on. A row written before the
+   * annotation existed then throws on read, which is a production incident in someone
+   * else's data, triggered by adding a comment to a schema.
+   *
+   * Weigh the two failure modes rather than the two principles. Default true breaks
+   * reads of existing rows. Default false leaves the result schema disagreeing with the
+   * input schema until the user opts in: confusing, documented, breaks nothing. The
+   * second is the lesser harm and the only one that cannot page someone at night.
+   */
+  applyToResults?: boolean;
+
   /** Emit the `declare global` namespace file. Default: false. */
   emitNamespace?: boolean;
 
@@ -74,6 +96,7 @@ export interface ResolvedTypedJsonConfig {
   schemaModule: string | undefined;
   schemaSuffix: string;
   namespace: string;
+  applyToResults: boolean;
   emitNamespace: boolean;
   namespaceOutput: string;
   map: Record<string, string>;
@@ -112,6 +135,8 @@ export function resolveTypedJsonConfig(
     // legitimate convention and is not the same thing as leaving the key unset.
     schemaSuffix: typedJson.schemaSuffix ?? DEFAULT_TYPED_JSON_SCHEMA_SUFFIX,
     namespace: typedJson.namespace || DEFAULT_TYPED_JSON_NAMESPACE,
+    // `=== true`, so anything short of an explicit opt-in leaves the read path alone.
+    applyToResults: typedJson.applyToResults === true,
     emitNamespace: typedJson.emitNamespace === true,
     namespaceOutput: typedJson.namespaceOutput || DEFAULT_TYPED_JSON_NAMESPACE_OUTPUT,
     map: { ...(typedJson.map ?? {}) },
@@ -149,6 +174,7 @@ export function resolveTypedJsonType(
     schemaModule: undefined,
     schemaSuffix: DEFAULT_TYPED_JSON_SCHEMA_SUFFIX,
     namespace: DEFAULT_TYPED_JSON_NAMESPACE,
+    applyToResults: false,
     emitNamespace: false,
     namespaceOutput: DEFAULT_TYPED_JSON_NAMESPACE_OUTPUT,
     map: {},

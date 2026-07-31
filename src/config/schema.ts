@@ -313,6 +313,12 @@ export const ConfigurationSchema: JSONSchema7 = {
           description:
             'Namespace the emitted declare global block declares. Matches prisma-json-types-generator.',
         },
+        applyToResults: {
+          type: 'boolean',
+          default: false,
+          description:
+            'Also apply the annotation to schemas/results/*. Off by default: result schemas are emitted by default and describe rows the database already returned, so typing them would make a row written before the annotation existed throw on READ. Turn it on to make the read path agree with the write path.',
+        },
         emitNamespace: {
           type: 'boolean',
           default: false,
