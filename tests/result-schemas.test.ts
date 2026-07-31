@@ -126,12 +126,22 @@ describe('Result Schema Generation Tests', () => {
             }
           });
 
-          // Operations that always return a value should not be nullable
+          // Operations Prisma declares non-nullable, so the schema is not wrapped the way
+          // findUnique's `z.nullable(z.object(...))` is.
+          //
+          // The list comes from the DMMF rather than from intuition: `createOneUser` and
+          // `upsertOneUser` are `isNullable=false`, while `updateOneUser` and `deleteOneUser`
+          // are `isNullable=true`. Update used to be listed here on the reasoning that it
+          // throws rather than returning null, which is true of the TypeScript client but
+          // not of the DMMF the generator builds from. It never failed, because the old
+          // assertion grepped the file for `.nullable()` with empty parens and
+          // `z.nullable(z.object(...))` does not match that. So it checked the columns by
+          // accident and the wrapper never at all.
           const nonNullableOperations = [
             'UserCreateResult.schema.ts',
-            'UserUpdateResult.schema.ts',
+            'UserUpsertResult.schema.ts',
             'PostCreateResult.schema.ts',
-            'PostUpdateResult.schema.ts',
+            'PostUpsertResult.schema.ts',
           ];
 
           nonNullableOperations.forEach((resultFile) => {
@@ -139,9 +149,17 @@ describe('Result Schema Generation Tests', () => {
             if (existsSync(filePath)) {
               const content = readFileSync(filePath, 'utf-8');
 
-              // Should be required object schema
-              expect(content).toMatch(/z\.object\(/);
-              expect(content).not.toMatch(/\.nullable\(\)/);
+              expect(content, resultFile).toMatch(/z\.object\(/);
+              expect(content, resultFile).not.toMatch(/=\s*z\.nullable\(/);
+            }
+          });
+
+          // The other half of the same claim, which nothing was asserting: the operations
+          // Prisma DOES declare nullable are wrapped.
+          ['UserFindUniqueResult.schema.ts', 'UserUpdateResult.schema.ts'].forEach((resultFile) => {
+            const filePath = join(resultsDir, resultFile);
+            if (existsSync(filePath)) {
+              expect(readFileSync(filePath, 'utf-8'), resultFile).toMatch(/=\s*z\.nullable\(/);
             }
           });
         } finally {

@@ -543,7 +543,11 @@ ${allFields.join(',\n')}
         return `  ${field.name}: ${this.buildRelationFieldSchema(field, model, modelDependencies)}`;
       }
       const zodType = this.mapPrismaTypeToZod(field);
-      const optionalMarker = !field.isRequired ? '.optional()' : '';
+      // `.nullable()` before `.optional()`, because a nullable column returns null and
+      // `.optional()` admits only undefined. Without it, `bio String?` emitted
+      // `z.string().optional()` and rejected the ordinary state of the column, in all seven
+      // record-shaped schemas. `Json?` and enums escaped it only by mapping to z.unknown().
+      const optionalMarker = !field.isRequired ? '.nullable().optional()' : '';
       return `  ${field.name}: ${zodType}${optionalMarker}`;
     });
 
