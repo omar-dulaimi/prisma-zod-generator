@@ -1,3 +1,15 @@
+## [3.0.2](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.0.1...v3.0.2) (2026-07-31)
+
+### 🐛 Bug Fixes
+
+* **generator:** warn when two models collide on one input-type name ([567ca49](https://github.com/omar-dulaimi/prisma-zod-generator/commit/567ca49517810e821ad7c1aefe5816bfe0e92dca))
+* **results:** accept null for a nullable column in every result schema ([04f5b99](https://github.com/omar-dulaimi/prisma-zod-generator/commit/04f5b99919d84a18a2dda33ed48f577b23b08923))
+* **results:** match aggregate result schemas to what Prisma returns ([5874deb](https://github.com/omar-dulaimi/prisma-zod-generator/commit/5874debf370ea97eaf916bf4405b19a0fc6e4077))
+* **results:** match groupBy result schemas to what Prisma returns ([91b3c88](https://github.com/omar-dulaimi/prisma-zod-generator/commit/91b3c886e7e8b994dd170134d00a3f5e91b30c93))
+* **where-unique:** emit one key per compound unique selector ([651210b](https://github.com/omar-dulaimi/prisma-zod-generator/commit/651210bcdac0a07a08aabec36ea98e5b795e5d39))
+* **zod-annotations:** keep column validations out of OrderBy schemas ([76ebcde](https://github.com/omar-dulaimi/prisma-zod-generator/commit/76ebcde1a99c79bcc85bcc2c3e9ecf2d3a50e7e9))
+* **zod-annotations:** match Select schemas by whole name, not substring ([ca1efe7](https://github.com/omar-dulaimi/prisma-zod-generator/commit/ca1efe7a0dabe47ecc7ee6e234f0936b7f4f52d9))
+
 ## [3.0.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.0.0...v3.0.1) (2026-07-26)
 
 ### 🐛 Bug Fixes
