@@ -28,6 +28,7 @@ import {
 } from './generators/typed-json-namespace';
 import Transformer from './transformer';
 import { detectPjtgAnnotation } from './typed-json/annotation-parser';
+import { planTypedFieldUpdateOperations } from './generators/typed-field-update-operations';
 import { isTypedJsonInputType, reportTypedJsonResult } from './typed-json/emission';
 import { resolveTypedJsonField } from './typed-json/resolver';
 import type { SchemaEnumWithValues } from './types';
@@ -574,7 +575,7 @@ export async function generate(options: GeneratorOptions) {
     const addMissingInputObjectTypeOptions =
       resolveAddMissingInputObjectTypeOptions(backwardCompatibleOptions);
 
-    const mutableInputObjectTypes = Array.from(inputObjectTypes ?? []);
+    let mutableInputObjectTypes = Array.from(inputObjectTypes ?? []);
     const mutableOutputObjectTypes = Array.from(outputObjectTypes ?? []);
 
     addMissingInputObjectTypes(
@@ -585,6 +586,18 @@ export async function generate(options: GeneratorOptions) {
       dataSource.provider,
       addMissingInputObjectTypeOptions,
     );
+
+    // Give every annotated column its own copy of the shared `<Type>FieldUpdateOperationsInput`,
+    // so `{ label: { set } }` is constrained the same way `{ label }` is. A no-op with no
+    // `typedJson` block, and for every unannotated column with one.
+    const typedFieldUpdateOperations = planTypedFieldUpdateOperations({
+      inputObjectTypes: mutableInputObjectTypes,
+      models,
+      config: Transformer.getTypedJsonConfig(),
+      extractModelName: (schemaName) => Transformer.extractModelNameFromContext(schemaName),
+    });
+    mutableInputObjectTypes = typedFieldUpdateOperations.inputObjectTypes;
+    Transformer.setTypedFieldUpdateOperationsPlan(typedFieldUpdateOperations.plan);
 
     // Set dual export configuration options on Transformer
     // In minimal mode, forcibly disable select/include types regardless of legacy flags

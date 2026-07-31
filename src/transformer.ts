@@ -21,6 +21,10 @@ import {
   resolveTypedJsonOwnerModel,
 } from './typed-json/emission';
 import { resolveTypedJsonField, type TypedJsonResolved } from './typed-json/resolver';
+import {
+  EMPTY_TYPED_FIELD_UPDATE_OPERATIONS_PLAN,
+  type TypedFieldUpdateOperationsPlan,
+} from './generators/typed-field-update-operations';
 import { logger } from './utils/logger';
 import {
   applyPattern,
@@ -177,6 +181,17 @@ export default class Transformer {
    */
   static getTypedJsonConfig(): ResolvedTypedJsonConfig | null {
     return resolveTypedJsonConfig(this.generatorConfig);
+  }
+
+  /**
+   * The per-field copies of Prisma's shared update-operations inputs, planned once per
+   * generate. Empty unless `typedJson` is configured and some column is annotated.
+   */
+  private static typedFieldUpdateOperationsPlan: TypedFieldUpdateOperationsPlan =
+    EMPTY_TYPED_FIELD_UPDATE_OPERATIONS_PLAN;
+
+  static setTypedFieldUpdateOperationsPlan(plan: TypedFieldUpdateOperationsPlan): void {
+    this.typedFieldUpdateOperationsPlan = plan;
   }
 
   static getStrictModeResolver(): StrictModeResolver | null {
@@ -1651,6 +1666,12 @@ export default class Transformer {
   private typedJsonTargetForArg(
     argName: string,
   ): { modelName: string; field: PrismaDMMF.Field } | null {
+    // A per-field copy of a shared update-operations input. Its name yields no model to
+    // the general extraction, and its `set` member holds a value of the column it was
+    // copied for, so the plan is the only thing that knows which column that is.
+    const copied = Transformer.typedFieldUpdateOperationsPlan.targetFor(this.name, argName);
+    if (copied) return copied;
+
     const wrapper = this.listWrapperTarget();
     if (wrapper) {
       // Only the operation members. Anything else in one of these files is not a value of
@@ -1719,7 +1740,10 @@ export default class Transformer {
     // this the wrapper references a schema it never imports - and the same is true of the
     // `Unchecked` halves of a nested write, whose model the extraction reads wrong.
     const owner =
-      this.typedJsonOwnerModel(modelName) ?? this.listWrapperTarget()?.modelName ?? null;
+      Transformer.typedFieldUpdateOperationsPlan.ownerOf(this.name) ??
+      this.typedJsonOwnerModel(modelName) ??
+      this.listWrapperTarget()?.modelName ??
+      null;
     if (!owner) return [];
 
     const enhancedModel = this.enhancedModels.find((em) => em.model.name === owner);
@@ -3168,6 +3192,12 @@ const isValidDecimalInput = (
   private resolvePrismaTypeForObject(exportName: string): string | null {
     // No Prisma types for generic Args wrappers here
     if (exportName.endsWith('Args')) return null;
+
+    // A per-field copy of a shared update-operations input has no Prisma type of its own.
+    // It is structurally the input it was copied from and binds to that one, so the
+    // emitted file still typechecks against the client.
+    const copiedFrom = Transformer.typedFieldUpdateOperationsPlan.prismaTypeNameFor(exportName);
+    if (copiedFrom) return `Prisma.${copiedFrom}`;
 
     // Handle aggregate input objects that use the `Type` suffix
     if (/(Count|Min|Max|Avg|Sum)AggregateInput$/.test(exportName)) {

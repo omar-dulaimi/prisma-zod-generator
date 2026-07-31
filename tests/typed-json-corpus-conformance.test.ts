@@ -740,7 +740,6 @@ const CORPUS: CorpusFile[] = [
         at: 'typed',
         value: { typed: { set: 'invalid' } },
         from: "string.test-d.ts: expectNotAssignable<ModelUpdateInput>({ typed: { set: 'invalid' } })",
-        gap: 'StringFieldUpdateOperationsInput.set stays z.string(); the annotation is applied to the direct branch of the update union only',
       },
       {
         target: 'objects/ModelUpdateInput',
@@ -755,7 +754,6 @@ const CORPUS: CorpusFile[] = [
         at: 'literal',
         value: { literal: { set: 'invalid' } },
         from: "string.test-d.ts: expectNotAssignable<ModelUpdateInput>({ literal: { set: 'invalid' } })",
-        gap: 'StringFieldUpdateOperationsInput.set stays z.string(); the annotation is applied to the direct branch of the update union only',
       },
       {
         target: 'models/StringArrayModel',
@@ -1831,13 +1829,13 @@ describe('PJTG corpus conformance with typedJson.applyToResults: the score', () 
  * Two numbers, both produced by generating, importing and `.parse()`ing, never by reading
  * the list below:
  *
- *   default                     214 / 230   93.0%   what a `typedJson` block gives you
- *   `applyToResults: true`      219 / 230   95.2%   the same corpus, read path opted in
+ *   default                     216 / 230   93.9%   what a `typedJson` block gives you
+ *   `applyToResults: true`      221 / 230   96.1%   the same corpus, read path opted in
  *
  * The first is the headline, because it is what a user gets out of the box. The second is
  * the ceiling this branch can reach by configuration alone.
  *
- * The 16 default-mode gaps fall in four groups, and the difference between them matters
+ * The 14 default-mode gaps fall in three groups, and the difference between them matters
  * more than the total:
  *
  *   - **5, open by configuration.** `GroupByOutputType` and the Min/Max aggregate output
@@ -1845,11 +1843,6 @@ describe('PJTG corpus conformance with typedJson.applyToResults: the score', () 
  *     result schema describes a row already in the database, so narrowing it on READ can
  *     reject data written before the annotation existed. The flag closes all 5, which is
  *     the whole of the difference between the two scores above.
- *   - **2, a PZG defect in the typed-JSON path.** `{ field: { set: <value> } }` on a
- *     *scalar* column goes through the shared `StringFieldUpdateOperationsInput`, which
- *     Prisma emits once per schema rather than once per column; typing it would apply one
- *     column's annotation to every String column. Closing it needs a per-field variant of
- *     that wrapper, which is new machinery rather than another call site.
  *   - **3, PZG defects outside the typed-JSON path.** Two are groupBy's `_count` slot
  *     being `.optional()` without `.nullable()` while the other four aggregate slots are
  *     both, so upstream's explicit `_count: null` is rejected; one is that annotations
@@ -1862,13 +1855,17 @@ describe('PJTG corpus conformance with typedJson.applyToResults: the score', () 
  *     it cannot assert anything about a type's identity.
  *
  * So 224 is the ceiling of the *corpus* (230 minus the 6 that no runtime check can
- * express), not the ceiling of this branch. Reaching it needs the 5 real defects in the
- * middle two groups fixed. 219 is what configuration alone can reach today.
+ * express), not the ceiling of this branch. Reaching it needs the 3 real defects in the
+ * middle group fixed. 221 is what configuration alone can reach today.
+ *
+ * The two `{ field: { set: <value> } }` rows that used to sit here are gone: every
+ * annotated column now has its own copy of the shared `<Type>FieldUpdateOperationsInput`,
+ * so the operations arm of an update is constrained the same way the direct arm is.
  *
  * Gaps are recorded rather than hidden because a legible gap list is worth more than a
  * green suite that was trimmed to fit. The snapshots name every one with its reason.
  */
-const EXPECTED_TALLY: Tally = { cases: 230, matching: 214, gaps: 16 };
+const EXPECTED_TALLY: Tally = { cases: 230, matching: 216, gaps: 14 };
 
 /** The same corpus generated with `typedJson.applyToResults: true`. */
-const EXPECTED_TALLY_APPLY_TO_RESULTS: Tally = { cases: 230, matching: 219, gaps: 11 };
+const EXPECTED_TALLY_APPLY_TO_RESULTS: Tally = { cases: 230, matching: 221, gaps: 9 };

@@ -26,6 +26,33 @@ const TYPED_JSON_INPUT_TYPES = new Set(['Json', 'String', 'Int', 'Float']);
 export const LIST_OPERATION_MEMBERS = new Set(['set', 'push']);
 
 /**
+ * Prisma's shared per-scalar update-operations input: `StringFieldUpdateOperationsInput`,
+ * `NullableIntFieldUpdateOperationsInput`, and so on.
+ *
+ * One of these exists per scalar type for the whole schema, not per column, which is why
+ * it can never carry one column's annotation.
+ */
+const SHARED_FIELD_UPDATE_OPERATIONS_INPUT =
+  /^(?:Nullable)?[A-Za-z0-9]+FieldUpdateOperationsInput$/;
+
+export function isSharedFieldUpdateOperationsInput(name: unknown): boolean {
+  return typeof name === 'string' && SHARED_FIELD_UPDATE_OPERATIONS_INPUT.test(name);
+}
+
+/**
+ * The name of the per-field copy of a shared update-operations input.
+ *
+ * `Post.label` gets `PostLabelFieldUpdateOperationsInput`. The name is not guaranteed
+ * unique on its own - `Post.labelField` and `PostLabel.field` both produce
+ * `PostLabelFieldFieldUpdateOperationsInput` - so the caller checks for a clash and
+ * leaves the field alone when it finds one.
+ */
+export function typedFieldUpdateOperationsName(modelName: string, fieldName: string): string {
+  const head = fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+  return `${modelName}${head}FieldUpdateOperationsInput`;
+}
+
+/**
  * Whether an annotation is allowed to replace this input type.
  *
  * Deliberately a short allow-list rather than "every scalar". These are the types the
