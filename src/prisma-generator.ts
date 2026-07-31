@@ -22,7 +22,21 @@ import {
   resolveAddMissingInputObjectTypeOptions,
   resolveModelsComments,
 } from './helpers';
+import {
+  writeTypedJsonNamespace,
+  type TypedJsonNamespaceBinding,
+} from './generators/typed-json-namespace';
 import Transformer from './transformer';
+import { detectPjtgAnnotation } from './typed-json/annotation-parser';
+import { planTypedFieldUpdateOperations } from './generators/typed-field-update-operations';
+import {
+  isTypedJsonInputType,
+  mergeTypedJsonImports,
+  reportTypedJsonResult,
+} from './typed-json/emission';
+import { resolveTypedJsonField } from './typed-json/resolver';
+import { resolveTypedJsonConfig } from './config/typed-json';
+import type { CustomImport } from './parsers/zod-comments';
 import type { SchemaEnumWithValues } from './types';
 import { ResolvedSafetyConfig } from './types/safety';
 import { logger } from './utils/logger';
@@ -567,7 +581,7 @@ export async function generate(options: GeneratorOptions) {
     const addMissingInputObjectTypeOptions =
       resolveAddMissingInputObjectTypeOptions(backwardCompatibleOptions);
 
-    const mutableInputObjectTypes = Array.from(inputObjectTypes ?? []);
+    let mutableInputObjectTypes = Array.from(inputObjectTypes ?? []);
     const mutableOutputObjectTypes = Array.from(outputObjectTypes ?? []);
 
     addMissingInputObjectTypes(
@@ -578,6 +592,18 @@ export async function generate(options: GeneratorOptions) {
       dataSource.provider,
       addMissingInputObjectTypeOptions,
     );
+
+    // Give every annotated column its own copy of the shared `<Type>FieldUpdateOperationsInput`,
+    // so `{ label: { set } }` is constrained the same way `{ label }` is. A no-op with no
+    // `typedJson` block, and for every unannotated column with one.
+    const typedFieldUpdateOperations = planTypedFieldUpdateOperations({
+      inputObjectTypes: mutableInputObjectTypes,
+      models,
+      config: Transformer.getTypedJsonConfig(),
+      extractModelName: (schemaName) => Transformer.extractModelNameFromContext(schemaName),
+    });
+    mutableInputObjectTypes = typedFieldUpdateOperations.inputObjectTypes;
+    Transformer.setTypedFieldUpdateOperationsPlan(typedFieldUpdateOperations.plan);
 
     // Set dual export configuration options on Transformer
     // In minimal mode, forcibly disable select/include types regardless of legacy flags
@@ -727,6 +753,9 @@ export async function generate(options: GeneratorOptions) {
       } catch {}
     }
 
+    // After the single-file cleanup, which wipes everything beside the bundle.
+    await emitTypedJsonNamespace(models);
+
     // Save the manifest at the end of generation
     const finalManifest = Transformer.getCurrentManifest();
     if (finalManifest && resolvedSafetyConfig && !resolvedSafetyConfig.skipManifest) {
@@ -742,6 +771,172 @@ export async function generate(options: GeneratorOptions) {
     // and simply produced no schemas.
     console.error(error);
     throw error;
+  }
+}
+
+/**
+ * A field is only worth a namespace declaration if an emitter would actually have replaced
+ * its schema. Declaring `PrismaJson.Foo` for a field whose schema is untouched tells the
+ * user the annotation took effect when it did not.
+ */
+function isTypedJsonCandidate(field: DMMF.Field): boolean {
+  return field.kind === 'scalar' && isTypedJsonInputType(field.type) && !!field.documentation;
+}
+
+/**
+ * Tell the user their prisma-json-types-generator annotations were seen and ignored.
+ *
+ * Output is unchanged, which is the whole contract for an unconfigured project. Silence
+ * would be worse than a line of text: a schema carrying `/// [Foo]` looks like it should be
+ * doing something, and there is otherwise nothing to distinguish "not configured" from
+ * "configured and quietly broken".
+ */
+function warnAboutIgnoredPjtgAnnotations(models: DMMF.Model[]): void {
+  const annotated: string[] = [];
+  for (const model of models) {
+    for (const field of model.fields) {
+      if (isTypedJsonCandidate(field) && detectPjtgAnnotation(field.documentation)) {
+        annotated.push(`${model.name}.${field.name}`);
+      }
+    }
+  }
+  if (annotated.length === 0) return;
+
+  const shown = annotated.slice(0, 5).join(', ');
+  const more = annotated.length > 5 ? `, and ${annotated.length - 5} more` : '';
+  logger.warn(
+    `[typedJson] ${annotated.length} field(s) carry prisma-json-types-generator annotations ` +
+      `(${shown}${more}), but "typedJson" is not configured, so their schemas are unchanged. ` +
+      `Set typedJson.schemaModule to have prisma-zod-generator use them.`,
+  );
+}
+
+/**
+ * The optional / nullable markers a variant applies to a column.
+ *
+ * Extracted so the typed-JSON branch and the ordinary branch cannot drift: an annotation
+ * replaces the base schema and gets no vote on optionality, which is a fact about the
+ * column.
+ */
+function variantOptionalityModifiers(field: DMMF.Field, variantName: string): string {
+  if (field.isRequired) return '';
+  // Input schemas: allow omitting the field OR passing null explicitly.
+  // Pure/result schemas: the database returns null for an optional column, never undefined.
+  return variantName === 'input' ? '.optional().nullable()' : '.nullable()';
+}
+
+/**
+ * A variant field's PJTG annotation, or `null` to emit it exactly as before.
+ *
+ * `variants/` was the one plane that ignored these, so the same column with the same
+ * annotation disagreed with `models/` and `objects/`. That is the "two sources of truth"
+ * the feature exists to remove, reappearing inside the generator's own output.
+ *
+ * Returns the ELEMENT schema alongside the whole-field one, because a list column's
+ * annotation describes the element and the caller adds its own `z.array(...)`.
+ */
+function resolveVariantTypedJson(
+  field: DMMF.Field,
+  model: DMMF.Model,
+  variantName: string,
+  config: CustomGeneratorConfig | undefined,
+): { expression: string; elementExpression: string; imports: CustomImport[] } | null {
+  const resolved = resolveTypedJsonConfig({ typedJson: config?.typedJson });
+  if (!resolved) return null;
+  if (!field.documentation) return null;
+  if (field.kind !== 'scalar' || !isTypedJsonInputType(field.type)) return null;
+
+  const result = resolveTypedJsonField(
+    {
+      modelName: model.name,
+      fieldName: field.name,
+      documentation: field.documentation,
+      isList: field.isList,
+      isOptional: !field.isRequired,
+      outputSubdir: Transformer.typedJsonOutputSubdir(`variants/${variantName}`),
+      importExtension: Transformer.getImportFileExtension(),
+    },
+    resolved,
+  );
+
+  reportTypedJsonResult(result, () => `${model.name}.${field.name}`);
+  if (result.status !== 'resolved') return null;
+
+  return {
+    expression: result.elementExpression,
+    elementExpression: result.elementExpression,
+    imports: result.imports,
+  };
+}
+
+/**
+ * Write the `declare global` namespace file, when `typedJson.emitNamespace` asks for it.
+ *
+ * Runs after every emitter, so the declarations describe the schemas that were actually
+ * used. `writeTypedJsonNamespace` decides whether there is anything to write and refuses to
+ * overwrite a file it did not generate.
+ */
+async function emitTypedJsonNamespace(models: DMMF.Model[]): Promise<void> {
+  const config = Transformer.getTypedJsonConfig();
+  if (!config) {
+    warnAboutIgnoredPjtgAnnotations(models);
+    return;
+  }
+
+  const bindings: TypedJsonNamespaceBinding[] = [];
+  for (const model of models) {
+    for (const field of model.fields) {
+      if (!isTypedJsonCandidate(field)) continue;
+
+      const result = resolveTypedJsonField(
+        {
+          modelName: model.name,
+          fieldName: field.name,
+          documentation: field.documentation,
+          isList: field.isList,
+          isOptional: !field.isRequired,
+        },
+        config,
+      );
+      // Deduplicated in-process, so this reports anything the emitters could not - including
+      // when the emitters are switched off entirely and nothing else would have said so.
+      reportTypedJsonResult(result, () => `${model.name}.${field.name}`);
+      if (result.status !== 'resolved') continue;
+
+      for (const use of result.typeUses) {
+        bindings.push({
+          typeName: use.typeName,
+          model: model.name,
+          field: field.name,
+          resolution: use.resolution,
+        });
+      }
+    }
+  }
+
+  const outputPath = Transformer.getOutputPath();
+  const result = await writeTypedJsonNamespace({
+    bindings,
+    config,
+    baseDir: outputPath,
+    zodImportSpecifier: Transformer.resolveZodImportSpecifier(),
+  });
+
+  for (const warning of result.warnings) logger.warn(warning);
+
+  if (!result.filePath) return;
+  logger.debug(
+    `[typedJson] Wrote ${config.namespace} namespace to ${result.filePath} (${result.declared.length} type(s))`,
+  );
+
+  // Track it only when it lands inside the output directory. `namespaceOutput` is meant to
+  // be allowed to point at the consumer's src/, and the manifest drives cleanup of the
+  // output directory alone.
+  const manifest = Transformer.getCurrentManifest();
+  const relative = path.relative(outputPath, result.filePath);
+  const isInsideOutput = !relative.startsWith('..') && !path.isAbsolute(relative);
+  if (manifest && isInsideOutput) {
+    addFileToManifest(manifest, result.filePath, outputPath);
   }
 }
 
@@ -2204,12 +2399,29 @@ async function generateVariantSchemaContent(
   });
   const enhancedModel = enhancedModels[0];
 
+  /** Imports the resolved PJTG annotations need. Stays empty without a `typedJson` block. */
+  const variantTypedJsonImports: CustomImport[] = [];
+
   const fieldDefinitions = enabledFields
     .map((field) => {
       // Check if we have enhanced field information with @zod annotations
       const enhancedField = enhancedModel?.enhancedFields.find(
         (ef) => ef.field.name === field.name,
       );
+
+      // A PJTG annotation, before the `@zod` branch, mirroring the CRUD path. It resolves
+      // to `superseded` when `@zod.custom.use(...)` is present, so an explicit custom
+      // schema still wins; a plain `@zod` chain is dropped when the annotation resolves,
+      // exactly as `objects/` does. Inert without a `typedJson` block: the resolver returns
+      // `none` without so much as reading the comment.
+      const typedJson = resolveVariantTypedJson(field, model, variantName, config);
+      if (typedJson) {
+        variantTypedJsonImports.push(...typedJson.imports);
+        const base = field.isList
+          ? `z.array(${typedJson.elementExpression})`
+          : typedJson.expression;
+        return `    ${field.name}: ${base}${variantOptionalityModifiers(field, variantName)}`;
+      }
 
       if (enhancedField && enhancedField.hasZodAnnotations && enhancedField.zodSchema) {
         // Use the enhanced schema with @zod annotations
@@ -2246,16 +2458,7 @@ async function generateVariantSchemaContent(
       // Apply consistent optional/nullable patterns based on Prisma behavior:
       // - Database stores NULL for optional fields (never undefined)
       // - Input can accept omitted fields (become NULL) or explicit NULL
-      let modifiers = '';
-      if (!field.isRequired) {
-        if (variantName === 'input') {
-          // Input schemas: allow omitting fields OR passing null explicitly
-          modifiers = '.optional().nullable()';
-        } else {
-          // Pure/Result schemas: database returns null for optional fields, never undefined
-          modifiers = '.nullable()';
-        }
-      }
+      const modifiers = variantOptionalityModifiers(field, variantName);
 
       return `    ${field.name}: ${base}${modifiers}`;
     })
@@ -2274,6 +2477,17 @@ async function generateVariantSchemaContent(
     uniqueCustomImports.length > 0
       ? new Transformer({}).generateCustomImportStatements(uniqueCustomImports, currentDir)
       : '';
+
+  // Imports for the resolved PJTG annotations. `mergeTypedJsonImports` deduplicates the
+  // names across fields and drops the statement entirely in single-file mode, where the
+  // aggregator inlines every schema and a relative specifier would not resolve.
+  const typedJsonImportLines = mergeTypedJsonImports(
+    variantTypedJsonImports,
+    fieldDefinitions,
+    isSingleFileEnabled(),
+  )
+    .map((customImport) => `${customImport.importStatement}\n`)
+    .join('');
 
   // Apply model-level validation if present and appropriate for this variant type
   // Model-level validation typically applies to pure/result schemas, not input schemas
@@ -2320,7 +2534,7 @@ async function generateVariantSchemaContent(
     typeName = `${model.name}${variantSuffix}Type`;
   }
 
-  return `${zImport}${prismaImport}${customImportLines}${enumImportLines}// prettier-ignore
+  return `${zImport}${prismaImport}${customImportLines}${typedJsonImportLines}${enumImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
 })${strictModeSuffix}${partialSuffix}${modelLevelValidation};
@@ -2529,6 +2743,7 @@ async function generatePureModelSchemas(
       jsonSchemaCompatible: config.jsonSchemaCompatible,
       jsonSchemaOptions: config.jsonSchemaOptions,
       decimalMode: config.decimalMode,
+      typedJson: config.typedJson,
     });
 
     // Detect circular dependencies if the option is enabled

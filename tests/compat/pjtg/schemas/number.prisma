@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../target/number"
+}
+
+generator json {
+  provider = "node ./index.js"
+  namespace = "PNumberJson"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Model {
+  id Int @id @default(autoincrement())
+
+  /// [Price]
+  price Int
+  /// [NullablePrice]
+  nullablePrice Int?
+  /// [FloatPrice]
+  floatPrice Float
+  /// [Config]
+  config Json?
+}

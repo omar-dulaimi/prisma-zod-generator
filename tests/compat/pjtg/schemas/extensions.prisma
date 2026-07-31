@@ -1,0 +1,21 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../target/extensions"
+}
+
+generator json {
+  provider = "node ./index.js"
+  namespace = "PExtensionsJson"
+  allowAny = true
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  
+  /// [UserProfile]
+  profile Json?
+}

@@ -6,6 +6,14 @@
 import { DMMF } from '@prisma/generator-helper';
 import { GeneratorConfig } from '../config/parser';
 import { getDefaultConfiguration } from '../config/defaults';
+import { resolveTypedJsonConfig, type ResolvedTypedJsonConfig } from '../config/typed-json';
+import type { CustomImport } from '../parsers/zod-comments';
+import {
+  isTypedJsonInputType,
+  mergeTypedJsonImports,
+  reportTypedJsonResult,
+} from '../typed-json/emission';
+import { resolveTypedJsonField } from '../typed-json/resolver';
 
 /**
  * Prisma operation types that return results
@@ -72,6 +80,22 @@ export interface ResultModelSchemaRef {
 }
 
 /**
+ * Where the emitted result files sit and how they import, for a relative
+ * `typedJson.schemaModule`. Supplied by the transformer, which owns the output layout;
+ * omit it and a relative specifier is emitted exactly as configured, which is what a
+ * caller driving this generator directly wants and what `typedJson.map` needs nothing
+ * of, since a mapped expression imports nothing at all.
+ */
+export interface ResultTypedJsonContext {
+  /** Directory of the emitted file relative to the output root, e.g. `schemas/results`. */
+  outputSubdir?: string;
+  /** Extension to append to relative specifiers, e.g. `.js` under NodeNext. */
+  importExtension?: string;
+  /** True in single-file mode, where imports must be one name per statement. */
+  singleFile?: boolean;
+}
+
+/**
  * Generated result schema information
  */
 export interface GeneratedResultSchema {
@@ -88,6 +112,12 @@ export interface GeneratedResultSchema {
    * Separate from `dependencies` (which routes through `../objects`).
    */
   modelDependencies: string[];
+  /**
+   * Imports the typed-JSON replacements in this schema need, already merged and
+   * filtered to the names its body mentions. Empty unless
+   * `typedJson.applyToResults` is on.
+   */
+  typedJsonImports: CustomImport[];
   documentation: string;
   examples?: string[];
 }
@@ -118,6 +148,8 @@ export class ResultSchemaGenerator {
    * across the inlined bundle) so relations degrade to the safe fallback.
    */
   private availablePureModels: Map<string, ResultModelSchemaRef> = new Map();
+  /** Where the emitted files sit, for rewriting a relative `typedJson.schemaModule`. */
+  private typedJsonContext: ResultTypedJsonContext;
   // Safe accessors for JSON Schema compatibility flags/options to avoid strict type coupling
   private isJsonSchemaModeEnabled(): boolean {
     const cfg = this.config as unknown as { jsonSchemaCompatible?: boolean };
@@ -172,8 +204,86 @@ export class ResultSchemaGenerator {
     };
   }
 
-  constructor(config?: GeneratorConfig) {
+  constructor(config?: GeneratorConfig, typedJsonContext?: ResultTypedJsonContext) {
     this.config = config ?? getDefaultConfiguration();
+    this.typedJsonContext = typedJsonContext ?? {};
+  }
+
+  /**
+   * The `typedJson` block, but only when it opted results in.
+   *
+   * `null` is the answer for an unconfigured generate *and* for the default
+   * `applyToResults: false`, and it means "emit exactly what 3.0.0 emitted". A result
+   * schema describes what the database already returned: narrowing it makes a row
+   * written before the annotation existed fail on READ, so the read path is opt-in
+   * even though the write path is not.
+   */
+  private typedJsonConfig(): ResolvedTypedJsonConfig | null {
+    const config = resolveTypedJsonConfig(this.config);
+    return config?.applyToResults ? config : null;
+  }
+
+  /**
+   * The Zod expression a PJTG annotation gives this field, or `null` to map it exactly
+   * as before. Returns the ELEMENT expression for a list field, because every caller
+   * applies its own `z.array(...)` wrapper afterwards.
+   */
+  private typedJsonExpression(field: DMMF.Field, model: DMMF.Model): string | null {
+    const config = this.typedJsonConfig();
+    if (!config) return null;
+    if (!field.documentation) return null;
+    if (field.kind !== 'scalar' || !isTypedJsonInputType(field.type)) return null;
+
+    const result = resolveTypedJsonField(
+      {
+        modelName: model.name,
+        fieldName: field.name,
+        documentation: field.documentation,
+        isList: field.isList,
+        isOptional: !field.isRequired,
+        outputSubdir: this.typedJsonContext.outputSubdir,
+        importExtension: this.typedJsonContext.importExtension,
+      },
+      config,
+    );
+
+    reportTypedJsonResult(result, () => `${model.name}.${field.name}`);
+    return result.status === 'resolved' ? result.elementExpression : null;
+  }
+
+  /**
+   * Imports for the replacements this body actually mentions.
+   *
+   * Resolved from the model's fields rather than accumulated while building, because one
+   * annotated field reaches several slots of the same file (`_min`, `_max`, the grouped
+   * value) and only the finished body knows which names survived into it. Filtering on
+   * the body is what keeps `WorkflowAggregateResult` - which narrows min/max but never
+   * touches a Json column - from importing a schema it never names.
+   */
+  private collectTypedJsonImports(model: DMMF.Model, schemaBody: string): CustomImport[] {
+    const config = this.typedJsonConfig();
+    if (!config) return [];
+
+    const collected: CustomImport[] = [];
+    for (const field of model.fields) {
+      if (!field.documentation) continue;
+      if (field.kind !== 'scalar' || !isTypedJsonInputType(field.type)) continue;
+
+      const result = resolveTypedJsonField(
+        {
+          modelName: model.name,
+          fieldName: field.name,
+          documentation: field.documentation,
+          isList: field.isList,
+          outputSubdir: this.typedJsonContext.outputSubdir,
+          importExtension: this.typedJsonContext.importExtension,
+        },
+        config,
+      );
+      if (result.status === 'resolved') collected.push(...result.imports);
+    }
+
+    return mergeTypedJsonImports(collected, schemaBody, this.typedJsonContext.singleFile === true);
   }
 
   /**
@@ -327,6 +437,7 @@ export class ResultSchemaGenerator {
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: this.extractDependencies(context),
       modelDependencies: Array.from(modelDependencies),
+      typedJsonImports: this.collectTypedJsonImports(context.model, zodSchema),
       documentation,
       examples,
     };
@@ -365,6 +476,7 @@ export class ResultSchemaGenerator {
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: this.extractDependencies(context),
       modelDependencies: Array.from(modelDependencies),
+      typedJsonImports: this.collectTypedJsonImports(context.model, zodSchema),
       documentation,
       examples,
     };
@@ -393,6 +505,8 @@ export class ResultSchemaGenerator {
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
       modelDependencies: [],
+      // `{ count: z.number() }` names no column, so no annotation can reach it.
+      typedJsonImports: [],
       documentation,
       examples,
     };
@@ -420,6 +534,7 @@ export class ResultSchemaGenerator {
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
       modelDependencies: [],
+      typedJsonImports: this.collectTypedJsonImports(model, zodSchema),
       documentation,
       examples,
     };
@@ -452,6 +567,7 @@ ${allFields.join(',\n')}
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
       modelDependencies: [],
+      typedJsonImports: this.collectTypedJsonImports(model, zodSchema),
       documentation,
       examples,
     };
@@ -479,6 +595,8 @@ ${allFields.join(',\n')}
       exports: new Set([schemaName, `${schemaName}Type`]),
       dependencies: [],
       modelDependencies: [],
+      // A count is a number whatever the columns hold.
+      typedJsonImports: [],
       documentation,
       examples,
     };
@@ -542,13 +660,12 @@ ${allFields.join(',\n')}
       if (field.kind === 'object') {
         return `  ${field.name}: ${this.buildRelationFieldSchema(field, model, modelDependencies)}`;
       }
-      const zodType = this.mapPrismaTypeToZod(field);
+      const { expression, typed } = this.mapPrismaFieldToZod(field, model);
       // `.nullable()` before `.optional()`, because a nullable column returns null and
       // `.optional()` admits only undefined. Without it, `bio String?` emitted
       // `z.string().optional()` and rejected the ordinary state of the column, in all seven
       // record-shaped schemas. `Json?` and enums escaped it only by mapping to z.unknown().
-      const optionalMarker = !field.isRequired ? '.nullable().optional()' : '';
-      return `  ${field.name}: ${zodType}${optionalMarker}`;
+      return `  ${field.name}: ${expression}${this.optionalityMarkers(field, typed, '.nullable().optional()')}`;
     });
 
     // Add included relations
@@ -678,7 +795,7 @@ ${allFields.join(',\n')}
       // `_sum` / `_avg` are arithmetic over the group; all three stay numeric whatever
       // the column holds.
       const minMaxFields = comparableFields.map((field) => {
-        const zodType = this.mapPrismaTypeToZod(field);
+        const zodType = this.mapPrismaTypeToZod(field, model);
         return `    ${field.name}: ${zodType}.nullable().optional()`;
       });
       aggregateFields.push(
@@ -713,11 +830,36 @@ ${allFields.join(',\n')}
 
     return groupableFields
       .map((field) => {
-        const zodType = this.mapPrismaTypeToZod(field);
-        const nullable = field.isRequired ? '' : '.nullable()';
-        return `  ${field.name}: ${zodType}${nullable}.optional()`;
+        const { expression, typed } = this.mapPrismaFieldToZod(field, model);
+        const markers = this.optionalityMarkers(field, typed, '.nullable()');
+        // `optionalityMarkers` already ends in `.optional()` for a typed nullable column.
+        const optional = markers.endsWith('.optional()') ? '' : '.optional()';
+        return `  ${field.name}: ${expression}${markers}${optional}`;
       })
       .join(',\n');
+  }
+
+  /**
+   * What a non-required column's schema needs appended, given the expression it already got.
+   *
+   * A nullable column's ordinary value is `null`: that is what Prisma returns for it, and
+   * a groupBy that does not name the column in `by` leaves it out altogether. Both were
+   * already true of the untyped expressions, which is why nobody noticed - `z.unknown()`
+   * accepts null and undefined on its own, so the missing `.nullable()` never showed. A
+   * replacement schema accepts neither, so this is where the flag either works on ordinary
+   * data or does not work at all.
+   *
+   * Gated on `typed` for one reason: correcting the untyped path would change the emitted
+   * bytes of every tree that has no `typedJson` block at all (`z.string().optional()` would
+   * become nullish, and a groupBy field would gain markers it has never had). That is the
+   * one thing the flag-off contract forbids, so the untyped defect stays put and is pinned
+   * by a test instead. With no `typedJson.applyToResults`, `typed` is never true and this
+   * method returns `fallback`, which is the marker the call site emitted before.
+   */
+  private optionalityMarkers(field: DMMF.Field, typed: boolean, fallback: string): string {
+    if (field.isRequired) return '';
+    if (!typed) return fallback;
+    return '.nullable().optional()';
   }
 
   private generatePaginationSchema(): string {
@@ -731,7 +873,50 @@ ${allFields.join(',\n')}
 })`;
   }
 
-  private mapPrismaTypeToZod(field: DMMF.Field): string {
+  /**
+   * The expression alone, for the `_min` / `_max` slots, which append their own
+   * `.nullable()` whatever produced it and so have nothing to ask.
+   */
+  private mapPrismaTypeToZod(field: DMMF.Field, model: DMMF.Model): string {
+    return this.mapPrismaFieldToZod(field, model).expression;
+  }
+
+  /**
+   * The Zod expression for one field of the model, in every result schema that carries
+   * it - the record-shaped results, the grouped values, and the `_min` / `_max` slots -
+   * and whether a PJTG annotation is what produced it.
+   *
+   * `model` is required rather than optional so that a new call site cannot quietly opt
+   * out of the annotation lookup and emit a different schema for the same column than
+   * the file next to it.
+   *
+   * `typed` is here because the two callers that append optionality need it: what a
+   * nullable column has to accept is the same either way, and only a replacement fails to
+   * accept it unaided. See {@link optionalityMarkers}.
+   */
+  private mapPrismaFieldToZod(
+    field: DMMF.Field,
+    model: DMMF.Model,
+  ): { expression: string; typed: boolean } {
+    // A PJTG annotation replaces the base expression and nothing else: the list wrapper,
+    // the `.nullable()` an aggregate slot appends and the `.optional()` a record field
+    // appends are all still the emitter's, applied outside it exactly as before.
+    const typedJson = this.typedJsonExpression(field, model);
+    if (typedJson) {
+      return {
+        expression: field.isList ? `z.array(${typedJson})` : typedJson,
+        typed: true,
+      };
+    }
+
+    return { expression: this.mapUntypedPrismaTypeToZod(field), typed: false };
+  }
+
+  /**
+   * The expression for a field no annotation reaches: the 3.0.0 type map, unchanged, and
+   * the only expression a repo with no `typedJson` block ever sees.
+   */
+  private mapUntypedPrismaTypeToZod(field: DMMF.Field): string {
     const isJsonSchemaCompatible = this.isJsonSchemaModeEnabled();
 
     // Handle JSON Schema compatibility mapping

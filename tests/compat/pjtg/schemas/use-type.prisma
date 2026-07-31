@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../target/use-type"
+}
+
+generator json {
+  provider = "node ./index.js"
+  useType  = "MyOwnType"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Model {
+  id Int @id @default(autoincrement())
+
+  /// [Simple]
+  simple Json
+
+  /// [Optional]
+  optional Json?
+
+  /// [List]
+  list Json[]
+}

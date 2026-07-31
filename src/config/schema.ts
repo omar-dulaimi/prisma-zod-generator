@@ -291,6 +291,59 @@ export const ConfigurationSchema: JSONSchema7 = {
       additionalProperties: false,
       description: 'Options for JSON Schema compatibility mode',
     },
+    typedJson: {
+      type: 'object',
+      properties: {
+        schemaModule: {
+          type: 'string',
+          minLength: 1,
+          description:
+            "Module that [TypeName] resolves from: with './json-types', /// [WorkflowNode] uses WorkflowNodeSchema imported from there. A relative specifier is relative to the generator output directory.",
+        },
+        schemaSuffix: {
+          type: 'string',
+          minLength: 0,
+          default: 'Schema',
+          description: 'Suffix appended to the annotation type name. [Foo] -> FooSchema.',
+        },
+        namespace: {
+          type: 'string',
+          pattern: '^[A-Za-z_$][A-Za-z0-9_$]*$',
+          default: 'PrismaJson',
+          description:
+            'Namespace the emitted declare global block declares. Matches prisma-json-types-generator.',
+        },
+        applyToResults: {
+          type: 'boolean',
+          default: false,
+          description:
+            'Also apply the annotation to schemas/results/*. Off by default: result schemas are emitted by default and describe rows the database already returned, so typing them would make a row written before the annotation existed throw on READ. Turn it on to make the read path agree with the write path.',
+        },
+        emitNamespace: {
+          type: 'boolean',
+          default: false,
+          description:
+            'Emit a declare global file deriving the namespace types from the Zod schemas, so the schema is the single authored definition.',
+        },
+        namespaceOutput: {
+          type: 'string',
+          minLength: 1,
+          default: './prisma-json-types.d.ts',
+          description:
+            'Path of the emitted namespace file, relative to the generator output directory.',
+        },
+        map: {
+          type: 'object',
+          propertyNames: { pattern: '^[A-Za-z_$][A-Za-z0-9_$]*$' },
+          additionalProperties: { type: 'string', minLength: 1 },
+          description:
+            'Explicit TypeName -> Zod expression overrides, checked before schemaModule.',
+        },
+      },
+      additionalProperties: false,
+      description:
+        "Read prisma-json-types-generator's /// [TypeName] and /// ![<ts type>] annotations and validate those fields at runtime. Unrelated to jsonSchemaCompatible / jsonSchemaOptions. Omit for byte-identical output.",
+    },
     addSelectType: {
       type: 'boolean',
       default: true,

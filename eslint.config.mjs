@@ -87,6 +87,12 @@ export default [
       'src/dsrc/**/*',
       // 'prisma/generated/**/*',
       'coverage/**/*',
+      // Vendored verbatim from prisma-json-types-generator (MIT, see
+      // tests/compat/pjtg/UPSTREAM-LICENSE). Its type tests declare `namespace PXJson`,
+      // which is the very pattern under test and which no-namespace rejects. Editing it
+      // to satisfy our rules would destroy its value: unchanged, it proves compatibility
+      // with the real library instead of asserting it.
+      'tests/compat/pjtg/**/*',
     ],
   },
   prettier,

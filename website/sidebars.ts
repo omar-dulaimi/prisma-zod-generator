@@ -93,7 +93,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Integrations',
       collapsed: true,
-      items: ['integrations/overview'],
+      items: ['integrations/overview', 'integrations/prisma-json-types-generator'],
     },
     {
       type: 'category',

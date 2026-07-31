@@ -1,6 +1,7 @@
 import type { ConnectorType, DMMF as PrismaDMMF } from '@prisma/generator-helper';
 import path from 'path';
 import type { GeneratorConfig as ZodGeneratorConfig } from './config/parser';
+import { resolveTypedJsonConfig, type ResolvedTypedJsonConfig } from './config/typed-json';
 import { ResultSchemaGenerator, type ResultModelSchemaRef } from './generators/results';
 import { findModelByName, isMongodbRawOp } from './helpers';
 import { generateDecimalInputSchema, isDecimalJsAvailable } from './helpers/decimal-helpers';
@@ -11,6 +12,19 @@ import {
 import { processModelsWithZodIntegration, type EnhancedModelInfo } from './helpers/zod-integration';
 import type { CustomImport } from './parsers/zod-comments';
 import { SchemaEnumWithValues, TransformerParams } from './types';
+import {
+  isTypedJsonExcludedSchema,
+  isTypedJsonInputType,
+  LIST_OPERATION_MEMBERS,
+  mergeTypedJsonImports,
+  reportTypedJsonResult,
+  resolveTypedJsonOwnerModel,
+} from './typed-json/emission';
+import { resolveTypedJsonField, type TypedJsonResolved } from './typed-json/resolver';
+import {
+  EMPTY_TYPED_FIELD_UPDATE_OPERATIONS_PLAN,
+  type TypedFieldUpdateOperationsPlan,
+} from './generators/typed-field-update-operations';
 import { logger } from './utils/logger';
 import {
   applyPattern,
@@ -26,6 +40,21 @@ import type { GeneratedManifest } from './utils/safeOutputManagement';
 import { createStrictModeResolver, type StrictModeResolver } from './utils/strict-mode-resolver';
 import { writeFileSafely } from './utils/writeFileSafely';
 import { addIndexExport, writeIndexFile } from './utils/writeIndexFile';
+
+/**
+ * Placeholder a typed-JSON replacement is swapped for while the optionality strips run
+ * over a composed property line. NUL cannot appear in a Zod expression the generator
+ * writes or a user configures, so the mask can never collide with real emitted text.
+ */
+const TYPED_JSON_MASK = '\u0000pzgTypedJson';
+
+/**
+ * A run of optionality markers at the very end of a typed-JSON replacement.
+ *
+ * Anchored at the end on purpose: where the marker sits is the whole boundary between
+ * one the emitter decides and one the annotation decides. See `typedJsonSlotExpression`.
+ */
+const TYPED_JSON_TRAILING_OPTIONALITY = /(?:\.(?:optional|nullable|nullish)\(\))+$/;
 
 /**
  * Filter validation result interface
@@ -140,6 +169,29 @@ export default class Transformer {
 
   static getGeneratorConfig(): ZodGeneratorConfig | null {
     return this.generatorConfig;
+  }
+
+  /**
+   * The `typedJson` block with its defaults filled in, or `null` when the user did not
+   * configure it.
+   *
+   * `null` is load-bearing: it is what keeps output byte-identical to 3.0.0 for every
+   * configuration that omits the key. Read it, never reconstruct it, so there is one
+   * place that decides whether the feature is on.
+   */
+  static getTypedJsonConfig(): ResolvedTypedJsonConfig | null {
+    return resolveTypedJsonConfig(this.generatorConfig);
+  }
+
+  /**
+   * The per-field copies of Prisma's shared update-operations inputs, planned once per
+   * generate. Empty unless `typedJson` is configured and some column is annotated.
+   */
+  private static typedFieldUpdateOperationsPlan: TypedFieldUpdateOperationsPlan =
+    EMPTY_TYPED_FIELD_UPDATE_OPERATIONS_PLAN;
+
+  static setTypedFieldUpdateOperationsPlan(plan: TypedFieldUpdateOperationsPlan): void {
+    this.typedFieldUpdateOperationsPlan = plan;
   }
 
   static getStrictModeResolver(): StrictModeResolver | null {
@@ -1245,31 +1297,42 @@ export default class Transformer {
     );
   }
 
-  generateImportZodStatement() {
-    // Determine import target based on configuration
+  /**
+   * The module `z` is imported from, honouring `zodImportTarget` and `zodImportPath`.
+   *
+   * Extracted so the typed-JSON namespace file can import `z` from the same place the
+   * schemas do. Recomputing it there would make the module path two sources of truth,
+   * which is precisely the class of drift this feature exists to remove.
+   */
+  static resolveZodImportSpecifier(): string {
     const config = Transformer.getGeneratorConfig();
     const target = (config?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4';
-
-    // v3 binds a named export (import { z }); auto/v4 bind the namespace.
-    const useNamedBinding = target === 'v3';
     const defaultPath = target === 'v4' ? 'zod/v4' : target === 'v3' ? 'zod/v3' : 'zod';
 
     // A custom module path (issue #370) lets users point z at their own
     // re-export configured with an i18n error map, etc. The binding style still
     // follows zodImportTarget, so the custom module must export z accordingly.
-    let path = defaultPath;
     const custom = typeof config?.zodImportPath === 'string' ? config.zodImportPath.trim() : '';
-    if (custom) {
-      // Guard the generated string literal: a real module specifier never
-      // contains quotes/whitespace. Reject anything else and warn.
-      if (/^[a-zA-Z0-9_@./-]+$/.test(custom)) {
-        path = custom;
-      } else {
-        logger.warn(
-          `[prisma-zod-generator] Ignoring invalid zodImportPath "${custom}"; falling back to '${defaultPath}'`,
-        );
-      }
-    }
+    if (!custom) return defaultPath;
+
+    // Guard the generated string literal: a real module specifier never
+    // contains quotes/whitespace. Reject anything else and warn.
+    if (/^[a-zA-Z0-9_@./-]+$/.test(custom)) return custom;
+
+    logger.warn(
+      `[prisma-zod-generator] Ignoring invalid zodImportPath "${custom}"; falling back to '${defaultPath}'`,
+    );
+    return defaultPath;
+  }
+
+  generateImportZodStatement() {
+    // v3 binds a named export (import { z }); auto/v4 bind the namespace.
+    const target = (Transformer.getGeneratorConfig()?.zodImportTarget ?? 'auto') as
+      | 'auto'
+      | 'v3'
+      | 'v4';
+    const useNamedBinding = target === 'v3';
+    const path = Transformer.resolveZodImportSpecifier();
 
     return useNamedBinding ? `import { z } from '${path}';\n` : `import * as z from '${path}';\n`;
   }
@@ -1507,6 +1570,208 @@ export default class Transformer {
   }
 
   /**
+   * Directory the file being emitted sits in, relative to the generator output directory.
+   *
+   * This is what a relative `typedJson.schemaModule` is rewritten against, so `./json-types`
+   * becomes `../json-types` from `objects/`.
+   */
+  static typedJsonOutputSubdir(subdir: string): string {
+    try {
+      // In single-file mode every schema ends up in one bundle, so what matters is where
+      // that bundle lands, not which subdirectory the content came from.
+      const dir = isSingleFileEnabled()
+        ? Transformer.getGeneratorConfig()?.placeSingleFileAtRoot !== false
+          ? Transformer.getOutputPath()
+          : Transformer.getSchemasPath()
+        : path.join(Transformer.getSchemasPath(), subdir);
+
+      return path.relative(Transformer.getOutputPath(), dir).split(path.sep).join('/');
+    } catch {
+      return subdir;
+    }
+  }
+
+  /**
+   * The model this schema's members take their typed-JSON annotations from.
+   *
+   * `resolveTypedJsonOwnerModel` repairs the one shape the general extraction reads wrong -
+   * `<Model>UncheckedCreateWithout<Relation>Input` and its update twin, which it answers as
+   * a model called `<Model>Unchecked`. The repair lives here, on the typed-JSON path only,
+   * rather than in `extractModelNameFromContext`, because that function also drives file
+   * naming and field filtering: a changed answer there would move bytes for repos that have
+   * never configured `typedJson`.
+   */
+  private typedJsonOwnerModel(extractedName: string | null): string | null {
+    return resolveTypedJsonOwnerModel(extractedName, (name) =>
+      this.enhancedModels.some((em) => em.model.name === name),
+    );
+  }
+
+  /** The DMMF model field an input-object member refers to, when there is one. */
+  private getModelFieldForArg(fieldName: string): PrismaDMMF.Field | null {
+    const modelName = this.typedJsonOwnerModel(Transformer.extractModelNameFromContext(this.name));
+    if (!modelName) return null;
+    const enhancedModel = this.enhancedModels.find((em) => em.model.name === modelName);
+    if (!enhancedModel) return null;
+    return enhancedModel.enhancedFields.find((ef) => ef.field.name === fieldName)?.field ?? null;
+  }
+
+  /** Memoised `listWrapperTarget()`. `undefined` means "not computed", `null` means "not one". */
+  private listWrapperTargetCache?: { modelName: string; field: PrismaDMMF.Field } | null;
+
+  /**
+   * The model list field this schema is the `{ set }` / `{ push }` wrapper for, if it is one.
+   *
+   * Prisma emits one of these per list column, named `<Model><Create|Update><field>Input`,
+   * and its members are literally `set` and `push`. So the model cannot be read off the
+   * schema name by `extractModelNameFromContext` - and must not be taught to it, because
+   * that same function drives file naming and field filtering. It is resolved here instead,
+   * against the models actually in the schema.
+   *
+   * The longest matching model name wins, so `Foo` and `FooBar` both existing resolves
+   * `FooBarUpdatetagsInput` to `FooBar.tags` regardless of DMMF order.
+   */
+  private listWrapperTarget(): { modelName: string; field: PrismaDMMF.Field } | null {
+    if (this.listWrapperTargetCache !== undefined) return this.listWrapperTargetCache;
+
+    let best: { modelName: string; field: PrismaDMMF.Field } | null = null;
+    for (const enhancedModel of this.enhancedModels) {
+      const modelName = enhancedModel.model.name;
+      if (best && modelName.length <= best.modelName.length) continue;
+
+      const fieldName = this.name?.match(
+        new RegExp(`^${Transformer.escapeRegExp(modelName)}(?:Create|Update)(.+)Input$`),
+      )?.[1];
+      if (!fieldName) continue;
+
+      const field = enhancedModel.enhancedFields.find(
+        (ef) => ef.field.name === fieldName && ef.field.isList,
+      )?.field;
+      if (field) best = { modelName, field };
+    }
+
+    this.listWrapperTargetCache = best;
+    return best;
+  }
+
+  /**
+   * The model field an input-object member should take its annotation from, if any.
+   *
+   * Normally that is the field of the same name. A list-operation wrapper is the exception:
+   * `set` and `push` are operations on the wrapped column, so the annotation belongs to
+   * that column. Looking a wrapper's members up by name would find nothing, or - once a
+   * model has a column actually *called* `set` - find an unrelated one and stamp its
+   * annotation onto every wrapper in the model.
+   */
+  private typedJsonTargetForArg(
+    argName: string,
+  ): { modelName: string; field: PrismaDMMF.Field } | null {
+    // A per-field copy of a shared update-operations input. Its name yields no model to
+    // the general extraction, and its `set` member holds a value of the column it was
+    // copied for, so the plan is the only thing that knows which column that is.
+    const copied = Transformer.typedFieldUpdateOperationsPlan.targetFor(this.name, argName);
+    if (copied) return copied;
+
+    const wrapper = this.listWrapperTarget();
+    if (wrapper) {
+      // Only the operation members. Anything else in one of these files is not a value of
+      // the wrapped column and has no business carrying its annotation.
+      if (!LIST_OPERATION_MEMBERS.has(argName)) return null;
+      return wrapper.field.documentation ? wrapper : null;
+    }
+
+    const modelName = this.typedJsonOwnerModel(Transformer.extractModelNameFromContext(this.name));
+    if (!modelName) return null;
+
+    const field = this.getModelFieldForArg(argName);
+    return field?.documentation ? { modelName, field } : null;
+  }
+
+  /**
+   * Resolve a PJTG annotation for one input-object member, or `null` to leave it alone.
+   *
+   * Returning `null` is the default in every uncertain case, and `null` means "emit exactly
+   * what 3.0.0 emitted". Nothing here runs at all when `typedJson` is unconfigured.
+   */
+  private typedJsonForField(
+    field: PrismaDMMF.SchemaArg,
+    inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
+  ): TypedJsonResolved | null {
+    const config = Transformer.getTypedJsonConfig();
+    if (!config) return null;
+    if (!isTypedJsonInputType(inputType.type)) return null;
+    if (isTypedJsonExcludedSchema(this.name)) return null;
+
+    const target = this.typedJsonTargetForArg(field.name);
+    if (!target?.field.documentation) return null;
+
+    const result = resolveTypedJsonField(
+      {
+        modelName: target.modelName,
+        fieldName: target.field.name,
+        documentation: target.field.documentation,
+        // The DMMF arg carries the list-ness for this position; the model field is a
+        // list even where the arg is a single `push` value.
+        isList: inputType.isList,
+        isOptional: !field.isRequired,
+        outputSubdir: Transformer.typedJsonOutputSubdir('objects'),
+        importExtension: this.getImportFileExtension(),
+      },
+      config,
+    );
+
+    reportTypedJsonResult(result, () => `${target.modelName}.${target.field.name}`);
+    return result.status === 'resolved' ? result : null;
+  }
+
+  /**
+   * Imports the typed-JSON expressions in this file need, merged to one per module and
+   * filtered to the names the file actually mentions.
+   */
+  private getTypedJsonImportsForSchema(
+    modelName: string | null,
+    schemaContent: string,
+  ): CustomImport[] {
+    const config = Transformer.getTypedJsonConfig();
+    if (!config) return [];
+
+    // A `{ set }` / `{ push }` wrapper's name does not yield its model to the general
+    // extraction, so it has to be resolved the way the members themselves are. Without
+    // this the wrapper references a schema it never imports - and the same is true of the
+    // `Unchecked` halves of a nested write, whose model the extraction reads wrong.
+    const owner =
+      Transformer.typedFieldUpdateOperationsPlan.ownerOf(this.name) ??
+      this.typedJsonOwnerModel(modelName) ??
+      this.listWrapperTarget()?.modelName ??
+      null;
+    if (!owner) return [];
+
+    const enhancedModel = this.enhancedModels.find((em) => em.model.name === owner);
+    if (!enhancedModel) return [];
+
+    const collected: CustomImport[] = [];
+    for (const enhancedField of enhancedModel.enhancedFields) {
+      const documentation = enhancedField.field.documentation;
+      if (!documentation) continue;
+
+      const result = resolveTypedJsonField(
+        {
+          modelName: owner,
+          fieldName: enhancedField.field.name,
+          documentation,
+          isList: enhancedField.field.isList,
+          outputSubdir: Transformer.typedJsonOutputSubdir('objects'),
+          importExtension: this.getImportFileExtension(),
+        },
+        config,
+      );
+      if (result.status === 'resolved') collected.push(...result.imports);
+    }
+
+    return mergeTypedJsonImports(collected, schemaContent, isSingleFileEnabled());
+  }
+
+  /**
    * Adjust relative import paths based on output directory structure
    *
    * @param importStatement - Original import statement
@@ -1645,6 +1910,97 @@ export default class Transformer {
     return zodObjectSchemaFields;
   }
 
+  /**
+   * The replacement text to compose into a property line, given where it is about to land.
+   *
+   * A typed replacement is the user's schema and the emitter does not rewrite it, with one
+   * exception that is not a rewrite so much as a division of labour: a marker at the TOP
+   * LEVEL of the replacement answers a question the emitter has already answered from the
+   * DMMF, and only one of the two answers can be right.
+   *
+   * Every object schema is cast to the Prisma input type for the same operation, so
+   * whether a key may be omitted and whether it admits `null` are facts about the column,
+   * not opinions the annotation gets to hold. `![string | undefined]` on a required column
+   * would make a required key omittable; `![{ a: string } | null]` on a required `Json`
+   * column would accept a bare `null` where `Prisma.<M>CreateInput` says
+   * `JsonNullValueInput | InputJsonValue` and means `Prisma.JsonNull`. Both are payloads
+   * the type the schema is cast to rejects. So a trailing run of markers comes off here and
+   * the emitter's own optional/nullable policy re-applies whatever the column actually
+   * says - which is also why an annotation that agrees with the column no longer emits its
+   * marker twice.
+   *
+   * Nothing else in the replacement is touched. `{ a: string; b?: number }` keeps `b`
+   * optional, and so does an element inside a `z.array(...)` the annotation wrote itself:
+   * those markers are nowhere near the top level and describe the user's own type.
+   *
+   * The `isList` case is the reason this takes an `inputType` rather than working on the
+   * string alone. On a list field the replacement is the ELEMENT schema and
+   * `wrapWithZodValidators` is about to append `.array()` to it, so its trailing marker
+   * ends up under that wrapper describing an element rather than the field. Prisma's
+   * `InputJsonArray` is `ReadonlyArray<InputJsonValue | null>`, so a null element is a
+   * value it really does accept, and the condition below is the same one the wrapper
+   * itself uses to decide whether to append.
+   */
+  private static typedJsonSlotExpression(
+    expression: string,
+    inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
+  ): string {
+    const willWrapInArray = inputType.isList && !expression.includes('.array()');
+    if (willWrapInArray) return expression;
+    return expression.replace(TYPED_JSON_TRAILING_OPTIONALITY, '');
+  }
+
+  /**
+   * Run an optionality strip over a composed property line without letting it reach
+   * inside a typed-JSON replacement.
+   *
+   * The strips exist for the OUTER expression and are load-bearing there: every
+   * alternative arrives from `wrapWithZodValidators` already carrying `.optional()`, a
+   * union adds its own tail, and the optional/nullable policy below re-applies exactly
+   * one marker. Left unstripped that composes two markers where the policy allows one.
+   *
+   * Inside a typed replacement is not the emitter's to strip, though. That is the user's
+   * schema, and `{ a: string; b?: number }` means `b` is optional in every artifact that
+   * reads the annotation - the pure model and the result schema both say so. Masking each
+   * replacement to an opaque token keeps the outer strip doing its job while what it
+   * covers passes through byte for byte.
+   *
+   * What it covers is `typedJsonSlotExpression`'s answer, which is the replacement with
+   * the top-level markers the emitter owns already removed. So the two halves compose
+   * rather than fight: the emitter decides the outermost marker, the annotation decides
+   * every marker under it, and neither reaches into the other.
+   *
+   * Nothing is ever collected without a `typedJson` block, so for everyone else this is
+   * exactly `strip(expression)`.
+   */
+  private static withTypedJsonMasked(
+    expression: string,
+    typedJsonExpressions: Set<string>,
+    strip: (value: string) => string,
+  ): string {
+    if (typedJsonExpressions.size === 0) return strip(expression);
+
+    // Longest first: one replacement can contain another (`TagSchema` inside
+    // `z.array(TagSchema)`), and masking the shorter one first would leave the rest of
+    // the longer one exposed to the strip.
+    const masked = [...typedJsonExpressions].sort((a, b) => b.length - a.length);
+    // Delimited at both ends, so restoring token 1 cannot chew the head off token 11.
+    const token = (index: number) => `${TYPED_JSON_MASK}${index}${TYPED_JSON_MASK}`;
+
+    let result = expression;
+    masked.forEach((value, index) => {
+      result = result.split(value).join(token(index));
+    });
+
+    result = strip(result);
+
+    masked.forEach((value, index) => {
+      result = result.split(token(index)).join(value);
+    });
+
+    return result;
+  }
+
   generateObjectSchemaField(
     field: PrismaDMMF.SchemaArg,
   ): [string, PrismaDMMF.SchemaArg, boolean][] {
@@ -1653,6 +2009,28 @@ export default class Transformer {
     if (lines.length === 0) {
       return [];
     }
+
+    /**
+     * Typed replacements used in this property line, kept out of the optionality strips
+     * below. Empty unless `typedJson` is configured, which is what leaves those strips
+     * byte-identical for everybody else.
+     *
+     * What goes in the set is what was composed into the line, which is the replacement
+     * minus whatever `typedJsonSlotExpression` handed back to the emitter. So the mask
+     * protects the user's schema and nothing more: the emitter's own markers, including
+     * the one the annotation duplicated, are still in front of the strips.
+     */
+    const typedJsonExpressions = new Set<string>();
+    const typedJsonBase = (
+      typedJson: TypedJsonResolved | null,
+      inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
+    ): string | undefined => {
+      const resolved = typedJson?.elementExpression;
+      if (!resolved) return undefined;
+      const expression = Transformer.typedJsonSlotExpression(resolved, inputType);
+      typedJsonExpressions.add(expression);
+      return expression;
+    };
 
     let alternatives = lines.reduce<string[]>((result, inputType) => {
       // Skip inputTypes that reference blocked schemas in minimal mode
@@ -1664,21 +2042,39 @@ export default class Transformer {
 
       if (inputType.type === 'String') {
         // Check for custom schema from @zod.import() annotations
+        const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = customSchema || 'z.string()';
-        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
+        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || 'z.string()';
+        result.push(
+          this.wrapWithZodValidators(
+            baseSchema,
+            field,
+            inputType,
+            !!customSchema || !!typedJson,
+            // `@db.VarChar(n)` appends `.max(n)` to whatever the base is, and
+            // `z.enum([...]).max(8)` throws TypeError the moment the module loads.
+            typedJson ? typedJson.allowsStringLengthConstraints : true,
+          ),
+        );
       } else if (inputType.type === 'Boolean') {
         const customSchema = this.getCustomSchemaForField(field.name);
         const baseSchema = customSchema || 'z.boolean()';
         result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Int') {
+        const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = customSchema || 'z.number().int()';
-        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
+        const baseSchema =
+          typedJsonBase(typedJson, inputType) || customSchema || 'z.number().int()';
+        result.push(
+          this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
+        );
       } else if (inputType.type === 'Float') {
+        const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = customSchema || 'z.number()';
-        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
+        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || 'z.number()';
+        result.push(
+          this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
+        );
       } else if (inputType.type === 'Decimal') {
         const cfg = Transformer.getGeneratorConfig();
         const mode = cfg?.decimalMode || 'decimal';
@@ -1760,11 +2156,17 @@ export default class Transformer {
         const baseSchema = customSchema || dateExpr;
         result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Json') {
-        this.hasJson = true;
-
+        const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = customSchema || 'jsonSchema';
-        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
+        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || 'jsonSchema';
+        // A typed field no longer mentions `jsonSchema`, so flagging it would emit an
+        // unused import. Gated on typedJson specifically, not on the resulting expression:
+        // the `@zod.custom.use` path has always set this and must keep doing so, or every
+        // schema using that escape hatch changes.
+        if (!typedJson) this.hasJson = true;
+        result.push(
+          this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
+        );
       } else if (inputType.type === 'True') {
         const customSchema = this.getCustomSchemaForField(field.name);
         const baseSchema = customSchema || 'z.literal(true)';
@@ -1836,7 +2238,11 @@ export default class Transformer {
     }
 
     if (alternatives.length > 1) {
-      alternatives = alternatives.map((alter) => alter.replace('.optional()', ''));
+      alternatives = alternatives.map((alter) =>
+        Transformer.withTypedJsonMasked(alter, typedJsonExpressions, (value) =>
+          value.replace('.optional()', ''),
+        ),
+      );
     }
 
     // Check if ALL alternatives already include the field name
@@ -1878,10 +2284,12 @@ export default class Transformer {
       ].includes(field.name);
 
     // Strip any existing optional/nullable/nullish from the composed string; we will re-apply
-    resString = resString
-      .replace(/\.optional\(\)/g, '')
-      .replace(/\.nullish\(\)/g, '')
-      .replace(/\.nullable\(\)/g, '');
+    resString = Transformer.withTypedJsonMasked(resString, typedJsonExpressions, (value) =>
+      value
+        .replace(/\.optional\(\)/g, '')
+        .replace(/\.nullish\(\)/g, '')
+        .replace(/\.nullable\(\)/g, ''),
+    );
 
     let isRequired = field.isRequired;
 
@@ -1943,6 +2351,14 @@ export default class Transformer {
     field: PrismaDMMF.SchemaArg,
     inputType: PrismaDMMF.SchemaArg['inputTypes'][0],
     skipZodAnnotations = false,
+    /**
+     * Whether a native `@db.VarChar(n)` length may still be appended to the base.
+     *
+     * False only for a typed replacement that is not rooted in `z.string()`. The native-max
+     * block rewrites the leading `z.…(…)` call, so `!['A' | 'B']` on a `String @db.VarChar(8)`
+     * would emit `z.enum(['A','B']).max(8)` - a module that throws `TypeError` on import.
+     */
+    allowNativeMaxLength = true,
   ) {
     let line: string = mainValidator;
     let hasEnhancedZodSchema = false;
@@ -1988,7 +2404,7 @@ export default class Transformer {
 
     // Apply native type constraints (e.g., @db.VarChar(255) -> .max(255))
     // Only for String types and only if no enhanced Zod schema is already applied
-    if (inputType.type === 'String' && field.name) {
+    if (inputType.type === 'String' && field.name && allowNativeMaxLength) {
       const nativeMaxLength = this.extractMaxLengthFromNativeType(field);
       const existingMaxConstraint = hasEnhancedZodSchema
         ? this.extractExistingMaxConstraint(line)
@@ -2557,7 +2973,10 @@ export default class Transformer {
     }
     // Get custom imports for this model by analyzing the actual schema content
     const modelName = Transformer.extractModelNameFromContext(this.name);
-    const customImports = this.getCustomImportsForModel(modelName, objectSchema);
+    const customImports = [
+      ...this.getCustomImportsForModel(modelName, objectSchema),
+      ...this.getTypedJsonImportsForSchema(modelName, objectSchema),
+    ];
     const baseImports = this.generateObjectSchemaImportStatements(customImports);
     let jsonImport = '';
     if (this.hasJson) {
@@ -2773,6 +3192,12 @@ const isValidDecimalInput = (
   private resolvePrismaTypeForObject(exportName: string): string | null {
     // No Prisma types for generic Args wrappers here
     if (exportName.endsWith('Args')) return null;
+
+    // A per-field copy of a shared update-operations input has no Prisma type of its own.
+    // It is structurally the input it was copied from and binds to that one, so the
+    // emitted file still typechecks against the client.
+    const copiedFrom = Transformer.typedFieldUpdateOperationsPlan.prismaTypeNameFor(exportName);
+    if (copiedFrom) return `Prisma.${copiedFrom}`;
 
     // Handle aggregate input objects that use the `Type` suffix
     if (/(Count|Min|Max|Avg|Sum)AggregateInput$/.test(exportName)) {
@@ -4395,7 +4820,15 @@ ${helperCode}
     if (!generatorConfig) {
       throw new Error('Generator config not available for result schema generation');
     }
-    const resultGenerator = new ResultSchemaGenerator(generatorConfig);
+    // The typed-JSON context is where the *file* sits, which the generator cannot know:
+    // a relative `typedJson.schemaModule` has to resolve from `results/`, and in
+    // single-file mode from wherever the bundle lands. It is inert unless the user set
+    // `typedJson.applyToResults`.
+    const resultGenerator = new ResultSchemaGenerator(generatorConfig, {
+      outputSubdir: Transformer.typedJsonOutputSubdir('results'),
+      importExtension: Transformer.getImportFileExtension(),
+      singleFile: isSingleFileEnabled(),
+    });
 
     // Determine which pure model schemas (schemas/models/<Model>.schema.ts) are
     // emitted so relation fields in result schemas can reference them instead of
@@ -4536,6 +4969,13 @@ ${helperCode}
               `import { ${info.exportName} } from '../models/${info.fileBase}${importExtension}';\n`,
             );
           }
+        }
+
+        // Typed-JSON replacements, already merged per module and filtered to the names
+        // this file mentions. Empty unless `typedJson.applyToResults` is on, which is
+        // what keeps the emitted bytes identical for everyone who did not ask for this.
+        for (const typedJsonImport of resultSchema.typedJsonImports ?? []) {
+          imports.push(`${typedJsonImport.importStatement};\n`);
         }
 
         await writeFileSafely(filePath, `${imports.join('')}${resultSchema.zodSchema}`);

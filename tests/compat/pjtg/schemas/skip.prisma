@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../target/skip"
+  previewFeatures = ["strictUndefinedChecks"]
+}
+
+generator json {
+  provider = "node ./index.js"
+  namespace = "SkipJson"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Model {
+  id Int @id @default(autoincrement())
+
+  /// [Simple]
+  simple Json
+
+  /// [Optional]
+  optional Json?
+
+  /// [List]
+  list Json[]
+}

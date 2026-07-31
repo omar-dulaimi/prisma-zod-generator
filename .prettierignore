@@ -9,6 +9,11 @@ coverage/
 *.json
 *.js.map
 *.d.ts
+# Vendored verbatim from prisma-json-types-generator (MIT, see
+# tests/compat/pjtg/UPSTREAM-LICENSE). Reformatting it would make it ours, and the
+# point of keeping it byte-identical is that it proves compatibility rather than
+# asserting it.
+tests/compat/pjtg/**
 website/build/
 pnpm-lock.yaml
 **/pnpm-lock.yaml

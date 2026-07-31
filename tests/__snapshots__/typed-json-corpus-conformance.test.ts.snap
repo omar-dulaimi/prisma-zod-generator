@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PJTG corpus conformance with typedJson.applyToResults: the score > lists every known gap with its reason 1`] = `
+[
+  "any.prisma :: any.test-d.ts: expectNotType<Model>({ field: {} as unknown }) :: JsonValue and unknown differ only statically; both accept every runtime value, so no .parse() can tell them apart",
+  "cockroach.prisma :: cockroach.test-d.ts: expectNotAssignable<Model>({ simple: 1, optional: 2 }) :: upstream's client is emitted under @ts-nocheck, where expectNotAssignable never fires; this row is a copy of the accept case above it and asserts that a valid value is invalid",
+  "mongo.prisma :: mongo.test-d.ts: expectNotAssignable<Model>({ simple: '1' }) applied to the composite :: annotations inside a MongoDB composite \`type\` block are not applied: the emitter resolves a model name from the schema name, and a composite is not a model",
+  "mongo.prisma :: mongo.test-d.ts: expectNotAssignable<Model>({ simple: 1, optional: 2, list: [3], nested: {...} }) :: upstream's client is emitted under @ts-nocheck, where expectNotAssignable never fires; this row is a copy of the accept case above it and asserts that a valid value is invalid",
+  "mysql.prisma :: mysql.test-d.ts: expectNotAssignable<Model>({ simple: 1, optional: 2 }) :: upstream's client is emitted under @ts-nocheck, where expectNotAssignable never fires; this row is a copy of the accept case above it and asserts that a valid value is invalid",
+  "normal.prisma :: normal.test-d.ts: expectAssignable<ModelGroupByOutputType>({ optional: null, list: [3,3,3], _count: null, ... }) :: PZG's groupBy result marks _count optional but not nullable (the other four aggregate slots are both), so upstream's explicit _count: null is rejected",
+  "normal.prisma :: normal.test-d.ts: expectAssignable<ModelGroupByOutputType>({ simple: 1, optional: 2, list: [3], _count: null, ... }) :: PZG's groupBy result marks _count optional but not nullable (the other four aggregate slots are both), so upstream's explicit _count: null is rejected",
+  "skip.prisma :: skip.test-d.ts: expectNotAssignable<...>({ simple: 1, list: [3] }) :: PZG has no strictUndefinedChecks analogue: an optional field may simply be omitted",
+  "unknown.prisma :: unknown.test-d.ts: expectNotType<Model>({ field: {} as any, str: {} as any, int: 0 as any }) :: any and unknown differ only statically; no .parse() can tell them apart",
+]
+`;
+
+exports[`PJTG corpus conformance: the score > lists every known gap with its reason 1`] = `
+[
+  "any.prisma :: any.test-d.ts: expectNotType<Model>({ field: {} as unknown }) :: JsonValue and unknown differ only statically; both accept every runtime value, so no .parse() can tell them apart",
+  "cockroach.prisma :: cockroach.test-d.ts: expectNotAssignable<Model>({ simple: 1, optional: 2 }) :: upstream's client is emitted under @ts-nocheck, where expectNotAssignable never fires; this row is a copy of the accept case above it and asserts that a valid value is invalid",
+  "mongo.prisma :: mongo.test-d.ts: expectNotAssignable<Model>({ simple: '1' }) applied to the composite :: annotations inside a MongoDB composite \`type\` block are not applied: the emitter resolves a model name from the schema name, and a composite is not a model",
+  "mongo.prisma :: mongo.test-d.ts: expectNotAssignable<Model>({ simple: 1, optional: 2, list: [3], nested: {...} }) :: upstream's client is emitted under @ts-nocheck, where expectNotAssignable never fires; this row is a copy of the accept case above it and asserts that a valid value is invalid",
+  "mysql.prisma :: mysql.test-d.ts: expectNotAssignable<Model>({ simple: 1, optional: 2 }) :: upstream's client is emitted under @ts-nocheck, where expectNotAssignable never fires; this row is a copy of the accept case above it and asserts that a valid value is invalid",
+  "normal.prisma :: normal.test-d.ts: expectAssignable<ModelGroupByOutputType>({ optional: null, list: [3,3,3], _count: null, ... }) :: PZG's groupBy result marks _count optional but not nullable (the other four aggregate slots are both), so upstream's explicit _count: null is rejected",
+  "normal.prisma :: normal.test-d.ts: expectAssignable<ModelGroupByOutputType>({ simple: 1, optional: 2, list: [3], _count: null, ... }) :: PZG's groupBy result marks _count optional but not nullable (the other four aggregate slots are both), so upstream's explicit _count: null is rejected",
+  "normal.prisma :: normal.test-d.ts: expectNotAssignable<ModelGroupByOutputType>({ list: ['3'] }) :: result schemas emit z.unknown() for Json columns: typedJson.applyToResults defaults to false, so result schemas keep the column scalar type; the corpus generates with the default",
+  "normal.prisma :: normal.test-d.ts: expectNotAssignable<ModelGroupByOutputType>({ optional: '2' }) :: result schemas emit z.unknown() for Json columns: typedJson.applyToResults defaults to false, so result schemas keep the column scalar type; the corpus generates with the default",
+  "normal.prisma :: normal.test-d.ts: expectNotAssignable<ModelGroupByOutputType>({ simple: '1' }) :: result schemas emit z.unknown() for Json columns: typedJson.applyToResults defaults to false, so result schemas keep the column scalar type; the corpus generates with the default",
+  "number.prisma :: number.test-d.ts: expectNotAssignable<ModelMaxAggregateOutputType>({ price: 999, nullablePrice: 75, floatPrice: 9.75 }) :: min/max aggregate results are not narrowed: typedJson.applyToResults defaults to false, so result schemas keep the column scalar type; the corpus generates with the default",
+  "number.prisma :: number.test-d.ts: expectNotAssignable<ModelMinAggregateOutputType>({ price: 123, nullablePrice: 75, floatPrice: 2.25 }) :: min/max aggregate results are not narrowed: typedJson.applyToResults defaults to false, so result schemas keep the column scalar type; the corpus generates with the default",
+  "skip.prisma :: skip.test-d.ts: expectNotAssignable<...>({ simple: 1, list: [3] }) :: PZG has no strictUndefinedChecks analogue: an optional field may simply be omitted",
+  "unknown.prisma :: unknown.test-d.ts: expectNotType<Model>({ field: {} as any, str: {} as any, int: 0 as any }) :: any and unknown differ only statically; no .parse() can tell them apart",
+]
+`;

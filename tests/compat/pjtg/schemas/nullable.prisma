@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../target/nullable"
+}
+
+generator json {
+  provider = "node ./index.js"
+  useType  = "PNullable"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Model {
+  id Int @id @default(autoincrement())
+
+  /// [TestJsonType]
+  testJSON Json?
+
+  testInt      Int?
+  testString   String?
+  testBoolean  Boolean?
+  testFloat    Float?
+  testDateTime DateTime?
+  testDecimal  Decimal?
+  testBytes    Bytes?
+  testBigInt   BigInt?
+}

@@ -22,6 +22,12 @@ const DOC_GLOBS = [
   'website/content/**/*.mdx',
   'website/docs/**/*.md',
   'website/docs/**/*.mdx',
+  // `docs/specs/` holds internal design and planning documents: drafts, decision reversals,
+  // measured gaps in our own output, competitive notes. They live in the repo so the
+  // reasoning behind a change is reviewable, but llms.txt is a published, curated surface
+  // and they are not part of it. Without this the first spec added swept ~900 lines of
+  // internal working notes into the shipped file.
+  '!docs/specs/**',
 ];
 
 const processor = remark().use(mdx).use(gfm).use(stringify, {
