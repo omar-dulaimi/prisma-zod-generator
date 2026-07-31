@@ -38,6 +38,13 @@ import { writeFileSafely } from './utils/writeFileSafely';
 import { addIndexExport, writeIndexFile } from './utils/writeIndexFile';
 
 /**
+ * Placeholder a typed-JSON replacement is swapped for while the optionality strips run
+ * over a composed property line. NUL cannot appear in a Zod expression the generator
+ * writes or a user configures, so the mask can never collide with real emitted text.
+ */
+const TYPED_JSON_MASK = '\u0000pzgTypedJson';
+
+/**
  * Filter validation result interface
  */
 interface FilterValidationResult {
@@ -1871,6 +1878,52 @@ export default class Transformer {
     return zodObjectSchemaFields;
   }
 
+  /**
+   * Run an optionality strip over a composed property line without letting it reach
+   * inside a typed-JSON replacement.
+   *
+   * The strips exist for the OUTER expression and are load-bearing there: every
+   * alternative arrives from `wrapWithZodValidators` already carrying `.optional()`, a
+   * union adds its own tail, and the optional/nullable policy below re-applies exactly
+   * one marker. Left unstripped that composes two markers where the policy allows one.
+   *
+   * A typed replacement is not the emitter's expression, though. It is the user's schema,
+   * and `{ a: string; b?: number }` means `b` is optional in every artifact that reads
+   * that annotation - the pure model and the result schema both say so. Masking each
+   * replacement to an opaque token keeps the outer strip doing its job while the
+   * replacement passes through byte for byte.
+   *
+   * Nothing is ever collected without a `typedJson` block, so for everyone else this is
+   * exactly `strip(expression)`.
+   */
+  private static withTypedJsonMasked(
+    expression: string,
+    typedJsonExpressions: Set<string>,
+    strip: (value: string) => string,
+  ): string {
+    if (typedJsonExpressions.size === 0) return strip(expression);
+
+    // Longest first: one replacement can contain another (`TagSchema` inside
+    // `z.array(TagSchema)`), and masking the shorter one first would leave the rest of
+    // the longer one exposed to the strip.
+    const masked = [...typedJsonExpressions].sort((a, b) => b.length - a.length);
+    // Delimited at both ends, so restoring token 1 cannot chew the head off token 11.
+    const token = (index: number) => `${TYPED_JSON_MASK}${index}${TYPED_JSON_MASK}`;
+
+    let result = expression;
+    masked.forEach((value, index) => {
+      result = result.split(value).join(token(index));
+    });
+
+    result = strip(result);
+
+    masked.forEach((value, index) => {
+      result = result.split(token(index)).join(value);
+    });
+
+    return result;
+  }
+
   generateObjectSchemaField(
     field: PrismaDMMF.SchemaArg,
   ): [string, PrismaDMMF.SchemaArg, boolean][] {
@@ -1879,6 +1932,19 @@ export default class Transformer {
     if (lines.length === 0) {
       return [];
     }
+
+    /**
+     * Typed replacements used in this property line, kept out of the optionality strips
+     * below. Empty unless `typedJson` is configured, which is what leaves those strips
+     * byte-identical for everybody else.
+     */
+    const typedJsonExpressions = new Set<string>();
+    const typedJsonBase = (typedJson: TypedJsonResolved | null): string | undefined => {
+      const expression = typedJson?.elementExpression;
+      if (!expression) return undefined;
+      typedJsonExpressions.add(expression);
+      return expression;
+    };
 
     let alternatives = lines.reduce<string[]>((result, inputType) => {
       // Skip inputTypes that reference blocked schemas in minimal mode
@@ -1892,7 +1958,7 @@ export default class Transformer {
         // Check for custom schema from @zod.import() annotations
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = typedJson?.elementExpression || customSchema || 'z.string()';
+        const baseSchema = typedJsonBase(typedJson) || customSchema || 'z.string()';
         result.push(
           this.wrapWithZodValidators(
             baseSchema,
@@ -1911,14 +1977,14 @@ export default class Transformer {
       } else if (inputType.type === 'Int') {
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = typedJson?.elementExpression || customSchema || 'z.number().int()';
+        const baseSchema = typedJsonBase(typedJson) || customSchema || 'z.number().int()';
         result.push(
           this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
         );
       } else if (inputType.type === 'Float') {
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = typedJson?.elementExpression || customSchema || 'z.number()';
+        const baseSchema = typedJsonBase(typedJson) || customSchema || 'z.number()';
         result.push(
           this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
         );
@@ -2005,7 +2071,7 @@ export default class Transformer {
       } else if (inputType.type === 'Json') {
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = typedJson?.elementExpression || customSchema || 'jsonSchema';
+        const baseSchema = typedJsonBase(typedJson) || customSchema || 'jsonSchema';
         // A typed field no longer mentions `jsonSchema`, so flagging it would emit an
         // unused import. Gated on typedJson specifically, not on the resulting expression:
         // the `@zod.custom.use` path has always set this and must keep doing so, or every
@@ -2085,7 +2151,11 @@ export default class Transformer {
     }
 
     if (alternatives.length > 1) {
-      alternatives = alternatives.map((alter) => alter.replace('.optional()', ''));
+      alternatives = alternatives.map((alter) =>
+        Transformer.withTypedJsonMasked(alter, typedJsonExpressions, (value) =>
+          value.replace('.optional()', ''),
+        ),
+      );
     }
 
     // Check if ALL alternatives already include the field name
@@ -2127,10 +2197,12 @@ export default class Transformer {
       ].includes(field.name);
 
     // Strip any existing optional/nullable/nullish from the composed string; we will re-apply
-    resString = resString
-      .replace(/\.optional\(\)/g, '')
-      .replace(/\.nullish\(\)/g, '')
-      .replace(/\.nullable\(\)/g, '');
+    resString = Transformer.withTypedJsonMasked(resString, typedJsonExpressions, (value) =>
+      value
+        .replace(/\.optional\(\)/g, '')
+        .replace(/\.nullish\(\)/g, '')
+        .replace(/\.nullable\(\)/g, ''),
+    );
 
     let isRequired = field.isRequired;
 
