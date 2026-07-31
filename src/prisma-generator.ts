@@ -615,6 +615,8 @@ export async function generate(options: GeneratorOptions) {
 
     hideInputObjectTypesAndRelatedFields(mutableInputObjectTypes, hiddenModels, hiddenFields);
 
+    warnOnAmbiguousInputTypeNames(mutableInputObjectTypes, models);
+
     // Determine explicit emission flags with fallbacks
     const emitObjects = generatorConfig.emit?.objects !== false;
     const emitCrud = generatorConfig.emit?.crud !== false;
@@ -740,6 +742,64 @@ export async function generate(options: GeneratorOptions) {
     // and simply produced no schemas.
     console.error(error);
     throw error;
+  }
+}
+
+/** The slice of a DMMF input object type this check needs, readonly as the DMMF hands it over. */
+interface InputTypeShape {
+  readonly name: string;
+  readonly fields: readonly { readonly name: string }[];
+}
+
+/**
+ * Warn when two models make Prisma emit two different input types under one name.
+ *
+ * Models `Order` and `OrderUnchecked` both produce an `OrderUncheckedCreateInput`: one is
+ * Order's unchecked create, the other is OrderUnchecked's create. Measured from the DMMF,
+ * they carry different fields (`[id,label]` vs `[label]`). The ambiguity is upstream in
+ * Prisma's naming, so nothing here can resolve it by reading the model name more carefully:
+ * one name genuinely denotes two types.
+ *
+ * We emit one file per input-type name, so the last definition wins and one model's input
+ * schema silently describes the other's columns. With a `@zod` or typed-JSON annotation on
+ * either, one model's validation is enforced on the other model's column.
+ *
+ * A warning rather than an error: the schema is legal Prisma, the collision may involve
+ * schemas the user never calls, and failing the build over it would be worse than saying so.
+ */
+function warnOnAmbiguousInputTypeNames(
+  inputObjectTypes: readonly InputTypeShape[],
+  models: readonly { readonly name: string }[],
+): void {
+  const byName = new Map<string, InputTypeShape[]>();
+  for (const inputType of inputObjectTypes) {
+    const existing = byName.get(inputType.name);
+    if (existing) existing.push(inputType);
+    else byName.set(inputType.name, [inputType]);
+  }
+
+  const modelNames = new Set(models.map((m) => m.name));
+  for (const [name, definitions] of byName) {
+    if (definitions.length < 2) continue;
+
+    // Name the pair responsible when we can, so the message points at the fix (rename one
+    // model) instead of at a generated file the user never wrote.
+    const culprits = [...modelNames]
+      .filter((m) => name.startsWith(m) && modelNames.has(`${m}Unchecked`))
+      .flatMap((m) => [m, `${m}Unchecked`]);
+    const pair =
+      culprits.length > 0 ? ` Models involved: ${[...new Set(culprits)].join(', ')}.` : '';
+    const shapes = definitions
+      .map((d) => `[${d.fields.map((f) => f.name).join(', ')}]`)
+      .join(' vs ');
+
+    logger.warn(
+      `[prisma-zod-generator] ⚠️  Ambiguous input type "${name}": Prisma emits ` +
+        `${definitions.length} different types under this one name (${shapes}), so only one ` +
+        `can be written to objects/${name}.schema.ts and the other is lost.${pair} ` +
+        `Any @zod or typedJson annotation on the losing model is not enforced. ` +
+        `Rename one of the models to remove the collision.`,
+    );
   }
 }
 
