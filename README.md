@@ -193,15 +193,15 @@ trade-offs.
 The generator above is MIT licensed and complete on its own. The commercial packs generate the layers
 people usually hand-write around it:
 
-- **Server Actions** — typed Next.js `'use server'` actions per model, validation already wired in.
-- **Form UX** — working forms from your schema for shadcn, MUI, Chakra, Mantine, or plain elements,
+- **Server Actions**: typed Next.js `'use server'` actions per model, validation already wired in.
+- **Form UX**: working forms from your schema for shadcn, MUI, Chakra, Mantine, or plain elements,
   with react-hook-form and your Zod schemas connected.
-- **Policies & Redaction** — turn `/// @policy` and `/// @pii` comments in your schema into enforced
+- **Policies & Redaction**: turn `/// @policy` and `/// @pii` comments in your schema into enforced
   access rules and redacted logs, plus PostgreSQL row-level security.
-- **Drift Guard** — a CI command that compares two git refs and fails the build on a breaking schema
+- **Drift Guard**: a CI command that compares two git refs and fails the build on a breaking schema
   change, with an allow-list for the ones you accept.
-- **SDK Publisher** — a publishable TypeScript or Python client for your models.
-- **API Docs, Contract Testing, Data Factories, Performance, Multi-Tenant Kit** — OpenAPI plus a mock
+- **SDK Publisher**: a publishable TypeScript or Python client for your models.
+- **API Docs, Contract Testing, Data Factories, Performance, Multi-Tenant Kit**: OpenAPI plus a mock
   server, Pact consumer and provider tests, seed factories typed to your schema, precompiled
   generation for large schemas, and tenant isolation enforced in the client.
 
@@ -220,7 +220,7 @@ through the bundled `pzg-pro` CLI.
 ### Buying a licence
 
 Licences are sold through GitHub Sponsors, which needs one thing spelled out: open the
-**One-time** tab — the second one — and pick a yearly **PZG Starter**, **PZG Professional**,
+**One-time** tab, the second one, and pick a yearly **PZG Starter**, **PZG Professional**,
 **PZG Business**, or **PZG Enterprise** tier. The monthly support tiers on the first tab do **not**
 include a PZG Pro licence.
 
@@ -240,5 +240,5 @@ commit conventions, and test commands. Please open an issue before large refacto
 
 ## License
 
-MIT © [Omar Dulaimi](https://github.com/omar-dulaimi) — see [LICENSE](LICENSE).
+MIT © [Omar Dulaimi](https://github.com/omar-dulaimi). See [LICENSE](LICENSE).
 PZG Pro packs are covered by a separate commercial license ([LICENSE-PRO.md](LICENSE-PRO.md)).
