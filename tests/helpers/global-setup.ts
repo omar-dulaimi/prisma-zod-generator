@@ -1,9 +1,11 @@
 import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, readdirSync, rmSync } from 'fs';
 import path from 'path';
 import { prismaGenerateSync } from './prisma-generate';
 
 const MULTI_PROVIDER_PROVIDERS = ['postgresql', 'mysql', 'mongodb', 'sqlite', 'sqlserver'] as const;
+
+const TEST_ENV_PREFIX = 'test-env-';
 
 /**
  * Build the generator once before any test worker starts.
@@ -61,7 +63,55 @@ function generateMultiProviderFixtures(): void {
   }
 }
 
-export default function setup(): void {
+/**
+ * Delete every `test-env-*` scratch directory in the repository root.
+ *
+ * `TestEnvironment.createTestEnv()` writes one of these per test env and returns a
+ * `cleanup()` the test is meant to call. Plenty of tests don't — some assert on
+ * generated files after the last `await`, some bail early — and the safety nets
+ * behind it don't cover the gap: the `process.on('exit')` hook is registered inside
+ * a pooled worker thread that vitest may reuse rather than exit, and the stale sweep
+ * in `createTestEnv` only removes directories older than six hours *and* only runs
+ * when some later test happens to create an env. So a normal green run routinely
+ * left dozens of them behind, and they accumulated until someone ran
+ * `pnpm test:clean-envs` by hand.
+ *
+ * Running this from globalSetup fixes both ends: once before the pool spawns (so a
+ * previous run that was killed doesn't leave litter), and once in the teardown that
+ * vitest calls after the run finishes, pass or fail.
+ *
+ * Set `KEEP_TEST_ENVS=1` to keep them for debugging.
+ */
+function sweepTestEnvs(when: 'before' | 'after'): void {
+  if (process.env.KEEP_TEST_ENVS === '1') return;
+
+  const root = process.cwd();
+  let removed = 0;
+
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !entry.name.startsWith(TEST_ENV_PREFIX)) continue;
+    try {
+      rmSync(path.join(root, entry.name), { recursive: true, force: true });
+      removed++;
+    } catch {
+      // A directory still held open by a straggling child process is not worth
+      // failing the run over — the next sweep gets it.
+    }
+  }
+
+  if (removed > 0) {
+    console.log(
+      `[global-setup] Removed ${removed} test-env-* director${removed === 1 ? 'y' : 'ies'} (${when} run).`,
+    );
+  }
+}
+
+export default function setup(): () => void {
+  sweepTestEnvs('before');
   buildGenerator();
   generateMultiProviderFixtures();
+
+  return function teardown(): void {
+    sweepTestEnvs('after');
+  };
 }
