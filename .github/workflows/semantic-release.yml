@@ -6,9 +6,79 @@ on:
   workflow_dispatch:
 
 jobs:
-  release:
+  # Decide whether this push will actually publish anything, before paying for the
+  # pipeline that would publish it.
+  #
+  # Most pushes to master do not release. `.releaserc.json` marks docs, style, chore,
+  # test, build and ci as `"release": false`, and those are the bulk of the traffic -
+  # over one recent stretch, one of five merges produced a version. Every one of the
+  # other four still ran the whole release job: submodule checkout, install,
+  # gen-example, typecheck, lint, the full test suite, package.sh with obfuscation and
+  # verify:build, roughly fifteen minutes, before semantic-release reached the end and
+  # reported "no relevant changes".
+  #
+  # This job asks commit-analyzer the same question first, for about a minute. It uses
+  # the real plugin and the real `releaseRules` rather than a grep over commit
+  # messages, so the gate cannot disagree with the release it is gating.
+  #
+  # It also does not need the private submodule, which the release job does.
+  plan:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    env:
+      HUSKY: 0
+    outputs:
+      will_release: ${{ steps.analyze.outputs.will_release }}
+      next_version: ${{ steps.analyze.outputs.next_version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.x'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Determine whether this push releases
+        id: analyze
+        shell: bash
+        run: |
+          set -uo pipefail
+          out="$(pnpm run release:predict 2>&1)" || true
+          echo "$out"
+
+          # Fail open. A missed release is expensive and silent; a wasted pipeline run
+          # costs fifteen minutes and is obvious. So only the explicit "nothing to
+          # release" message skips - anything unrecognised, including a future change
+          # to semantic-release's wording, falls through to running the release.
+          if grep -q "The next release version is" <<<"$out"; then
+            version="$(grep -oE "The next release version is [^ ]+" <<<"$out" | tail -1 | awk '{print $NF}')"
+            echo "will_release=true" >> "$GITHUB_OUTPUT"
+            echo "next_version=$version" >> "$GITHUB_OUTPUT"
+            echo "::notice::Releasing $version"
+          elif grep -qE "no new version is released|There are no relevant changes" <<<"$out"; then
+            echo "will_release=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No releasable commits; skipping the release pipeline."
+          else
+            echo "will_release=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Could not read a verdict from commit-analyzer; running the release pipeline anyway."
+          fi
+
+  release:
+    runs-on: ubuntu-latest
+    needs: plan
+    if: needs.plan.outputs.will_release == 'true'
     env:
       # Disable husky entirely in CI; npm publish runs the packaged
       # package.json's prepare script inside package/ where no .git exists.
