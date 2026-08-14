@@ -18,6 +18,13 @@ export interface GeneratorConfig {
   output?: string;
 
   /**
+   * Override the Prisma Client import path generated schemas use, instead of
+   * deriving it from the schema's own `generator client` block. Relative paths
+   * resolve against the directory containing schema.prisma.
+   */
+  prismaClientPath?: string;
+
+  /**
    * Control file output mode.
    * When true (default), generate multiple files (current behavior).
    * When false, generate a single bundled file with all schemas.
