@@ -1,3 +1,9 @@
+## [3.2.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.2.0...v3.2.1) (2026-08-14)
+
+### 🐛 Bug Fixes
+
+* **mongodb:** stop dropping composite-typed fields to z.unknown() in variants ([#410](https://github.com/omar-dulaimi/prisma-zod-generator/issues/410)) ([051abfd](https://github.com/omar-dulaimi/prisma-zod-generator/commit/051abfd61a1dbc9f6f0731352ecc312a139ce059)), closes [zpt#54](https://github.com/omar-dulaimi/zpt/issues/54) [zpt#318](https://github.com/omar-dulaimi/zpt/issues/318)
+
 ## [3.2.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.1.1...v3.2.0) (2026-08-14)
 
 ### 🚀 Features
