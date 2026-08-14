@@ -22,11 +22,12 @@ const DOC_GLOBS = [
   'website/content/**/*.mdx',
   'website/docs/**/*.md',
   'website/docs/**/*.mdx',
-  // `docs/specs/` holds internal design and planning documents: drafts, decision reversals,
-  // measured gaps in our own output, competitive notes. They live in the repo so the
-  // reasoning behind a change is reviewable, but llms.txt is a published, curated surface
-  // and they are not part of it. Without this the first spec added swept ~900 lines of
-  // internal working notes into the shipped file.
+  // `docs/specs/` is empty as of the removal of the typed-JSON design and parity notes -
+  // once the work ships, a plan that still reads "not yet implemented" is worse than no
+  // document. The guard stays because the cost of it being wrong is asymmetric: llms.txt
+  // is a published, curated surface, and the first spec ever added here swept ~900 lines
+  // of internal working notes into the shipped file. Anything dropped in that directory
+  // later is excluded by default rather than by someone remembering.
   '!docs/specs/**',
 ];
 
