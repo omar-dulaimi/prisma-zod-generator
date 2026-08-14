@@ -1,3 +1,4 @@
+import path from 'path';
 import prettier from 'prettier';
 import type { BuiltInParserName } from 'prettier';
 
@@ -37,10 +38,10 @@ export function parserForFile(filePath: string): BuiltInParserName | undefined {
 /**
  * Format `content` with Prettier.
  *
- * `filePath` selects the parser. When it is omitted the content is parsed as
- * TypeScript, preserving the original behaviour for the core schema writers.
- * Content that Prettier cannot parse is returned unchanged rather than throwing,
- * so a formatting problem can never cost the caller its file.
+ * `filePath` selects the parser and locates the user's Prettier config. When it is
+ * omitted the content is parsed as TypeScript, preserving the original behaviour for
+ * the core schema writers. Content that Prettier cannot parse is returned unchanged
+ * rather than throwing, so a formatting problem can never cost the caller its file.
  */
 export const formatFile = async (content: string, filePath?: string): Promise<string> => {
   const parser = filePath === undefined ? 'typescript' : parserForFile(filePath);
@@ -48,7 +49,20 @@ export const formatFile = async (content: string, filePath?: string): Promise<st
     return content;
   }
 
-  const resolved = await prettier.resolveConfig(process.cwd());
+  // `resolveConfig` takes the path of the *file being formatted* and searches upward
+  // from its directory. It used to be handed `process.cwd()`, which Prettier treats as
+  // a file name and so searches from the parent of - meaning the project's own
+  // `.prettierrc` was skipped and only an ancestor's config could ever be found.
+  //
+  // Since `prisma generate` runs at the project root, that was every project: the
+  // user's config was silently ignored and the defaults below applied instead. It also
+  // made output depend on where the project sat on disk, because a repo nested under a
+  // directory that happened to hold a `.prettierrc` picked that one up.
+  //
+  // Passing the target file also lets a per-directory config over the output folder
+  // apply, which is what Prettier itself would do for that file.
+  const configTarget = filePath ?? path.join(process.cwd(), 'index.ts');
+  const resolved = await prettier.resolveConfig(configTarget);
   const formatOptions = resolved ?? {
     trailingComma: 'all' as const,
     tabWidth: 2,
