@@ -1,3 +1,13 @@
+## [3.1.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.1.0...v3.1.1) (2026-08-14)
+
+### 🐛 Bug Fixes
+
+* **format:** resolve the user's Prettier config, not an ancestor's ([#403](https://github.com/omar-dulaimi/prisma-zod-generator/issues/403)) ([488e37f](https://github.com/omar-dulaimi/prisma-zod-generator/commit/488e37fb75b67863e25b6ee4875cb708947fb94f))
+
+### 📚 Documentation
+
+* remove em dashes from the README ([2787861](https://github.com/omar-dulaimi/prisma-zod-generator/commit/27878612bd1e640ee9304352b9bd5eef4c7b64a1))
+
 ## [3.1.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.0.2...v3.1.0) (2026-07-31)
 
 ### 🚀 Features

@@ -145,7 +145,7 @@
     "url": "https://github.com/sponsors/omar-dulaimi"
   },
   "homepage": "https://omar-dulaimi.github.io/prisma-zod-generator",
-  "private": true,
+  "private": false,
   "engines": {
     "node": ">=20.19.0"
   }
