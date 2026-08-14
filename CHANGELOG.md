@@ -1,3 +1,14 @@
+## [3.2.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.1.1...v3.2.0) (2026-08-14)
+
+### 🚀 Features
+
+* **generator:** add PZG_SKIP to no-op generation entirely ([#409](https://github.com/omar-dulaimi/prisma-zod-generator/issues/409)) ([71846f8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/71846f85813afe8294b075309dff581da74d15f4))
+* **zod-comments:** add [@zod](https://github.com/zod).coerce() for Int/Float/BigInt/Boolean ([#408](https://github.com/omar-dulaimi/prisma-zod-generator/issues/408)) ([df5f7b8](https://github.com/omar-dulaimi/prisma-zod-generator/commit/df5f7b8f8d10748334758bf4d2fc4a34e437c8cc))
+
+### 📚 Documentation
+
+* drop the internal typed-JSON specs ([#405](https://github.com/omar-dulaimi/prisma-zod-generator/issues/405)) ([94f5bd3](https://github.com/omar-dulaimi/prisma-zod-generator/commit/94f5bd3a59474803074b64cbaba7916e804816e8)), closes [#398](https://github.com/omar-dulaimi/prisma-zod-generator/issues/398)
+
 ## [3.1.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.1.0...v3.1.1) (2026-08-14)
 
 ### 🐛 Bug Fixes
