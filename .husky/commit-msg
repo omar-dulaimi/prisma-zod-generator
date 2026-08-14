@@ -1,0 +1,44 @@
+# Reject the CI-skip marker when it appears in the body of a commit message.
+#
+# GitHub matches that marker anywhere in the head commit's message, subject and body
+# alike, and skips every workflow for the commit. It also carries into a squash-merge,
+# because the PR's commit body becomes the merge commit's body.
+#
+# That is not hypothetical here: PR #406 was a change *about* the marker, its commit
+# body quoted the literal string three times while explaining the mechanism, and the
+# result was zero checks on the pull request and zero workflow runs on the merge
+# commit. A CI change reached master having never run CI, and nothing reported a
+# problem, because from GitHub's side nothing went wrong.
+#
+# Intentional use stays available: put it in the subject line, which is where
+# semantic-release writes it. Only prose in the body is rejected.
+
+msg_file="$1"
+[ -f "$msg_file" ] || exit 0
+
+# Strip comment lines git adds to the template before looking.
+content="$(grep -v '^#' "$msg_file")"
+subject="$(printf '%s\n' "$content" | sed -n '1p')"
+body="$(printf '%s\n' "$content" | sed -n '2,$p')"
+
+marker='\[(skip ci|ci skip|skip actions|actions skip)\]'
+
+if printf '%s' "$body" | grep -qEi "$marker"; then
+  if printf '%s' "$subject" | grep -qEi "$marker"; then
+    exit 0
+  fi
+  echo ""
+  echo "✖ The CI-skip marker appears in the body of this commit message."
+  echo ""
+  echo "  GitHub reads the entire message, so this silently disables every workflow"
+  echo "  for the commit - and for the squash-merge commit it becomes part of."
+  echo "  A change can reach master without CI ever running, with nothing to show"
+  echo "  for it: no failed check, no skipped check, no run at all."
+  echo ""
+  echo "  If you are describing the marker, write it without the brackets."
+  echo "  If you actually mean to skip CI, put it in the subject line instead."
+  echo ""
+  exit 1
+fi
+
+exit 0
