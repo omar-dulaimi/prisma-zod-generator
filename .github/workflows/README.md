@@ -9,13 +9,15 @@ This repository uses GitHub Actions for automated testing, building, and releasi
 
 **Jobs**:
 - **test**: Runs on Node.js 20.19.0, 22.x, 24.x
-  - Builds project with `npm run gen-example`
-  - Type checking with `npm run test:type-check`
-  - Linting with `npm run lint`
-  - Basic tests with `npm run test:basic`
+  - Builds project with `pnpm run gen-example`
+  - Type checking with `pnpm run typecheck`
+  - Linting with `pnpm run lint` (reported, non-blocking)
+  - The full test suite with `pnpm test` — every file matched by the vitest glob
+  - Coverage thresholds with `pnpm run test:coverage:ci` (Node 24 only)
 - **package-test**: Tests package integrity
   - Builds and packages the project
-  - Verifies package can be created successfully
+  - Verifies the tarball installs and generates in a throwaway consumer project
+  - Type-checks the emitted Pro UI output against the real UI libraries
 
 ### 2. Release (`release.yml`)
 **Trigger**: Push to master branch, manual dispatch
@@ -151,23 +153,20 @@ To trigger a manual release:
 ## Testing Locally
 
 ```bash
-# Run basic tests
-npm run test:basic
+# Run the full test suite
+pnpm test
 
-# Run with coverage
-npm run test:coverage
-
-# Run basic tests
-npm run test:basic
+# Run with coverage (enforces the thresholds CI enforces)
+pnpm test:coverage
 
 # Test release process (dry run)
-npm run release:dry
+pnpm run release:dry
 
 # Type check
-npm run test:type-check
+pnpm run typecheck
 
 # Lint code
-npm run lint
+pnpm run lint
 ```
 
 ## Monitoring

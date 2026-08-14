@@ -4,22 +4,22 @@ A comprehensive testing framework for validating generated Zod schemas with Type
 
 ## Quick Start
 
-```bash
-# Install dependencies
-cd tests
-npm install
+Run everything from the repository root with pnpm; there is no separate install
+inside `tests/`.
 
+```bash
 # Run all tests
-npm run test:full
+pnpm test
+
+# Run one file, or one test by name
+pnpm test tests/generated-schema.test.ts
+pnpm test -t 'should validate required fields'
 
 # Run tests with coverage
-npm run test:coverage
+pnpm test:coverage
 
 # Run tests in watch mode
-npm run test:watch
-
-# Run automated test runner
-npx ts-node automated-test-runner.ts
+pnpm test:watch
 ```
 
 ## Test Structure
@@ -220,10 +220,9 @@ Add to your CI pipeline:
 ```yaml
 - name: Test Generated Schemas
   run: |
-    cd tests
-    npm install
-    npm run test:ci
-    npx ts-node automated-test-runner.ts
+    pnpm install --frozen-lockfile
+    pnpm run gen-example
+    pnpm test
 ```
 
 This ensures all generated schemas are validated before deployment.
@@ -235,15 +234,14 @@ This ensures all generated schemas are validated before deployment.
 1. **Import Errors**: Ensure schema paths are correct in test files
 2. **Type Errors**: Check that generated schemas have proper TypeScript types
 3. **Performance Issues**: Use `performanceTest` to identify slow schemas
-4. **Missing Schemas**: Run `npm run gen-example` to regenerate schemas
+4. **Missing Schemas**: Run `pnpm run gen-example` to regenerate schemas
 
 ### Debug Mode
 
 Run tests with additional logging:
 
 ```bash
-npm test -- --verbose
-NODE_ENV=test npm test
+pnpm test --reporter=verbose
 ```
 
 This comprehensive test suite ensures your generated Zod schemas are reliable, type-safe, and performant.

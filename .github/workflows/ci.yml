@@ -103,7 +103,7 @@ jobs:
         run: pnpm run gen-example
 
       - name: Run type checking
-        run: pnpm run test:type-check
+        run: pnpm run typecheck
 
       # Reported but not blocking. `|| echo` *and* continue-on-error meant a lint failure
       # could not even be seen in the job's conclusion; continue-on-error alone still
@@ -112,12 +112,12 @@ jobs:
         run: pnpm run lint
         continue-on-error: true
 
-      # Runs every file matched by the vitest include glob, not a hand-maintained
-      # list, so a new test file can never be silently left out of CI. No
-      # database services are required: the provider suites only run
+      # `pnpm test` runs every file matched by the vitest include glob, not a
+      # hand-maintained list, so a new test file can never be silently left out of
+      # CI. No database services are required: the provider suites only run
       # `prisma generate`, they never connect.
       - name: Run full test suite
-        run: pnpm run test:all
+        run: pnpm test
         timeout-minutes: 45
 
       # The coverage ratchet, run once rather than on all three Node versions. Thresholds are

@@ -82,7 +82,7 @@ jobs:
           pnpm run gen-example
           pnpm run typecheck
           pnpm run lint
-          pnpm run test:all
+          pnpm test
 
       - name: Build package (with obfuscation)
         run: ./package.sh
