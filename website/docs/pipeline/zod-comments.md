@@ -291,6 +291,41 @@ export const NumberValidationCreateInputSchema = z.object({
 });
 ```
 
+### Type Coercion
+
+`@zod.coerce()` on an `Int`, `Float`, `BigInt` or `Boolean` field switches its base
+type to Zod's coercing constructor (`z.coerce.number()`, `z.coerce.bigint()`,
+`z.coerce.boolean()`), so a value arriving as a string — a raw HTML form field, a
+query-string parameter — is converted before validation instead of rejected. Chain
+the rest of the validators after it as usual; `DateTime` fields already have this
+through the generator-level [`dateTimeStrategy: 'coerce'`](../reference/config-options.md)
+option instead of a per-field annotation.
+
+```prisma
+model CoerceExample {
+  id      Int     @id @default(autoincrement())
+  /// @zod.coerce().min(1)
+  count   Int
+  /// @zod.coerce()
+  ratio   Float
+  /// @zod.coerce()
+  agree   Boolean
+}
+```
+
+Generated schema:
+```ts
+export const CoerceExampleCreateInputSchema = z.object({
+  count: z.coerce.number().int().min(1),
+  ratio: z.coerce.number(),
+  agree: z.coerce.boolean(),
+});
+```
+
+`@zod.coerce()` on a `String` field or a list field (`Int[]`) is rejected the same
+way any other type-incompatible validator is — the field falls back to its plain
+schema rather than emitting `z.coerce.string()` or coercing per array element.
+
 ### Array Validations
 
 ```prisma
