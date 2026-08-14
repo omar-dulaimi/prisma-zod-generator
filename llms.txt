@@ -9588,6 +9588,16 @@ These override both the generator block and the config file.
 | `PRISMA_ZOD_SAFETY_CUSTOM_DANGEROUS_PATHS` | `safety.customDangerousPaths` |
 | `PRISMA_ZOD_SAFETY_CUSTOM_PROJECT_FILES`   | `safety.customProjectFiles`   |
 
+## Other environment variables
+
+Not tied to a config key; read directly by the generator entrypoint.
+
+| Variable                      | Effect                                                                                                                                                                                                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PZG_SKIP=1` (or `true`)      | Skips generation entirely for this run. `prisma generate` still runs — this generator does nothing when its turn comes and leaves whatever is already on disk untouched. Useful for a production build where schemas are already committed and regenerating them is wasted CI time rather than a no-op. |
+| `PZG_NO_BANNER=1` (or `true`) | Silences the periodic sponsor message printed after install/generate.                                                                                                                                                                                                                                   |
+| `PZG_DEV_MODE=true`           | Bypasses the Pro license check in a local checkout of this repo. Has no effect outside it.                                                                                                                                                                                                              |
+
 ## Declared but not read
 
 These keys are accepted, validate cleanly, and appear in editor IntelliSense, but no code in the generation pipeline reads them. Setting them changes nothing.
