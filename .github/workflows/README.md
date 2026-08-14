@@ -25,17 +25,23 @@ only run `prisma generate`, which never connects.
 **`package-test`** — the only job that checks out the private submodule, so the
 only place its checks can run:
 
-1. builds and packages, then `npm pack --dry-run`
-2. `pnpm run test:package-consumer` — installs the tarball into a throwaway
+1. `pnpm test` — the full suite *with* the submodule present
+2. builds and packages, then `npm pack --dry-run`
+3. `pnpm run test:package-consumer` — installs the tarball into a throwaway
    project and generates through it
-3. `pnpm run test:typecheck-fixtures` — type-checks emitted Pro UI output
+4. `pnpm run test:typecheck-fixtures` — type-checks emitted Pro UI output
    against the real MUI, Chakra, Mantine and Pact packages
 
-> **Known gap:** the vitest suite never runs with the submodule present. `test`
-> has no submodule (the `pro-*` suites self-skip) and `package-test` runs only
-> the two commands above, one of which is a single Pro test file. So 20 of the
-> 21 `tests/pro-*.test.ts` files execute only on a machine that has the
-> submodule checked out.
+Step 1 looks redundant against the `test` job and is not. Roughly two dozen
+suites skip themselves when the submodule is absent, which is the case in `test`
+and in every fork, so without this step 20 of the 21 `tests/pro-*.test.ts` files
+executed nowhere in CI at all. It runs the full glob rather than a `pro-*`
+pattern because the pro-prefixed files are not the whole set — `cli-commands`
+and `issue-375-shadcn-form-compat` gate on the submodule too.
+
+This job does not run for forks, so a fork's CI still covers only the
+open-source suites. That is intended: the submodule is private, and the `test`
+job is what a fork can meaningfully run.
 
 ## `docs.yml` — Docs
 

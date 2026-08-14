@@ -195,6 +195,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The whole suite again, and deliberately so: this is the only job that checks out
+      # the private submodule, and roughly two dozen suites skip themselves without it.
+      # The `test` job above has no submodule, so every `tests/pro-*.test.ts` self-skips
+      # there — 20 of the 21 never executed anywhere in CI, and the one that did
+      # (pro-ui-output-compiles) only because it has its own step below. A real failure
+      # in them was invisible until someone ran the suite on a machine with the
+      # submodule checked out.
+      #
+      # It runs the full glob rather than `tests/pro-*.test.ts` because the pro-prefixed
+      # files are not the whole set: cli-commands and issue-375-shadcn-form-compat gate
+      # on the submodule too, and a hand-written pattern would drift the same way the
+      # old curated test script did.
+      #
+      # Placed before packaging so a failure reports quickly, and so it runs against a
+      # normal `lib/` rather than the obfuscated one package.sh produces.
+      - name: Run the full test suite with the Pro submodule
+        run: pnpm test
+        timeout-minutes: 30
+
       - name: Build and package
         run: |
           pnpm run gen-example
