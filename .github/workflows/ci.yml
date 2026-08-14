@@ -25,6 +25,22 @@ jobs:
         run: |
           set -euo pipefail
 
+          # The release workflow pushes its own commits back to master - the
+          # `chore(release): x.y.z` version bump from @semantic-release/git, and the
+          # workflow-mutations commit after it - both tagged `[skip ci]`. Their contents
+          # are a version bump and a changelog, produced from a tree CI already validated
+          # one commit earlier, and both touch package.json, which is not in the docs-only
+          # pattern below. So every release used to re-run the full three-Node matrix and
+          # package-test on code nothing had changed.
+          #
+          # Honour the marker the release workflow is already writing.
+          HEAD_MSG="$(git log -1 --pretty=%B "${{ github.sha }}" || true)"
+          if [ "$EVENT_NAME" != "pull_request" ] && printf '%s' "$HEAD_MSG" | grep -qF '[skip ci]'; then
+            echo "Head commit is marked [skip ci]; not running."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           if [ "$EVENT_NAME" = "pull_request" ] && [ -n "${BASE_REF:-}" ]; then
             git fetch --no-tags --prune --depth=1 origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
             RANGE="origin/${BASE_REF}...HEAD"
