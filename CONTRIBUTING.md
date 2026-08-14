@@ -166,6 +166,17 @@ We use **Conventional Commits** format:
 <footer>
 ```
 
+> **Do not write the CI-skip marker in a commit body.** GitHub matches it anywhere in
+> the head commit's message, so it disables every workflow for that commit — and the
+> body carries into the squash-merge commit, so the merge skips CI too. This has
+> already cost us once: a pull request whose body quoted the marker while explaining
+> it landed on `master` with zero checks and zero workflow runs, and nothing reported
+> a problem, because from GitHub's side nothing had gone wrong.
+>
+> Mention it without the brackets when describing it. A `commit-msg` hook rejects the
+> bracketed form in a body; the subject line, where `semantic-release` writes it,
+> still works.
+
 ### Types
 - `feat`: New feature
 - `fix`: Bug fix
