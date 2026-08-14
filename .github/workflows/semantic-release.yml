@@ -108,11 +108,13 @@ jobs:
           # Stage docs and common release-mutation files to avoid failing on dirty tree
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # `package/` is build output and gitignored, so it is deliberately not listed:
+          # package.sh rewrites package/package.json on every run, and while it was tracked
+          # it dirtied the tree every time and was the only thing this step ever committed.
           git add -A \
             website/docs/changelog.md \
             package.json \
             pnpm-lock.yaml \
-            package/package.json \
             CHANGELOG.md || true
           # If nothing is staged, skip committing to avoid exit 1 from git commit
           if git diff --cached --quiet; then
@@ -121,4 +123,17 @@ jobs:
           fi
           LAST_TAG=$(git describe --tags --abbrev=0 || echo "latest")
           git commit -m "chore(ci): commit workflow mutations (version bumps, lockfile, docs) for ${LAST_TAG} [skip ci]"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          # Push over an explicitly token-authenticated URL rather than `origin`.
+          #
+          # The submodule step above sets a *global*
+          # `url."git@github.com:".insteadOf "https://github.com/"`, so a plain
+          # `git push origin` is rewritten to SSH and authenticates with the only key in the
+          # agent — the submodule's deploy key, which has no write access to this repository.
+          # That failed with "Permission denied (publickey)".
+          #
+          # It went unnoticed because the step exits early unless one of the files above
+          # actually changed, and the only one that regularly did was package/package.json,
+          # now untracked. semantic-release's own push is unaffected: it builds this same
+          # authenticated form, whose prefix does not match the rewrite rule.
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            HEAD:"${GITHUB_REF_NAME}"
