@@ -1,6 +1,7 @@
 # Closing the typed-JSON parity gaps
 
-Status: plan, round 3, after two scrutiny passes. Ready to implement.
+Status: implemented and shipped in 3.1.0 (#398). Kept as the design record; the gap
+counts below are the measurements taken before the work landed, not current state.
 Follows: `2026-07-28-typed-json-fields-design.md`, shipped on `feat/typed-json-fields` at 197/230
 
 ## What is actually left, measured

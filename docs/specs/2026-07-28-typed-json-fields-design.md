@@ -1,6 +1,7 @@
 # Typed JSON and scalar fields, compatible with prisma-json-types-generator
 
-Status: spec, not yet implemented
+Status: implemented and shipped in 3.1.0 (#398). Kept as the design record — the
+reasoning below is why the implementation looks the way it does, not outstanding work.
 Issue: [#386](https://github.com/omar-dulaimi/prisma-zod-generator/issues/386)
 
 ## The problem, restated from evidence
