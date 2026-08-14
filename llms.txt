@@ -5471,6 +5471,41 @@ The constraint comes from the field's native type — the same mechanism that tu
 Pure model schemas (`models/`), variant schemas (`variants/`) and result schemas (`results/`) map `String` to a bare `z.string()`. None of them reads native types, so `@db.ObjectId` adds nothing there, and their output does not vary by provider.
 :::
 
+## Composite types
+
+A field whose type is a MongoDB [composite type](https://www.prisma.io/docs/orm/prisma-schema/data-model/models#defining-composite-types) — a `type` block, not a `model` — has the same DMMF `kind: 'object'` as a real relation, but Prisma never sets `relationName` for one, since a composite isn't a relation.
+
+```prisma
+type Address {
+  street String
+  city   String
+  zip    String?
+}
+
+model Customer {
+  id      String  @id @default(auto()) @map("_id") @db.ObjectId
+  name    String
+  address Address
+}
+```
+
+CRUD/input/where schemas need no special handling: Prisma's own DMMF pre-expands every composite into ordinary `inputObjectTypes`/`outputObjectTypes` entries — `AddressCreateInput`, `AddressWhereInput`, `AddressObjectEqualityInput`, and so on under `objects/` — that the generic object-schema walker already covers.
+
+The pure, result and input **variant** schemas (`variants/`) build each field's expression directly from `model.fields` rather than from those pre-expanded DMMF types, though, so they reference the composite's `ObjectEqualityInput` schema — the one shaped like the composite's own fields, used elsewhere for equality filtering — instead:
+
+```ts
+// variants/pure/Customer.pure.ts
+import { AddressObjectEqualityInputObjectSchema } from '../../objects/AddressObjectEqualityInput.schema';
+
+export const CustomerModelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  address: AddressObjectEqualityInputObjectSchema,
+}).strict();
+```
+
+A list of composites (`addresses Address[]`) gets `.array()` appended the same way an enum list does.
+
 ## Models whose name contains `Raw`
 
 Raw operations are matched by **exact operation name**, never by looking for the substring `Raw`. When the provider is `mongodb`, the generator records the operation names Prisma itself reports for each enabled model and tests candidate names against that record; for any other provider the record is cleared, so it cannot leak into a later non-MongoDB run in the same process.
