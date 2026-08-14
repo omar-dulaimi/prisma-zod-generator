@@ -1970,13 +1970,28 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
                 .map((field) => String(field.type)),
             ),
           );
+          // See the sibling comment on `compositeTypes` in generateVariantSchemaContent:
+          // a MongoDB composite has the same DMMF `kind: 'object'` as a real relation but
+          // never a `relationName`. Every composite already gets a full
+          // `<Type>ObjectEqualityInput` object schema, so custom variants reference that
+          // instead of falling through getZodTypeForField's default to z.unknown().
+          const compositeTypes = Array.from(
+            new Set(
+              enabledFields
+                .filter((field) => field.kind === 'object' && !field.relationName)
+                .map((field) => String(field.type)),
+            ),
+          );
           const fieldLines = enabledFields
             .map((field) => {
               // Base zod type
+              const isFieldComposite = field.kind === 'object' && !field.relationName;
               let zod =
                 field.kind === 'enum'
                   ? `${String(field.type)}Schema`
-                  : `z.${getZodTypeForField(field, variantNameForRules)}`;
+                  : isFieldComposite
+                    ? `${String(field.type)}ObjectEqualityInputObjectSchema${field.isList ? '.array()' : ''}`
+                    : `z.${getZodTypeForField(field, variantNameForRules)}`;
 
               // Apply optionality rules
               const wasRequired = field.isRequired;
@@ -2108,6 +2123,15 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
                 })
                 .join('\n') + '\n'
             : '';
+          const objectsImportBase = placeAtRoot ? './objects' : '../objects';
+          const compositeSchemaImports = compositeTypes.length
+            ? compositeTypes
+                .map(
+                  (n) =>
+                    `import { ${n}ObjectEqualityInputObjectSchema } from '${objectsImportBase}/${n}ObjectEqualityInput.schema${importExtension}';`,
+                )
+                .join('\n') + '\n'
+            : '';
           // Check if Prisma import is needed (for Decimal or other Prisma types)
           const needsPrismaImport = fieldLines.includes('Prisma.');
           const prismaImport = needsPrismaImport
@@ -2132,7 +2156,7 @@ async function generateVariantSchemas(models: DMMF.Model[], config: CustomGenera
             // fallback to default naming
             typeName = `${model.name}Type`;
           }
-          const content = `${zImport}${prismaImport}${enumSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n})${strictModeSuffix};\n\nexport type ${typeName} = z.infer<typeof ${schemaName}>;\n`;
+          const content = `${zImport}${prismaImport}${enumSchemaImports}${compositeSchemaImports}// prettier-ignore\nexport const ${schemaName} = z.object({\n${fieldLines}\n})${strictModeSuffix};\n\nexport type ${typeName} = z.infer<typeof ${schemaName}>;\n`;
           await writeFileSafely(filePath, content);
           exportLines.push(`export { ${schemaName} } from './${fileBase}${importExtension}';`);
         }
@@ -2341,6 +2365,21 @@ async function generateVariantSchemaContent(
     ),
   );
 
+  // A MongoDB composite type (`type Address { ... }`) referenced by a field has the
+  // same DMMF `kind: 'object'` as a real relation, but never a `relationName` - Prisma
+  // only sets that for actual relations. Every composite already gets a full
+  // `<Type>ObjectEqualityInput` object schema generated (used by WhereInput's equality
+  // filter), so the pure/result variant can reference that structural schema directly
+  // instead of falling through getZodTypeForField's default case to z.unknown() - which
+  // is what happened before this, silently, with no warning, for every composite field.
+  const compositeTypes = Array.from(
+    new Set(
+      enabledFields
+        .filter((field) => field.kind === 'object' && !field.relationName)
+        .map((field) => String(field.type)),
+    ),
+  );
+
   // Build enum import lines for variant files: import generated enum schemas
   let enumImportLines = '';
   if (enumTypes.length > 0) {
@@ -2386,6 +2425,23 @@ async function generateVariantSchemaContent(
           )
           .join('\n') + '\n';
     }
+  }
+
+  // Build composite type import lines the same way: one import per referenced
+  // composite, from its already-generated ObjectEqualityInput object schema. That
+  // filename/export pair isn't run through the naming resolver (objects/ has no
+  // configurable naming the way models/enums do), so there's no per-field naming
+  // config to resolve here, unlike the enum import block above.
+  let compositeImportLines = '';
+  if (compositeTypes.length > 0) {
+    const importExtension = Transformer.getImportFileExtension();
+    compositeImportLines =
+      compositeTypes
+        .map(
+          (name) =>
+            `import { ${name}ObjectEqualityInputObjectSchema } from '../../objects/${name}ObjectEqualityInput.schema${importExtension}';`,
+        )
+        .join('\n') + '\n';
   }
 
   // Get enhanced models with @zod annotation processing
@@ -2448,10 +2504,16 @@ async function generateVariantSchemaContent(
 
       // Fallback to basic type generation
       const isEnum = field.kind === 'enum';
-      let base = isEnum ? `${field.type}Schema` : `z.${getZodTypeForField(field, variantName)}`;
+      const isComposite = field.kind === 'object' && !field.relationName;
+      let base = isEnum
+        ? `${field.type}Schema`
+        : isComposite
+          ? `${field.type}ObjectEqualityInputObjectSchema`
+          : `z.${getZodTypeForField(field, variantName)}`;
 
-      // Handle arrays - only add .array() for enums, scalar fields already handled by getZodTypeForField
-      if (field.isList && isEnum) {
+      // Handle arrays - only add .array() for enums/composites, scalar fields already
+      // handled by getZodTypeForField
+      if (field.isList && (isEnum || isComposite)) {
         base = `${base}.array()`;
       }
 
@@ -2534,7 +2596,7 @@ async function generateVariantSchemaContent(
     typeName = `${model.name}${variantSuffix}Type`;
   }
 
-  return `${zImport}${prismaImport}${customImportLines}${typedJsonImportLines}${enumImportLines}// prettier-ignore
+  return `${zImport}${prismaImport}${customImportLines}${typedJsonImportLines}${enumImportLines}${compositeImportLines}// prettier-ignore
 export const ${schemaName} = z.object({
 ${fieldDefinitions}
 })${strictModeSuffix}${partialSuffix}${modelLevelValidation};
