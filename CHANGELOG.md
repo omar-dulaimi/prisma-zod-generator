@@ -1,3 +1,9 @@
+## [3.3.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.2.1...v3.3.0) (2026-08-14)
+
+### 🚀 Features
+
+* **config:** add prismaClientPath override for Prisma Client import path ([#411](https://github.com/omar-dulaimi/prisma-zod-generator/issues/411)) ([fd141ce](https://github.com/omar-dulaimi/prisma-zod-generator/commit/fd141cecb45e105d69146f595616cdaa4e6d965b))
+
 ## [3.2.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.2.0...v3.2.1) (2026-08-14)
 
 ### 🐛 Bug Fixes
