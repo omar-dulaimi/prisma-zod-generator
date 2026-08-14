@@ -8,7 +8,7 @@ fi
 set -e
 
 # Run type check, lint and prettier check before pushing
-pnpm run test:type-check
+pnpm run typecheck
 pnpm run lint
 pnpm run format:check
 

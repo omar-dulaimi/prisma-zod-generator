@@ -12,9 +12,9 @@
 Use pnpm.
 - `pnpm install` — Install dependencies.
 - `pnpm build` — Compile TypeScript (tsc).
-- `pnpm test` — Run the default Vitest suite.
-- `pnpm test:full` — Broader test pass (multiple suites).
-- `pnpm test:ci` — CI‑oriented tests with coverage.
+- `pnpm test` — Run every Vitest file. Pass a path or `-t <name>` to narrow it.
+- `pnpm test:sequential` — The same suite on one worker, for parallel-only failures.
+- `pnpm test:coverage` — Full suite under c8, with the coverage thresholds enforced.
 - `pnpm lint` — ESLint over `src/` and `tests/` (auto‑fix where safe).
 - `pnpm format` / `pnpm format:check` — Prettier write/check.
 - `pnpm gen-example` — Build and run a local generate cycle.
@@ -29,7 +29,7 @@ Use pnpm.
 ## Testing Guidelines
 - Framework: Vitest. Tests live under `tests/` and end with `.test.ts`.
 - Add focused tests alongside related areas (e.g., ESM index generation in `tests/prisma-client-esm-config.test.ts`).
-- Run `pnpm test` locally; for comprehensive checks use `pnpm test:full` or `pnpm test:ci`.
+- `pnpm test` is the whole suite; narrow it with a path or `-t <name>` rather than adding a script for it.
 
 ## Commit & Pull Request Guidelines
 - Use Conventional Commits with a scope: `type(scope): subject` (e.g., `fix(variants): include .js in ESM index imports`).

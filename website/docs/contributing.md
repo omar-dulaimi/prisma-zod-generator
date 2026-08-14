@@ -9,7 +9,9 @@ title: Contributing
 	<a href="https://github.com/sponsors/omar-dulaimi" className="button button--primary">Sponsor on GitHub</a>
 </div>
 
-Tests use Vitest; comprehensive generation tests cover multi-provider & feature flags. `pnpm test` runs the parallel feature suite (`test:features:parallel`), and a Vitest `globalSetup` builds `lib/` once before the workers spawn, so you don't need a separate build step first.
+Tests use Vitest; comprehensive generation tests cover multi-provider & feature flags. `pnpm test` runs **every** test file — there is no curated-subset script, because a hand-maintained file list drifts and quietly stops running new tests. Narrow it on the command line instead: `pnpm test tests/config.test.ts`, or `pnpm test -t 'some test name'`.
+
+A Vitest `globalSetup` builds `lib/` once before the workers spawn, so you don't need a separate build step first. It also sweeps the `test-env-*` scratch directories before and after each run; set `KEEP_TEST_ENVS=1` to keep them for debugging. No database is needed — the provider suites only run `prisma generate`, they never connect.
 
 Always use **pnpm** — `npm` and `npx` are not supported in this repo.
 

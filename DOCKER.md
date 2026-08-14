@@ -1,6 +1,13 @@
-# Docker Setup for Testing
+# Docker Setup
 
-This repository includes a Docker Compose setup to make testing easier across all supported database providers.
+This repository includes a Docker Compose setup that brings up one server per
+supported database provider.
+
+> **The test suite does not need any of this.** Nothing under `tests/` opens a
+> database connection — the provider suites only run `prisma generate`, which
+> reads the schema and never connects. `pnpm test` passes on a machine with no
+> Docker installed. These services are here for manually checking generated
+> schemas against a real server.
 
 ## Quick Start
 
@@ -14,12 +21,7 @@ This repository includes a Docker Compose setup to make testing easier across al
    cp .env.example .env
    ```
 
-3. **Run tests:**
-   ```bash
-   pnpm test:docker
-   ```
-
-4. **Stop databases:**
+3. **Stop databases:**
    ```bash
    pnpm docker:down
    ```
@@ -43,14 +45,16 @@ The Docker Compose setup includes the following services that match the existing
 - `pnpm docker:ps` - Check status of all services
 - `pnpm docker:reset` - Reset all data and restart services
 
-## Test Commands
+To start a single service, name it: `docker compose up -d postgresql`.
 
-- `pnpm test:docker` - Start databases and run multi-provider tests
-- `pnpm test:docker:full` - Start databases and run all tests
-- `pnpm test:docker:postgresql` - Start PostgreSQL and run PostgreSQL tests
-- `pnpm test:docker:mysql` - Start MySQL and run MySQL tests
-- `pnpm test:docker:mongodb` - Start MongoDB and run MongoDB tests
-- `pnpm test:docker:sqlserver` - Start SQL Server and run SQL Server tests
+## Running the tests
+
+Just `pnpm test` — no databases required. To run only the provider suites:
+
+```bash
+pnpm test tests/multi-provider/
+pnpm test tests/multi-provider/ -t 'PostgreSQL Provider Tests'
+```
 
 ## Environment Variables
 

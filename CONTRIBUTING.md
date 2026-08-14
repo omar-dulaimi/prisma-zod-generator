@@ -197,13 +197,14 @@ All PRs must include tests:
 
 ```bash
 # Run EVERY test file (the gate that must pass before opening a PR)
-pnpm test:all
-
-# Faster inner loop: the curated parallel subset
 pnpm test
 
-# Run specific test suite
-pnpm test:features:config
+# Run one file, or one test by name — pass vitest arguments straight through
+pnpm test tests/config.test.ts
+pnpm test -t 'should respect field exclusions'
+
+# Same suite on a single worker, for a failure that only shows up in parallel
+pnpm test:sequential
 
 # Run with coverage
 pnpm test:coverage
@@ -215,10 +216,17 @@ pnpm typecheck
 pnpm lint
 ```
 
+`pnpm test` runs every file matched by the vitest `include` glob. There is
+deliberately no curated-subset script: a hand-maintained file list drifts, and a
+new test file silently stops being run. Filter on the command line instead.
+
+Scratch `test-env-*` directories are swept automatically before and after each
+run. Set `KEEP_TEST_ENVS=1` to keep them for debugging.
+
 ## Before Submitting PR
 
 ✅ **Checklist:**
-- [ ] Every test file passes (`pnpm test:all`) — not just `pnpm test`, which runs a curated subset
+- [ ] Every test file passes (`pnpm test`)
 - [ ] Type check passes (`pnpm typecheck`)
 - [ ] Linting passes (`pnpm lint`)
 - [ ] Formatted code (`pnpm format`)
