@@ -12,7 +12,6 @@ This test suite ensures that the Prisma Zod Generator produces consistent, valid
 
 - **`multi-provider.test.ts`** - Main test suite orchestrating cross-provider validation
 - **`provider-test-suite.ts`** - Framework for creating provider-specific test suites
-- **`run-all-tests.ts`** - CLI script for comprehensive test execution
 - **`../../prisma/utils/`** - Supporting utilities for multi-provider testing
 
 ### Test Categories
@@ -39,37 +38,18 @@ This test suite ensures that the Prisma Zod Generator produces consistent, valid
 ### Running All Tests
 
 ```bash
-# Run comprehensive multi-provider tests
+# Run the multi-provider suite
 pnpm test tests/multi-provider/
 
-# Run with specific providers
-pnpm test tests/multi-provider/ -- --providers postgresql,mysql
+# Narrow to one provider's tests
+pnpm test tests/multi-provider/ -t 'PostgreSQL Provider Tests'
 
-# Run in parallel for faster execution
-pnpm test tests/multi-provider/ -- --parallel
+# Narrow to generation only
+pnpm test tests/multi-provider/ -t 'should generate schemas for mysql'
 ```
 
-### Using the CLI Runner
-
-```bash
-# Run all providers with full setup
-npx ts-node tests/multi-provider/run-all-tests.ts
-
-# Test specific providers only
-npx ts-node tests/multi-provider/run-all-tests.ts --providers postgresql,mysql
-
-# Generate schemas only (skip tests)
-npx ts-node tests/multi-provider/run-all-tests.ts --generate-only
-
-# Run tests only (skip generation)
-npx ts-node tests/multi-provider/run-all-tests.ts --test-only
-
-# Verbose output
-npx ts-node tests/multi-provider/run-all-tests.ts --verbose
-
-# Output results as JSON
-npx ts-node tests/multi-provider/run-all-tests.ts --output json
-```
+No database is required: these suites only run `prisma generate`, which reads the
+schema and never connects.
 
 ## Test Structure
 
@@ -201,10 +181,11 @@ Add to your CI pipeline:
 
 ```yaml
 - name: Multi-Provider Tests
-  run: |
-    pnpm test tests/multi-provider/
-    npx ts-node tests/multi-provider/run-all-tests.ts --output json > test-results.json
+  run: pnpm test tests/multi-provider/
 ```
+
+In this repository they are covered by `pnpm test`, which runs every file, so CI
+needs no separate step.
 
 ## Troubleshooting
 
@@ -235,7 +216,7 @@ Add to your CI pipeline:
 Run tests with verbose output:
 
 ```bash
-npx ts-node tests/multi-provider/run-all-tests.ts --verbose
+pnpm test tests/multi-provider/ --reporter=verbose
 ```
 
 ## Best Practices

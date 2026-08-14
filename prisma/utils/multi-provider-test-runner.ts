@@ -186,9 +186,10 @@ export class MultiProviderTestRunner {
     // them directly.
     //
     // The check here used to require an entry in `this.schemaCache`, which is per-instance. A
-    // runner is constructed fresh in multi-provider.test.ts, provider-test-suite.ts and
-    // run-all-tests.ts, so each one found an empty cache and re-ran `prisma generate` into the
-    // shared directory — rewriting files while other workers were importing them. That surfaced
+    // runner is constructed fresh in multi-provider.test.ts and provider-test-suite.ts (and, at
+    // the time, a third CLI entry point since removed), so each one found an empty cache and
+    // re-ran `prisma generate` into the shared directory — rewriting files while other workers
+    // were importing them. That surfaced
     // as comprehensive-schema-coverage importing 212 of 246 postgresql schemas, or a missing
     // `PostgreSQLUserCreateNestedOneWithoutProfileInput`, in a run where every suite passes on
     // its own. Regenerating mid-run is never what this suite wants; globalSetup owns it.
