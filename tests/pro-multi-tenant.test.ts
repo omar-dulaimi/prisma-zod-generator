@@ -222,8 +222,17 @@ describe.skipIf(!proAvailable)('Multi-Tenant Kit', () => {
     it('injects the tenant filter into reads and the tenant id into creates', () => {
       const source = normalized(join(defaultOut, 'tenant-extensions.ts'));
 
-      expect(source).toContain('args.where = { ...args.where, tenantId: context.tenantId }');
-      expect(source).toContain('args.data = { ...args.data, tenantId: context.tenantId, }');
+      // Matched with an optional trailing comma rather than as a fixed string.
+      // Whether Prettier keeps these object literals on one line or wraps them is a
+      // function of the resolved printWidth, and `normalized()` collapses a wrapped
+      // form to `..., tenantId: context.tenantId, }`. Pinning the exact text made this
+      // assertion depend on which `.prettierrc` the generator happened to find - it
+      // passed at one checkout path and failed at another, which is what surfaced the
+      // resolveConfig bug this change fixes.
+      expect(source).toMatch(
+        /args\.where = \{ \.\.\.args\.where, tenantId: context\.tenantId,? \}/,
+      );
+      expect(source).toMatch(/args\.data = \{ \.\.\.args\.data, tenantId: context\.tenantId,? \}/);
     });
 
     it('keeps the create hook assignable to Prisma’s input type', () => {
