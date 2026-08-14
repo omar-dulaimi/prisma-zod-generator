@@ -1155,6 +1155,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'lowercase',
     'brand',
     'readonly',
+    'coerce',
   ];
 
   // Methods that accept optional parameters (format validation methods)
@@ -1204,6 +1205,13 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
   ];
 
   // Additional known methods not covered above
+  //
+  // This list and getValidationMethodConfig()'s table below are two separate,
+  // hand-maintained sources of truth for "is this a real @zod method" - a name
+  // missing from *either* one silently drops the annotation with no error, since a
+  // field with at least one other valid annotation never trips isValid:false. Adding
+  // a method means updating both; coerce was missed here the first time for exactly
+  // that reason.
   const additionalMethods = [
     'default',
     'optional',
@@ -1220,6 +1228,7 @@ function validateZodMethod(annotation: ParsedZodAnnotation, context: FieldCommen
     'pipe',
     'brand',
     'readonly',
+    'coerce',
     // Schema metadata (issue #225/#371): describe works on v3 and v4;
     // meta is v4-only and is version-mapped during emission.
     'describe',
@@ -1666,6 +1675,22 @@ function mapAnnotationToZodMethod(
     };
   }
 
+  if (method === 'coerce') {
+    // Zod has no `.coerce()` chain method — coercion only exists as a constructor
+    // variant (z.coerce.number(), never z.number().coerce()) — so this replaces the
+    // base type rather than appending to it, the same way json/enum do above.
+    // fieldTypeCompatibility already narrowed context.fieldType to one of these four.
+    const coerceExpr =
+      context.fieldType === 'Int'
+        ? 'z.coerce.number().int()' // preserves the .int() an uncoerced Int field gets
+        : context.fieldType === 'BigInt'
+          ? 'z.coerce.bigint()'
+          : context.fieldType === 'Boolean'
+            ? 'z.coerce.boolean()'
+            : 'z.coerce.number()'; // Float
+    return { methodCall: coerceExpr };
+  }
+
   if (method === 'custom') {
     if (parameters.length === 0) {
       throw new Error('Method custom requires parameters');
@@ -2107,6 +2132,19 @@ function getValidationMethodConfig(
       zodMethod: 'json',
       parameterCount: 0,
       fieldTypeCompatibility: ['Json'],
+    },
+    {
+      methodName: 'coerce',
+      zodMethod: 'coerce',
+      parameterCount: 0,
+      // DateTime already has its own generator-level dateTimeStrategy:'coerce'; String
+      // coercion (z.coerce.string()) stringifies arbitrary input, a different and much
+      // rarer need than #237's ask (a numeric HTML form value coming in as a string).
+      // Deliberately excludes 'Array': effectiveFieldType becomes 'Array' for list
+      // fields, so `Int[]` with @zod.coerce() is rejected by the same
+      // fieldTypeCompatibility check every other validator goes through, rather than
+      // silently doing nothing.
+      fieldTypeCompatibility: ['Int', 'Float', 'BigInt', 'Boolean'],
     },
     { methodName: 'catch', zodMethod: 'catch', parameterCount: 1 },
     { methodName: 'pipe', zodMethod: 'pipe', parameterCount: 1 },
