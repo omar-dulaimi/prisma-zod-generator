@@ -365,6 +365,24 @@ export async function generate(options: GeneratorOptions) {
       prismaClientGeneratorConfig,
       path.dirname(options.schemaPath),
     );
+    // A manual escape hatch for the rare case where the above derivation - from the
+    // schema's own `generator client` block - is wrong for an unusual setup. Runs
+    // after it unconditionally, so an explicit config value always wins; most
+    // projects never set this and get the auto-derived path untouched.
+    //
+    // '@prisma/client' is excluded deliberately, matching
+    // Transformer.setPrismaClientOutputPath's own existing convention for that one
+    // literal (isCustomPrismaClientOutputPath = value !== '@prisma/client'): it means
+    // "the plain package import, not a real path", not a directory literally named
+    // '@prisma' containing 'client'. Treating it as a real path here would resolve to
+    // exactly that nonexistent directory, and did during development.
+    if (generatorConfig.prismaClientPath && generatorConfig.prismaClientPath !== '@prisma/client') {
+      const schemaBaseDir = path.dirname(options.schemaPath);
+      const resolvedOverride = path.isAbsolute(generatorConfig.prismaClientPath)
+        ? path.normalize(generatorConfig.prismaClientPath)
+        : path.resolve(schemaBaseDir, generatorConfig.prismaClientPath);
+      Transformer.setPrismaClientOutputPath(resolvedOverride);
+    }
     setPrismaClientProvider(prismaClientGeneratorConfig);
     setPrismaClientConfig(prismaClientGeneratorConfig);
 

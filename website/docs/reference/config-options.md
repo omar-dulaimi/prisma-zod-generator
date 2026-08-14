@@ -22,6 +22,7 @@ Defaults are the **observed** values the generator resolves at runtime, which is
 | `mode` | `"full" \| "minimal" \| "custom"` | `"full"` | both | [/docs/config/modes](/docs/config/modes) |
 | `minimalOperations` | string[] | `["findMany","findUnique","findFirst","create","update","delete"]` | config file | [/docs/config/modes](/docs/config/modes) |
 | `output` | string | `./generated`, resolved relative to the schema directory | both | [/docs/config/precedence](/docs/config/precedence) |
+| `prismaClientPath` | string | derived from the `generator client` block's own `output`, not read unless set | config file | |
 | `useMultipleFiles` | boolean | `true` | both | [/docs/config/file-layout](/docs/config/file-layout) |
 | `singleFileName` | string | `"schemas.ts"` | both | [/docs/config/file-layout](/docs/config/file-layout) |
 | `placeSingleFileAtRoot` | boolean | `true` | both | [/docs/config/file-layout](/docs/config/file-layout) |

@@ -37,6 +37,14 @@ export const ConfigurationSchema: JSONSchema7 = {
       description: 'Output directory path for generated schemas',
     },
 
+    prismaClientPath: {
+      type: 'string',
+      minLength: 1,
+      pattern: '^[^<>:"|?*\\x00-\\x1f]+$',
+      description:
+        "Override the Prisma Client import path generated schemas use, instead of deriving it from the schema's own generator client block. Relative paths resolve against the directory containing schema.prisma. Only needed when that derivation is wrong for an unusual setup - most projects never set this.",
+    },
+
     useMultipleFiles: {
       type: 'boolean',
       default: true,
