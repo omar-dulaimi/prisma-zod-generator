@@ -1,65 +1,100 @@
-node_modules
-lib
-package
-npm-debug.log*
-prisma/generated
-coverage
-build/
-.venv/
+# Dependencies
+node_modules/
+.pnpm-store/
 
-# Test outputs and generated files
+# Build output
+lib/
+lib/__generated__/
+package/
+build/
+dsrc/
+src/dsrc
+src/schemas
+.cache/
+.turbo/
+
+# Coverage
+coverage
+coverage-full
+
+# Generated Prisma / Zod output
+prisma/generated
+prisma/client
+generated/
+app
+tests/multi-provider/schemas/*/generated/
+
+# Test scratch space
+#
+# `test-env-*/` is what tests/helpers/global-setup.ts sweeps around every run.
+# `test-*-*` is deliberately broad and predates it - it will also swallow a
+# source file named like `test-foo-bar.ts`, so name new fixtures carefully.
 test-output/
 test-env-*/
-generated/
-lib/__generated__/
-
-# Multi-provider test generated files
-tests/multi-provider/schemas/*/generated/
+test-*-*
+manual-*-*
+debug-test
+legacy-output
+temp-schema-*.prisma
 *.db
 *.sqlite
 *.sqlite3
-test-*-*
-manual-*-*
-legacy-output
 
-# PZG Pro generated examples and outputs
-examples/generated/
-tests/contracts/
-postgres/
-wiremock/
-*.pact
-pacts/
-logs/
-.docusaurus
-website/.docusaurus
-website/build
+# Test-generated Prisma config (writeConfig emits one next to the schema under test)
+prisma.config.mjs
+tests/multi-provider/schemas/*/prisma.config.mjs
 
 # Test reports and logs
 test-report.json
 test-results.json
 test-*.json
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log
+logs/
 
-# Environment files
+# PZG Pro generated examples and outputs
+# These packs write to a hardcoded path relative to cwd, so keep the rules even
+# when the directories are absent.
+examples/generated/
+tests/contracts/
+postgres/
+wiremock/
+pacts/
+*.pact
+
+# Docs site
+.docusaurus
+website/.docusaurus
+website/build
+
+# Environment
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.venv/
 
-# IDE files
+# Local scratch
+.tmp/
+.github/PR_BODY.md
+
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sw?
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 *~
 
-# Cache directories
-.cache/
-.pnpm-store/
-.turbo/
-
-# OS files
+# OS
 .DS_Store
 .DS_Store?
 ._*
@@ -67,54 +102,3 @@ test-*.json
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# Logs
-yarn-debug.log*
-yarn-error.log*
-dev-debug.log
-# Dependency directories
-node_modules/
-# Environment variables
-# Editor directories and files
-.idea
-.vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-# OS specific
-
-# Task files
-# tasks.json
-# tasks/ 
-prisma/client
-debug-test
-app
-src/dsrc
-src/schemas
-dsrc/
-.github/PR_BODY.md
-.tmp/
-scripts/branding/.venv/lib64
-scripts/branding/.venv/pyvenv.cfg
-scripts/branding/.venv/bin/activate
-scripts/branding/.venv/bin/activate.csh
-scripts/branding/.venv/bin/activate.fish
-scripts/branding/.venv/bin/Activate.ps1
-scripts/branding/.venv/bin/f2py
-scripts/branding/.venv/bin/numpy-config
-scripts/branding/.venv/bin/pip
-scripts/branding/.venv/bin/pip3
-scripts/branding/.venv/bin/pip3.12
-scripts/branding/.venv/bin/python
-scripts/branding/.venv/bin/python3
-scripts/branding/.venv/bin/python3.12
-
-# Test-generated Prisma config in multi-provider fixtures
-tests/multi-provider/schemas/*/prisma.config.mjs
-
-# Test artifacts (writeConfig emits a config next to the schema under test)
-prisma.config.mjs
-temp-schema-*.prisma
-coverage-full

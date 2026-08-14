@@ -1,205 +1,91 @@
 # CI/CD Workflows
 
-This repository uses GitHub Actions for automated testing, building, and releasing. Here's an overview of the workflows:
+Three workflows live in this directory. That is the complete list — if something
+is not described here, it does not run.
 
-## Core Workflows
+## `ci.yml` — CI
 
-### 1. CI (`ci.yml`)
-**Trigger**: Push/PR to master branch
+**Trigger**: push or PR to `master`, gated by a `filter` job that skips the run
+when the range touches only docs, recipes or workflow config *and* no commit
+message carries a release-worthy type.
 
-**Jobs**:
-- **test**: Runs on Node.js 20.19.0, 22.x, 24.x
-  - Builds project with `pnpm run gen-example`
-  - Type checking with `pnpm run typecheck`
-  - Linting with `pnpm run lint` (reported, non-blocking)
-  - The full test suite with `pnpm test` — every file matched by the vitest glob
-  - Coverage thresholds with `pnpm run test:coverage:ci` (Node 24 only)
-- **package-test**: Tests package integrity
-  - Builds and packages the project
-  - Verifies the tarball installs and generates in a throwaway consumer project
-  - Type-checks the emitted Pro UI output against the real UI libraries
+**`test`** — Node 20.19.0, 22.x, 24.x:
 
-### 2. Release (`release.yml`)
-**Trigger**: Push to master branch, manual dispatch
+1. `pnpm run gen-example` — build, then generate the example schemas
+2. `pnpm run typecheck`
+3. `pnpm run lint` — reported but `continue-on-error`, so it never blocks
+4. `pnpm test` — every file matched by the vitest `include` glob, not a
+   hand-maintained list, so a new test file cannot be silently left out
+5. `pnpm run test:coverage:ci` — Node 24 only; thresholds calibrated for a
+   checkout *without* the private `src/pro` submodule
 
-**Features**:
-- Automatic version bumping based on commit messages
-- Manual release type selection (patch/minor/major)
-- Automated Git tagging and GitHub releases
-- NPM package publishing
-- Package artifact uploading
+No database services are provisioned, and none are needed: the provider suites
+only run `prisma generate`, which never connects.
 
-**Version Determination**:
-- `BREAKING CHANGE` in commit → major version
-- `feat:` or `feature:` → minor version
-- Everything else → patch version
+**`package-test`** — the only job that checks out the private submodule, so the
+only place its checks can run:
 
-### 3. Semantic Release (`semantic-release.yml`)
-**Trigger**: Push to master branch
+1. builds and packages, then `npm pack --dry-run`
+2. `pnpm run test:package-consumer` — installs the tarball into a throwaway
+   project and generates through it
+3. `pnpm run test:typecheck-fixtures` — type-checks emitted Pro UI output
+   against the real MUI, Chakra, Mantine and Pact packages
 
-**Features**:
-- Uses conventional commits for automated releases
-- Generates changelogs automatically
-- Publishes to NPM with proper versioning
-- Creates GitHub releases with release notes
+> **Known gap:** the vitest suite never runs with the submodule present. `test`
+> has no submodule (the `pro-*` suites self-skip) and `package-test` runs only
+> the two commands above, one of which is a single Pro test file. So 20 of the
+> 21 `tests/pro-*.test.ts` files execute only on a machine that has the
+> submodule checked out.
 
-### 4. Extended Test Matrix (`test-matrix.yml`)
-**Trigger**: Nightly schedule (2 AM UTC), manual dispatch, pushes to master
+## `docs.yml` — Docs
 
-**Features**:
-- Cross-platform testing (Ubuntu, Windows, macOS)
-- Extended Node.js version matrix (20.19.0, 22.x, 24.x)
-- Database compatibility testing with real databases
-- Performance and compatibility tests
-- Comprehensive test reporting
+**Trigger**: push to `master` or manual dispatch. Also filtered, so it only
+deploys when the pushed range actually touches the docs site. Builds
+`website/` and deploys it to GitHub Pages.
 
-### 5. Dependabot Auto-merge (`dependabot-auto-merge.yml`)
-**Trigger**: Dependabot PRs
+## `semantic-release.yml` — Release
 
-**Features**:
-- Automatically tests dependabot PRs
-- Auto-approves and merges patch/minor updates
-- Skips major version updates for manual review
+**Trigger**: push to `master` or manual dispatch; skipped when the head commit
+message contains `[skip ci]`.
 
-## Configuration Files
+Initializes the private submodule, runs `gen-example`, `typecheck`, `lint` and
+`pnpm test`, builds the package, then runs `semantic-release`. Publishing uses
+**npm Trusted Publishing** (OIDC via `id-token: write`), so there is no npm
+token to manage.
 
-### Dependabot (`.github/dependabot.yml`)
-- Weekly dependency updates on Mondays
-- Grouped updates for related packages (Prisma, testing, ESLint, etc.)
-- Ignores major updates for critical dependencies
-- Automatic labeling and assignment
+## Configuration
 
-### Semantic Release (`.releaserc.json`)
-- Conventional commits configuration
-- Automatic changelog generation
-- Branch-based release strategy (master = stable releases)
-- NPM publishing from `package/` directory
+**`.releaserc.json`** — conventional commits; changelog generation; publishes
+from `package/`. Release branches: `master`, plus
+`upgrade/prisma-and-dependencies` as a `beta` prerelease line.
 
-## Required Secrets
+## Secrets
 
-To use these workflows, configure the following secrets in your repository:
+Only two, and one is automatic:
 
-### Required
-- `GITHUB_TOKEN`: Automatically provided by GitHub
-- `NPM_TOKEN`: NPM registry access token for publishing
+- `GITHUB_TOKEN` — provided by GitHub
+- `SUBMODULE_DEPLOY_KEY` — SSH deploy key for the private `src/pro` submodule;
+  required by `package-test` and by the release workflow
 
-### Optional
-- `CODECOV_TOKEN`: For code coverage reporting
+## Branch protection
 
-## Setup Instructions
+Require the `test` and `package-test` checks on `master`.
 
-1. **NPM Token**: 
-   ```bash
-   npm login
-   npm token create --read-only
-   ```
-   Add this token as `NPM_TOKEN` in repository secrets.
+## Commit messages
 
-2. **Codecov Token**:
-   - Visit [codecov.io](https://codecov.io)
-   - Connect your repository
-   - Copy the token and add as `CODECOV_TOKEN`
+Conventional commits, with a scope: `type(scope): subject`.
 
-3. **Branch Protection**:
-   - Enable branch protection for `master`
-   - Require status checks: "test", "package-test"
-   - Require up-to-date branches
-   - Require review from code owners
+`feat` → minor, `fix`/`perf`/`refactor` → patch, `BREAKING CHANGE:` in the
+footer or `!` after the type → major. `docs`, `style`, `test`, `chore`, `ci`
+and `build` do not themselves trigger a release.
 
-## Commit Message Format
-
-Use conventional commits for automatic release management:
-
-```
-<type>[optional scope]: <description>
-
-[optional body]
-
-[optional footer(s)]
-```
-
-**Types**:
-- `feat`: New features (minor version)
-- `fix`: Bug fixes (patch version)
-- `docs`: Documentation changes
-- `style`: Code style changes
-- `refactor`: Code refactoring (patch version)
-- `perf`: Performance improvements (patch version)
-- `test`: Test changes
-- `chore`: Maintenance tasks
-- `ci`: CI/CD changes
-- `build`: Build system changes
-
-**Breaking Changes**:
-Add `BREAKING CHANGE:` in footer or `!` after type for major version bumps.
-
-**Examples**:
-```
-feat: add MongoDB native type support
-fix: resolve schema generation for optional fields
-docs: update installation instructions
-feat!: change API for schema configuration
-```
-
-## Manual Release
-
-To trigger a manual release:
-
-1. Go to Actions → Release workflow
-2. Click "Run workflow"
-3. Select release type (patch/minor/major)
-4. Click "Run workflow"
-
-## Testing Locally
+## Running the same checks locally
 
 ```bash
-# Run the full test suite
-pnpm test
-
-# Run with coverage (enforces the thresholds CI enforces)
-pnpm test:coverage
-
-# Test release process (dry run)
-pnpm run release:dry
-
-# Type check
+pnpm run gen-example
 pnpm run typecheck
-
-# Lint code
 pnpm run lint
+pnpm test
+pnpm test:coverage      # local thresholds, higher than the CI ones
+pnpm run release:dry    # what semantic-release would do
 ```
-
-## Monitoring
-
-- **GitHub Actions**: View workflow runs in the Actions tab
-- **NPM**: Monitor package downloads and versions
-- **Codecov**: Track code coverage trends
-- **Dependabot**: Review dependency update PRs
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Tests failing on Windows**: 
-   - Check file path separators
-   - Verify line ending settings
-
-2. **Release workflow fails**:
-   - Verify NPM_TOKEN is valid
-   - Check conventional commit format
-   - Ensure all tests pass
-
-3. **Coverage upload fails**:
-   - Verify CODECOV_TOKEN
-   - Check coverage file generation
-
-4. **Dependabot PRs fail**:
-   - Review breaking changes in dependencies
-   - Check test compatibility
-
-### Getting Help
-
-- Review workflow logs in GitHub Actions
-- Check the project's issue tracker
-- Verify all required secrets are configured
-- Test changes in a fork first

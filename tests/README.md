@@ -28,8 +28,10 @@ pnpm test:watch
 
 1. **`schema-test-utils.ts`** - Comprehensive utility functions for schema testing
 2. **`generated-schema.test.ts`** - Example test cases for generated schemas
-3. **`automated-test-runner.ts`** - Automated test discovery and execution
-4. **`setup.ts`** - Global test setup and custom Jest matchers
+3. **`helpers/global-setup.ts`** - Builds `lib/` once before the workers spawn, generates the
+   multi-provider fixtures, and sweeps the `test-env-*` scratch directories around every run
+4. **`helpers/mock-generators.ts`** - `TestEnvironment`, which creates the throwaway schema +
+   output directory each generation test runs against
 
 ### Test Categories
 
@@ -100,29 +102,6 @@ const testUser = TestDataGenerators.generateObject(
   { id: 123 }
 );
 ```
-
-## Automated Test Runner
-
-The automated test runner provides comprehensive validation:
-
-```bash
-# Run full test suite
-npx ts-node automated-test-runner.ts
-
-# Run specific test pattern
-npx ts-node automated-test-runner.ts specific "UserSchema"
-
-# Run performance benchmark
-npx ts-node automated-test-runner.ts performance
-```
-
-### Features
-
-- **TypeScript Compilation Check**: Validates all types compile correctly
-- **Schema Discovery**: Automatically finds all generated schemas
-- **Validation Testing**: Tests schema loading and basic validation
-- **Performance Benchmarking**: Measures validation speed
-- **Comprehensive Reporting**: Detailed test results and timing
 
 ## Writing Tests
 
