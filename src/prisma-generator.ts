@@ -57,7 +57,23 @@ import {
 } from './utils/singleFileAggregator';
 import { writeFileSafely } from './utils/writeFileSafely';
 
+/**
+ * Skip generation entirely, e.g. for a production build where schemas are already
+ * committed and regenerating them is wasted CI time rather than a no-op — `prisma
+ * generate` still runs (this generator is one of possibly several in the schema),
+ * this generator just does nothing when it's this one's turn.
+ *
+ * `onManifest` is untouched: it only reports output defaults and writes nothing.
+ */
+function isSkipRequested(): boolean {
+  return process.env.PZG_SKIP === '1' || process.env.PZG_SKIP === 'true';
+}
+
 export async function generate(options: GeneratorOptions) {
+  if (isSkipRequested()) {
+    logger.info('[prisma-zod-generator] PZG_SKIP is set — skipping generation.');
+    return;
+  }
   try {
     // Parse and validate new generator options
     const extendedOptions = parseGeneratorOptions(
