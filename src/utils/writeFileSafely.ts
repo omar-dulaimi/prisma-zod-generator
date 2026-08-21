@@ -98,12 +98,16 @@ export const writeFileSafely = async (
       }
     }
   } catch (err) {
-    // Surfaced via logger.warn (stdout): Prisma does not relay a generator's
-    // stderr, so a console.error here would leave the user with a successful
-    // run and a missing file.
+    // Logged via logger.warn (stdout, since Prisma does not relay a generator's
+    // stderr) for context, then rethrown: swallowing a real write failure here
+    // made generation report success with that one file silently missing,
+    // exactly the class of bug generate()'s own outer catch was fixed to
+    // prevent (see its comment in prisma-generator.ts) - this was the one write
+    // path that still had the gap (issue #412).
     logger.warn(`❌ [writeFileSafely] Failed to write: ${writeLocation}`);
     logger.warn(`   ${err instanceof Error ? err.message.split('\n')[0] : String(err)}`);
     logger.debug('[writeFileSafely] Content that failed to write:', content);
     logger.debug('[writeFileSafely] Error details:', err);
+    throw err;
   }
 };

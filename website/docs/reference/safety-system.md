@@ -76,7 +76,11 @@ Uses pattern detection to identify likely generated files:
 - Analyzes file content for generator signatures
 - Only removes files that contain generated code patterns
 - Preserves files that don't match generator signatures
-- Removes the known generated directories — `enums`, `objects`, `schemas`, `results` — recursively
+- Looks inside the known generated directories — `enums`, `objects`, `schemas`, `results` — and applies the same content check to each file there, rather than removing the directory wholesale; a directory is only removed once every file inside it has been individually confirmed as generated output
+
+:::note
+Before v3.3.1, a matched directory was removed **wholesale** regardless of what was inside it — any file placed in `enums/`, `objects/`, `schemas/`, or `results/` by another tool or by hand was deleted purely because of its parent directory's name ([#412](https://github.com/omar-dulaimi/prisma-zod-generator/issues/412)). If you're relying on this fallback (no manifest present, typically because it's gitignored in a repo that commits generated output), upgrade to get the per-file check.
+:::
 
 #### Shared Output Directories
 
