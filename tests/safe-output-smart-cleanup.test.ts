@@ -52,3 +52,54 @@ describe('performSmartCleanup shared output directory (issue #365)', () => {
     expect(existsSync(join(dir, 'schemas'))).toBe(false);
   });
 });
+
+describe('performSmartCleanup nested generated directories (issue #412)', () => {
+  let dir: string;
+
+  afterEach(() => {
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('removes generated files inside a known directory but preserves other files placed alongside them', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'pzg-smart-cleanup-nested-'));
+
+    mkdirSync(join(dir, 'objects'));
+
+    // Genuine prisma-zod-generator output living in the matched directory
+    writeFileSync(
+      join(dir, 'objects', 'UserWhereInput.schema.ts'),
+      "import * as z from 'zod';\n" +
+        "import { StringFilterObjectSchema } from './StringFilter.schema';\n" +
+        'export const UserWhereInputObjectSchema = z.object({ id: StringFilterObjectSchema });\n',
+    );
+
+    // A file a separate script wrote into the same directory - not generator output,
+    // and sharing none of isLikelyGeneratedFile's signatures.
+    writeFileSync(
+      join(dir, 'objects', 'index.ts'),
+      '// Hand-maintained barrel written by a separate build script.\n' +
+        "export * from './extra-notes';\n",
+    );
+
+    await performSmartCleanup(dir);
+
+    expect(existsSync(join(dir, 'objects', 'UserWhereInput.schema.ts'))).toBe(false);
+    expect(existsSync(join(dir, 'objects', 'index.ts'))).toBe(true);
+  });
+
+  it('removes a known directory entirely once every file inside it was generator output', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'pzg-smart-cleanup-nested-empty-'));
+
+    mkdirSync(join(dir, 'enums'));
+    writeFileSync(
+      join(dir, 'enums', 'Role.schema.ts'),
+      "import * as z from 'zod';\n" +
+        "export const RoleSchema = z.enum(['ADMIN', 'USER']);\n" +
+        'export default RoleSchema;\n',
+    );
+
+    await performSmartCleanup(dir);
+
+    expect(existsSync(join(dir, 'enums'))).toBe(false);
+  });
+});

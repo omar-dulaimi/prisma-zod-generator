@@ -354,6 +354,59 @@ const PRISMA_CLIENT_OUTPUT_FILES = new Set([
   'browser.ts',
 ]);
 
+/**
+ * Removes only the files inside `dirPath` that look like generator output (same
+ * `isLikelyGeneratedFile` content check used for top-level files), then removes
+ * `dirPath` itself if that left it empty. A whole-directory `rm -rf` here was the
+ * bug in issue #412: any user- or tool-owned file living inside a directory named
+ * `enums`/`objects`/`schemas`/`results` was deleted purely because of its parent's
+ * name, with no check of its own content. Nested directories are left untouched
+ * entirely rather than recursed into - a directory nested inside a matched one is,
+ * if anything, more likely to be user-added, not less.
+ */
+async function cleanupGeneratedFilesInDirectory(dirPath: string): Promise<void> {
+  let entries: fs.Dirent[];
+  try {
+    entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
+  } catch (error) {
+    logger.debug(`[safeOutputManagement] Could not read directory ${dirPath}: ${error}`);
+    return;
+  }
+
+  const cleanupPromises: Promise<void>[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.name === MANIFEST_FILENAME) continue;
+    if (PRISMA_CLIENT_OUTPUT_FILES.has(entry.name)) {
+      logger.debug(`[safeOutputManagement] Preserved Prisma client generator file: ${fullPath}`);
+      continue;
+    }
+
+    cleanupPromises.push(
+      isLikelyGeneratedFile(fullPath).then(async (isGenerated) => {
+        if (isGenerated) {
+          await fsPromises.unlink(fullPath);
+          logger.debug(`[safeOutputManagement] Removed likely generated file: ${fullPath}`);
+        } else {
+          logger.debug(`[safeOutputManagement] Preserved potentially user file: ${fullPath}`);
+        }
+      }),
+    );
+  }
+
+  await Promise.all(cleanupPromises);
+
+  try {
+    await fsPromises.rmdir(dirPath);
+    logger.debug(`[safeOutputManagement] Removed now-empty generated directory: ${dirPath}`);
+  } catch {
+    // Not empty (a preserved file or a nested directory remains) or already gone.
+  }
+}
+
 export async function performSmartCleanup(outputPath: string): Promise<void> {
   logger.debug('[safeOutputManagement] Performing smart cleanup using pattern analysis');
 
@@ -386,11 +439,7 @@ export async function performSmartCleanup(outputPath: string): Promise<void> {
       } else if (file.isDirectory()) {
         const knownGeneratedDirs = ['enums', 'objects', 'schemas', 'results'];
         if (knownGeneratedDirs.includes(file.name.toLowerCase())) {
-          cleanupPromises.push(
-            fsPromises.rm(fullPath, { recursive: true, force: true }).then(() => {
-              logger.debug(`[safeOutputManagement] Removed generated directory: ${file.name}`);
-            }),
-          );
+          cleanupPromises.push(cleanupGeneratedFilesInDirectory(fullPath));
         }
       }
     }
