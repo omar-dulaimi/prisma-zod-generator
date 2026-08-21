@@ -1,3 +1,9 @@
+## [3.3.1](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.3.0...v3.3.1) (2026-08-21)
+
+### 🐛 Bug Fixes
+
+* **safety:** stop wholesale-deleting directories and silently swallowing write failures in no-manifest cleanup ([#413](https://github.com/omar-dulaimi/prisma-zod-generator/issues/413)) ([7068031](https://github.com/omar-dulaimi/prisma-zod-generator/commit/7068031620b295a574c1e096a08f14a037b55941)), closes [#412](https://github.com/omar-dulaimi/prisma-zod-generator/issues/412) [#412](https://github.com/omar-dulaimi/prisma-zod-generator/issues/412)
+
 ## [3.3.0](https://github.com/omar-dulaimi/prisma-zod-generator/compare/v3.2.1...v3.3.0) (2026-08-14)
 
 ### 🚀 Features
