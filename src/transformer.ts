@@ -2057,21 +2057,26 @@ export default class Transformer {
           ),
         );
       } else if (inputType.type === 'Boolean') {
+        const cfg = Transformer.getGeneratorConfig();
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = customSchema || 'z.boolean()';
+        const baseSchema = customSchema || (cfg?.inputCoercion ? 'z.coerce.boolean()' : 'z.boolean()');
         result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Int') {
+        const cfg = Transformer.getGeneratorConfig();
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
+        const intSchema = cfg?.inputCoercion ? 'z.coerce.number().int()' : 'z.number().int()';
         const baseSchema =
-          typedJsonBase(typedJson, inputType) || customSchema || 'z.number().int()';
+          typedJsonBase(typedJson, inputType) || customSchema || intSchema;
         result.push(
           this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
         );
       } else if (inputType.type === 'Float') {
+        const cfg = Transformer.getGeneratorConfig();
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || 'z.number()';
+        const floatSchema = cfg?.inputCoercion ? 'z.coerce.number()' : 'z.number()';
+        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || floatSchema;
         result.push(
           this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
         );
@@ -2088,14 +2093,15 @@ export default class Transformer {
         } else if (mode === 'string') {
           decimalExpr = 'z.string()';
         } else {
-          decimalExpr = 'z.number()';
+          decimalExpr = cfg?.inputCoercion ? 'z.coerce.number()' : 'z.number()';
         }
 
         const customSchema = this.getCustomSchemaForField(field.name);
         const baseSchema = customSchema || decimalExpr;
         result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'BigInt') {
-        let bigintExpr = 'z.bigint()';
+        const cfg = Transformer.getGeneratorConfig();
+        let bigintExpr = cfg?.inputCoercion ? 'z.coerce.bigint()' : 'z.bigint()';
 
         // JSON Schema compatibility mode overrides normal behavior
         if (Transformer.isJsonSchemaModeEnabled()) {

@@ -23,6 +23,7 @@ export interface ExtendedGeneratorOptions {
   pureModelsExcludeCircularRelations?: boolean; // When pureModelsIncludeRelations is true, exclude circular relations (default false)
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString'; // DateTime scalar strategy
   dateTimeSplitStrategy?: boolean; // Split default: inputs=coerce, pure/results=date when dateTimeStrategy is unset
+  inputCoercion?: boolean; // Use z.coerce.*() for numeric and boolean types
   jsonSchemaCompatible?: boolean; // Generate schemas compatible with z.toJSONSchema()
   jsonSchemaOptions?: {
     dateTimeFormat?: 'isoString' | 'isoDate';
@@ -113,6 +114,9 @@ export function parseGeneratorOptions(
       generatorConfig.dateTimeSplitStrategy,
       'dateTimeSplitStrategy',
     );
+  }
+  if (generatorConfig.inputCoercion !== undefined) {
+    options.inputCoercion = parseBoolean(generatorConfig.inputCoercion, 'inputCoercion');
   }
   if (generatorConfig.jsonSchemaCompatible !== undefined) {
     options.jsonSchemaCompatible = parseBoolean(
@@ -375,6 +379,9 @@ export function generatorOptionsToConfigOverrides(
   if (options.dateTimeSplitStrategy !== undefined) {
     overrides.dateTimeSplitStrategy = options.dateTimeSplitStrategy;
   }
+  if (options.inputCoercion !== undefined) {
+    overrides.inputCoercion = options.inputCoercion;
+  }
   if (options.jsonSchemaCompatible !== undefined) {
     overrides.jsonSchemaCompatible = options.jsonSchemaCompatible;
   }
@@ -405,6 +412,7 @@ export interface GeneratorConfigOverrides {
   pureModelsExcludeCircularRelations?: boolean;
   dateTimeStrategy?: 'date' | 'coerce' | 'isoString';
   dateTimeSplitStrategy?: boolean;
+  inputCoercion?: boolean;
   jsonSchemaCompatible?: boolean;
   jsonSchemaOptions?: {
     dateTimeFormat?: 'isoString' | 'isoDate';

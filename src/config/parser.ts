@@ -95,6 +95,15 @@ export interface GeneratorConfig {
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
 
   /**
+   * When true, use z.coerce.number() / z.coerce.boolean() / z.coerce.bigint()
+   * for Int, Float, Boolean, BigInt, and Decimal (when decimalMode='number')
+   * in all generated schemas. This is useful when validating HTTP query
+   * parameters where numeric/boolean values arrive as strings.
+   * Default: false
+   */
+  inputCoercion?: boolean;
+
+  /**
    * Strategy for Decimal scalar mapping.
    * - 'number': Map to z.number() (legacy behavior, may lose precision)
    * - 'string': Map to z.string() with decimal regex validation

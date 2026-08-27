@@ -2660,13 +2660,13 @@ function getZodTypeForField(field: DMMF.Field, variantName?: string): string {
       baseType = 'string()';
       break;
     case 'Int':
-      baseType = 'number().int()';
+      baseType = cfg?.inputCoercion ? 'coerce.number().int()' : 'number().int()';
       break;
     case 'Float':
-      baseType = 'number()';
+      baseType = cfg?.inputCoercion ? 'coerce.number()' : 'number()';
       break;
     case 'Boolean':
-      baseType = 'boolean()';
+      baseType = cfg?.inputCoercion ? 'coerce.boolean()' : 'boolean()';
       break;
     case 'DateTime':
       if (cfg?.jsonSchemaCompatible) {
@@ -2719,7 +2719,7 @@ function getZodTypeForField(field: DMMF.Field, variantName?: string): string {
           baseType = 'number().int()'; // Note: May lose precision for very large numbers
         }
       } else {
-        baseType = 'bigint()';
+        baseType = cfg?.inputCoercion ? 'coerce.bigint()' : 'bigint()';
       }
       break;
     case 'Decimal':
@@ -2733,7 +2733,7 @@ function getZodTypeForField(field: DMMF.Field, variantName?: string): string {
       } else if (cfg?.decimalMode === 'string') {
         baseType = 'string()';
       } else {
-        baseType = 'number()'; // Default to number for backward compatibility
+        baseType = cfg?.inputCoercion ? 'coerce.number()' : 'number()'; // Default to number for backward compatibility
       }
       break;
     default:

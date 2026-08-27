@@ -258,6 +258,12 @@ export const ConfigurationSchema: JSONSchema7 = {
       description:
         'When true and dateTimeStrategy is unset, use coerce for input schemas and date for pure/result schemas (split strategy)',
     },
+    inputCoercion: {
+      type: 'boolean',
+      default: false,
+      description:
+        'When true, use z.coerce.number() / z.coerce.boolean() / z.coerce.bigint() for Int, Float, Boolean, BigInt, and Decimal (decimalMode=number) in all generated schemas. Useful when validating HTTP query parameters where values arrive as strings.',
+    },
     jsonSchemaCompatible: {
       type: 'boolean',
       default: false,
