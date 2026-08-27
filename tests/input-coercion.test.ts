@@ -179,7 +179,9 @@ describe('inputCoercion option', () => {
         expect(existsSync(modelsDir), 'models directory should exist').toBe(true);
         const modelFiles = readdirSync(modelsDir).filter((f) => f.endsWith('.ts'));
         expect(modelFiles.length).toBeGreaterThan(0);
-        const modelContent = modelFiles.map((f) => readFileSync(join(modelsDir, f), 'utf-8')).join('\n');
+        const modelContent = modelFiles
+          .map((f) => readFileSync(join(modelsDir, f), 'utf-8'))
+          .join('\n');
         expect(modelContent).toContain('z.coerce.number()');
         expect(modelContent).toContain('z.coerce.boolean()');
         expect(modelContent).toContain('z.coerce.bigint()');
@@ -201,10 +203,7 @@ describe('inputCoercion option', () => {
           decimalMode: 'number',
         };
         writeFileSync(join(testEnv.testDir, 'config.json'), JSON.stringify(config, null, 2));
-        writeFileSync(
-          testEnv.schemaPath,
-          buildSchema(testEnv.outputDir, 'amount Decimal'),
-        );
+        writeFileSync(testEnv.schemaPath, buildSchema(testEnv.outputDir, 'amount Decimal'));
         await testEnv.runGeneration();
 
         const decimalFilter = readObject(testEnv.outputDir, 'DecimalFilter');

@@ -2059,15 +2059,15 @@ export default class Transformer {
       } else if (inputType.type === 'Boolean') {
         const cfg = Transformer.getGeneratorConfig();
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = customSchema || (cfg?.inputCoercion ? 'z.coerce.boolean()' : 'z.boolean()');
+        const baseSchema =
+          customSchema || (cfg?.inputCoercion ? 'z.coerce.boolean()' : 'z.boolean()');
         result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'Int') {
         const cfg = Transformer.getGeneratorConfig();
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
         const intSchema = cfg?.inputCoercion ? 'z.coerce.number().int()' : 'z.number().int()';
-        const baseSchema =
-          typedJsonBase(typedJson, inputType) || customSchema || intSchema;
+        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || intSchema;
         result.push(
           this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
         );
