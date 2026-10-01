@@ -716,6 +716,11 @@ export async function generate(options: GeneratorOptions) {
 
     // Only create objects index if objects or crud emitted (legacy expectation)
     if ((emitObjects || emitCrud) && !shouldSkipCrudAndObjectsDueToHeuristics) {
+      // Must run before generateIndex() so the objects barrel is registered in the
+      // index export set. Previously only called from generateModelSchemas(), which
+      // meant emit.objects=true + emit.crud=false wrote object files the barrel
+      // never referenced.
+      await generateObjectsIndex();
       await generateIndex();
     }
 
@@ -1603,8 +1608,6 @@ async function generateModelSchemas(models: DMMF.Model[], modelOperations: DMMF.
   });
   await transformer.generateModelSchemas();
   await transformer.generateResultSchemas();
-  // Ensure objects index exists for integration expectations
-  await generateObjectsIndex();
 }
 
 async function generateIndex() {

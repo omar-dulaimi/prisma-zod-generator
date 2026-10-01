@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { TestEnvironment } from './helpers';
@@ -175,6 +175,62 @@ model User {
         expect(existsSync(join(base, 'results'))).toBe(false);
         expect(existsSync(join(base, 'variants'))).toBe(false);
         expect(existsSync(join(base, 'objects'))).toBe(true);
+      } finally {
+        await env.cleanup();
+      }
+    },
+    GENERATION_TIMEOUT,
+  );
+
+  it(
+    'should barrel-reach object schemas when emit.crud is false',
+    async () => {
+      // Regression: generateObjectsIndex() used to be called only from
+      // generateModelSchemas(), so emit.objects=true + emit.crud=false wrote object
+      // files that the root index never referenced. Every *WhereInputObject* import
+      // then failed to resolve.
+      const env = await TestEnvironment.createTestEnv('emit-objects-no-crud');
+      try {
+        const config = {
+          mode: 'minimal',
+          emit: { enums: true, objects: true, crud: false, results: false },
+          variants: {
+            pure: { enabled: false },
+            input: { enabled: false },
+            result: { enabled: false },
+          },
+        } as Partial<import('../src/config/parser').GeneratorConfig>;
+        const schema = `datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider = "node ./lib/generator.js"
+  output   = "${env.outputDir}/schemas"
+  config   = "./config.json"
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique
+}
+`;
+        writeFileSync(join(env.testDir, 'config.json'), JSON.stringify(config, null, 2));
+        writeFileSync(env.schemaPath, schema);
+        await env.runGeneration();
+
+        const base = join(env.outputDir, 'schemas');
+        expect(existsSync(join(base, 'objects', 'UserWhereInput.schema.ts'))).toBe(true);
+        expect(existsSync(join(base, 'objects', 'index.ts'))).toBe(true);
+        // The object barrel must be reachable from the root index, otherwise the
+        // object schemas are dead files no consumer can import.
+        const rootIndex = readFileSync(join(base, 'index.ts'), 'utf-8');
+        expect(rootIndex).toMatch(/objects\/index/);
       } finally {
         await env.cleanup();
       }
