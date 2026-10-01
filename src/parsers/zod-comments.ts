@@ -6,6 +6,7 @@
  */
 
 import { DMMF } from '@prisma/generator-helper';
+import { booleanCoercionExpr } from '../utils/coercion';
 import { logger } from '../utils/logger';
 
 /**
@@ -1686,7 +1687,7 @@ function mapAnnotationToZodMethod(
         : context.fieldType === 'BigInt'
           ? 'z.coerce.bigint()'
           : context.fieldType === 'Boolean'
-            ? 'z.coerce.boolean()'
+            ? `z.${booleanCoercionExpr(zodVersion)}`
             : 'z.coerce.number()'; // Float
     return { methodCall: coerceExpr };
   }
@@ -2489,7 +2490,9 @@ export function generateCompleteZodSchema(
  */
 export function getBaseZodTypeForField(
   field: import('@prisma/generator-helper').DMMF.Field,
+  inputCoercion?: boolean,
   isOptionalOverride?: boolean,
+  zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
 ): string {
   const isOptional =
     typeof isOptionalOverride === 'boolean' ? isOptionalOverride : !field.isRequired;
@@ -2500,22 +2503,22 @@ export function getBaseZodTypeForField(
       baseType = 'z.string()';
       break;
     case 'Int':
-      baseType = 'z.number().int()';
+      baseType = inputCoercion ? 'z.coerce.number().int()' : 'z.number().int()';
       break;
     case 'Float':
-      baseType = 'z.number()';
+      baseType = inputCoercion ? 'z.coerce.number()' : 'z.number()';
       break;
     case 'Boolean':
-      baseType = 'z.boolean()';
+      baseType = inputCoercion ? `z.${booleanCoercionExpr(zodVersion)}` : 'z.boolean()';
       break;
     case 'DateTime':
       baseType = 'z.date()';
       break;
     case 'BigInt':
-      baseType = 'z.bigint()';
+      baseType = inputCoercion ? 'z.coerce.bigint()' : 'z.bigint()';
       break;
     case 'Decimal':
-      baseType = 'z.number()';
+      baseType = inputCoercion ? 'z.coerce.number()' : 'z.number()';
       break;
     case 'Json':
       baseType = 'z.unknown()';

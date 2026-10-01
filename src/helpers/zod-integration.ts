@@ -76,7 +76,9 @@ export function processModelsWithZodIntegration(
       // Create fallback model info
       enhancedModels.push({
         model,
-        enhancedFields: model.fields.map((field) => createFallbackFieldInfo(field)),
+        enhancedFields: model.fields.map((field) =>
+          createFallbackFieldInfo(field, options.inputCoercion),
+        ),
         allZodImports: new Set(),
         hasAnyZodAnnotations: false,
         zodProcessingErrors: [
@@ -112,6 +114,9 @@ export interface ZodIntegrationOptions {
 
   /** Zod version target for version-specific handling */
   zodVersion?: 'auto' | 'v3' | 'v4';
+
+  /** Whether Int/Float/Boolean/BigInt/Decimal(number) fields should emit coercing schemas */
+  inputCoercion?: boolean;
 }
 
 /**
@@ -162,7 +167,7 @@ function processModelWithZodIntegration(
       // Handle field processing errors gracefully
       console.warn(`Failed to process field ${field.name} in model ${model.name}:`, error);
 
-      const fallbackField = createFallbackFieldInfo(field);
+      const fallbackField = createFallbackFieldInfo(field, options.inputCoercion);
       fallbackField.zodErrors.push(
         `Field processing failed: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -229,7 +234,7 @@ function processFieldWithZodIntegration(
   if (!extractedComment || !extractedComment.hasZodAnnotations) {
     // No @zod annotations found
     if (options.generateFallbackSchemas !== false) {
-      enhancedField.zodSchema = generateFallbackSchema(field);
+      enhancedField.zodSchema = generateFallbackSchema(field, options.inputCoercion);
       enhancedField.zodImports = getRequiredImports(field.type);
     }
     enhancedField.fallbackToDefault = true;
@@ -256,7 +261,12 @@ function processFieldWithZodIntegration(
     }
 
     // Generate Zod schema from annotations
-    const baseType = getBaseZodTypeForField(field);
+    const baseType = getBaseZodTypeForField(
+      field,
+      options.inputCoercion,
+      undefined,
+      options.zodVersion || 'auto',
+    );
     const schemaResult = generateCompleteZodSchema(
       baseType,
       parseResult.annotations,
@@ -274,7 +284,7 @@ function processFieldWithZodIntegration(
 
       // Generate fallback if enabled
       if (options.generateFallbackSchemas !== false) {
-        enhancedField.zodSchema = generateFallbackSchema(field);
+        enhancedField.zodSchema = generateFallbackSchema(field, options.inputCoercion);
         enhancedField.zodImports = getRequiredImports(field.type);
       }
     }
@@ -286,7 +296,7 @@ function processFieldWithZodIntegration(
 
     // Generate fallback if enabled
     if (options.generateFallbackSchemas !== false) {
-      enhancedField.zodSchema = generateFallbackSchema(field);
+      enhancedField.zodSchema = generateFallbackSchema(field, options.inputCoercion);
       enhancedField.zodImports = getRequiredImports(field.type);
     }
   }
@@ -300,11 +310,11 @@ function processFieldWithZodIntegration(
  * @param field - Prisma DMMF field
  * @returns Fallback enhanced field info
  */
-function createFallbackFieldInfo(field: DMMF.Field): EnhancedFieldInfo {
+function createFallbackFieldInfo(field: DMMF.Field, inputCoercion?: boolean): EnhancedFieldInfo {
   return {
     field,
     hasZodAnnotations: false,
-    zodSchema: generateFallbackSchema(field),
+    zodSchema: generateFallbackSchema(field, inputCoercion),
     zodImports: getRequiredImports(field.type),
     zodErrors: [],
     fallbackToDefault: true,
@@ -319,8 +329,12 @@ function createFallbackFieldInfo(field: DMMF.Field): EnhancedFieldInfo {
  * @param field - Prisma DMMF field
  * @returns Fallback Zod schema string
  */
-function generateFallbackSchema(field: DMMF.Field): string {
-  return getBaseZodTypeForField(field);
+function generateFallbackSchema(
+  field: DMMF.Field,
+  inputCoercion?: boolean,
+  zodVersion: 'auto' | 'v3' | 'v4' = 'auto',
+): string {
+  return getBaseZodTypeForField(field, inputCoercion, undefined, zodVersion);
 }
 
 /**

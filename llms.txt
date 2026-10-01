@@ -15,6 +15,7 @@
 - Naming & Presets: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/naming
 - Optional Field Behavior: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/optional-fields
 - DateTime Strategy: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/datetime-strategy
+- Input Coercion: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/input-coercion
 - JSON Schema Compatibility: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/json-schema-compatibility
 - Dual Schema Exports: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/dual-exports
 - Model / Operation / Field Filtering: https://omar-dulaimi.github.io/prisma-zod-generator/docs/config/filtering
@@ -85,7 +86,7 @@
 
 > Prisma → Zod in one generate. Ship validated, typed data everywhere.
 
-Last updated: 2026-08-21 • Version: 3.3.1
+Last updated: 2026-10-01 • Version: 3.3.1
 
 ## Quick start
 
@@ -627,6 +628,71 @@ If you want early failure when no selector is present (e.g., rejecting `{}` befo
 ```
 
 This adds a minimal superRefine that checks only the presence of at least one top-level selector. It does not enforce “exactly one” (Prisma will still validate that at runtime) and does not attempt to peek into nested composite fields (those are already required by their own schemas).
+
+# Input Coercion
+
+Coerce string values (as they arrive from an HTTP query string or a raw HTML form) into `Int`, `Float`, `BigInt`, `Decimal` and `Boolean` fields when validating input schemas.
+
+## Overview
+
+HTTP query parameters and raw form submissions arrive as strings — filter values like `"30"` or `"true"` fail against `z.number().int()` and `z.boolean()`. With `inputCoercion: true` the generator emits `z.coerce.number()` / `z.coerce.bigint()` (and a decimal-coercing base) for input types, and accepts `'true'`/`'false'` strings for booleans.
+
+Enable it in the JSON config file or directly in the Prisma generator block:
+
+```json
+{
+  "inputCoercion": true
+}
+```
+
+```prisma
+generator zod {
+  provider      = "prisma-zod-generator"
+  output        = "./generated/zod"
+  inputCoercion = true
+}
+```
+
+## What gets coerced
+
+When enabled, coercion applies to every **DMMF input type** — the filter objects (`WhereInput`, `WhereUniqueInput`, `ScalarFilter`…), CRUD input objects (`CreateInput`, `UpdateInput`, `UncheckedCreateInput`…), `Select`/`Include` objects, their nested children, and the generated argument schemas (including the `take`/`skip` pagination args) — plus the **`input` variant**. It does **not** apply to pure models, the `result` variant, or operation result schemas, which keep strict `z.number()`, `z.boolean()`, etc., so read-model validation stays tight.
+
+An annotated field keeps its full chain — `@zod.min(1)` on an `Int` with coercion enabled emits `z.coerce.number().int().min(1)`.
+
+## Boolean coercion
+
+Booleans are **not** coerced with `z.coerce.boolean()`. That constructor applies JavaScript's `Boolean(x)`, which:
+
+- maps `'false'` to `true` and `''`, `null`, `[]` to `false`,
+- flattens nested objects — a filter object like `{ posts: { where: ... } }` would validate as `true`,
+- lets an **omitted** required `Boolean` silently pass as `false`.
+
+Instead, the emitted boolean schema accepts `'true'`/`'false'` strings alongside real booleans:
+
+- on `zodImportTarget: "auto"` with a Zod 4 install (`"v4"` explicitly): `z.union([z.boolean(), z.stringbool()])` — the bare `z.boolean()` arm also keeps a JSON `true`/`false` from appearing in the `stringbool()` arm;
+- on Zod 3 (`"v3"`): `z.preprocess((v) => v === "true" ? true : v === "false" ? false : v, z.boolean())`.
+
+Both forms survive `z.toJSONSchema()`. Zod's own coercion (`z.coerce.number()`) still accepts the empty forms it always did — `''`, `null` and `[]` map to `0`, and `true` maps to `1` — which is inherent to `z.coerce`, not something this option adds.
+
+## Validation examples
+
+```typescript
+const filter = UserWhereInput.safeParse({ age: "30" });                                   // ✅
+const filter = UserWhereInput.safeParse({ age: { gte: "10", lte: "20" } });               // ✅
+const filter = UserWhereInput.safeParse({ verified: "true" });                            // ✅
+const filter = UserWhereInput.safeParse({ verified: "false" });                           // ✅
+const filter = UserWhereInput.safeParse({ verified: true });                              // ✅
+const include = UserInclude.safeParse({ posts: { where: { published: true } } });         // ✅ nested object kept, not flattened
+const bad = UserWhereInput.safeParse({ verified: "nope" });                               // ❌
+const bad = UserWhereInput.safeParse({ verified: { equals: "" } });                       // ❌
+```
+
+## Related Configuration
+
+- [`@zod.coerce()`](../pipeline/zod-comments.md#type-coercion) — the per-field annotation; with this option both routes share the exact same emitted boolean form.
+- [`dateTimeStrategy`](./datetime-strategy.md) — `DateTime` already coerces on input schemas by default, independently of this option.
+- [`zodImportTarget`](../recipes/zod-import-targets.md) — selects the boolean coercion emission above.
+- [`jsonSchemaCompatible`](./json-schema-compatibility.md) — overrides coercion settings; when enabled, every emitter checks it first.
 
 # JSON Schema Compatibility
 
@@ -6037,6 +6103,8 @@ Use when embedding schemas directly into application packages or publishing a li
 
 **DateTime**: with the shipped defaults (`dateTimeStrategy: "date"` plus `dateTimeSplitStrategy: true`) the emitted form is variant-aware — `Create*`, `Update*` and `Where*` schemas get `z.coerce.date()`, while pure models and result schemas get `z.date()`. Set `dateTimeStrategy` to `"coerce"` or `"isoString"` to force a single form in every generated file; variant files honor the same setting.
 
+**Input coercion**: by default only `DateTime` coerces strings (`z.coerce.date()` above). Set [`inputCoercion: true`](../config/input-coercion.md) to also coerce `Int`, `Float`, `BigInt` and `Decimal` input values with `z.coerce.number()`/`z.coerce.bigint()` (so query-string parameters like `"30"` validate) and to make `Boolean` accept the strings `'true'`/`'false'` alongside real booleans — never `z.coerce.boolean()`, which produces `Boolean('false') === true` and flattens nested objects. Coercion applies to DMMF input types (filter/CRUD input objects), the `take`/`skip` pagination arguments, and the `input` variant; pure models, `result` variants and result schemas stay strict. Because coercion widens the accepted input, it interacts with `@zod.coerce()` annotations and `z.toJSONSchema()` — see the [`inputCoercion`](../config/input-coercion.md) reference.
+
 **JSON**: object and CRUD schemas reference `jsonSchema` — the recursive `JsonValueSchema` helper generated into `helpers/json-helpers.ts` — and union it with the Json-null enum arm. Pure models use a `z.unknown()` base plus a nesting-depth `.refine(...)` that is always applied (maximum depth 10). `jsonSchemaCompatible: true` switches both bases to `z.any()`. A single `Json` field can be given a real schema with `@zod.import([...]).custom.use(...)`; see [Typed JSON fields](./zod-comments.md#typed-json-fields-with-a-referenced-schema).
 
 **Bytes**: pure models emit a base64 `z.string()` with a base64 regex and a `.max()` derived from the internal 16 MB size cap; input and object schemas use `z.instanceof(Uint8Array)`. The only supported way to change the representation is `jsonSchemaCompatible: true` together with `jsonSchemaOptions.bytesFormat` (`base64String` or `hexString`).
@@ -6454,11 +6522,19 @@ export const NumberValidationCreateInputSchema = z.object({
 ### Type Coercion
 
 `@zod.coerce()` on an `Int`, `Float`, `BigInt` or `Boolean` field switches its base
-type to Zod's coercing constructor (`z.coerce.number()`, `z.coerce.bigint()`,
-`z.coerce.boolean()`), so a value arriving as a string — a raw HTML form field, a
+type to a coercing schema, so a value arriving as a string — a raw HTML form field, a
 query-string parameter — is converted before validation instead of rejected. Chain
-the rest of the validators after it as usual; `DateTime` fields already have this
-through the generator-level [`dateTimeStrategy: 'coerce'`](../reference/config-options.md)
+the rest of the validators after it as usual. `Int`, `Float` and `BigInt` use Zod's
+coercing constructors (`z.coerce.number()`, `z.coerce.bigint()`), while `Boolean`
+does **not** use `z.coerce.boolean()` (which applies JavaScript's `Boolean(x)` — it
+would turn `'false'` into `true` and flatten nested objects). Instead it accepts the
+string forms `'true'`/`'false'` alongside real booleans via
+`z.union([z.boolean(), z.stringbool()])` on Zod 4, or a `z.preprocess` mapping them
+onto `z.boolean()` on Zod 3. See [`inputCoercion`](../config/input-coercion.md), the
+generator-level switch that applies equivalent coercion to every filter, CRUD-input
+and input-variant field, any field with `@zod.coerce()`, and the `take`/`skip`
+pagination arguments. `DateTime` fields already have this behavior through the
+generator-level [`dateTimeStrategy: 'coerce'`](../reference/config-options.md)
 option instead of a per-field annotation.
 
 ```prisma
@@ -6479,7 +6555,8 @@ Generated schema:
 export const CoerceExampleCreateInputSchema = z.object({
   count: z.coerce.number().int().min(1),
   ratio: z.coerce.number(),
-  agree: z.coerce.boolean(),
+  agree: z.union([z.boolean(), z.stringbool()]), // Zod 4
+  // Zod 3: agree: z.preprocess((v) => v === "true" ? true : v === "false" ? false : v, z.boolean()),
 });
 ```
 
@@ -9533,6 +9610,7 @@ Defaults are the **observed** values the generator resolves at runtime, which is
 | `dateTimeStrategy`                                      | `"date" \| "coerce" \| "isoString"`                                        | `"date"`                                                                      | both        | [/docs/config/datetime-strategy](/docs/config/datetime-strategy)                                 |
 | `dateTimeSplitStrategy`                                 | boolean                                                                    | `true`                                                                        | both        | [/docs/config/datetime-strategy](/docs/config/datetime-strategy)                                 |
 | `decimalMode`                                           | `"number" \| "string" \| "decimal"`                                        | `"decimal"`                                                                   | config file | [/docs/pipeline/special-types](/docs/pipeline/special-types)                                     |
+| `inputCoercion`                                         | boolean                                                                    | `false`                                                                       | both        | [/docs/config/input-coercion](/docs/config/input-coercion)                                       |
 | `optionalFieldBehavior`                                 | `"optional" \| "nullable" \| "nullish"`                                    | `"nullish"`                                                                   | both        | [/docs/config/optional-fields](/docs/config/optional-fields)                                     |
 | `jsonSchemaCompatible`                                  | boolean                                                                    | `false`                                                                       | both        | [/docs/config/json-schema-compatibility](/docs/config/json-schema-compatibility)                 |
 | `jsonSchemaOptions.dateTimeFormat`                      | `"isoString" \| "isoDate"`                                                 | `"isoString"`                                                                 | both        | [/docs/config/json-schema-compatibility](/docs/config/json-schema-compatibility)                 |

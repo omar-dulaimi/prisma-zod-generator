@@ -75,6 +75,7 @@ export class DefaultConfigurationManager {
         },
       },
       optionalFieldBehavior: 'nullish',
+      inputCoercion: false,
       naming: {
         preset: 'default',
         // Intentionally leave pureModel overrides empty so presets can supply their own

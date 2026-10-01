@@ -47,6 +47,7 @@ Defaults are the **observed** values the generator resolves at runtime, which is
 | `dateTimeStrategy` | `"date" \| "coerce" \| "isoString"` | `"date"` | both | [/docs/config/datetime-strategy](/docs/config/datetime-strategy) |
 | `dateTimeSplitStrategy` | boolean | `true` | both | [/docs/config/datetime-strategy](/docs/config/datetime-strategy) |
 | `decimalMode` | `"number" \| "string" \| "decimal"` | `"decimal"` | config file | [/docs/pipeline/special-types](/docs/pipeline/special-types) |
+| `inputCoercion` | boolean | `false` | both | [/docs/config/input-coercion](/docs/config/input-coercion) |
 | `optionalFieldBehavior` | `"optional" \| "nullable" \| "nullish"` | `"nullish"` | both | [/docs/config/optional-fields](/docs/config/optional-fields) |
 | `jsonSchemaCompatible` | boolean | `false` | both | [/docs/config/json-schema-compatibility](/docs/config/json-schema-compatibility) |
 | `jsonSchemaOptions.dateTimeFormat` | `"isoString" \| "isoDate"` | `"isoString"` | both | [/docs/config/json-schema-compatibility](/docs/config/json-schema-compatibility) |

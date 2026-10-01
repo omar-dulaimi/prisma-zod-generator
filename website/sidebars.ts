@@ -19,6 +19,7 @@ const sidebars: SidebarsConfig = {
         'config/naming',
         'config/optional-fields',
         'config/datetime-strategy',
+        'config/input-coercion',
         'config/json-schema-compatibility',
         'config/dual-exports',
         'config/filtering',

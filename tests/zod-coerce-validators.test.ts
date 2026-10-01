@@ -82,8 +82,12 @@ model CoerceList {
     expect(scalars).toContain('z.coerce.bigint()');
   });
 
-  it('coerces Boolean', () => {
-    expect(scalars).toContain('z.coerce.boolean()');
+  it('coerces Boolean via the true/false string union', () => {
+    // z.coerce.boolean() would apply Boolean(x): 'false' -> true, nested objects
+    // flatten to boolean, and an omitted required Boolean would pass as false.
+    // The @zod.coerce() path and the inputCoercion option share this form.
+    expect(scalars).toContain('z.union([z.boolean(), z.stringbool()])');
+    expect(scalars).not.toContain('z.coerce.boolean()');
   });
 
   it('rejects @zod.coerce() on String instead of emitting z.coerce.string()', () => {

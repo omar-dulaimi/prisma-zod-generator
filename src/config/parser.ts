@@ -95,6 +95,27 @@ export interface GeneratorConfig {
   optionalFieldBehavior?: 'optional' | 'nullable' | 'nullish';
 
   /**
+   * When true, coerce string input into Int, Float, BigInt, and Decimal
+   * (when decimalMode='number') using z.coerce.number() / z.coerce.bigint(),
+   * and accept 'true'/'false' strings for Boolean.
+   *
+   * Boolean deliberately does not use z.coerce.boolean(): that constructor is
+   * Boolean(x), so 'false' would become true, nested objects would collapse to
+   * true, and an omitted required Boolean would pass as false. Booleans instead
+   * emit z.union([z.boolean(), z.stringbool()]) on Zod 4, or a z.preprocess
+   * mapping the two strings onto z.boolean() on Zod 3.
+   *
+   * Scope: DMMF input types (filter/CRUD-input/select/include objects, their
+   * nested children, and the take/skip arguments) plus the 'input' variant.
+   * Pure models, the 'result' variant and result schemas stay strict.
+   *
+   * This is useful when validating HTTP query parameters, where numeric and
+   * boolean values arrive as strings.
+   * Default: false
+   */
+  inputCoercion?: boolean;
+
+  /**
    * Strategy for Decimal scalar mapping.
    * - 'number': Map to z.number() (legacy behavior, may lose precision)
    * - 'string': Map to z.string() with decimal regex validation

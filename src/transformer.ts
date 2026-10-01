@@ -25,6 +25,7 @@ import {
   EMPTY_TYPED_FIELD_UPDATE_OPERATIONS_PLAN,
   type TypedFieldUpdateOperationsPlan,
 } from './generators/typed-field-update-operations';
+import { booleanCoercionExpr, takeSkipFields } from './utils/coercion';
 import { logger } from './utils/logger';
 import {
   applyPattern,
@@ -147,6 +148,7 @@ export default class Transformer {
       validateTypeCompatibility: true,
       collectDetailedErrors: true,
       zodVersion: zodVersion,
+      inputCoercion: generatorConfig?.inputCoercion === true,
     });
   }
 
@@ -2057,21 +2059,29 @@ export default class Transformer {
           ),
         );
       } else if (inputType.type === 'Boolean') {
-        const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = customSchema || 'z.boolean()';
-        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
-      } else if (inputType.type === 'Int') {
-        const typedJson = this.typedJsonForField(field, inputType);
+        const cfg = Transformer.getGeneratorConfig();
         const customSchema = this.getCustomSchemaForField(field.name);
         const baseSchema =
-          typedJsonBase(typedJson, inputType) || customSchema || 'z.number().int()';
+          customSchema ||
+          (cfg?.inputCoercion
+            ? `z.${booleanCoercionExpr((cfg?.zodImportTarget ?? 'auto') as 'auto' | 'v3' | 'v4')}`
+            : 'z.boolean()');
+        result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
+      } else if (inputType.type === 'Int') {
+        const cfg = Transformer.getGeneratorConfig();
+        const typedJson = this.typedJsonForField(field, inputType);
+        const customSchema = this.getCustomSchemaForField(field.name);
+        const intSchema = cfg?.inputCoercion ? 'z.coerce.number().int()' : 'z.number().int()';
+        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || intSchema;
         result.push(
           this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
         );
       } else if (inputType.type === 'Float') {
+        const cfg = Transformer.getGeneratorConfig();
         const typedJson = this.typedJsonForField(field, inputType);
         const customSchema = this.getCustomSchemaForField(field.name);
-        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || 'z.number()';
+        const floatSchema = cfg?.inputCoercion ? 'z.coerce.number()' : 'z.number()';
+        const baseSchema = typedJsonBase(typedJson, inputType) || customSchema || floatSchema;
         result.push(
           this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema || !!typedJson),
         );
@@ -2088,14 +2098,15 @@ export default class Transformer {
         } else if (mode === 'string') {
           decimalExpr = 'z.string()';
         } else {
-          decimalExpr = 'z.number()';
+          decimalExpr = cfg?.inputCoercion ? 'z.coerce.number()' : 'z.number()';
         }
 
         const customSchema = this.getCustomSchemaForField(field.name);
         const baseSchema = customSchema || decimalExpr;
         result.push(this.wrapWithZodValidators(baseSchema, field, inputType, !!customSchema));
       } else if (inputType.type === 'BigInt') {
-        let bigintExpr = 'z.bigint()';
+        const cfg = Transformer.getGeneratorConfig();
+        let bigintExpr = cfg?.inputCoercion ? 'z.coerce.bigint()' : 'z.bigint()';
 
         // JSON Schema compatibility mode overrides normal behavior
         if (Transformer.isJsonSchemaModeEnabled()) {
@@ -3967,7 +3978,7 @@ ${helperCode}
               : `include: ${includeFieldRef1},`
             : '';
           const schemaFields =
-            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
+            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), ${takeSkipFields(Transformer.getGeneratorConfig()?.inputCoercion === true)}, distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
               .trim()
               .replace(/,\s*,/g, ',');
 
@@ -4046,7 +4057,7 @@ ${helperCode}
               : `include: ${includeFieldRef2},`
             : '';
           const schemaFields =
-            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
+            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), ${takeSkipFields(Transformer.getGeneratorConfig()?.inputCoercion === true)}, distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
               .trim()
               .replace(/,\s*,/g, ',');
 
@@ -4129,7 +4140,7 @@ ${helperCode}
               : `include: ${includeFieldRef3},`
             : '';
           const schemaFields =
-            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
+            `${selectField} ${includeField} ${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), ${takeSkipFields(Transformer.getGeneratorConfig()?.inputCoercion === true)}, distinct: z.union([${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema, ${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema.array()]).optional()`
               .trim()
               .replace(/,\s*,/g, ',');
 
@@ -4185,7 +4196,7 @@ ${helperCode}
             Transformer.getStrictModeResolver()?.getOperationStrictModeSuffix(modelName, 'count') ||
             '';
           const countSchemaObject = this.composeObjectDefinition(
-            `${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional()`,
+            `${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), ${takeSkipFields(Transformer.getGeneratorConfig()?.inputCoercion === true)}, select: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional()`,
             strictModeSuffix,
           );
 
@@ -4692,7 +4703,7 @@ ${helperCode}
               'aggregate',
             ) || '';
           const aggregateSchemaObject = this.composeObjectDefinition(
-            `${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), take: z.number().optional(), skip: z.number().optional(), ${aggregateOperations.join(
+            `${orderByZodSchemaLine} where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional(), cursor: ${Transformer.getObjectSchemaName(`${modelName}WhereUniqueInput`)}.optional(), ${takeSkipFields(Transformer.getGeneratorConfig()?.inputCoercion === true)}, ${aggregateOperations.join(
               ', ',
             )}`,
             strictModeSuffix,
@@ -4751,8 +4762,9 @@ ${helperCode}
             `where: ${Transformer.getObjectSchemaName(`${modelName}WhereInput`)}.optional()`,
             `orderBy: z.union([${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}, ${Transformer.getObjectSchemaName(`${modelName}OrderByWithAggregationInput`)}.array()]).optional()`,
             `having: ${Transformer.getObjectSchemaName(`${modelName}ScalarWhereWithAggregatesInput`)}.optional()`,
-            'take: z.number().optional()',
-            'skip: z.number().optional()',
+            ...takeSkipFields(Transformer.getGeneratorConfig()?.inputCoercion === true)
+              .split(',')
+              .map((f) => f.trim()),
             `by: z.array(${this.getPascalCaseModelName(modelName)}ScalarFieldEnumSchema)`,
             `_count: z.union([ z.literal(true), ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'CountAggregateInput')}`)} ]).optional()`,
             `_min: ${Transformer.getObjectSchemaName(`${this.getAggregateInputName(modelName, 'MinAggregateInput')}`)}.optional()`,
